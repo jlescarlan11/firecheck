@@ -1,0 +1,5 @@
+# Superpowers brainstorm cache (local mockups + server state)
+.superpowers/
+
+# Claude Code local settings
+.claude/settings.local.json
