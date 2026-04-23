@@ -27,11 +27,13 @@ migrate_working_dir/
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
+.flutter-plugins
 .flutter-plugins-dependencies
+.packages
 .pub-cache/
 .pub/
-/build/
-/coverage/
+build/
+coverage/
 
 # Symbolication related
 app.*.symbols
@@ -50,19 +52,6 @@ app.*.map.json
 # Claude Code local settings
 .claude/settings.local.json
 
-# Flutter
-build/
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-.packages
-coverage/
-
 # Local environment
 .env
 !.env.example
-
-# IDE
-.idea/
-*.iml
-.vscode/
