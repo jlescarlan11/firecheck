@@ -1,4 +1,4 @@
-package ph.gov.bfp.firecheck.firecheck
+package ph.gov.bfp.firecheck
 
 import io.flutter.embedding.android.FlutterActivity
 
