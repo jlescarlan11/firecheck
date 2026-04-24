@@ -30,9 +30,13 @@ dependencies:
   # remote
   supabase_flutter: ^2.5.6
 
+  # map
+  mapbox_maps_flutter: ^2.5.0
+
   # platform
   flutter_secure_storage: ^9.2.2
   local_auth: ^2.2.0
+  geolocator: ^13.0.0
 
   # utilities
   uuid: ^4.4.0
