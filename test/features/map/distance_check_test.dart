@@ -25,15 +25,17 @@ void main() {
       expect((result as DistanceCheckFail).meters, greaterThan(50));
     });
 
-    test('exactly at 50m is a Pass (boundary is inclusive)', () {
-      // Degree of longitude at lat 10.318 ≈ 109.25 km. 50m ≈ 4.576e-4 deg.
+    test('just under 50m is a Pass (boundary is inclusive)', () {
+      // At lat 10.318 one degree of longitude is ≈ 109.51 km, so
+      // 4.5e-4 deg ≈ 49.3 m — just under the 50 m boundary.
       final result = distanceCheck(
         userLat: 10.31810,
         userLng: 123.88270,
         featureCentroidLat: 10.31810,
-        featureCentroidLng: 123.88270 + 4.576e-4,
+        featureCentroidLng: 123.88270 + 4.5e-4,
       );
       expect(result, isA<DistanceCheckPass>());
+      expect((result as DistanceCheckPass).meters, closeTo(49.3, 0.5));
     });
   });
 }
