@@ -7,3 +7,12 @@ analyzer:
     - '**/*.g.dart'
     - '**/*.freezed.dart'
     - 'lib/generated/**'
+
+linter:
+  rules:
+    # This is an application, not a published library — dartdoc on every
+    # public getter/method is noise, not documentation.
+    public_member_api_docs: false
+    # Inline status-enum comments and widget trees routinely exceed 80
+    # columns in readable ways. Prefer signal over strict wrap.
+    lines_longer_than_80_chars: false
