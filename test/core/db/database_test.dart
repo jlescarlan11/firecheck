@@ -14,8 +14,19 @@ void main() {
       await db.close();
     });
 
-    test('schema v1 creates all 11 tables without error', () async {
-      // Assert by inserting a row into every table and reading it back.
+    test('schema v1 materializes every table against SQLite', () async {
+      // Force SQLite to execute CREATE TABLE for each registered table by
+      // issuing a trivial SELECT. If any table's DDL is malformed (bad FK,
+      // invalid default, typo'd column, etc.), Drift's lazy table creation
+      // will throw here and the test fails with a helpful SQL error.
+      for (final table in db.allTables) {
+        await db
+            .customSelect('SELECT 1 FROM ${table.actualTableName} LIMIT 1')
+            .get();
+      }
+
+      // Round-trip one row to catch companion/serialization regressions on a
+      // representative table.
       await db.into(db.ra9514Types).insert(
             Ra9514TypesCompanion.insert(
               code: 'A',
@@ -33,11 +44,12 @@ void main() {
       expect(db.schemaVersion, 1);
     });
 
-    test('all 11 tables are registered on the DB', () {
+    test('the DB registers exactly the 11 expected tables', () {
       final names = db.allTables.map((t) => t.actualTableName).toSet();
+      expect(names, hasLength(11));
       expect(
         names,
-        containsAll([
+        equals({
           'enumerators',
           'assignments',
           'features',
@@ -49,7 +61,7 @@ void main() {
           'ra_9514_types',
           'sync_jobs',
           'offline_tile_packs',
-        ]),
+        }),
       );
     });
   });
