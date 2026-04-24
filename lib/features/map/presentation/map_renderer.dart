@@ -108,6 +108,9 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
         center: Point(coordinates: Position(123.88270, 10.31810)),
         zoom: 15,
       ),
+      // Without an explicit styleUri the map renders a black background
+      // because no style is loaded. Streets v12 is the Phase 1 spec choice.
+      styleUri: 'mapbox://styles/mapbox/streets-v12',
       onMapCreated: _onMapCreated,
     );
   }
