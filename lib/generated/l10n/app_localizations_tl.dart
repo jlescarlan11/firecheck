@@ -392,4 +392,7 @@ class AppLocalizationsTl extends AppLocalizations {
 
   @override
   String get savedFailedSnackbar => 'Hindi nai-save. Susubukan ulit…';
+
+  @override
+  String get gpsWaitingSnackbar => 'Naghulat og GPS signal…';
 }

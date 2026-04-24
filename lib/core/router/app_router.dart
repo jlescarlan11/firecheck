@@ -4,6 +4,7 @@ import 'package:firecheck/features/auth/presentation/auth_providers.dart';
 import 'package:firecheck/features/auth/presentation/login_screen.dart';
 import 'package:firecheck/features/home/presentation/home_screen.dart';
 import 'package:firecheck/features/map/presentation/map_screen.dart';
+import 'package:firecheck/features/survey/building_form/presentation/submission_detail_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -48,6 +49,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/map',
         builder: (context, state) => const MapScreen(),
+      ),
+      GoRoute(
+        path: '/feature/:featureId',
+        builder: (context, state) => SubmissionDetailScreen(
+          featureId: state.pathParameters['featureId']!,
+        ),
       ),
     ],
   );

@@ -392,4 +392,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get savedFailedSnackbar => 'Couldn\'t save. Retrying…';
+
+  @override
+  String get gpsWaitingSnackbar => 'Waiting for GPS fix…';
 }

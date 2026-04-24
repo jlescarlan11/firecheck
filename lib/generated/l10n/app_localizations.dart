@@ -817,6 +817,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t save. Retrying…'**
   String get savedFailedSnackbar;
+
+  /// No description provided for @gpsWaitingSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for GPS fix…'**
+  String get gpsWaitingSnackbar;
 }
 
 class _AppLocalizationsDelegate

@@ -162,5 +162,6 @@
   "storeysWarningTooTall": "That's very tall — confirm?",
   "errorRequiredField": "Required",
   "cameraPermissionSnackbar": "Enable camera permission to take photos",
-  "savedFailedSnackbar": "Couldn't save. Retrying…"
+  "savedFailedSnackbar": "Couldn't save. Retrying…",
+  "gpsWaitingSnackbar": "Waiting for GPS fix…"
 }

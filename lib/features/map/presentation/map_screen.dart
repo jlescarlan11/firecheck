@@ -1,12 +1,15 @@
 import 'package:firecheck/core/db/database.dart';
+import 'package:firecheck/core/geo/centroid.dart';
+import 'package:firecheck/core/location/distance.dart';
+import 'package:firecheck/core/location/location_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
-import 'package:firecheck/features/map/domain/distance_check.dart';
-import 'package:firecheck/features/map/presentation/feature_bottom_sheet.dart';
-import 'package:firecheck/features/map/presentation/feature_too_far_modal.dart';
 import 'package:firecheck/features/map/presentation/map_providers.dart';
+import 'package:firecheck/features/survey/building_form/presentation/building_form_providers.dart';
+import 'package:firecheck/features/survey/building_form/presentation/override_reason_dialog.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
@@ -67,43 +70,47 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   Future<void> _handleFeatureTap(Feature f) async {
-    // Phase 1 placeholder: use Brgy. Tisa coordinate as the "user" position
-    // since real GPS wiring with the location_providers lands alongside the
-    // real MapboxMapRenderer in T19. Centroid is also a fixed value because
-    // geojson centroid math comes in Phase 2 with the form.
-    const userLat = 10.31810;
-    const userLng = 123.88270;
-    final (centroidLat, centroidLng) = _centroidFallback(f.geometryGeojson);
+    final l = AppLocalizations.of(context)!;
 
-    final result = distanceCheck(
-      userLat: userLat,
-      userLng: userLng,
-      featureCentroidLat: centroidLat,
-      featureCentroidLng: centroidLng,
+    final pos = ref.read(currentPositionProvider).value;
+    if (pos == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l.gpsWaitingSnackbar)),
+      );
+      return;
+    }
+
+    final ring = decodePolygonGeojson(f.geometryGeojson);
+    if (ring == null || ring.isEmpty) return;
+
+    final centroid = polygonCentroid(ring);
+    final meters =
+        haversineMeters(pos.latitude, pos.longitude, centroid.lat, centroid.lng);
+
+    String? reason;
+    if (meters > 50.0) {
+      if (!mounted) return;
+      reason = await showOverrideReasonDialog(
+        context,
+        distanceMeters: meters,
+      );
+      if (reason == null || reason.trim().isEmpty) return;
+    }
+
+    if (!mounted) return;
+    final submissionRepo = ref.read(submissionRepositoryProvider);
+    final submission = await submissionRepo.ensureDraftForFeature(
+      featureId: f.id,
+      enumeratorId: 'admin',
     );
 
-    final open = switch (result) {
-      DistanceCheckPass() => true,
-      DistanceCheckFail(:final meters) =>
-        await showFeatureTooFarModal(context, distanceMeters: meters),
-    };
+    if (reason != null) {
+      await submissionRepo.updateOverrideReason(submission.id, reason.trim());
+    }
 
-    if (!open || !mounted) return;
-
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) => FeatureBottomSheet(
-        feature: f,
-        distanceMeters: result.meters,
-      ),
-    );
-  }
-
-  (double, double) _centroidFallback(String geojson) {
-    // TODO(phase-2): real GeoJSON centroid. Returning a fixed Brgy. Tisa
-    // coordinate keeps Phase 1 tap-testable.
-    return (10.31810, 123.88270);
+    if (!mounted) return;
+    context.go('/feature/${f.id}');
   }
 
   Widget _pill(

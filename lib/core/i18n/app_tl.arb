@@ -119,5 +119,6 @@
   "storeysWarningTooTall": "Sobrang taas — kumpirmahin?",
   "errorRequiredField": "Kailangan",
   "cameraPermissionSnackbar": "Buksan ang permiso sa kamera para makakuha ng larawan",
-  "savedFailedSnackbar": "Hindi nai-save. Susubukan ulit…"
+  "savedFailedSnackbar": "Hindi nai-save. Susubukan ulit…",
+  "gpsWaitingSnackbar": "Naghulat og GPS signal…"
 }
