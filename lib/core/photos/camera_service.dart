@@ -1,5 +1,8 @@
 import 'package:image_picker/image_picker.dart';
 
+/// Single-method facade is intentional — concrete impls (real ImagePicker
+/// + scripted Fake) are distinguished by type for provider overrides.
+// ignore: one_member_abstracts
 abstract class CameraService {
   /// Opens the system camera. Returns the captured photo's local path
   /// (full-res), or null if the user cancelled.
