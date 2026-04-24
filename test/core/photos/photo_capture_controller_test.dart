@@ -1,5 +1,7 @@
 import 'dart:io';
 
+// Hide drift's SQL helpers that collide with matcher's expectations.
+import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/photos/camera_service.dart';
@@ -16,6 +18,7 @@ void main() {
   late AppDatabase db;
   late InMemoryPhotoStorage storage;
   late String srcPath;
+  const submissionId = 'sub-1';
 
   setUp(() async {
     tempDir = await Directory.systemTemp.createTemp('photo_ctrl_test_');
@@ -26,6 +29,27 @@ void main() {
 
     db = AppDatabase.forTesting(NativeDatabase.memory());
     storage = InMemoryPhotoStorage(root: tempDir.path);
+
+    // Seed the FK chain so photos.submission_id has a valid parent. With
+    // PRAGMA foreign_keys = ON (Phase 1), an orphan insert would fail.
+    final now = DateTime.now();
+    await db.into(db.features).insert(
+          FeaturesCompanion.insert(
+            id: 'feat-1',
+            assignmentId: 'assn-1',
+            featureType: 'building',
+            geometryGeojson: '{}',
+            createdAt: now,
+          ),
+        );
+    await db.into(db.submissions).insert(
+          SubmissionsCompanion.insert(
+            id: submissionId,
+            featureId: 'feat-1',
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
   });
 
   tearDown(() async {
@@ -44,12 +68,12 @@ void main() {
       storage: storage,
       repo: PhotoRepository(db: db, storage: storage),
     );
-    final id = await controller.capture(submissionId: 'sub-1');
+    final id = await controller.capture(submissionId: submissionId);
     expect(id, isNotNull);
 
     final rows = await db.select(db.photos).get();
     expect(rows, hasLength(1));
-    expect(rows.first.submissionId, 'sub-1');
+    expect(rows.first.submissionId, submissionId);
     expect(File(rows.first.localPath).existsSync(), isTrue);
   });
 
@@ -60,7 +84,7 @@ void main() {
       storage: storage,
       repo: PhotoRepository(db: db, storage: storage),
     );
-    final id = await controller.capture(submissionId: 'sub-1');
+    final id = await controller.capture(submissionId: submissionId);
     expect(id, isNull);
     final rows = await db.select(db.photos).get();
     expect(rows, isEmpty);
