@@ -2756,6 +2756,36 @@ git push origin main --tags
 
 ---
 
+## Phase 0 → Phase 1 handoff (must be addressed before Phase 1 writes)
+
+Two items surfaced during Phase 0 code review that are **not blocking Phase 0** but must be addressed before the first Phase 1 Drift write, because they affect correctness at scale and FK enforcement:
+
+1. **Drift `MigrationStrategy` with `PRAGMA foreign_keys = ON`.** SQLite disables foreign key enforcement by default. Without a `beforeOpen` hook enabling it, any FK between Drift tables is silently unenforced — and schema v2 migration will fail without an `onUpgrade` handler. First Phase 1 task should extend `AppDatabase`:
+   ```dart
+   @override
+   MigrationStrategy get migration => MigrationStrategy(
+     beforeOpen: (details) async {
+       await customStatement('PRAGMA foreign_keys = ON');
+     },
+     onUpgrade: (m, from, to) async {
+       // fill in per-version migration as schema evolves
+     },
+   );
+   ```
+
+2. **Local Drift indexes on FK columns.** The server SQL has indexes on lookup paths; the local Drift schema doesn't. Before the first `getAssignment` bulk-insert, add indexes for:
+   - `features(assignment_id)`
+   - `submissions(feature_id)`
+   - `photos(submission_id)`
+   - `sync_jobs(status, next_retry_at)`
+   - `building_attributes(ra_9514_type)`
+
+   Declare via `@TableIndex` on the table classes or a migration that runs `CREATE INDEX` statements. Simpler to do while tables are empty than after real field data lands.
+
+These are captured here (not as open TODOs in code) so they don't evaporate between plan documents.
+
+---
+
 ## Self-review (plan-level)
 
 **Spec coverage:** scanning spec §12 Phase 0 row — Flutter scaffold ✓ (T1), Riverpod ✓ (T10, T13), Drift schema + migrations ✓ (T3, T4), Supabase project + RLS + tables ✓ (T2), auth screen ✓ (T11), secure storage ✓ (T6), biometric unlock ✓ (T7), empty home screen with real progress counts ✓ (T12, T13). Router with auth gating ✓ (T14). i18n bootstrap ✓ (T15). All covered.
