@@ -15,8 +15,7 @@ class OfflineTilePackRepository {
   Future<void> upsert({
     required String id,
     required String assignmentId,
-    String? mapboxPackId,
-    required String regionBoundsGeojson,
+    required String regionBoundsGeojson, String? mapboxPackId,
     int downloadedBytes = 0,
     int totalBytes = 0,
     String status = 'downloading',
@@ -43,7 +42,7 @@ class OfflineTilePackRepository {
         .write(OfflineTilePacksCompanion(
       downloadedBytes: Value(downloadedBytes),
       totalBytes: Value(totalBytes),
-    ));
+    ),);
   }
 
   Future<void> markReady(String id) {
