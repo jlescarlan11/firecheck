@@ -19,7 +19,9 @@ class BiometricGate {
       return await _auth.authenticate(
         localizedReason: reason,
         options: const AuthenticationOptions(
-          biometricOnly: false,
+          // biometricOnly defaults to false; allow device PIN/passcode
+          // fallback so enumerators with dirty or wet hands in the field
+          // can still unlock via their passcode.
           stickyAuth: true,
         ),
       );
