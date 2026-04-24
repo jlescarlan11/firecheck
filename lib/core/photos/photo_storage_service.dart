@@ -23,8 +23,14 @@ class FilesystemPhotoStorage implements PhotoStorageService {
 
   @override
   Future<void> deleteFile(String path) async {
-    final f = File(path);
-    if (await f.exists()) await f.delete();
+    // Best-effort: swallow PathNotFoundException so the caller doesn't have
+    // to know whether the file existed. avoid_slow_async_io flags
+    // File.exists(); we just attempt the delete and ignore the miss.
+    try {
+      await File(path).delete();
+    } on FileSystemException {
+      // File didn't exist — fine.
+    }
   }
 }
 
