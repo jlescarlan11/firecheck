@@ -2,7 +2,10 @@ import 'package:firecheck/core/db/database.dart';
 import 'package:flutter/material.dart';
 
 /// Minimal surface the map screen actually needs. Lets tests substitute a
-/// renderer that doesn't require a GL context.
+/// renderer that doesn't require a GL context. Intentionally an abstract
+/// class rather than a typedef so concrete implementations (Fake + real
+/// Mapbox) can be distinguished by type in tests and provider overrides.
+// ignore: one_member_abstracts
 abstract class MapRenderer {
   Widget build(
     BuildContext context, {
