@@ -1,6 +1,7 @@
 import 'package:firecheck/features/home/presentation/home_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -54,12 +55,12 @@ class HomeScreen extends ConsumerWidget {
               _ActionTile(
                 title: 'Gather Data',
                 subtitle: 'Resume where you left off',
-                onTap: () => _showComingSoon(context, 'Phase 1'),
+                onTap: () => context.go('/map'),
               ),
               _ActionTile(
                 title: 'Get Maps',
                 subtitle: 'Download your assignment',
-                onTap: () => _showComingSoon(context, 'Phase 1'),
+                onTap: () => context.go('/get-maps'),
               ),
               _ActionTile(
                 title: 'Upload Data',

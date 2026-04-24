@@ -1,7 +1,9 @@
+import 'package:firecheck/features/assignment/presentation/get_maps_screen.dart';
 import 'package:firecheck/features/auth/domain/auth_state.dart';
 import 'package:firecheck/features/auth/presentation/auth_providers.dart';
 import 'package:firecheck/features/auth/presentation/login_screen.dart';
 import 'package:firecheck/features/home/presentation/home_screen.dart';
+import 'package:firecheck/features/map/presentation/map_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -38,6 +40,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           }
           return const HomeScreen();
         },
+      ),
+      GoRoute(
+        path: '/get-maps',
+        builder: (context, state) => const GetMapsScreen(),
+      ),
+      GoRoute(
+        path: '/map',
+        builder: (context, state) => const MapScreen(),
       ),
     ],
   );
