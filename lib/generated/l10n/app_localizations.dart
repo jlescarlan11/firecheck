@@ -181,6 +181,198 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Coming in {phase}'**
   String comingInPhase(String phase);
+
+  /// No description provided for @getMapsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Get Maps'**
+  String get getMapsTitle;
+
+  /// No description provided for @getMapsExplainer.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ll download about {size} of map data and {count} building records. Works best on wifi.'**
+  String getMapsExplainer(String size, int count);
+
+  /// No description provided for @startDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Start download'**
+  String get startDownload;
+
+  /// No description provided for @cancelLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancelLabel;
+
+  /// No description provided for @tryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get tryAgain;
+
+  /// No description provided for @fetchingFeatures.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetching buildings…'**
+  String get fetchingFeatures;
+
+  /// No description provided for @downloadingTiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading map tiles…'**
+  String get downloadingTiles;
+
+  /// No description provided for @readyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to gather data'**
+  String get readyLabel;
+
+  /// No description provided for @openMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Open map'**
+  String get openMap;
+
+  /// No description provided for @backToHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to home'**
+  String get backToHome;
+
+  /// No description provided for @noInternetForGetMaps.
+  ///
+  /// In en, this message translates to:
+  /// **'You need internet to download maps.'**
+  String get noInternetForGetMaps;
+
+  /// No description provided for @noAssignmentForEnumerator.
+  ///
+  /// In en, this message translates to:
+  /// **'No assignments assigned to you yet. Contact your supervisor.'**
+  String get noAssignmentForEnumerator;
+
+  /// No description provided for @downloadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Map download failed.'**
+  String get downloadFailed;
+
+  /// No description provided for @mapTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Gather Data'**
+  String get mapTitle;
+
+  /// No description provided for @gpsPermissionOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Location off — tap to enable'**
+  String get gpsPermissionOff;
+
+  /// No description provided for @gpsWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for GPS…'**
+  String get gpsWaiting;
+
+  /// No description provided for @gpsWeak.
+  ///
+  /// In en, this message translates to:
+  /// **'Weak GPS signal'**
+  String get gpsWeak;
+
+  /// No description provided for @offlineBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'offline'**
+  String get offlineBadge;
+
+  /// No description provided for @followMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow'**
+  String get followMe;
+
+  /// No description provided for @newFeaturePlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'+ New Feature (P3)'**
+  String get newFeaturePlaceholder;
+
+  /// No description provided for @featureTooFarTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Feature too far'**
+  String get featureTooFarTitle;
+
+  /// No description provided for @featureTooFarBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re {distance}m away. Map policy requires ≤50m.'**
+  String featureTooFarBody(int distance);
+
+  /// No description provided for @continueAnyway.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue anyway'**
+  String get continueAnyway;
+
+  /// No description provided for @metersAway.
+  ///
+  /// In en, this message translates to:
+  /// **'{distance} m away'**
+  String metersAway(int distance);
+
+  /// No description provided for @phase2FormNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Form coming in Phase 2 — the full attribution form will open from this sheet.'**
+  String get phase2FormNote;
+
+  /// No description provided for @close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
+  /// No description provided for @statusUnfilled.
+  ///
+  /// In en, this message translates to:
+  /// **'Unfilled'**
+  String get statusUnfilled;
+
+  /// No description provided for @statusInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get statusInProgress;
+
+  /// No description provided for @statusComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete'**
+  String get statusComplete;
+
+  /// No description provided for @statusNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get statusNew;
+
+  /// No description provided for @featureTypeBuilding.
+  ///
+  /// In en, this message translates to:
+  /// **'Building'**
+  String get featureTypeBuilding;
+
+  /// No description provided for @featureTypeRoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Road'**
+  String get featureTypeRoad;
 }
 
 class _AppLocalizationsDelegate

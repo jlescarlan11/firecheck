@@ -29,5 +29,49 @@
   "comingInPhase": "Coming in {phase}",
   "@comingInPhase": {
     "placeholders": {"phase": {"type": "String"}}
-  }
+  },
+  "getMapsTitle": "Get Maps",
+  "getMapsExplainer": "We'll download about {size} of map data and {count} building records. Works best on wifi.",
+  "@getMapsExplainer": {
+    "placeholders": {
+      "size": {"type": "String"},
+      "count": {"type": "int"}
+    }
+  },
+  "startDownload": "Start download",
+  "cancelLabel": "Cancel",
+  "tryAgain": "Try again",
+  "fetchingFeatures": "Fetching buildings…",
+  "downloadingTiles": "Downloading map tiles…",
+  "readyLabel": "Ready to gather data",
+  "openMap": "Open map",
+  "backToHome": "Back to home",
+  "noInternetForGetMaps": "You need internet to download maps.",
+  "noAssignmentForEnumerator": "No assignments assigned to you yet. Contact your supervisor.",
+  "downloadFailed": "Map download failed.",
+  "mapTitle": "Gather Data",
+  "gpsPermissionOff": "Location off — tap to enable",
+  "gpsWaiting": "Waiting for GPS…",
+  "gpsWeak": "Weak GPS signal",
+  "offlineBadge": "offline",
+  "followMe": "Follow",
+  "newFeaturePlaceholder": "+ New Feature (P3)",
+  "featureTooFarTitle": "Feature too far",
+  "featureTooFarBody": "You're {distance}m away. Map policy requires ≤50m.",
+  "@featureTooFarBody": {
+    "placeholders": {"distance": {"type": "int"}}
+  },
+  "continueAnyway": "Continue anyway",
+  "metersAway": "{distance} m away",
+  "@metersAway": {
+    "placeholders": {"distance": {"type": "int"}}
+  },
+  "phase2FormNote": "Form coming in Phase 2 — the full attribution form will open from this sheet.",
+  "close": "Close",
+  "statusUnfilled": "Unfilled",
+  "statusInProgress": "In progress",
+  "statusComplete": "Complete",
+  "statusNew": "New",
+  "featureTypeBuilding": "Building",
+  "featureTypeRoad": "Road"
 }

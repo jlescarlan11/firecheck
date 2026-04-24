@@ -55,4 +55,108 @@ class AppLocalizationsEn extends AppLocalizations {
   String comingInPhase(String phase) {
     return 'Coming in $phase';
   }
+
+  @override
+  String get getMapsTitle => 'Get Maps';
+
+  @override
+  String getMapsExplainer(String size, int count) {
+    return 'We\'ll download about $size of map data and $count building records. Works best on wifi.';
+  }
+
+  @override
+  String get startDownload => 'Start download';
+
+  @override
+  String get cancelLabel => 'Cancel';
+
+  @override
+  String get tryAgain => 'Try again';
+
+  @override
+  String get fetchingFeatures => 'Fetching buildings…';
+
+  @override
+  String get downloadingTiles => 'Downloading map tiles…';
+
+  @override
+  String get readyLabel => 'Ready to gather data';
+
+  @override
+  String get openMap => 'Open map';
+
+  @override
+  String get backToHome => 'Back to home';
+
+  @override
+  String get noInternetForGetMaps => 'You need internet to download maps.';
+
+  @override
+  String get noAssignmentForEnumerator =>
+      'No assignments assigned to you yet. Contact your supervisor.';
+
+  @override
+  String get downloadFailed => 'Map download failed.';
+
+  @override
+  String get mapTitle => 'Gather Data';
+
+  @override
+  String get gpsPermissionOff => 'Location off — tap to enable';
+
+  @override
+  String get gpsWaiting => 'Waiting for GPS…';
+
+  @override
+  String get gpsWeak => 'Weak GPS signal';
+
+  @override
+  String get offlineBadge => 'offline';
+
+  @override
+  String get followMe => 'Follow';
+
+  @override
+  String get newFeaturePlaceholder => '+ New Feature (P3)';
+
+  @override
+  String get featureTooFarTitle => 'Feature too far';
+
+  @override
+  String featureTooFarBody(int distance) {
+    return 'You\'re ${distance}m away. Map policy requires ≤50m.';
+  }
+
+  @override
+  String get continueAnyway => 'Continue anyway';
+
+  @override
+  String metersAway(int distance) {
+    return '$distance m away';
+  }
+
+  @override
+  String get phase2FormNote =>
+      'Form coming in Phase 2 — the full attribution form will open from this sheet.';
+
+  @override
+  String get close => 'Close';
+
+  @override
+  String get statusUnfilled => 'Unfilled';
+
+  @override
+  String get statusInProgress => 'In progress';
+
+  @override
+  String get statusComplete => 'Complete';
+
+  @override
+  String get statusNew => 'New';
+
+  @override
+  String get featureTypeBuilding => 'Building';
+
+  @override
+  String get featureTypeRoad => 'Road';
 }
