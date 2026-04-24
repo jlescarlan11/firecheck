@@ -8,4 +8,7 @@ class Ra9514Types extends Table {
 
   @override
   Set<Column> get primaryKey => {code};
+
+  @override
+  String get tableName => 'ra_9514_types';
 }
