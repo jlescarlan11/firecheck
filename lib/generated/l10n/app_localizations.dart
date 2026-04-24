@@ -373,6 +373,450 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Road'**
   String get featureTypeRoad;
+
+  /// No description provided for @submissionDetailTitleBuilding.
+  ///
+  /// In en, this message translates to:
+  /// **'Building'**
+  String get submissionDetailTitleBuilding;
+
+  /// No description provided for @submissionDetailTitleRoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Road'**
+  String get submissionDetailTitleRoad;
+
+  /// No description provided for @tabStructure.
+  ///
+  /// In en, this message translates to:
+  /// **'Structure {n}'**
+  String tabStructure(int n);
+
+  /// No description provided for @tabSoftCapTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'This polygon already has 5 structures'**
+  String get tabSoftCapTooltip;
+
+  /// No description provided for @savedAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'✓ Saved {seconds} seconds ago · {connectivity}'**
+  String savedAgo(int seconds, String connectivity);
+
+  /// No description provided for @savedJustNow.
+  ///
+  /// In en, this message translates to:
+  /// **'✓ Saved just now · {connectivity}'**
+  String savedJustNow(String connectivity);
+
+  /// No description provided for @photosLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos'**
+  String get photosLabel;
+
+  /// No description provided for @photosRequiredBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'0 / 1 required'**
+  String get photosRequiredBadge;
+
+  /// No description provided for @photosCompleteBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'1+ ✓'**
+  String get photosCompleteBadge;
+
+  /// No description provided for @addPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'+ Photo'**
+  String get addPhoto;
+
+  /// No description provided for @deletePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete photo?'**
+  String get deletePhoto;
+
+  /// No description provided for @deletePhotoConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'This photo will be removed from the device.'**
+  String get deletePhotoConfirm;
+
+  /// No description provided for @deleteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get deleteAction;
+
+  /// No description provided for @doesNotExistTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This building does not exist'**
+  String get doesNotExistTitle;
+
+  /// No description provided for @doesNotExistHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo still required to confirm'**
+  String get doesNotExistHelper;
+
+  /// No description provided for @sectionIdentity.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity'**
+  String get sectionIdentity;
+
+  /// No description provided for @sectionConstruction.
+  ///
+  /// In en, this message translates to:
+  /// **'Construction'**
+  String get sectionConstruction;
+
+  /// No description provided for @sectionCost.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost'**
+  String get sectionCost;
+
+  /// No description provided for @sectionFireFighting.
+  ///
+  /// In en, this message translates to:
+  /// **'Fire-fighting facilities'**
+  String get sectionFireFighting;
+
+  /// No description provided for @sectionFireLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Fire load *'**
+  String get sectionFireLoad;
+
+  /// No description provided for @fieldCbmsId.
+  ///
+  /// In en, this message translates to:
+  /// **'CBMS ID (optional)'**
+  String get fieldCbmsId;
+
+  /// No description provided for @fieldBuildingName.
+  ///
+  /// In en, this message translates to:
+  /// **'Building name *'**
+  String get fieldBuildingName;
+
+  /// No description provided for @fieldRa9514Type.
+  ///
+  /// In en, this message translates to:
+  /// **'Type — RA 9514 *'**
+  String get fieldRa9514Type;
+
+  /// No description provided for @fieldStoreys.
+  ///
+  /// In en, this message translates to:
+  /// **'Storeys *'**
+  String get fieldStoreys;
+
+  /// No description provided for @fieldMaterial.
+  ///
+  /// In en, this message translates to:
+  /// **'Wall material *'**
+  String get fieldMaterial;
+
+  /// No description provided for @fieldCostExact.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact amount'**
+  String get fieldCostExact;
+
+  /// No description provided for @fieldCostRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated range'**
+  String get fieldCostRange;
+
+  /// No description provided for @fieldCostExactInput.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount (₱) *'**
+  String get fieldCostExactInput;
+
+  /// No description provided for @fieldCostRangeInput.
+  ///
+  /// In en, this message translates to:
+  /// **'Range *'**
+  String get fieldCostRangeInput;
+
+  /// No description provided for @costRangeUnder100k.
+  ///
+  /// In en, this message translates to:
+  /// **'<₱100k'**
+  String get costRangeUnder100k;
+
+  /// No description provided for @costRange100to500k.
+  ///
+  /// In en, this message translates to:
+  /// **'₱100k – ₱500k'**
+  String get costRange100to500k;
+
+  /// No description provided for @costRange500kto1M.
+  ///
+  /// In en, this message translates to:
+  /// **'₱500k – ₱1M'**
+  String get costRange500kto1M;
+
+  /// No description provided for @costRange1to5M.
+  ///
+  /// In en, this message translates to:
+  /// **'₱1M – ₱5M'**
+  String get costRange1to5M;
+
+  /// No description provided for @costRange5to10M.
+  ///
+  /// In en, this message translates to:
+  /// **'₱5M – ₱10M'**
+  String get costRange5to10M;
+
+  /// No description provided for @costRangeOver10M.
+  ///
+  /// In en, this message translates to:
+  /// **'>₱10M'**
+  String get costRangeOver10M;
+
+  /// No description provided for @ffExtinguisher.
+  ///
+  /// In en, this message translates to:
+  /// **'Extinguisher'**
+  String get ffExtinguisher;
+
+  /// No description provided for @ffSprinkler.
+  ///
+  /// In en, this message translates to:
+  /// **'Sprinkler'**
+  String get ffSprinkler;
+
+  /// No description provided for @ffHose.
+  ///
+  /// In en, this message translates to:
+  /// **'Hose'**
+  String get ffHose;
+
+  /// No description provided for @ffSmokeAlarm.
+  ///
+  /// In en, this message translates to:
+  /// **'Smoke alarm'**
+  String get ffSmokeAlarm;
+
+  /// No description provided for @ffNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get ffNone;
+
+  /// No description provided for @fireLoadWoodFurniture.
+  ///
+  /// In en, this message translates to:
+  /// **'Wood furniture'**
+  String get fireLoadWoodFurniture;
+
+  /// No description provided for @fireLoadFabric.
+  ///
+  /// In en, this message translates to:
+  /// **'Fabric'**
+  String get fireLoadFabric;
+
+  /// No description provided for @fireLoadPaper.
+  ///
+  /// In en, this message translates to:
+  /// **'Paper'**
+  String get fireLoadPaper;
+
+  /// No description provided for @fireLoadChemicals.
+  ///
+  /// In en, this message translates to:
+  /// **'Chemicals'**
+  String get fireLoadChemicals;
+
+  /// No description provided for @fireLoadCookingGas.
+  ///
+  /// In en, this message translates to:
+  /// **'Cooking gas'**
+  String get fireLoadCookingGas;
+
+  /// No description provided for @fireLoadOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get fireLoadOther;
+
+  /// No description provided for @materialConcrete.
+  ///
+  /// In en, this message translates to:
+  /// **'Concrete'**
+  String get materialConcrete;
+
+  /// No description provided for @materialWood.
+  ///
+  /// In en, this message translates to:
+  /// **'Wood'**
+  String get materialWood;
+
+  /// No description provided for @materialMixed.
+  ///
+  /// In en, this message translates to:
+  /// **'Mixed'**
+  String get materialMixed;
+
+  /// No description provided for @materialLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light materials'**
+  String get materialLight;
+
+  /// No description provided for @materialSteel.
+  ///
+  /// In en, this message translates to:
+  /// **'Steel'**
+  String get materialSteel;
+
+  /// No description provided for @materialOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get materialOther;
+
+  /// No description provided for @ra9514GroupA.
+  ///
+  /// In en, this message translates to:
+  /// **'Group A · Residential'**
+  String get ra9514GroupA;
+
+  /// No description provided for @ra9514GroupB.
+  ///
+  /// In en, this message translates to:
+  /// **'Group B · Residential / Hotel'**
+  String get ra9514GroupB;
+
+  /// No description provided for @ra9514GroupC.
+  ///
+  /// In en, this message translates to:
+  /// **'Group C · Educational'**
+  String get ra9514GroupC;
+
+  /// No description provided for @ra9514GroupD.
+  ///
+  /// In en, this message translates to:
+  /// **'Group D · Institutional'**
+  String get ra9514GroupD;
+
+  /// No description provided for @ra9514GroupE.
+  ///
+  /// In en, this message translates to:
+  /// **'Group E · Business'**
+  String get ra9514GroupE;
+
+  /// No description provided for @ra9514GroupF.
+  ///
+  /// In en, this message translates to:
+  /// **'Group F · Mercantile'**
+  String get ra9514GroupF;
+
+  /// No description provided for @ra9514GroupG.
+  ///
+  /// In en, this message translates to:
+  /// **'Group G · Industrial'**
+  String get ra9514GroupG;
+
+  /// No description provided for @ra9514GroupH.
+  ///
+  /// In en, this message translates to:
+  /// **'Group H · Storage'**
+  String get ra9514GroupH;
+
+  /// No description provided for @ra9514GroupI.
+  ///
+  /// In en, this message translates to:
+  /// **'Group I · Hazardous'**
+  String get ra9514GroupI;
+
+  /// No description provided for @ra9514GroupJ.
+  ///
+  /// In en, this message translates to:
+  /// **'Group J · Miscellaneous'**
+  String get ra9514GroupJ;
+
+  /// No description provided for @doneButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get doneButton;
+
+  /// No description provided for @footerStatusReady.
+  ///
+  /// In en, this message translates to:
+  /// **'All required fields filled · ready'**
+  String get footerStatusReady;
+
+  /// No description provided for @footerStatusPhotoRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo required to mark complete'**
+  String get footerStatusPhotoRequired;
+
+  /// No description provided for @footerStatusFieldsMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Required fields missing'**
+  String get footerStatusFieldsMissing;
+
+  /// No description provided for @overrideTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Override required'**
+  String get overrideTitle;
+
+  /// No description provided for @overrideBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re {distance}m away. Map policy requires ≤50m. Why are you submitting from this distance?'**
+  String overrideBody(int distance);
+
+  /// No description provided for @overrideReasonHint.
+  ///
+  /// In en, this message translates to:
+  /// **'polygon misplaced · couldn\'t approach safely · unable to verify on foot'**
+  String get overrideReasonHint;
+
+  /// No description provided for @overrideContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get overrideContinue;
+
+  /// No description provided for @storeysWarningTooTall.
+  ///
+  /// In en, this message translates to:
+  /// **'That\'s very tall — confirm?'**
+  String get storeysWarningTooTall;
+
+  /// No description provided for @errorRequiredField.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get errorRequiredField;
+
+  /// No description provided for @cameraPermissionSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable camera permission to take photos'**
+  String get cameraPermissionSnackbar;
+
+  /// No description provided for @savedFailedSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save. Retrying…'**
+  String get savedFailedSnackbar;
 }
 
 class _AppLocalizationsDelegate

@@ -160,4 +160,236 @@ class AppLocalizationsTl extends AppLocalizations {
 
   @override
   String get featureTypeRoad => 'Daan';
+
+  @override
+  String get submissionDetailTitleBuilding => 'Gusali';
+
+  @override
+  String get submissionDetailTitleRoad => 'Daan';
+
+  @override
+  String tabStructure(int n) {
+    return 'Istruktura $n';
+  }
+
+  @override
+  String get tabSoftCapTooltip => 'May 5 nang istruktura ang polygon na ito';
+
+  @override
+  String savedAgo(int seconds, String connectivity) {
+    return '✓ Naka-save ${seconds}s ang nakalipas · $connectivity';
+  }
+
+  @override
+  String savedJustNow(String connectivity) {
+    return '✓ Naka-save kanina · $connectivity';
+  }
+
+  @override
+  String get photosLabel => 'Mga larawan';
+
+  @override
+  String get photosRequiredBadge => '0 / 1 kailangan';
+
+  @override
+  String get photosCompleteBadge => '1+ ✓';
+
+  @override
+  String get addPhoto => '+ Larawan';
+
+  @override
+  String get deletePhoto => 'Burahin ang larawan?';
+
+  @override
+  String get deletePhotoConfirm => 'Maaalis ito sa device.';
+
+  @override
+  String get deleteAction => 'Burahin';
+
+  @override
+  String get doesNotExistTitle => 'Hindi umiiral ang gusaling ito';
+
+  @override
+  String get doesNotExistHelper => 'Kailangan pa rin ng larawan';
+
+  @override
+  String get sectionIdentity => 'Pagkakakilanlan';
+
+  @override
+  String get sectionConstruction => 'Konstruksyon';
+
+  @override
+  String get sectionCost => 'Halaga';
+
+  @override
+  String get sectionFireFighting => 'Kagamitang panlaban sa sunog';
+
+  @override
+  String get sectionFireLoad => 'Madaling masunog *';
+
+  @override
+  String get fieldCbmsId => 'CBMS ID (opsyonal)';
+
+  @override
+  String get fieldBuildingName => 'Pangalan ng gusali *';
+
+  @override
+  String get fieldRa9514Type => 'Uri — RA 9514 *';
+
+  @override
+  String get fieldStoreys => 'Bilang ng palapag *';
+
+  @override
+  String get fieldMaterial => 'Materyal ng dingding *';
+
+  @override
+  String get fieldCostExact => 'Eksaktong halaga';
+
+  @override
+  String get fieldCostRange => 'Tinatayang halaga';
+
+  @override
+  String get fieldCostExactInput => 'Halaga (₱) *';
+
+  @override
+  String get fieldCostRangeInput => 'Range *';
+
+  @override
+  String get costRangeUnder100k => '<₱100k';
+
+  @override
+  String get costRange100to500k => '₱100k – ₱500k';
+
+  @override
+  String get costRange500kto1M => '₱500k – ₱1M';
+
+  @override
+  String get costRange1to5M => '₱1M – ₱5M';
+
+  @override
+  String get costRange5to10M => '₱5M – ₱10M';
+
+  @override
+  String get costRangeOver10M => '>₱10M';
+
+  @override
+  String get ffExtinguisher => 'Pang-apula';
+
+  @override
+  String get ffSprinkler => 'Sprinkler';
+
+  @override
+  String get ffHose => 'Hose';
+
+  @override
+  String get ffSmokeAlarm => 'Smoke alarm';
+
+  @override
+  String get ffNone => 'Wala';
+
+  @override
+  String get fireLoadWoodFurniture => 'Kahoy na muwebles';
+
+  @override
+  String get fireLoadFabric => 'Tela';
+
+  @override
+  String get fireLoadPaper => 'Papel';
+
+  @override
+  String get fireLoadChemicals => 'Kemikal';
+
+  @override
+  String get fireLoadCookingGas => 'Gas pangluto';
+
+  @override
+  String get fireLoadOther => 'Iba pa';
+
+  @override
+  String get materialConcrete => 'Konkreto';
+
+  @override
+  String get materialWood => 'Kahoy';
+
+  @override
+  String get materialMixed => 'Pinaghalo';
+
+  @override
+  String get materialLight => 'Magagaang materyales';
+
+  @override
+  String get materialSteel => 'Bakal';
+
+  @override
+  String get materialOther => 'Iba pa';
+
+  @override
+  String get ra9514GroupA => 'Grupo A · Tirahan';
+
+  @override
+  String get ra9514GroupB => 'Grupo B · Tirahan / Hotel';
+
+  @override
+  String get ra9514GroupC => 'Grupo C · Paaralan';
+
+  @override
+  String get ra9514GroupD => 'Grupo D · Pampubliko';
+
+  @override
+  String get ra9514GroupE => 'Grupo E · Negosyo';
+
+  @override
+  String get ra9514GroupF => 'Grupo F · Komersyal';
+
+  @override
+  String get ra9514GroupG => 'Grupo G · Industriya';
+
+  @override
+  String get ra9514GroupH => 'Grupo H · Imbakan';
+
+  @override
+  String get ra9514GroupI => 'Grupo I · Mapanganib';
+
+  @override
+  String get ra9514GroupJ => 'Grupo J · Iba pa';
+
+  @override
+  String get doneButton => 'Tapos';
+
+  @override
+  String get footerStatusReady => 'Lahat ng kailangan ay napunan · handa';
+
+  @override
+  String get footerStatusPhotoRequired => 'Kailangan ng larawan';
+
+  @override
+  String get footerStatusFieldsMissing => 'May kulang na impormasyon';
+
+  @override
+  String get overrideTitle => 'Kailangan ng paliwanag';
+
+  @override
+  String overrideBody(int distance) {
+    return '${distance}m ang layo mo. Ang patakaran ay ≤50m. Bakit ka mag-su-submit mula sa layong ito?';
+  }
+
+  @override
+  String get overrideReasonHint =>
+      'maling lugar ng polygon · hindi ligtas lumapit · hindi ma-verify nang lakad';
+
+  @override
+  String get overrideContinue => 'Ituloy';
+
+  @override
+  String get storeysWarningTooTall => 'Sobrang taas — kumpirmahin?';
+
+  @override
+  String get errorRequiredField => 'Kailangan';
+
+  @override
+  String get cameraPermissionSnackbar =>
+      'Buksan ang permiso sa kamera para makakuha ng larawan';
+
+  @override
+  String get savedFailedSnackbar => 'Hindi nai-save. Susubukan ulit…';
 }
