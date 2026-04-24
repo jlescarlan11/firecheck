@@ -15,7 +15,7 @@ class SubmissionRepository {
   }) async {
     final existing = await (_db.select(_db.submissions)
           ..where((t) =>
-              t.featureId.equals(featureId) & t.syncStatus.equals('draft'))
+              t.featureId.equals(featureId) & t.syncStatus.equals('draft'),)
           ..orderBy([(t) => OrderingTerm.asc(t.createdAt)])
           ..limit(1))
         .getSingleOrNull();
@@ -66,7 +66,7 @@ class SubmissionRepository {
         .write(SubmissionsCompanion(
       overrideReason: Value(reason),
       updatedAt: Value(DateTime.now()),
-    ));
+    ),);
   }
 
   Future<void> updateDoesNotExist(String submissionId, bool doesNotExist) {
@@ -75,7 +75,7 @@ class SubmissionRepository {
         .write(SubmissionsCompanion(
       doesNotExist: Value(doesNotExist),
       updatedAt: Value(DateTime.now()),
-    ));
+    ),);
   }
 
   Future<void> markStatus(String submissionId, String syncStatus) {
@@ -84,7 +84,7 @@ class SubmissionRepository {
         .write(SubmissionsCompanion(
       syncStatus: Value(syncStatus),
       updatedAt: Value(DateTime.now()),
-    ));
+    ),);
   }
 
   Future<void> deleteSubmission(String submissionId) {
