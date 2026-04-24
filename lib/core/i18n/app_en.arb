@@ -1,0 +1,33 @@
+{
+  "@@locale": "en",
+  "appTitle": "FireCheck",
+  "signIn": "Sign in",
+  "email": "Email",
+  "password": "Password",
+  "assignmentProgress": "Assignment progress",
+  "featuresLabel": "{completed} of {total} features",
+  "@featuresLabel": {
+    "placeholders": {
+      "completed": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "jobCountsLabel": "{queued} queued · {failed} failed · {dead} dead",
+  "@jobCountsLabel": {
+    "placeholders": {
+      "queued": {"type": "int"},
+      "failed": {"type": "int"},
+      "dead": {"type": "int"}
+    }
+  },
+  "gatherData": "Gather Data",
+  "gatherDataSubtitle": "Resume where you left off",
+  "getMaps": "Get Maps",
+  "getMapsSubtitle": "Download your assignment",
+  "uploadData": "Upload Data",
+  "uploadDataSubtitle": "Send completed work",
+  "comingInPhase": "Coming in {phase}",
+  "@comingInPhase": {
+    "placeholders": {"phase": {"type": "String"}}
+  }
+}

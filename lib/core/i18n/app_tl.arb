@@ -1,0 +1,17 @@
+{
+  "@@locale": "tl",
+  "appTitle": "FireCheck",
+  "signIn": "Mag-sign in",
+  "email": "Email",
+  "password": "Password",
+  "assignmentProgress": "Progreso ng takda",
+  "featuresLabel": "{completed} sa {total} na istruktura",
+  "jobCountsLabel": "{queued} nakapila · {failed} nabigo · {dead} patay",
+  "gatherData": "Mangalap ng Datos",
+  "gatherDataSubtitle": "Ituloy kung saan ka huling tumigil",
+  "getMaps": "Kumuha ng Mapa",
+  "getMapsSubtitle": "I-download ang iyong takda",
+  "uploadData": "I-upload ang Datos",
+  "uploadDataSubtitle": "Ipadala ang tapos na gawa",
+  "comingInPhase": "Darating sa {phase}"
+}
