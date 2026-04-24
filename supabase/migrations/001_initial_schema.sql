@@ -30,7 +30,8 @@ create type assignment_status as enum ('assigned', 'in_progress', 'submitted');
 create table public.assignments (
   id uuid primary key,
   enumerator_id uuid not null references public.enumerators(id) on delete cascade,
-  campaign_id uuid not null,
+  campaign_id uuid not null, -- TODO(later phase): FK to campaigns(id) once that table exists
+
   boundary_polygon geography(Polygon, 4326) not null,
   downloaded_at timestamptz,
   submitted_at timestamptz,
@@ -64,7 +65,10 @@ create index on public.features using gist (geometry);
 create table public.submissions (
   id uuid primary key,
   feature_id uuid not null references public.features(id) on delete cascade,
-  submitted_by uuid not null references public.enumerators(id),
+  -- Nullable + set null on delete: preserves audit trail if an enumerator
+  -- account is removed (government-data retention), consistent with cascade
+  -- chain through feature/assignment.
+  submitted_by uuid references public.enumerators(id) on delete set null,
   does_not_exist boolean not null default false,
   remarks text,
   created_at timestamptz not null default now(),
@@ -72,6 +76,7 @@ create table public.submissions (
 );
 
 create index on public.submissions (feature_id);
+create index on public.submissions (submitted_by);
 
 -- ============================================================
 -- Building attributes (1:1 with submission when building)
@@ -89,6 +94,8 @@ create table public.building_attributes (
   fire_fighting_facilities text[] not null default '{}',
   fire_load text[] not null default '{}'
 );
+
+create index on public.building_attributes (ra_9514_type);
 
 -- ============================================================
 -- Road attributes (1:1 with submission when road)
