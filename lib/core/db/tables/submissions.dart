@@ -3,7 +3,10 @@ import 'package:drift/drift.dart';
 class Submissions extends Table {
   TextColumn get id => text()();
   TextColumn get featureId => text()();
-  TextColumn get submittedBy => text()();
+  // Nullable to match server: `submitted_by uuid references enumerators(id)
+  // on delete set null`. Preserves audit trail if the enumerator account
+  // is later removed.
+  TextColumn get submittedBy => text().nullable()();
   BoolColumn get doesNotExist => boolean().withDefault(const Constant(false))();
   TextColumn get remarks => text().nullable()();
   TextColumn get syncStatus =>
