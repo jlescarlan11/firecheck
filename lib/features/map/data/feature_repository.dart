@@ -1,4 +1,3 @@
-import 'package:drift/drift.dart';
 import 'package:firecheck/core/db/database.dart';
 
 class FeatureRepository {
