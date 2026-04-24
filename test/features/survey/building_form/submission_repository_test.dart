@@ -69,7 +69,7 @@ void main() {
     );
     await repo.updateDoesNotExist(s.id, true);
     await repo.markStatus(s.id, 'ready_to_upload');
-    var reloaded = (await db.select(db.submissions).get()).single;
+    final reloaded = (await db.select(db.submissions).get()).single;
     expect(reloaded.doesNotExist, isTrue);
     expect(reloaded.syncStatus, 'ready_to_upload');
 
