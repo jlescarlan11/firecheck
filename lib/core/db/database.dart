@@ -1,20 +1,20 @@
 import 'dart:io';
+
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+import 'package:firecheck/core/db/tables/assignments.dart';
+import 'package:firecheck/core/db/tables/building_attributes.dart';
+import 'package:firecheck/core/db/tables/enumerators.dart';
+import 'package:firecheck/core/db/tables/features.dart';
+import 'package:firecheck/core/db/tables/household_surveys.dart';
+import 'package:firecheck/core/db/tables/offline_tile_packs.dart';
+import 'package:firecheck/core/db/tables/photos.dart';
+import 'package:firecheck/core/db/tables/ra_9514_types.dart';
+import 'package:firecheck/core/db/tables/road_attributes.dart';
+import 'package:firecheck/core/db/tables/submissions.dart';
+import 'package:firecheck/core/db/tables/sync_jobs.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-
-import 'tables/enumerators.dart';
-import 'tables/assignments.dart';
-import 'tables/features.dart';
-import 'tables/submissions.dart';
-import 'tables/building_attributes.dart';
-import 'tables/road_attributes.dart';
-import 'tables/household_surveys.dart';
-import 'tables/photos.dart';
-import 'tables/ra_9514_types.dart';
-import 'tables/sync_jobs.dart';
-import 'tables/offline_tile_packs.dart';
 
 part 'database.g.dart';
 
@@ -37,7 +37,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   /// For tests — pass an in-memory executor.
-  AppDatabase.forTesting(QueryExecutor e) : super(e);
+  AppDatabase.forTesting(super.e);
 
   @override
   int get schemaVersion => 1;

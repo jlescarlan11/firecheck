@@ -16,3 +16,7 @@ linter:
     # Inline status-enum comments and widget trees routinely exceed 80
     # columns in readable ways. Prefer signal over strict wrap.
     lines_longer_than_80_chars: false
+    # pubspec dependencies are intentionally grouped by concern (state,
+    # routing, persistence, remote, platform, utilities) via blank-line +
+    # comment separators, which reads better than a flat alpha sort.
+    sort_pub_dependencies: false
