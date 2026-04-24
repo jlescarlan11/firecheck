@@ -79,8 +79,9 @@ void main() {
           '[123.88200,10.31720]]]}';
       final ring = decodePolygonGeojson(geojson);
       expect(ring, isNotNull);
-      expect(ring!, hasLength(5));
-      expect(ring.first, [123.88200, 10.31720]);
+      final r = ring!;
+      expect(r, hasLength(5));
+      expect(r.first, [123.88200, 10.31720]);
     });
   });
 }
