@@ -67,7 +67,7 @@ void main() {
       featureId: 'f1',
       enumeratorId: 'u1',
     );
-    await repo.updateDoesNotExist(s.id, true);
+    await repo.updateDoesNotExist(s.id, doesNotExist: true);
     await repo.markStatus(s.id, 'ready_to_upload');
     final reloaded = (await db.select(db.submissions).get()).single;
     expect(reloaded.doesNotExist, isTrue);

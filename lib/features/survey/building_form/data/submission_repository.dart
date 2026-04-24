@@ -69,7 +69,10 @@ class SubmissionRepository {
     ),);
   }
 
-  Future<void> updateDoesNotExist(String submissionId, bool doesNotExist) {
+  Future<void> updateDoesNotExist(
+    String submissionId, {
+    required bool doesNotExist,
+  }) {
     return (_db.update(_db.submissions)
           ..where((t) => t.id.equals(submissionId)))
         .write(SubmissionsCompanion(
