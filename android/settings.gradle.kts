@@ -18,7 +18,11 @@ pluginManagement {
 }
 
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+    // PREFER_PROJECT lets Flutter and its plugins keep their own Maven repos
+    // (the Flutter engine is published from the local SDK install via a
+    // per-project repo). PREFER_SETTINGS would silently ignore those and
+    // the build fails with "Could not find io.flutter:flutter_embedding_*".
+    repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
     repositories {
         google()
         mavenCentral()
