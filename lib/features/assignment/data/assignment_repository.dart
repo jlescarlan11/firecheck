@@ -13,9 +13,18 @@ class AssignmentRepository {
   /// a single transaction.
   Future<void> fetchAndUpsertCurrent() async {
     try {
+      // Geometry columns are PostGIS `geography` and PostgREST serializes
+      // them as EWKB hex by default. We add computed-column functions
+      // (boundary_polygon_geojson, geometry_geojson) in migration 002 that
+      // wrap ST_AsGeoJSON, and select those instead so the client gets
+      // GeoJSON text directly.
       final assignmentRows = await client
           .from('assignments')
-          .select()
+          .select(
+            'id, enumerator_id, campaign_id, '
+            'boundary_polygon_geojson, '
+            'downloaded_at, submitted_at, status, created_at',
+          )
           .order('created_at', ascending: false)
           .limit(1);
 
@@ -35,7 +44,11 @@ class AssignmentRepository {
 
       final features = await client
           .from('features')
-          .select()
+          .select(
+            'id, assignment_id, feature_type, '
+            'geometry_geojson, '
+            'is_new, created_at',
+          )
           .eq('assignment_id', assignmentId);
 
       final ra9514Rows = await client.from('ra_9514_types').select();
@@ -78,8 +91,13 @@ class AssignmentRepository {
               id: assignment['id'] as String,
               enumeratorId: assignment['enumerator_id'] as String,
               campaignId: assignment['campaign_id'] as String,
-              boundaryPolygonGeojson:
-                  (assignment['boundary_polygon'] ?? '').toString(),
+              // Accept either the legacy `boundary_polygon` raw key (used by
+              // tests with hand-crafted maps) or the computed-column key
+              // `boundary_polygon_geojson` (used by the production fetch).
+              boundaryPolygonGeojson: (assignment['boundary_polygon_geojson'] ??
+                      assignment['boundary_polygon'] ??
+                      '')
+                  .toString(),
               downloadedAt: Value(DateTime.now()),
               status: Value((assignment['status'] ?? 'assigned') as String),
               createdAt: DateTime.parse(assignment['created_at'] as String),
@@ -92,7 +110,8 @@ class AssignmentRepository {
                 id: f['id'] as String,
                 assignmentId: f['assignment_id'] as String,
                 featureType: f['feature_type'] as String,
-                geometryGeojson: (f['geometry'] ?? '').toString(),
+                geometryGeojson:
+                    (f['geometry_geojson'] ?? f['geometry'] ?? '').toString(),
                 isNew: Value((f['is_new'] ?? false) as bool),
                 createdAt: DateTime.parse(f['created_at'] as String),
               ),
