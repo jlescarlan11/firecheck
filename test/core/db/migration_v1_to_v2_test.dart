@@ -1,4 +1,3 @@
-import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -25,13 +24,16 @@ void main() {
           )
           .get();
       final names = rows.map((r) => r.data['name'] as String).toSet();
-      expect(names, containsAll([
-        'features_assignment_id_idx',
-        'submissions_feature_id_idx',
-        'photos_submission_id_idx',
-        'sync_jobs_status_retry_idx',
-        'building_attrs_ra9514_type_idx',
-      ]));
+      expect(
+        names,
+        containsAll([
+          'features_assignment_id_idx',
+          'submissions_feature_id_idx',
+          'photos_submission_id_idx',
+          'sync_jobs_status_retry_idx',
+          'building_attrs_ra9514_type_idx',
+        ]),
+      );
     });
 
     test('schemaVersion is 2', () {
@@ -41,7 +43,7 @@ void main() {
     test('offline_tile_packs has mapbox_pack_id column, not maplibre_pack_id',
         () async {
       final rows = await db
-          .customSelect("PRAGMA table_info(offline_tile_packs)")
+          .customSelect('PRAGMA table_info(offline_tile_packs)')
           .get();
       final cols = rows.map((r) => r.data['name'] as String).toSet();
       expect(cols, contains('mapbox_pack_id'));
