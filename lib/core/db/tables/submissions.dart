@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+@TableIndex(name: 'submissions_feature_id_idx', columns: {#featureId})
 class Submissions extends Table {
   TextColumn get id => text()();
   TextColumn get featureId => text()();

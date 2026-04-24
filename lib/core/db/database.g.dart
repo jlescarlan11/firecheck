@@ -4287,11 +4287,11 @@ class $OfflineTilePacksTable extends OfflineTilePacks
   late final GeneratedColumn<String> assignmentId = GeneratedColumn<String>(
       'assignment_id', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _maplibrePackIdMeta =
-      const VerificationMeta('maplibrePackId');
+  static const VerificationMeta _mapboxPackIdMeta =
+      const VerificationMeta('mapboxPackId');
   @override
-  late final GeneratedColumn<String> maplibrePackId = GeneratedColumn<String>(
-      'maplibre_pack_id', aliasedName, true,
+  late final GeneratedColumn<String> mapboxPackId = GeneratedColumn<String>(
+      'mapbox_pack_id', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _regionBoundsGeojsonMeta =
       const VerificationMeta('regionBoundsGeojson');
@@ -4326,7 +4326,7 @@ class $OfflineTilePacksTable extends OfflineTilePacks
   List<GeneratedColumn> get $columns => [
         id,
         assignmentId,
-        maplibrePackId,
+        mapboxPackId,
         regionBoundsGeojson,
         downloadedBytes,
         totalBytes,
@@ -4355,11 +4355,11 @@ class $OfflineTilePacksTable extends OfflineTilePacks
     } else if (isInserting) {
       context.missing(_assignmentIdMeta);
     }
-    if (data.containsKey('maplibre_pack_id')) {
+    if (data.containsKey('mapbox_pack_id')) {
       context.handle(
-          _maplibrePackIdMeta,
-          maplibrePackId.isAcceptableOrUnknown(
-              data['maplibre_pack_id']!, _maplibrePackIdMeta));
+          _mapboxPackIdMeta,
+          mapboxPackId.isAcceptableOrUnknown(
+              data['mapbox_pack_id']!, _mapboxPackIdMeta));
     }
     if (data.containsKey('region_bounds_geojson')) {
       context.handle(
@@ -4398,8 +4398,8 @@ class $OfflineTilePacksTable extends OfflineTilePacks
           .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
       assignmentId: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}assignment_id'])!,
-      maplibrePackId: attachedDatabase.typeMapping.read(
-          DriftSqlType.string, data['${effectivePrefix}maplibre_pack_id']),
+      mapboxPackId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}mapbox_pack_id']),
       regionBoundsGeojson: attachedDatabase.typeMapping.read(
           DriftSqlType.string,
           data['${effectivePrefix}region_bounds_geojson'])!,
@@ -4421,7 +4421,7 @@ class $OfflineTilePacksTable extends OfflineTilePacks
 class OfflineTilePack extends DataClass implements Insertable<OfflineTilePack> {
   final String id;
   final String assignmentId;
-  final String? maplibrePackId;
+  final String? mapboxPackId;
   final String regionBoundsGeojson;
   final int downloadedBytes;
   final int totalBytes;
@@ -4429,7 +4429,7 @@ class OfflineTilePack extends DataClass implements Insertable<OfflineTilePack> {
   const OfflineTilePack(
       {required this.id,
       required this.assignmentId,
-      this.maplibrePackId,
+      this.mapboxPackId,
       required this.regionBoundsGeojson,
       required this.downloadedBytes,
       required this.totalBytes,
@@ -4439,8 +4439,8 @@ class OfflineTilePack extends DataClass implements Insertable<OfflineTilePack> {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['assignment_id'] = Variable<String>(assignmentId);
-    if (!nullToAbsent || maplibrePackId != null) {
-      map['maplibre_pack_id'] = Variable<String>(maplibrePackId);
+    if (!nullToAbsent || mapboxPackId != null) {
+      map['mapbox_pack_id'] = Variable<String>(mapboxPackId);
     }
     map['region_bounds_geojson'] = Variable<String>(regionBoundsGeojson);
     map['downloaded_bytes'] = Variable<int>(downloadedBytes);
@@ -4453,9 +4453,9 @@ class OfflineTilePack extends DataClass implements Insertable<OfflineTilePack> {
     return OfflineTilePacksCompanion(
       id: Value(id),
       assignmentId: Value(assignmentId),
-      maplibrePackId: maplibrePackId == null && nullToAbsent
+      mapboxPackId: mapboxPackId == null && nullToAbsent
           ? const Value.absent()
-          : Value(maplibrePackId),
+          : Value(mapboxPackId),
       regionBoundsGeojson: Value(regionBoundsGeojson),
       downloadedBytes: Value(downloadedBytes),
       totalBytes: Value(totalBytes),
@@ -4469,7 +4469,7 @@ class OfflineTilePack extends DataClass implements Insertable<OfflineTilePack> {
     return OfflineTilePack(
       id: serializer.fromJson<String>(json['id']),
       assignmentId: serializer.fromJson<String>(json['assignmentId']),
-      maplibrePackId: serializer.fromJson<String?>(json['maplibrePackId']),
+      mapboxPackId: serializer.fromJson<String?>(json['mapboxPackId']),
       regionBoundsGeojson:
           serializer.fromJson<String>(json['regionBoundsGeojson']),
       downloadedBytes: serializer.fromJson<int>(json['downloadedBytes']),
@@ -4483,7 +4483,7 @@ class OfflineTilePack extends DataClass implements Insertable<OfflineTilePack> {
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'assignmentId': serializer.toJson<String>(assignmentId),
-      'maplibrePackId': serializer.toJson<String?>(maplibrePackId),
+      'mapboxPackId': serializer.toJson<String?>(mapboxPackId),
       'regionBoundsGeojson': serializer.toJson<String>(regionBoundsGeojson),
       'downloadedBytes': serializer.toJson<int>(downloadedBytes),
       'totalBytes': serializer.toJson<int>(totalBytes),
@@ -4494,7 +4494,7 @@ class OfflineTilePack extends DataClass implements Insertable<OfflineTilePack> {
   OfflineTilePack copyWith(
           {String? id,
           String? assignmentId,
-          Value<String?> maplibrePackId = const Value.absent(),
+          Value<String?> mapboxPackId = const Value.absent(),
           String? regionBoundsGeojson,
           int? downloadedBytes,
           int? totalBytes,
@@ -4502,8 +4502,8 @@ class OfflineTilePack extends DataClass implements Insertable<OfflineTilePack> {
       OfflineTilePack(
         id: id ?? this.id,
         assignmentId: assignmentId ?? this.assignmentId,
-        maplibrePackId:
-            maplibrePackId.present ? maplibrePackId.value : this.maplibrePackId,
+        mapboxPackId:
+            mapboxPackId.present ? mapboxPackId.value : this.mapboxPackId,
         regionBoundsGeojson: regionBoundsGeojson ?? this.regionBoundsGeojson,
         downloadedBytes: downloadedBytes ?? this.downloadedBytes,
         totalBytes: totalBytes ?? this.totalBytes,
@@ -4515,9 +4515,9 @@ class OfflineTilePack extends DataClass implements Insertable<OfflineTilePack> {
       assignmentId: data.assignmentId.present
           ? data.assignmentId.value
           : this.assignmentId,
-      maplibrePackId: data.maplibrePackId.present
-          ? data.maplibrePackId.value
-          : this.maplibrePackId,
+      mapboxPackId: data.mapboxPackId.present
+          ? data.mapboxPackId.value
+          : this.mapboxPackId,
       regionBoundsGeojson: data.regionBoundsGeojson.present
           ? data.regionBoundsGeojson.value
           : this.regionBoundsGeojson,
@@ -4535,7 +4535,7 @@ class OfflineTilePack extends DataClass implements Insertable<OfflineTilePack> {
     return (StringBuffer('OfflineTilePack(')
           ..write('id: $id, ')
           ..write('assignmentId: $assignmentId, ')
-          ..write('maplibrePackId: $maplibrePackId, ')
+          ..write('mapboxPackId: $mapboxPackId, ')
           ..write('regionBoundsGeojson: $regionBoundsGeojson, ')
           ..write('downloadedBytes: $downloadedBytes, ')
           ..write('totalBytes: $totalBytes, ')
@@ -4545,7 +4545,7 @@ class OfflineTilePack extends DataClass implements Insertable<OfflineTilePack> {
   }
 
   @override
-  int get hashCode => Object.hash(id, assignmentId, maplibrePackId,
+  int get hashCode => Object.hash(id, assignmentId, mapboxPackId,
       regionBoundsGeojson, downloadedBytes, totalBytes, status);
   @override
   bool operator ==(Object other) =>
@@ -4553,7 +4553,7 @@ class OfflineTilePack extends DataClass implements Insertable<OfflineTilePack> {
       (other is OfflineTilePack &&
           other.id == this.id &&
           other.assignmentId == this.assignmentId &&
-          other.maplibrePackId == this.maplibrePackId &&
+          other.mapboxPackId == this.mapboxPackId &&
           other.regionBoundsGeojson == this.regionBoundsGeojson &&
           other.downloadedBytes == this.downloadedBytes &&
           other.totalBytes == this.totalBytes &&
@@ -4563,7 +4563,7 @@ class OfflineTilePack extends DataClass implements Insertable<OfflineTilePack> {
 class OfflineTilePacksCompanion extends UpdateCompanion<OfflineTilePack> {
   final Value<String> id;
   final Value<String> assignmentId;
-  final Value<String?> maplibrePackId;
+  final Value<String?> mapboxPackId;
   final Value<String> regionBoundsGeojson;
   final Value<int> downloadedBytes;
   final Value<int> totalBytes;
@@ -4572,7 +4572,7 @@ class OfflineTilePacksCompanion extends UpdateCompanion<OfflineTilePack> {
   const OfflineTilePacksCompanion({
     this.id = const Value.absent(),
     this.assignmentId = const Value.absent(),
-    this.maplibrePackId = const Value.absent(),
+    this.mapboxPackId = const Value.absent(),
     this.regionBoundsGeojson = const Value.absent(),
     this.downloadedBytes = const Value.absent(),
     this.totalBytes = const Value.absent(),
@@ -4582,7 +4582,7 @@ class OfflineTilePacksCompanion extends UpdateCompanion<OfflineTilePack> {
   OfflineTilePacksCompanion.insert({
     required String id,
     required String assignmentId,
-    this.maplibrePackId = const Value.absent(),
+    this.mapboxPackId = const Value.absent(),
     required String regionBoundsGeojson,
     this.downloadedBytes = const Value.absent(),
     this.totalBytes = const Value.absent(),
@@ -4594,7 +4594,7 @@ class OfflineTilePacksCompanion extends UpdateCompanion<OfflineTilePack> {
   static Insertable<OfflineTilePack> custom({
     Expression<String>? id,
     Expression<String>? assignmentId,
-    Expression<String>? maplibrePackId,
+    Expression<String>? mapboxPackId,
     Expression<String>? regionBoundsGeojson,
     Expression<int>? downloadedBytes,
     Expression<int>? totalBytes,
@@ -4604,7 +4604,7 @@ class OfflineTilePacksCompanion extends UpdateCompanion<OfflineTilePack> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (assignmentId != null) 'assignment_id': assignmentId,
-      if (maplibrePackId != null) 'maplibre_pack_id': maplibrePackId,
+      if (mapboxPackId != null) 'mapbox_pack_id': mapboxPackId,
       if (regionBoundsGeojson != null)
         'region_bounds_geojson': regionBoundsGeojson,
       if (downloadedBytes != null) 'downloaded_bytes': downloadedBytes,
@@ -4617,7 +4617,7 @@ class OfflineTilePacksCompanion extends UpdateCompanion<OfflineTilePack> {
   OfflineTilePacksCompanion copyWith(
       {Value<String>? id,
       Value<String>? assignmentId,
-      Value<String?>? maplibrePackId,
+      Value<String?>? mapboxPackId,
       Value<String>? regionBoundsGeojson,
       Value<int>? downloadedBytes,
       Value<int>? totalBytes,
@@ -4626,7 +4626,7 @@ class OfflineTilePacksCompanion extends UpdateCompanion<OfflineTilePack> {
     return OfflineTilePacksCompanion(
       id: id ?? this.id,
       assignmentId: assignmentId ?? this.assignmentId,
-      maplibrePackId: maplibrePackId ?? this.maplibrePackId,
+      mapboxPackId: mapboxPackId ?? this.mapboxPackId,
       regionBoundsGeojson: regionBoundsGeojson ?? this.regionBoundsGeojson,
       downloadedBytes: downloadedBytes ?? this.downloadedBytes,
       totalBytes: totalBytes ?? this.totalBytes,
@@ -4644,8 +4644,8 @@ class OfflineTilePacksCompanion extends UpdateCompanion<OfflineTilePack> {
     if (assignmentId.present) {
       map['assignment_id'] = Variable<String>(assignmentId.value);
     }
-    if (maplibrePackId.present) {
-      map['maplibre_pack_id'] = Variable<String>(maplibrePackId.value);
+    if (mapboxPackId.present) {
+      map['mapbox_pack_id'] = Variable<String>(mapboxPackId.value);
     }
     if (regionBoundsGeojson.present) {
       map['region_bounds_geojson'] =
@@ -4671,7 +4671,7 @@ class OfflineTilePacksCompanion extends UpdateCompanion<OfflineTilePack> {
     return (StringBuffer('OfflineTilePacksCompanion(')
           ..write('id: $id, ')
           ..write('assignmentId: $assignmentId, ')
-          ..write('maplibrePackId: $maplibrePackId, ')
+          ..write('mapboxPackId: $mapboxPackId, ')
           ..write('regionBoundsGeojson: $regionBoundsGeojson, ')
           ..write('downloadedBytes: $downloadedBytes, ')
           ..write('totalBytes: $totalBytes, ')
@@ -4699,6 +4699,17 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SyncJobsTable syncJobs = $SyncJobsTable(this);
   late final $OfflineTilePacksTable offlineTilePacks =
       $OfflineTilePacksTable(this);
+  late final Index featuresAssignmentIdIdx = Index('features_assignment_id_idx',
+      'CREATE INDEX features_assignment_id_idx ON features (assignment_id)');
+  late final Index submissionsFeatureIdIdx = Index('submissions_feature_id_idx',
+      'CREATE INDEX submissions_feature_id_idx ON submissions (feature_id)');
+  late final Index buildingAttrsRa9514TypeIdx = Index(
+      'building_attrs_ra9514_type_idx',
+      'CREATE INDEX building_attrs_ra9514_type_idx ON building_attributes (ra_9514_type)');
+  late final Index photosSubmissionIdIdx = Index('photos_submission_id_idx',
+      'CREATE INDEX photos_submission_id_idx ON photos (submission_id)');
+  late final Index syncJobsStatusRetryIdx = Index('sync_jobs_status_retry_idx',
+      'CREATE INDEX sync_jobs_status_retry_idx ON sync_jobs (status, next_retry_at)');
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4714,7 +4725,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         photos,
         ra9514Types,
         syncJobs,
-        offlineTilePacks
+        offlineTilePacks,
+        featuresAssignmentIdIdx,
+        submissionsFeatureIdIdx,
+        buildingAttrsRa9514TypeIdx,
+        photosSubmissionIdIdx,
+        syncJobsStatusRetryIdx
       ];
 }
 
@@ -6804,7 +6820,7 @@ typedef $$OfflineTilePacksTableCreateCompanionBuilder
     = OfflineTilePacksCompanion Function({
   required String id,
   required String assignmentId,
-  Value<String?> maplibrePackId,
+  Value<String?> mapboxPackId,
   required String regionBoundsGeojson,
   Value<int> downloadedBytes,
   Value<int> totalBytes,
@@ -6815,7 +6831,7 @@ typedef $$OfflineTilePacksTableUpdateCompanionBuilder
     = OfflineTilePacksCompanion Function({
   Value<String> id,
   Value<String> assignmentId,
-  Value<String?> maplibrePackId,
+  Value<String?> mapboxPackId,
   Value<String> regionBoundsGeojson,
   Value<int> downloadedBytes,
   Value<int> totalBytes,
@@ -6838,9 +6854,8 @@ class $$OfflineTilePacksTableFilterComposer
   ColumnFilters<String> get assignmentId => $composableBuilder(
       column: $table.assignmentId, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get maplibrePackId => $composableBuilder(
-      column: $table.maplibrePackId,
-      builder: (column) => ColumnFilters(column));
+  ColumnFilters<String> get mapboxPackId => $composableBuilder(
+      column: $table.mapboxPackId, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get regionBoundsGeojson => $composableBuilder(
       column: $table.regionBoundsGeojson,
@@ -6873,8 +6888,8 @@ class $$OfflineTilePacksTableOrderingComposer
       column: $table.assignmentId,
       builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get maplibrePackId => $composableBuilder(
-      column: $table.maplibrePackId,
+  ColumnOrderings<String> get mapboxPackId => $composableBuilder(
+      column: $table.mapboxPackId,
       builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<String> get regionBoundsGeojson => $composableBuilder(
@@ -6907,8 +6922,8 @@ class $$OfflineTilePacksTableAnnotationComposer
   GeneratedColumn<String> get assignmentId => $composableBuilder(
       column: $table.assignmentId, builder: (column) => column);
 
-  GeneratedColumn<String> get maplibrePackId => $composableBuilder(
-      column: $table.maplibrePackId, builder: (column) => column);
+  GeneratedColumn<String> get mapboxPackId => $composableBuilder(
+      column: $table.mapboxPackId, builder: (column) => column);
 
   GeneratedColumn<String> get regionBoundsGeojson => $composableBuilder(
       column: $table.regionBoundsGeojson, builder: (column) => column);
@@ -6952,7 +6967,7 @@ class $$OfflineTilePacksTableTableManager extends RootTableManager<
           updateCompanionCallback: ({
             Value<String> id = const Value.absent(),
             Value<String> assignmentId = const Value.absent(),
-            Value<String?> maplibrePackId = const Value.absent(),
+            Value<String?> mapboxPackId = const Value.absent(),
             Value<String> regionBoundsGeojson = const Value.absent(),
             Value<int> downloadedBytes = const Value.absent(),
             Value<int> totalBytes = const Value.absent(),
@@ -6962,7 +6977,7 @@ class $$OfflineTilePacksTableTableManager extends RootTableManager<
               OfflineTilePacksCompanion(
             id: id,
             assignmentId: assignmentId,
-            maplibrePackId: maplibrePackId,
+            mapboxPackId: mapboxPackId,
             regionBoundsGeojson: regionBoundsGeojson,
             downloadedBytes: downloadedBytes,
             totalBytes: totalBytes,
@@ -6972,7 +6987,7 @@ class $$OfflineTilePacksTableTableManager extends RootTableManager<
           createCompanionCallback: ({
             required String id,
             required String assignmentId,
-            Value<String?> maplibrePackId = const Value.absent(),
+            Value<String?> mapboxPackId = const Value.absent(),
             required String regionBoundsGeojson,
             Value<int> downloadedBytes = const Value.absent(),
             Value<int> totalBytes = const Value.absent(),
@@ -6982,7 +6997,7 @@ class $$OfflineTilePacksTableTableManager extends RootTableManager<
               OfflineTilePacksCompanion.insert(
             id: id,
             assignmentId: assignmentId,
-            maplibrePackId: maplibrePackId,
+            mapboxPackId: mapboxPackId,
             regionBoundsGeojson: regionBoundsGeojson,
             downloadedBytes: downloadedBytes,
             totalBytes: totalBytes,

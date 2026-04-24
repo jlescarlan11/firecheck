@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+@TableIndex(name: 'sync_jobs_status_retry_idx', columns: {#status, #nextRetryAt})
 class SyncJobs extends Table {
   TextColumn get id => text()();
   TextColumn get entityType =>

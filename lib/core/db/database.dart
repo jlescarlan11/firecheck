@@ -40,7 +40,33 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onCreate: (m) async {
+          await m.createAll();
+        },
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            // v1 → v2:
+            // 1. Rename offline_tile_packs.maplibre_pack_id → mapbox_pack_id.
+            // 2. Create the five @TableIndex indexes.
+            await customStatement(
+              'ALTER TABLE offline_tile_packs '
+              'RENAME COLUMN maplibre_pack_id TO mapbox_pack_id',
+            );
+            await m.createIndex(featuresAssignmentIdIdx);
+            await m.createIndex(submissionsFeatureIdIdx);
+            await m.createIndex(photosSubmissionIdIdx);
+            await m.createIndex(syncJobsStatusRetryIdx);
+            await m.createIndex(buildingAttrsRa9514TypeIdx);
+          }
+        },
+        beforeOpen: (details) async {
+          await customStatement('PRAGMA foreign_keys = ON');
+        },
+      );
 }
 
 LazyDatabase _openConnection() {

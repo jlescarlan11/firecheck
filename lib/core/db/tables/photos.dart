@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+@TableIndex(name: 'photos_submission_id_idx', columns: {#submissionId})
 class Photos extends Table {
   TextColumn get id => text()();
   TextColumn get submissionId => text()();

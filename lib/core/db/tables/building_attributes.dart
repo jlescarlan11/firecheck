@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+@TableIndex(name: 'building_attrs_ra9514_type_idx', columns: {#ra9514Type})
 class BuildingAttributes extends Table {
   TextColumn get submissionId => text()();
   TextColumn get cbmsId => text().nullable()();

@@ -40,8 +40,8 @@ void main() {
       expect(rows.first.code, 'A');
     });
 
-    test('schemaVersion is 1', () {
-      expect(db.schemaVersion, 1);
+    test('schemaVersion is 2', () {
+      expect(db.schemaVersion, 2);
     });
 
     test('the DB registers exactly the 11 expected tables', () {
