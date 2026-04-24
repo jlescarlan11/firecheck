@@ -1,7 +1,5 @@
 import 'dart:io';
 
-// Hide drift's SQL helpers that collide with matcher's expectations.
-import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/photos/camera_service.dart';

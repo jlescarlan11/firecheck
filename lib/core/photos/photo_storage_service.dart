@@ -34,7 +34,10 @@ class FilesystemPhotoStorage implements PhotoStorageService {
   }
 }
 
-/// In-memory fake — generates deterministic paths under a given root.
+/// In-memory fake — generates deterministic paths and creates the parent
+/// directory so consumers (e.g. ImageProcessor) can immediately write the
+/// file. Matches FilesystemPhotoStorage's contract that the directory
+/// exists by the time reserveDestPath returns.
 class InMemoryPhotoStorage implements PhotoStorageService {
   InMemoryPhotoStorage({String? root}) : _root = root ?? '/tmp/test-photos';
 
@@ -45,7 +48,9 @@ class InMemoryPhotoStorage implements PhotoStorageService {
   @override
   Future<String> reserveDestPath({required String submissionId}) async {
     _counter += 1;
-    return p.join(_root, submissionId, 'p$_counter.jpg');
+    final subDir = Directory(p.join(_root, submissionId));
+    await subDir.create(recursive: true);
+    return p.join(subDir.path, 'p$_counter.jpg');
   }
 
   @override
