@@ -10,8 +10,8 @@ class Submissions extends Table {
   TextColumn get submittedBy => text().nullable()();
   BoolColumn get doesNotExist => boolean().withDefault(const Constant(false))();
   TextColumn get remarks => text().nullable()();
-  TextColumn get syncStatus =>
-      text().withDefault(const Constant('draft'))(); // draft|queued|uploading|uploaded|failed|dead
+  TextColumn get syncStatus => text().withDefault(const Constant('draft'))();
+  TextColumn get overrideReason => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
 

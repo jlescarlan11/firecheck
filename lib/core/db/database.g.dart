@@ -1178,6 +1178,12 @@ class $SubmissionsTable extends Submissions
       type: DriftSqlType.string,
       requiredDuringInsert: false,
       defaultValue: const Constant('draft'));
+  static const VerificationMeta _overrideReasonMeta =
+      const VerificationMeta('overrideReason');
+  @override
+  late final GeneratedColumn<String> overrideReason = GeneratedColumn<String>(
+      'override_reason', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -1198,6 +1204,7 @@ class $SubmissionsTable extends Submissions
         doesNotExist,
         remarks,
         syncStatus,
+        overrideReason,
         createdAt,
         updatedAt
       ];
@@ -1244,6 +1251,12 @@ class $SubmissionsTable extends Submissions
           syncStatus.isAcceptableOrUnknown(
               data['sync_status']!, _syncStatusMeta));
     }
+    if (data.containsKey('override_reason')) {
+      context.handle(
+          _overrideReasonMeta,
+          overrideReason.isAcceptableOrUnknown(
+              data['override_reason']!, _overrideReasonMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -1277,6 +1290,8 @@ class $SubmissionsTable extends Submissions
           .read(DriftSqlType.string, data['${effectivePrefix}remarks']),
       syncStatus: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}sync_status'])!,
+      overrideReason: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}override_reason']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       updatedAt: attachedDatabase.typeMapping
@@ -1297,6 +1312,7 @@ class Submission extends DataClass implements Insertable<Submission> {
   final bool doesNotExist;
   final String? remarks;
   final String syncStatus;
+  final String? overrideReason;
   final DateTime createdAt;
   final DateTime updatedAt;
   const Submission(
@@ -1306,6 +1322,7 @@ class Submission extends DataClass implements Insertable<Submission> {
       required this.doesNotExist,
       this.remarks,
       required this.syncStatus,
+      this.overrideReason,
       required this.createdAt,
       required this.updatedAt});
   @override
@@ -1321,6 +1338,9 @@ class Submission extends DataClass implements Insertable<Submission> {
       map['remarks'] = Variable<String>(remarks);
     }
     map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || overrideReason != null) {
+      map['override_reason'] = Variable<String>(overrideReason);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -1338,6 +1358,9 @@ class Submission extends DataClass implements Insertable<Submission> {
           ? const Value.absent()
           : Value(remarks),
       syncStatus: Value(syncStatus),
+      overrideReason: overrideReason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(overrideReason),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -1353,6 +1376,7 @@ class Submission extends DataClass implements Insertable<Submission> {
       doesNotExist: serializer.fromJson<bool>(json['doesNotExist']),
       remarks: serializer.fromJson<String?>(json['remarks']),
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      overrideReason: serializer.fromJson<String?>(json['overrideReason']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -1367,6 +1391,7 @@ class Submission extends DataClass implements Insertable<Submission> {
       'doesNotExist': serializer.toJson<bool>(doesNotExist),
       'remarks': serializer.toJson<String?>(remarks),
       'syncStatus': serializer.toJson<String>(syncStatus),
+      'overrideReason': serializer.toJson<String?>(overrideReason),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -1379,6 +1404,7 @@ class Submission extends DataClass implements Insertable<Submission> {
           bool? doesNotExist,
           Value<String?> remarks = const Value.absent(),
           String? syncStatus,
+          Value<String?> overrideReason = const Value.absent(),
           DateTime? createdAt,
           DateTime? updatedAt}) =>
       Submission(
@@ -1388,6 +1414,8 @@ class Submission extends DataClass implements Insertable<Submission> {
         doesNotExist: doesNotExist ?? this.doesNotExist,
         remarks: remarks.present ? remarks.value : this.remarks,
         syncStatus: syncStatus ?? this.syncStatus,
+        overrideReason:
+            overrideReason.present ? overrideReason.value : this.overrideReason,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
       );
@@ -1403,6 +1431,9 @@ class Submission extends DataClass implements Insertable<Submission> {
       remarks: data.remarks.present ? data.remarks.value : this.remarks,
       syncStatus:
           data.syncStatus.present ? data.syncStatus.value : this.syncStatus,
+      overrideReason: data.overrideReason.present
+          ? data.overrideReason.value
+          : this.overrideReason,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -1417,6 +1448,7 @@ class Submission extends DataClass implements Insertable<Submission> {
           ..write('doesNotExist: $doesNotExist, ')
           ..write('remarks: $remarks, ')
           ..write('syncStatus: $syncStatus, ')
+          ..write('overrideReason: $overrideReason, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -1425,7 +1457,7 @@ class Submission extends DataClass implements Insertable<Submission> {
 
   @override
   int get hashCode => Object.hash(id, featureId, submittedBy, doesNotExist,
-      remarks, syncStatus, createdAt, updatedAt);
+      remarks, syncStatus, overrideReason, createdAt, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1436,6 +1468,7 @@ class Submission extends DataClass implements Insertable<Submission> {
           other.doesNotExist == this.doesNotExist &&
           other.remarks == this.remarks &&
           other.syncStatus == this.syncStatus &&
+          other.overrideReason == this.overrideReason &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -1447,6 +1480,7 @@ class SubmissionsCompanion extends UpdateCompanion<Submission> {
   final Value<bool> doesNotExist;
   final Value<String?> remarks;
   final Value<String> syncStatus;
+  final Value<String?> overrideReason;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -1457,6 +1491,7 @@ class SubmissionsCompanion extends UpdateCompanion<Submission> {
     this.doesNotExist = const Value.absent(),
     this.remarks = const Value.absent(),
     this.syncStatus = const Value.absent(),
+    this.overrideReason = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -1468,6 +1503,7 @@ class SubmissionsCompanion extends UpdateCompanion<Submission> {
     this.doesNotExist = const Value.absent(),
     this.remarks = const Value.absent(),
     this.syncStatus = const Value.absent(),
+    this.overrideReason = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
@@ -1482,6 +1518,7 @@ class SubmissionsCompanion extends UpdateCompanion<Submission> {
     Expression<bool>? doesNotExist,
     Expression<String>? remarks,
     Expression<String>? syncStatus,
+    Expression<String>? overrideReason,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -1493,6 +1530,7 @@ class SubmissionsCompanion extends UpdateCompanion<Submission> {
       if (doesNotExist != null) 'does_not_exist': doesNotExist,
       if (remarks != null) 'remarks': remarks,
       if (syncStatus != null) 'sync_status': syncStatus,
+      if (overrideReason != null) 'override_reason': overrideReason,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -1506,6 +1544,7 @@ class SubmissionsCompanion extends UpdateCompanion<Submission> {
       Value<bool>? doesNotExist,
       Value<String?>? remarks,
       Value<String>? syncStatus,
+      Value<String?>? overrideReason,
       Value<DateTime>? createdAt,
       Value<DateTime>? updatedAt,
       Value<int>? rowid}) {
@@ -1516,6 +1555,7 @@ class SubmissionsCompanion extends UpdateCompanion<Submission> {
       doesNotExist: doesNotExist ?? this.doesNotExist,
       remarks: remarks ?? this.remarks,
       syncStatus: syncStatus ?? this.syncStatus,
+      overrideReason: overrideReason ?? this.overrideReason,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -1543,6 +1583,9 @@ class SubmissionsCompanion extends UpdateCompanion<Submission> {
     if (syncStatus.present) {
       map['sync_status'] = Variable<String>(syncStatus.value);
     }
+    if (overrideReason.present) {
+      map['override_reason'] = Variable<String>(overrideReason.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -1564,6 +1607,7 @@ class SubmissionsCompanion extends UpdateCompanion<Submission> {
           ..write('doesNotExist: $doesNotExist, ')
           ..write('remarks: $remarks, ')
           ..write('syncStatus: $syncStatus, ')
+          ..write('overrideReason: $overrideReason, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -5308,6 +5352,7 @@ typedef $$SubmissionsTableCreateCompanionBuilder = SubmissionsCompanion
   Value<bool> doesNotExist,
   Value<String?> remarks,
   Value<String> syncStatus,
+  Value<String?> overrideReason,
   required DateTime createdAt,
   required DateTime updatedAt,
   Value<int> rowid,
@@ -5320,6 +5365,7 @@ typedef $$SubmissionsTableUpdateCompanionBuilder = SubmissionsCompanion
   Value<bool> doesNotExist,
   Value<String?> remarks,
   Value<String> syncStatus,
+  Value<String?> overrideReason,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
   Value<int> rowid,
@@ -5351,6 +5397,10 @@ class $$SubmissionsTableFilterComposer
 
   ColumnFilters<String> get syncStatus => $composableBuilder(
       column: $table.syncStatus, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get overrideReason => $composableBuilder(
+      column: $table.overrideReason,
+      builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -5387,6 +5437,10 @@ class $$SubmissionsTableOrderingComposer
   ColumnOrderings<String> get syncStatus => $composableBuilder(
       column: $table.syncStatus, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get overrideReason => $composableBuilder(
+      column: $table.overrideReason,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 
@@ -5420,6 +5474,9 @@ class $$SubmissionsTableAnnotationComposer
 
   GeneratedColumn<String> get syncStatus => $composableBuilder(
       column: $table.syncStatus, builder: (column) => column);
+
+  GeneratedColumn<String> get overrideReason => $composableBuilder(
+      column: $table.overrideReason, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -5457,6 +5514,7 @@ class $$SubmissionsTableTableManager extends RootTableManager<
             Value<bool> doesNotExist = const Value.absent(),
             Value<String?> remarks = const Value.absent(),
             Value<String> syncStatus = const Value.absent(),
+            Value<String?> overrideReason = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
@@ -5468,6 +5526,7 @@ class $$SubmissionsTableTableManager extends RootTableManager<
             doesNotExist: doesNotExist,
             remarks: remarks,
             syncStatus: syncStatus,
+            overrideReason: overrideReason,
             createdAt: createdAt,
             updatedAt: updatedAt,
             rowid: rowid,
@@ -5479,6 +5538,7 @@ class $$SubmissionsTableTableManager extends RootTableManager<
             Value<bool> doesNotExist = const Value.absent(),
             Value<String?> remarks = const Value.absent(),
             Value<String> syncStatus = const Value.absent(),
+            Value<String?> overrideReason = const Value.absent(),
             required DateTime createdAt,
             required DateTime updatedAt,
             Value<int> rowid = const Value.absent(),
@@ -5490,6 +5550,7 @@ class $$SubmissionsTableTableManager extends RootTableManager<
             doesNotExist: doesNotExist,
             remarks: remarks,
             syncStatus: syncStatus,
+            overrideReason: overrideReason,
             createdAt: createdAt,
             updatedAt: updatedAt,
             rowid: rowid,

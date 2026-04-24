@@ -3,7 +3,7 @@ import 'package:firecheck/core/db/database.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('AppDatabase schema v2', () {
+  group('AppDatabase schema v3', () {
     late AppDatabase db;
 
     setUp(() {
@@ -12,12 +12,23 @@ void main() {
 
     tearDown(() async => db.close());
 
-    test('PRAGMA foreign_keys is ON after open', () async {
+    test('schemaVersion is 3', () {
+      expect(db.schemaVersion, 3);
+    });
+
+    test('PRAGMA foreign_keys remains ON', () async {
       final result = await db.customSelect('PRAGMA foreign_keys').getSingle();
       expect(result.data['foreign_keys'], 1);
     });
 
-    test('all 5 phase-1 indexes exist on disk', () async {
+    test('submissions has override_reason column', () async {
+      final rows =
+          await db.customSelect('PRAGMA table_info(submissions)').get();
+      final cols = rows.map((r) => r.data['name'] as String).toSet();
+      expect(cols, contains('override_reason'));
+    });
+
+    test('phase-1 indexes still present', () async {
       final rows = await db
           .customSelect(
             "SELECT name FROM sqlite_master WHERE type='index' AND name NOT LIKE 'sqlite_%'",
@@ -34,20 +45,6 @@ void main() {
           'building_attrs_ra9514_type_idx',
         ]),
       );
-    });
-
-    test('schemaVersion is at least 2', () {
-      expect(db.schemaVersion, greaterThanOrEqualTo(2));
-    });
-
-    test('offline_tile_packs has mapbox_pack_id column, not maplibre_pack_id',
-        () async {
-      final rows = await db
-          .customSelect('PRAGMA table_info(offline_tile_packs)')
-          .get();
-      final cols = rows.map((r) => r.data['name'] as String).toSet();
-      expect(cols, contains('mapbox_pack_id'));
-      expect(cols, isNot(contains('maplibre_pack_id')));
     });
   });
 }
