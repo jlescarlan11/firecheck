@@ -6,6 +6,10 @@ sealed class Failure {
   final String message;
 
   @override
+  // Debug/log output only; user-facing text should always come from
+  // [message]. runtimeType may be minified in release builds, which is
+  // acceptable here since this string never reaches end users.
+  // ignore: no_runtimetype_tostring
   String toString() => '$runtimeType($message)';
 }
 
