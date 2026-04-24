@@ -38,7 +38,7 @@ class Ready extends GetMapsState {
   final int totalBytes;
 
   @override
-  double get overallProgress => 1.0;
+  double get overallProgress => 1;
 }
 
 class Cancelled extends GetMapsState {
