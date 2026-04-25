@@ -1,5 +1,6 @@
 import 'package:firecheck/features/survey/building_form/domain/ra_9514_fallback.dart';
 import 'package:firecheck/features/survey/building_form/presentation/building_form_providers.dart';
+import 'package:firecheck/features/survey/building_form/presentation/sections/_persistent_text_field.dart';
 import 'package:firecheck/features/survey/building_form/presentation/sections/_section_card.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -62,19 +63,19 @@ class IdentitySection extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          TextField(
+          PersistentTextField(
             enabled: !disabled,
-            controller: TextEditingController(text: state.cbmsId ?? ''),
-            decoration: InputDecoration(labelText: l.fieldCbmsId),
+            value: state.cbmsId ?? '',
+            labelText: l.fieldCbmsId,
             onChanged: (v) => notifier.update(
               (s) => s.copyWith(cbmsId: v),
             ),
           ),
           const SizedBox(height: 8),
-          TextField(
+          PersistentTextField(
             enabled: !disabled,
-            controller: TextEditingController(text: state.buildingName ?? ''),
-            decoration: InputDecoration(labelText: l.fieldBuildingName),
+            value: state.buildingName ?? '',
+            labelText: l.fieldBuildingName,
             onChanged: (v) => notifier.update(
               (s) => s.copyWith(buildingName: v),
             ),

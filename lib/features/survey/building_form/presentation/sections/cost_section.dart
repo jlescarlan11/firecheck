@@ -1,4 +1,5 @@
 import 'package:firecheck/features/survey/building_form/presentation/building_form_providers.dart';
+import 'package:firecheck/features/survey/building_form/presentation/sections/_persistent_text_field.dart';
 import 'package:firecheck/features/survey/building_form/presentation/sections/_section_card.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -108,17 +109,13 @@ class CostSection extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           if (state.costIsExact)
-            TextField(
+            PersistentTextField(
               enabled: !disabled,
-              controller: TextEditingController(
-                text: state.costAmount?.toString() ?? '',
-              ),
+              value: state.costAmount?.toString() ?? '',
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(
-                labelText: l.fieldCostExactInput,
-                prefixText: '₱ ',
-              ),
+              labelText: l.fieldCostExactInput,
+              prefixText: '₱ ',
               onChanged: (v) {
                 final parsed = double.tryParse(v);
                 notifier.update((s) => s.copyWith(costAmount: parsed));

@@ -1,4 +1,5 @@
 import 'package:firecheck/features/survey/building_form/presentation/building_form_providers.dart';
+import 'package:firecheck/features/survey/building_form/presentation/sections/_persistent_text_field.dart';
 import 'package:firecheck/features/survey/building_form/presentation/sections/_section_card.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -65,16 +66,12 @@ class ConstructionSection extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          TextField(
+          PersistentTextField(
             enabled: !disabled,
-            controller: TextEditingController(
-              text: storeys?.toString() ?? '',
-            ),
+            value: storeys?.toString() ?? '',
             keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: l.fieldStoreys,
-              helperText: showWarning ? l.storeysWarningTooTall : null,
-            ),
+            labelText: l.fieldStoreys,
+            helperText: showWarning ? l.storeysWarningTooTall : null,
             onChanged: (v) {
               final parsed = int.tryParse(v);
               notifier.update((s) => s.copyWith(storeys: parsed));
