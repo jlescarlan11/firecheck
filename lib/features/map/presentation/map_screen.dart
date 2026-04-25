@@ -22,6 +22,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   bool _followMe = true;
 
   @override
+  void initState() {
+    super.initState();
+    // Kick the OS permission prompt so currentPositionProvider can emit.
+    // Without this, geolocator's stream silently errors on a denied
+    // permission and taps just see a stuck "waiting for GPS" state.
+    Future.microtask(() async {
+      await ref.read(locationServiceProvider).requestPermission();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     final renderer = ref.watch(mapRendererProvider);
