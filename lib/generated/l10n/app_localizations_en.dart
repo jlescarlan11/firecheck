@@ -210,6 +210,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get doesNotExistTitle => 'This building does not exist';
 
   @override
+  String get doesNotExistTitleRoad => 'This road does not exist';
+
+  @override
   String get doesNotExistHelper => 'Photo still required to confirm';
 
   @override

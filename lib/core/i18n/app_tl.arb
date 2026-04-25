@@ -60,6 +60,7 @@
   "deletePhotoConfirm": "Maaalis ito sa device.",
   "deleteAction": "Burahin",
   "doesNotExistTitle": "Hindi umiiral ang gusaling ito",
+  "doesNotExistTitleRoad": "Wala ang kalye na ito",
   "doesNotExistHelper": "Kailangan pa rin ng larawan",
   "sectionIdentity": "Pagkakakilanlan",
   "sectionConstruction": "Konstruksyon",

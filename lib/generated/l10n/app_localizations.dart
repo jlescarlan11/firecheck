@@ -458,6 +458,12 @@ abstract class AppLocalizations {
   /// **'This building does not exist'**
   String get doesNotExistTitle;
 
+  /// No description provided for @doesNotExistTitleRoad.
+  ///
+  /// In en, this message translates to:
+  /// **'This road does not exist'**
+  String get doesNotExistTitleRoad;
+
   /// No description provided for @doesNotExistHelper.
   ///
   /// In en, this message translates to:

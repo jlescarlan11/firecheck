@@ -210,6 +210,9 @@ class AppLocalizationsTl extends AppLocalizations {
   String get doesNotExistTitle => 'Hindi umiiral ang gusaling ito';
 
   @override
+  String get doesNotExistTitleRoad => 'Wala ang kalye na ito';
+
+  @override
   String get doesNotExistHelper => 'Kailangan pa rin ng larawan';
 
   @override
