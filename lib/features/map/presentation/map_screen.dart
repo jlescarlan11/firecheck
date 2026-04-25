@@ -23,6 +23,7 @@ class MapScreen extends ConsumerStatefulWidget {
 
 class _MapScreenState extends ConsumerState<MapScreen> {
   bool _followMe = true;
+  bool _addModeActive = false;
 
   @override
   void initState() {
@@ -48,20 +49,40 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       appBar: AppBar(title: Text(l.mapTitle)),
       body: Stack(
         children: [
-          featuresAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('Error: $e')),
-            data: (features) {
-              final boundary =
-                  assignmentAsync.value?.boundaryPolygonGeojson ?? '';
-              return renderer.build(
-                context,
-                features: features,
-                boundaryGeojson: boundary,
-                onFeatureTap: _handleFeatureTap,
-              );
-            },
+          SizedBox.expand(
+            child: featuresAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(child: Text('Error: $e')),
+              data: (features) {
+                final boundary =
+                    assignmentAsync.value?.boundaryPolygonGeojson ?? '';
+                return renderer.build(
+                  context,
+                  features: features,
+                  boundaryGeojson: boundary,
+                  onFeatureTap: _handleFeatureTap,
+                  addModeActive: _addModeActive,
+                );
+              },
+            ),
           ),
+          if (_addModeActive)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Material(
+                color: const Color(0xFF3B82F6),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  child: Text(
+                    l.addModeBannerHint,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+              ),
+            ),
           Positioned(
             left: 12,
             right: 12,
@@ -75,7 +96,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 ),
                 const SizedBox(width: 6),
                 Expanded(
-                  child: _pill(l.newFeaturePlaceholder, disabled: true),
+                  child: _pill(
+                    _addModeActive
+                        ? l.addModePillActiveLabel
+                        : l.newFeaturePlaceholder,
+                    on: _addModeActive,
+                    key: const Key('map.add-feature-pill'),
+                    onTap: () =>
+                        setState(() => _addModeActive = !_addModeActive),
+                  ),
                 ),
               ],
             ),
@@ -166,6 +195,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   Widget _pill(
     String label, {
+    Key? key,
     bool on = false,
     bool disabled = false,
     VoidCallback? onTap,
@@ -173,6 +203,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final color = on ? const Color(0xFF3B82F6) : const Color(0xFFEEEEEE);
     final fg = on ? Colors.white : const Color(0xFF555555);
     return Opacity(
+      key: key,
       opacity: disabled ? 0.5 : 1,
       child: GestureDetector(
         onTap: disabled ? null : onTap,
