@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/geo/centroid.dart';
+import 'package:firecheck/core/geo/point_in_polygon.dart';
 import 'package:firecheck/core/location/distance.dart';
 import 'package:firecheck/core/location/location_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
 import 'package:firecheck/features/map/presentation/map_providers.dart';
+import 'package:firecheck/features/new_feature/presentation/feature_type_picker.dart';
 import 'package:firecheck/features/survey/building_form/presentation/building_form_providers.dart';
 import 'package:firecheck/features/survey/building_form/presentation/override_reason_dialog.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
@@ -61,6 +63,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   features: features,
                   boundaryGeojson: boundary,
                   onFeatureTap: _handleFeatureTap,
+                  onLongPress: _handleLongPress,
                   addModeActive: _addModeActive,
                 );
               },
@@ -112,6 +115,40 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _handleLongPress(double lat, double lng) async {
+    if (!_addModeActive) return;
+    final l = AppLocalizations.of(context)!;
+    final assignment = ref.read(currentAssignmentProvider).value;
+    final boundary = assignment?.boundaryPolygonGeojson ?? '';
+
+    if (!pointInPolygonGeojson(lat, lng, boundary)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l.outsideBoundarySnackbar)),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    final type = await showFeatureTypePicker(context);
+    if (type == null) {
+      if (mounted) setState(() => _addModeActive = false);
+      return;
+    }
+
+    final newFeatureRepo = ref.read(newFeatureRepositoryProvider);
+    final feature = await newFeatureRepo.createNewFeature(
+      assignmentId: assignment!.id,
+      featureType: type,
+      lat: lat,
+      lng: lng,
+    );
+
+    if (!mounted) return;
+    setState(() => _addModeActive = false);
+    context.go('/feature/${feature.id}');
   }
 
   Future<void> _handleFeatureTap(Feature f) async {

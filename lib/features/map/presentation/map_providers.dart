@@ -1,6 +1,8 @@
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
+import 'package:firecheck/features/home/presentation/home_providers.dart';
 import 'package:firecheck/features/map/presentation/map_renderer.dart';
+import 'package:firecheck/features/new_feature/data/new_feature_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Stream of features for the currently-active assignment. Emits an empty
@@ -19,4 +21,8 @@ final currentFeaturesProvider = StreamProvider<List<Feature>>((ref) {
 /// main.dart overrides this with MapboxMapRenderer (T19).
 final mapRendererProvider = Provider<MapRenderer>((ref) {
   return FakeMapRenderer();
+});
+
+final newFeatureRepositoryProvider = Provider<NewFeatureRepository>((ref) {
+  return NewFeatureRepository(ref.watch(appDatabaseProvider));
 });
