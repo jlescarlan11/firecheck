@@ -454,4 +454,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pickFeatureTypeRoad => 'Road';
+
+  @override
+  String get featureNotFound => 'Feature not found';
 }

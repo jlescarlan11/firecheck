@@ -937,6 +937,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Road'**
   String get pickFeatureTypeRoad;
+
+  /// No description provided for @featureNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Feature not found'**
+  String get featureNotFound;
 }
 
 class _AppLocalizationsDelegate

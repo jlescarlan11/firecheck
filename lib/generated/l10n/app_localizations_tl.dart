@@ -454,4 +454,7 @@ class AppLocalizationsTl extends AppLocalizations {
 
   @override
   String get pickFeatureTypeRoad => 'Kalye';
+
+  @override
+  String get featureNotFound => 'Hindi nahanap ang feature';
 }

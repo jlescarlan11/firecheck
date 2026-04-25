@@ -139,5 +139,6 @@
   "outsideBoundarySnackbar": "Wala sa loob ng iyong nasasakupang lugar",
   "pickFeatureTypeTitle": "Anong nakita mo?",
   "pickFeatureTypeBuilding": "Gusali",
-  "pickFeatureTypeRoad": "Kalye"
+  "pickFeatureTypeRoad": "Kalye",
+  "featureNotFound": "Hindi nahanap ang feature"
 }

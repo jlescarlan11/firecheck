@@ -182,5 +182,6 @@
   "outsideBoundarySnackbar": "Long-press is outside your assignment area",
   "pickFeatureTypeTitle": "What did you find?",
   "pickFeatureTypeBuilding": "Building",
-  "pickFeatureTypeRoad": "Road"
+  "pickFeatureTypeRoad": "Road",
+  "featureNotFound": "Feature not found"
 }
