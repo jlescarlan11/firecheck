@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/geo/centroid.dart';
 import 'package:firecheck/core/location/distance.dart';
@@ -9,6 +11,7 @@ import 'package:firecheck/features/survey/building_form/presentation/override_re
 import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
@@ -38,6 +41,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final renderer = ref.watch(mapRendererProvider);
     final featuresAsync = ref.watch(currentFeaturesProvider);
     final assignmentAsync = ref.watch(currentAssignmentProvider);
+    // Subscribe so the GPS stream is hot from mount, not first tap.
+    ref.watch(currentPositionProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(l.mapTitle)),
@@ -81,16 +86,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   Future<void> _handleFeatureTap(Feature f) async {
-    final l = AppLocalizations.of(context)!;
-
-    final pos = ref.read(currentPositionProvider).value;
-    if (pos == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l.gpsWaitingSnackbar)),
-      );
-      return;
-    }
+    final pos = await _resolvePosition();
+    if (pos == null || !mounted) return;
 
     final ring = decodePolygonGeojson(f.geometryGeojson);
     if (ring == null || ring.isEmpty) return;
@@ -122,6 +119,49 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
     if (!mounted) return;
     context.go('/feature/${f.id}');
+  }
+
+  /// Returns a fresh GPS fix, blocking the UI with a small spinner if the
+  /// stream hasn't emitted yet. Returns null if the user dismisses or the
+  /// fix doesn't arrive within the timeout.
+  Future<Position?> _resolvePosition() async {
+    final l = AppLocalizations.of(context)!;
+    final cached = ref.read(currentPositionProvider).value;
+    if (cached != null) return cached;
+
+    unawaited(showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(width: 14),
+              Text(l.gpsWaitingSnackbar),
+            ],
+          ),
+        ),
+      ),
+    ),);
+
+    try {
+      final pos = await ref
+          .read(currentPositionProvider.future)
+          .timeout(const Duration(seconds: 8));
+      if (mounted) Navigator.of(context, rootNavigator: true).pop();
+      return pos;
+    } on Object {
+      if (mounted) Navigator.of(context, rootNavigator: true).pop();
+      return null;
+    }
   }
 
   Widget _pill(
