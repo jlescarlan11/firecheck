@@ -17,33 +17,57 @@ abstract class MapRenderer {
     required List<Feature> features,
     required String boundaryGeojson,
     required void Function(Feature) onFeatureTap,
+    void Function(double lat, double lng)? onLongPress,
+    bool addModeActive,
   });
 }
 
 /// Fake for widget tests — renders one tappable tile per feature instead of
 /// a real map. Matches the real renderer's tap contract.
 class FakeMapRenderer implements MapRenderer {
+  void Function(double, double)? _lastOnLongPress;
+
+  /// Test seam: simulates a long-press at the given coordinates. Invokes the
+  /// most recently stored onLongPress callback; no-op if none was provided.
+  Future<void> simulateLongPress(double lat, double lng) async {
+    final cb = _lastOnLongPress;
+    if (cb != null) cb(lat, lng);
+  }
+
   @override
   Widget build(
     BuildContext context, {
     required List<Feature> features,
     required String boundaryGeojson,
     required void Function(Feature) onFeatureTap,
+    void Function(double lat, double lng)? onLongPress,
+    bool addModeActive = false,
   }) {
+    _lastOnLongPress = onLongPress;
     return ListView(
       shrinkWrap: true,
-      children: features.map((f) {
-        return GestureDetector(
-          key: Key('fake-map-feature-${f.id}'),
-          onTap: () => onFeatureTap(f),
-          child: Container(
-            margin: const EdgeInsets.all(4),
-            padding: const EdgeInsets.all(8),
-            color: _colorForStatus(f.status),
-            child: Text('feature ${f.id}'),
+      children: [
+        if (addModeActive)
+          const Padding(
+            padding: EdgeInsets.all(8),
+            child: Text('add-mode'),
           ),
-        );
-      }).toList(),
+        ...features.map((f) {
+          return GestureDetector(
+            key: Key('fake-map-feature-${f.id}'),
+            onTap: () => onFeatureTap(f),
+            child: Container(
+              key: f.isNew
+                  ? Key('fake-map-new-feature-${f.id}')
+                  : Key('fake-map-poly-${f.id}'),
+              margin: const EdgeInsets.all(4),
+              padding: const EdgeInsets.all(8),
+              color: _colorForStatus(f.status),
+              child: Text('feature ${f.id}'),
+            ),
+          );
+        }),
+      ],
     );
   }
 
@@ -59,8 +83,13 @@ class FakeMapRenderer implements MapRenderer {
   }
 }
 
+// MapboxMapRenderer is exercised via FakeMapRenderer in widget tests and via
+// the manual happy path in plan Task 18. The Mapbox plugin does not render
+// in flutter_tester.
+
 /// Real renderer backed by `mapbox_maps_flutter` 2.22. Renders an actual map
-/// with polygon annotation managers for features + boundary, and a location
+/// with polygon annotation managers for features + boundary, a point
+/// annotation manager for is_new=true features (blue pins), and a location
 /// component pinned to GPS via [LocationSettings].
 class MapboxMapRenderer implements MapRenderer {
   @override
@@ -69,11 +98,15 @@ class MapboxMapRenderer implements MapRenderer {
     required List<Feature> features,
     required String boundaryGeojson,
     required void Function(Feature) onFeatureTap,
+    void Function(double lat, double lng)? onLongPress,
+    bool addModeActive = false,
   }) {
     return _MapboxMapView(
       features: features,
       boundaryGeojson: boundaryGeojson,
       onFeatureTap: onFeatureTap,
+      onLongPress: onLongPress,
+      addModeActive: addModeActive,
     );
   }
 }
@@ -83,11 +116,15 @@ class _MapboxMapView extends StatefulWidget {
     required this.features,
     required this.boundaryGeojson,
     required this.onFeatureTap,
+    this.onLongPress,
+    this.addModeActive = false,
   });
 
   final List<Feature> features;
   final String boundaryGeojson;
   final void Function(Feature) onFeatureTap;
+  final void Function(double lat, double lng)? onLongPress;
+  final bool addModeActive;
 
   @override
   State<_MapboxMapView> createState() => _MapboxMapViewState();
@@ -96,6 +133,7 @@ class _MapboxMapView extends StatefulWidget {
 class _MapboxMapViewState extends State<_MapboxMapView> {
   PolygonAnnotationManager? _featureManager;
   PolygonAnnotationManager? _boundaryManager;
+  PointAnnotationManager? _pointManager;
 
   // Map annotation-id to feature. Populated as each polygon is created so
   // the tap listener can resolve the Drift row from the tapped annotation.
@@ -112,6 +150,12 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
       // because no style is loaded. Streets v12 is the Phase 1 spec choice.
       styleUri: 'mapbox://styles/mapbox/streets-v12',
       onMapCreated: _onMapCreated,
+      onLongTapListener: (MapContentGestureContext ctx) {
+        if (widget.addModeActive && widget.onLongPress != null) {
+          final pos = ctx.point.coordinates;
+          widget.onLongPress!(pos.lat.toDouble(), pos.lng.toDouble());
+        }
+      },
     );
   }
 
@@ -129,9 +173,12 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
     // Two managers so feature + boundary paint properties don't collide.
     _featureManager = await map.annotations.createPolygonAnnotationManager();
     _boundaryManager = await map.annotations.createPolygonAnnotationManager();
+    // Point manager for is_new=true features (blue pins).
+    _pointManager = await map.annotations.createPointAnnotationManager();
 
     await _renderFeatures();
     await _renderBoundary();
+    await _renderNewFeatures();
 
     // ignore: deprecated_member_use
     _featureManager!.addOnPolygonAnnotationClickListener(
@@ -146,6 +193,9 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
     final manager = _featureManager;
     if (manager == null) return;
     for (final f in widget.features) {
+      // is_new features are rendered as point pins — skip them here so they
+      // don't appear as polygons as well.
+      if (f.isNew) continue;
       final polygon = _decodePolygon(f.geometryGeojson);
       if (polygon == null) continue;
       final created = await manager.create(
@@ -178,6 +228,24 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
     );
   }
 
+  Future<void> _renderNewFeatures() async {
+    final manager = _pointManager;
+    if (manager == null) return;
+    for (final f in widget.features) {
+      if (!f.isNew) continue;
+      final point = _decodePoint(f.geometryGeojson);
+      if (point == null) continue;
+      await manager.create(
+        PointAnnotationOptions(
+          geometry: point,
+          iconColor: 0xFF3B82F6,
+          iconSize: 1.2,
+          iconImage: 'marker', // built-in default; if missing, the dot is invisible
+        ),
+      );
+    }
+  }
+
   Polygon? _decodePolygon(String geojson) {
     if (geojson.isEmpty) return null;
     try {
@@ -200,6 +268,23 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
         rings.add(points);
       }
       return Polygon(coordinates: rings);
+    } on Object {
+      return null;
+    }
+  }
+
+  Point? _decodePoint(String geojson) {
+    try {
+      final decoded = jsonDecode(geojson);
+      if (decoded is! Map<String, Object?>) return null;
+      if (decoded['type'] != 'Point') return null;
+      final coords = decoded['coordinates'];
+      if (coords is! List<Object?>) return null;
+      if (coords.length < 2) return null;
+      final lng = coords[0];
+      final lat = coords[1];
+      if (lng is! num || lat is! num) return null;
+      return Point(coordinates: Position(lng.toDouble(), lat.toDouble()));
     } on Object {
       return null;
     }
