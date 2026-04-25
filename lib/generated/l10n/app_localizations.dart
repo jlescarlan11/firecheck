@@ -823,6 +823,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Waiting for GPS fix…'**
   String get gpsWaitingSnackbar;
+
+  /// No description provided for @sectionRoadIdentity.
+  ///
+  /// In en, this message translates to:
+  /// **'Road identity'**
+  String get sectionRoadIdentity;
+
+  /// No description provided for @sectionRoadDimensions.
+  ///
+  /// In en, this message translates to:
+  /// **'Dimensions'**
+  String get sectionRoadDimensions;
+
+  /// No description provided for @sectionRoadFeatures.
+  ///
+  /// In en, this message translates to:
+  /// **'Features'**
+  String get sectionRoadFeatures;
+
+  /// No description provided for @fieldRoadName.
+  ///
+  /// In en, this message translates to:
+  /// **'Road name'**
+  String get fieldRoadName;
+
+  /// No description provided for @fieldIsBridge.
+  ///
+  /// In en, this message translates to:
+  /// **'This is a bridge'**
+  String get fieldIsBridge;
+
+  /// No description provided for @fieldWidthMeters.
+  ///
+  /// In en, this message translates to:
+  /// **'Width (m)'**
+  String get fieldWidthMeters;
+
+  /// No description provided for @widthMetersUnusual.
+  ///
+  /// In en, this message translates to:
+  /// **'Width over 30 m looks unusual'**
+  String get widthMetersUnusual;
+
+  /// No description provided for @roadFeatureVendor.
+  ///
+  /// In en, this message translates to:
+  /// **'Vendor stalls'**
+  String get roadFeatureVendor;
+
+  /// No description provided for @roadFeaturePedestrian.
+  ///
+  /// In en, this message translates to:
+  /// **'Pedestrian'**
+  String get roadFeaturePedestrian;
+
+  /// No description provided for @roadFeatureParking.
+  ///
+  /// In en, this message translates to:
+  /// **'Parking'**
+  String get roadFeatureParking;
+
+  /// No description provided for @roadFeatureOthers.
+  ///
+  /// In en, this message translates to:
+  /// **'Others'**
+  String get roadFeatureOthers;
+
+  /// No description provided for @roadFeatureOthersDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe other features'**
+  String get roadFeatureOthersDescription;
+
+  /// No description provided for @addModeBannerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Long-press the map to add a building or road. Tap the pill again to cancel.'**
+  String get addModeBannerHint;
+
+  /// No description provided for @addModePillActiveLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap & hold to drop pin'**
+  String get addModePillActiveLabel;
+
+  /// No description provided for @outsideBoundarySnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Long-press is outside your assignment area'**
+  String get outsideBoundarySnackbar;
+
+  /// No description provided for @pickFeatureTypeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What did you find?'**
+  String get pickFeatureTypeTitle;
+
+  /// No description provided for @pickFeatureTypeBuilding.
+  ///
+  /// In en, this message translates to:
+  /// **'Building'**
+  String get pickFeatureTypeBuilding;
+
+  /// No description provided for @pickFeatureTypeRoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Road'**
+  String get pickFeatureTypeRoad;
 }
 
 class _AppLocalizationsDelegate

@@ -395,4 +395,60 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gpsWaitingSnackbar => 'Waiting for GPS fix…';
+
+  @override
+  String get sectionRoadIdentity => 'Road identity';
+
+  @override
+  String get sectionRoadDimensions => 'Dimensions';
+
+  @override
+  String get sectionRoadFeatures => 'Features';
+
+  @override
+  String get fieldRoadName => 'Road name';
+
+  @override
+  String get fieldIsBridge => 'This is a bridge';
+
+  @override
+  String get fieldWidthMeters => 'Width (m)';
+
+  @override
+  String get widthMetersUnusual => 'Width over 30 m looks unusual';
+
+  @override
+  String get roadFeatureVendor => 'Vendor stalls';
+
+  @override
+  String get roadFeaturePedestrian => 'Pedestrian';
+
+  @override
+  String get roadFeatureParking => 'Parking';
+
+  @override
+  String get roadFeatureOthers => 'Others';
+
+  @override
+  String get roadFeatureOthersDescription => 'Describe other features';
+
+  @override
+  String get addModeBannerHint =>
+      'Long-press the map to add a building or road. Tap the pill again to cancel.';
+
+  @override
+  String get addModePillActiveLabel => 'Tap & hold to drop pin';
+
+  @override
+  String get outsideBoundarySnackbar =>
+      'Long-press is outside your assignment area';
+
+  @override
+  String get pickFeatureTypeTitle => 'What did you find?';
+
+  @override
+  String get pickFeatureTypeBuilding => 'Building';
+
+  @override
+  String get pickFeatureTypeRoad => 'Road';
 }

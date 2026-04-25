@@ -395,4 +395,60 @@ class AppLocalizationsTl extends AppLocalizations {
 
   @override
   String get gpsWaitingSnackbar => 'Naghulat og GPS signal…';
+
+  @override
+  String get sectionRoadIdentity => 'Pagkakakilanlan ng kalye';
+
+  @override
+  String get sectionRoadDimensions => 'Sukat';
+
+  @override
+  String get sectionRoadFeatures => 'Mga katangian';
+
+  @override
+  String get fieldRoadName => 'Pangalan ng kalye';
+
+  @override
+  String get fieldIsBridge => 'Tulay ito';
+
+  @override
+  String get fieldWidthMeters => 'Lapad (m)';
+
+  @override
+  String get widthMetersUnusual => 'Mukhang malayo masyado ang lapad';
+
+  @override
+  String get roadFeatureVendor => 'Mga tindahan';
+
+  @override
+  String get roadFeaturePedestrian => 'Para sa naglalakad';
+
+  @override
+  String get roadFeatureParking => 'Paradahan';
+
+  @override
+  String get roadFeatureOthers => 'Iba pa';
+
+  @override
+  String get roadFeatureOthersDescription => 'Ilarawan ang iba pang katangian';
+
+  @override
+  String get addModeBannerHint =>
+      'Pindutin nang matagal ang mapa upang magdagdag ng gusali o kalye. Pindutin muli ang pill para kanselahin.';
+
+  @override
+  String get addModePillActiveLabel => 'Pindutin nang matagal para magdagdag';
+
+  @override
+  String get outsideBoundarySnackbar =>
+      'Wala sa loob ng iyong nasasakupang lugar';
+
+  @override
+  String get pickFeatureTypeTitle => 'Anong nakita mo?';
+
+  @override
+  String get pickFeatureTypeBuilding => 'Gusali';
+
+  @override
+  String get pickFeatureTypeRoad => 'Kalye';
 }
