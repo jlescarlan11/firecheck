@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/geo/centroid.dart';
 import 'package:firecheck/core/geo/point_in_polygon.dart';
+import 'package:firecheck/core/geo/polyline_midpoint.dart';
 import 'package:firecheck/core/location/distance.dart';
 import 'package:firecheck/core/location/location_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
@@ -155,10 +156,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final pos = await _resolvePosition();
     if (pos == null || !mounted) return;
 
-    final ring = decodePolygonGeojson(f.geometryGeojson);
-    if (ring == null || ring.isEmpty) return;
-
-    final centroid = polygonCentroid(ring);
+    final LatLng centroid;
+    if (f.featureType == 'road') {
+      final coords = decodePolylineGeojson(f.geometryGeojson);
+      if (coords == null || coords.isEmpty) return;
+      centroid = polylineMidpoint(coords);
+    } else {
+      final ring = decodePolygonGeojson(f.geometryGeojson);
+      if (ring == null || ring.isEmpty) return;
+      centroid = polygonCentroid(ring);
+    }
     final meters =
         haversineMeters(pos.latitude, pos.longitude, centroid.lat, centroid.lng);
 
