@@ -49,7 +49,7 @@ dependencies:
 
   # sync engine
   connectivity_plus: ^5.0.0
-  workmanager: ^0.5.2
+  workmanager: ^0.9.0
   archive: ^3.4.0
   share_plus: ^12.0.2
 
