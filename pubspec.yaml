@@ -47,6 +47,12 @@ dependencies:
   image: ^4.2.0
   native_exif: ^0.6.0
 
+  # sync engine
+  connectivity_plus: ^5.0.0
+  workmanager: ^0.5.2
+  archive: ^3.4.0
+  share_plus: ^12.0.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
