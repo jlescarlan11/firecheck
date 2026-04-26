@@ -52,6 +52,7 @@ class SubmissionPayloadBuilder {
         'override_reason': s.overrideReason,
         'created_at': s.createdAt.toIso8601String(),
         'updated_at': s.updatedAt.toIso8601String(),
+        // sync_status is local-only per master spec §6 — not sent.
       };
 
   static final _uuidRegex = RegExp(
