@@ -1,6 +1,7 @@
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/photos/photo_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
+import 'package:firecheck/features/home/presentation/home_providers.dart';
 import 'package:firecheck/features/survey/building_form/domain/building_form_validator.dart';
 import 'package:firecheck/features/survey/building_form/presentation/building_form.dart';
 import 'package:firecheck/features/survey/building_form/presentation/building_form_providers.dart';
@@ -228,13 +229,25 @@ class _Footer extends ConsumerWidget {
                               .read(buildingFormNotifierProvider(key).notifier)
                               .flushNow();
                         }
-                        await ref
-                            .read(submissionRepositoryProvider)
-                            .markStatus(submissionId, 'ready_to_upload');
+                        // Forward-only transition: don't regress a submission
+                        // that's already past ready_to_upload. Re-tapping Done
+                        // on an uploaded submission must not flip its local
+                        // sync_status back, or its already-uploaded photos
+                        // would get stuck waiting for a parent that's no
+                        // longer 'uploaded'.
+                        final db = ref.read(appDatabaseProvider);
+                        final current = await (db.select(db.submissions)
+                              ..where((t) => t.id.equals(submissionId)))
+                            .getSingleOrNull();
+                        const advancable = {'draft', 'in_progress'};
+                        if (current != null &&
+                            advancable.contains(current.syncStatus)) {
+                          await ref
+                              .read(submissionRepositoryProvider)
+                              .markStatus(submissionId, 'ready_to_upload');
+                        }
                         // Recompute the feature's color-coded status so the
-                        // map polygon flips green immediately. Without this,
-                        // the polygon stays yellow until the next autosave or
-                        // re-tap triggers markFeatureStatus.
+                        // map polygon flips green immediately.
                         await ref
                             .read(featureRepositoryProvider)
                             .markFeatureStatus(featureId);
