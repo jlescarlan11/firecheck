@@ -1,9 +1,17 @@
+import 'dart:convert';
+
 import 'package:firecheck/core/db/database.dart';
 
 class SubmissionPayloadBuilder {
   SubmissionPayloadBuilder(this._db);
   final AppDatabase _db;
 
+  /// Builds the payload for `upload_submission_bundle` RPC. The remote
+  /// schema differs from local Drift in two ways:
+  ///   - column names drop the `_json` suffix (kaayusan, fire_load, etc.)
+  ///   - jsonb-shaped columns expect native JSON values, not text strings
+  /// We decode the local jsonb-as-text columns here so the RPC sees native
+  /// arrays/objects.
   Future<Map<String, dynamic>> build(String submissionId) async {
     final submission = await (_db.select(_db.submissions)
           ..where((t) => t.id.equals(submissionId)))
@@ -38,7 +46,6 @@ class SubmissionPayloadBuilder {
         'submitted_by': s.submittedBy,
         'does_not_exist': s.doesNotExist,
         'remarks': s.remarks,
-        'sync_status': s.syncStatus,
         'override_reason': s.overrideReason,
         'created_at': s.createdAt.toIso8601String(),
         'updated_at': s.updatedAt.toIso8601String(),
@@ -54,8 +61,9 @@ class SubmissionPayloadBuilder {
         'cost_is_exact': b.costIsExact,
         'cost_amount': b.costAmount,
         'cost_estimate_range': b.costEstimateRange,
-        'fire_fighting_facilities_json': b.fireFightingFacilitiesJson,
-        'fire_load_json': b.fireLoadJson,
+        'fire_fighting_facilities':
+            _decodeJsonArray(b.fireFightingFacilitiesJson),
+        'fire_load': _decodeJsonArray(b.fireLoadJson),
       };
 
   Map<String, dynamic> _roadToJson(RoadAttribute r) => {
@@ -63,20 +71,40 @@ class SubmissionPayloadBuilder {
         'is_bridge': r.isBridge,
         'road_name': r.roadName,
         'width_meters': r.widthMeters,
-        'road_features_json': r.roadFeaturesJson,
+        'road_features': _decodeJsonArray(r.roadFeaturesJson),
         'others_description': r.othersDescription,
       };
 
   Map<String, dynamic> _householdToJson(HouseholdSurvey h) => {
         'submission_id': h.submissionId,
-        'construction_details_json': h.constructionDetailsJson,
-        'kaayusan_json': h.kaayusanJson,
-        'koneksyong_elektrikal_json': h.koneksyongElektrikalJson,
-        'kusina_json': h.kusinaJson,
-        'daanan_o_labasan_json': h.daananOLabasanJson,
+        'construction_details': _decodeJsonObject(h.constructionDetailsJson),
+        'kaayusan': _decodeJsonObject(h.kaayusanJson),
+        'koneksyong_elektrikal': _decodeJsonObject(h.koneksyongElektrikalJson),
+        'kusina': _decodeJsonObject(h.kusinaJson),
+        'daanan_o_labasan': _decodeJsonObject(h.daananOLabasanJson),
         'lebel_ng_kahinaan': h.lebelNgKahinaan,
         'safety_suggestions': h.safetySuggestions,
         'homeowner_acknowledged': h.homeownerAcknowledged,
         'completed_at': h.completedAt?.toIso8601String(),
       };
+
+  List<dynamic> _decodeJsonArray(String? raw) {
+    if (raw == null || raw.isEmpty) return const [];
+    try {
+      final decoded = jsonDecode(raw);
+      return decoded is List ? decoded : const [];
+    } on Object {
+      return const [];
+    }
+  }
+
+  Map<String, dynamic> _decodeJsonObject(String? raw) {
+    if (raw == null || raw.isEmpty) return const {};
+    try {
+      final decoded = jsonDecode(raw);
+      return decoded is Map<String, dynamic> ? decoded : const {};
+    } on Object {
+      return const {};
+    }
+  }
 }

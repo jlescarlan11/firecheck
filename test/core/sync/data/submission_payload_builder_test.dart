@@ -51,13 +51,15 @@ void main() {
     expect(p['household_survey'], isNull);
   });
 
-  test('building submission with attrs + olp', () async {
+  test('building submission with attrs + olp; jsonb columns decoded', () async {
     await db.into(db.buildingAttributes).insert(
           BuildingAttributesCompanion.insert(
             submissionId: 's1',
             buildingName: const Value('Hall A'),
             ra9514Type: const Value('A'),
             storeys: const Value(2),
+            fireFightingFacilitiesJson: const Value('["extinguisher","alarm"]'),
+            fireLoadJson: const Value('["wood"]'),
           ),
         );
     await db.into(db.householdSurveys).insert(
@@ -69,12 +71,17 @@ void main() {
           ),
         );
     final p = await builder.build('s1');
-    expect((p['building_attributes'] as Map)['building_name'], 'Hall A');
-    expect((p['household_survey'] as Map)['homeowner_acknowledged'], true);
-    expect((p['household_survey'] as Map)['lebel_ng_kahinaan'], 'LabisNaMapanganib');
+    final b = p['building_attributes']! as Map<String, dynamic>;
+    expect(b['building_name'], 'Hall A');
+    expect(b['fire_fighting_facilities'], ['extinguisher', 'alarm']);
+    expect(b['fire_load'], ['wood']);
+    final h = p['household_survey']! as Map<String, dynamic>;
+    expect(h['homeowner_acknowledged'], true);
+    expect(h['lebel_ng_kahinaan'], 'LabisNaMapanganib');
+    expect(h['kaayusan'], {'B-01': true});
   });
 
-  test('road submission with road_attributes', () async {
+  test('road submission with road_attributes; road_features decoded', () async {
     await (db.update(db.features)..where((t) => t.id.equals('f1')))
         .write(const FeaturesCompanion(featureType: Value('road')));
     await db.into(db.roadAttributes).insert(
@@ -82,12 +89,15 @@ void main() {
             submissionId: 's1',
             roadName: const Value('Mango Ave'),
             widthMeters: const Value(4.5),
+            roadFeaturesJson: const Value('["vendor","parking"]'),
           ),
         );
     final p = await builder.build('s1');
     expect(p['feature_type'], 'road');
-    expect((p['road_attributes'] as Map)['road_name'], 'Mango Ave');
-    expect((p['road_attributes'] as Map)['width_meters'], 4.5);
+    final r = p['road_attributes']! as Map<String, dynamic>;
+    expect(r['road_name'], 'Mango Ave');
+    expect(r['width_meters'], 4.5);
+    expect(r['road_features'], ['vendor', 'parking']);
     expect(p['building_attributes'], isNull);
   });
 }
