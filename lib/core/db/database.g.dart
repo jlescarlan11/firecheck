@@ -325,6 +325,16 @@ class $AssignmentsTable extends Assignments
       type: DriftSqlType.string,
       requiredDuringInsert: false,
       defaultValue: const Constant('assigned'));
+  static const VerificationMeta _closedRemotelyMeta =
+      const VerificationMeta('closedRemotely');
+  @override
+  late final GeneratedColumn<bool> closedRemotely = GeneratedColumn<bool>(
+      'closed_remotely', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("closed_remotely" IN (0, 1))'),
+      defaultValue: const Constant(false));
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -340,6 +350,7 @@ class $AssignmentsTable extends Assignments
         downloadedAt,
         submittedAt,
         status,
+        closedRemotely,
         createdAt
       ];
   @override
@@ -397,6 +408,12 @@ class $AssignmentsTable extends Assignments
       context.handle(_statusMeta,
           status.isAcceptableOrUnknown(data['status']!, _statusMeta));
     }
+    if (data.containsKey('closed_remotely')) {
+      context.handle(
+          _closedRemotelyMeta,
+          closedRemotely.isAcceptableOrUnknown(
+              data['closed_remotely']!, _closedRemotelyMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -427,6 +444,8 @@ class $AssignmentsTable extends Assignments
           .read(DriftSqlType.dateTime, data['${effectivePrefix}submitted_at']),
       status: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
+      closedRemotely: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}closed_remotely'])!,
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
     );
@@ -446,6 +465,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
   final DateTime? downloadedAt;
   final DateTime? submittedAt;
   final String status;
+  final bool closedRemotely;
   final DateTime createdAt;
   const Assignment(
       {required this.id,
@@ -455,6 +475,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
       this.downloadedAt,
       this.submittedAt,
       required this.status,
+      required this.closedRemotely,
       required this.createdAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -470,6 +491,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
       map['submitted_at'] = Variable<DateTime>(submittedAt);
     }
     map['status'] = Variable<String>(status);
+    map['closed_remotely'] = Variable<bool>(closedRemotely);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -487,6 +509,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
           ? const Value.absent()
           : Value(submittedAt),
       status: Value(status),
+      closedRemotely: Value(closedRemotely),
       createdAt: Value(createdAt),
     );
   }
@@ -503,6 +526,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
       downloadedAt: serializer.fromJson<DateTime?>(json['downloadedAt']),
       submittedAt: serializer.fromJson<DateTime?>(json['submittedAt']),
       status: serializer.fromJson<String>(json['status']),
+      closedRemotely: serializer.fromJson<bool>(json['closedRemotely']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -518,6 +542,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
       'downloadedAt': serializer.toJson<DateTime?>(downloadedAt),
       'submittedAt': serializer.toJson<DateTime?>(submittedAt),
       'status': serializer.toJson<String>(status),
+      'closedRemotely': serializer.toJson<bool>(closedRemotely),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -530,6 +555,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
           Value<DateTime?> downloadedAt = const Value.absent(),
           Value<DateTime?> submittedAt = const Value.absent(),
           String? status,
+          bool? closedRemotely,
           DateTime? createdAt}) =>
       Assignment(
         id: id ?? this.id,
@@ -541,6 +567,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
             downloadedAt.present ? downloadedAt.value : this.downloadedAt,
         submittedAt: submittedAt.present ? submittedAt.value : this.submittedAt,
         status: status ?? this.status,
+        closedRemotely: closedRemotely ?? this.closedRemotely,
         createdAt: createdAt ?? this.createdAt,
       );
   Assignment copyWithCompanion(AssignmentsCompanion data) {
@@ -560,6 +587,9 @@ class Assignment extends DataClass implements Insertable<Assignment> {
       submittedAt:
           data.submittedAt.present ? data.submittedAt.value : this.submittedAt,
       status: data.status.present ? data.status.value : this.status,
+      closedRemotely: data.closedRemotely.present
+          ? data.closedRemotely.value
+          : this.closedRemotely,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -574,14 +604,23 @@ class Assignment extends DataClass implements Insertable<Assignment> {
           ..write('downloadedAt: $downloadedAt, ')
           ..write('submittedAt: $submittedAt, ')
           ..write('status: $status, ')
+          ..write('closedRemotely: $closedRemotely, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, enumeratorId, campaignId,
-      boundaryPolygonGeojson, downloadedAt, submittedAt, status, createdAt);
+  int get hashCode => Object.hash(
+      id,
+      enumeratorId,
+      campaignId,
+      boundaryPolygonGeojson,
+      downloadedAt,
+      submittedAt,
+      status,
+      closedRemotely,
+      createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -593,6 +632,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
           other.downloadedAt == this.downloadedAt &&
           other.submittedAt == this.submittedAt &&
           other.status == this.status &&
+          other.closedRemotely == this.closedRemotely &&
           other.createdAt == this.createdAt);
 }
 
@@ -604,6 +644,7 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
   final Value<DateTime?> downloadedAt;
   final Value<DateTime?> submittedAt;
   final Value<String> status;
+  final Value<bool> closedRemotely;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const AssignmentsCompanion({
@@ -614,6 +655,7 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
     this.downloadedAt = const Value.absent(),
     this.submittedAt = const Value.absent(),
     this.status = const Value.absent(),
+    this.closedRemotely = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -625,6 +667,7 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
     this.downloadedAt = const Value.absent(),
     this.submittedAt = const Value.absent(),
     this.status = const Value.absent(),
+    this.closedRemotely = const Value.absent(),
     required DateTime createdAt,
     this.rowid = const Value.absent(),
   })  : id = Value(id),
@@ -640,6 +683,7 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
     Expression<DateTime>? downloadedAt,
     Expression<DateTime>? submittedAt,
     Expression<String>? status,
+    Expression<bool>? closedRemotely,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -652,6 +696,7 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
       if (downloadedAt != null) 'downloaded_at': downloadedAt,
       if (submittedAt != null) 'submitted_at': submittedAt,
       if (status != null) 'status': status,
+      if (closedRemotely != null) 'closed_remotely': closedRemotely,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -665,6 +710,7 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
       Value<DateTime?>? downloadedAt,
       Value<DateTime?>? submittedAt,
       Value<String>? status,
+      Value<bool>? closedRemotely,
       Value<DateTime>? createdAt,
       Value<int>? rowid}) {
     return AssignmentsCompanion(
@@ -676,6 +722,7 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
       downloadedAt: downloadedAt ?? this.downloadedAt,
       submittedAt: submittedAt ?? this.submittedAt,
       status: status ?? this.status,
+      closedRemotely: closedRemotely ?? this.closedRemotely,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -706,6 +753,9 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
     if (status.present) {
       map['status'] = Variable<String>(status.value);
     }
+    if (closedRemotely.present) {
+      map['closed_remotely'] = Variable<bool>(closedRemotely.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -725,6 +775,7 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
           ..write('downloadedAt: $downloadedAt, ')
           ..write('submittedAt: $submittedAt, ')
           ..write('status: $status, ')
+          ..write('closedRemotely: $closedRemotely, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -5031,6 +5082,7 @@ typedef $$AssignmentsTableCreateCompanionBuilder = AssignmentsCompanion
   Value<DateTime?> downloadedAt,
   Value<DateTime?> submittedAt,
   Value<String> status,
+  Value<bool> closedRemotely,
   required DateTime createdAt,
   Value<int> rowid,
 });
@@ -5043,6 +5095,7 @@ typedef $$AssignmentsTableUpdateCompanionBuilder = AssignmentsCompanion
   Value<DateTime?> downloadedAt,
   Value<DateTime?> submittedAt,
   Value<String> status,
+  Value<bool> closedRemotely,
   Value<DateTime> createdAt,
   Value<int> rowid,
 });
@@ -5077,6 +5130,10 @@ class $$AssignmentsTableFilterComposer
 
   ColumnFilters<String> get status => $composableBuilder(
       column: $table.status, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get closedRemotely => $composableBuilder(
+      column: $table.closedRemotely,
+      builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -5115,6 +5172,10 @@ class $$AssignmentsTableOrderingComposer
   ColumnOrderings<String> get status => $composableBuilder(
       column: $table.status, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<bool> get closedRemotely => $composableBuilder(
+      column: $table.closedRemotely,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 }
@@ -5148,6 +5209,9 @@ class $$AssignmentsTableAnnotationComposer
 
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<bool> get closedRemotely => $composableBuilder(
+      column: $table.closedRemotely, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -5183,6 +5247,7 @@ class $$AssignmentsTableTableManager extends RootTableManager<
             Value<DateTime?> downloadedAt = const Value.absent(),
             Value<DateTime?> submittedAt = const Value.absent(),
             Value<String> status = const Value.absent(),
+            Value<bool> closedRemotely = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -5194,6 +5259,7 @@ class $$AssignmentsTableTableManager extends RootTableManager<
             downloadedAt: downloadedAt,
             submittedAt: submittedAt,
             status: status,
+            closedRemotely: closedRemotely,
             createdAt: createdAt,
             rowid: rowid,
           ),
@@ -5205,6 +5271,7 @@ class $$AssignmentsTableTableManager extends RootTableManager<
             Value<DateTime?> downloadedAt = const Value.absent(),
             Value<DateTime?> submittedAt = const Value.absent(),
             Value<String> status = const Value.absent(),
+            Value<bool> closedRemotely = const Value.absent(),
             required DateTime createdAt,
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -5216,6 +5283,7 @@ class $$AssignmentsTableTableManager extends RootTableManager<
             downloadedAt: downloadedAt,
             submittedAt: submittedAt,
             status: status,
+            closedRemotely: closedRemotely,
             createdAt: createdAt,
             rowid: rowid,
           ),
