@@ -21,7 +21,9 @@ class SyncWorker {
     required this.db,
     this.bundle,
     SupabaseClient? supabaseClient,
-  }) : _supabaseClient = supabaseClient;
+    Future<bool> Function()? refreshSession,
+  })  : _supabaseClient = supabaseClient,
+        _refreshSession = refreshSession;
 
   final SyncApi api;
   final SyncJobsRepository jobs;
@@ -30,6 +32,7 @@ class SyncWorker {
   final AppDatabase db;
   final PendingWorkBundle? bundle;
   final SupabaseClient? _supabaseClient;
+  final Future<bool> Function()? _refreshSession;
 
   static const _maxConcurrent = 3;
   bool _running = false;
@@ -145,12 +148,17 @@ class SyncWorker {
     }
   }
 
-  Future<void> _handleAuthExpired(SyncJob job) async {
+  Future<bool> _defaultRefresh() async {
     final client = _supabaseClient ?? Supabase.instance.client;
+    final res = await client.auth.refreshSession();
+    return res.session != null;
+  }
+
+  Future<void> _handleAuthExpired(SyncJob job) async {
+    final refresh = _refreshSession ?? _defaultRefresh;
     bool ok;
     try {
-      final res = await client.auth.refreshSession();
-      ok = res.session != null;
+      ok = await refresh();
     } on Object {
       ok = false;
     }
@@ -159,7 +167,6 @@ class SyncWorker {
       return;
     }
     final retry = await _execute(job);
-    // Avoid infinite loop: a second AuthExpired is treated as transient.
     await _applyOutcome(
         job, retry is AuthExpired ? const TransientFailure('repeat 401') : retry,);
   }
