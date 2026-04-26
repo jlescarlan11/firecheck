@@ -1,5 +1,7 @@
 import 'package:firecheck/app.dart';
 import 'package:firecheck/core/mapbox/offline_pack_adapter.dart';
+import 'package:firecheck/core/sync/presentation/sync_providers.dart';
+import 'package:firecheck/core/sync/worker/workmanager_dispatcher.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
 import 'package:firecheck/features/map/presentation/map_providers.dart';
 import 'package:firecheck/features/map/presentation/map_renderer.dart';
@@ -31,6 +33,7 @@ Future<void> main() async {
   }
 
   await Supabase.initialize(url: supaUrl, anonKey: supaKey);
+  await registerPeriodicSync();
   MapboxOptions.setAccessToken(mapboxToken);
 
   // Phase 1 T19: wire the real Mapbox renderer + offline-pack adapter so
@@ -57,7 +60,28 @@ Future<void> main() async {
             MapboxOfflinePackAdapter(tileStore),
           ),
       ],
-      child: const FireCheckApp(),
+      child: const _SyncBootstrap(child: FireCheckApp()),
     ),
   );
+}
+
+class _SyncBootstrap extends ConsumerStatefulWidget {
+  const _SyncBootstrap({required this.child});
+  final Widget child;
+
+  @override
+  ConsumerState<_SyncBootstrap> createState() => _SyncBootstrapState();
+}
+
+class _SyncBootstrapState extends ConsumerState<_SyncBootstrap> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() async {
+      await ref.read(syncControllerProvider).start();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
