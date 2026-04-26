@@ -1,3 +1,5 @@
+import 'package:firecheck/core/sync/domain/finalize_submission.dart';
+import 'package:firecheck/core/sync/presentation/sync_providers.dart';
 import 'package:firecheck/features/home/presentation/home_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,35 +21,54 @@ class HomeScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Assignment progress',
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${snap.completedFeatures} of ${snap.totalFeatures} features',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
+              GestureDetector(
+                onLongPress: () async {
+                  final db = ref.read(appDatabaseProvider);
+                  final messenger = ScaffoldMessenger.of(context);
+                  final readyRows = await (db.select(db.submissions)
+                        ..where((t) => t.syncStatus.equals('ready_to_upload')))
+                      .get();
+                  final useCase = FinalizeSubmissionUseCase(db);
+                  for (final s in readyRows) {
+                    await useCase.execute(s.id);
+                  }
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text('Queued ${readyRows.length} submission(s)'),
+                    ),
+                  );
+                  await ref.read(syncControllerProvider).triggerNow();
+                },
+                child: Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Assignment progress',
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
                         ),
-                      ),
-                      LinearProgressIndicator(
-                        value: snap.totalFeatures == 0
-                            ? 0
-                            : snap.completedFeatures / snap.totalFeatures,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '${snap.queuedJobs} queued · ${snap.failedJobs} failed · ${snap.deadJobs} dead',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                    ],
+                        const SizedBox(height: 4),
+                        Text(
+                          '${snap.completedFeatures} of ${snap.totalFeatures} features',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        LinearProgressIndicator(
+                          value: snap.totalFeatures == 0
+                              ? 0
+                              : snap.completedFeatures / snap.totalFeatures,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '${snap.queuedJobs} queued · ${snap.failedJobs} failed · ${snap.deadJobs} dead',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
