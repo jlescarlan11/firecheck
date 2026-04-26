@@ -73,14 +73,22 @@ class SupabaseSyncApi implements SyncApi {
   @override
   Future<SyncOutcome> uploadNewFeature(Feature feature) async {
     try {
-      await _client.from('features').upsert({
-        'id': feature.id,
-        'assignment_id': feature.assignmentId,
-        'feature_type': feature.featureType,
-        'geometry': feature.geometryGeojson,
-        'is_new': feature.isNew,
-        'created_at': feature.createdAt.toIso8601String(),
-      });
+      // Goes through upload_new_feature RPC because features.geometry is
+      // PostGIS — PostgREST can't auto-convert raw GeoJSON. The RPC uses
+      // ST_GeomFromGeoJSON server-side.
+      await _client.rpc<dynamic>(
+        'upload_new_feature',
+        params: {
+          'payload': {
+            'id': feature.id,
+            'assignment_id': feature.assignmentId,
+            'feature_type': feature.featureType,
+            'geometry_geojson': feature.geometryGeojson,
+            'is_new': feature.isNew,
+            'created_at': feature.createdAt.toIso8601String(),
+          },
+        },
+      );
       return const Success();
     } on PostgrestException catch (e) {
       return _mapPostgrestException(e, null);

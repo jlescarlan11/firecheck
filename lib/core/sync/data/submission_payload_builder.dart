@@ -43,13 +43,22 @@ class SubmissionPayloadBuilder {
   Map<String, dynamic> _submissionToJson(Submission s) => {
         'id': s.id,
         'feature_id': s.featureId,
-        'submitted_by': s.submittedBy,
+        // Supabase expects a uuid; null is acceptable. Phase 2 placeholder
+        // 'admin' fails the uuid cast — coerce to null until real auth wires
+        // submittedBy to Supabase.instance.client.auth.currentUser.id.
+        'submitted_by': _asUuidOrNull(s.submittedBy),
         'does_not_exist': s.doesNotExist,
         'remarks': s.remarks,
         'override_reason': s.overrideReason,
         'created_at': s.createdAt.toIso8601String(),
         'updated_at': s.updatedAt.toIso8601String(),
       };
+
+  static final _uuidRegex = RegExp(
+    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+  );
+  String? _asUuidOrNull(String? raw) =>
+      raw != null && _uuidRegex.hasMatch(raw) ? raw : null;
 
   Map<String, dynamic> _buildingToJson(BuildingAttribute b) => {
         'submission_id': b.submissionId,
