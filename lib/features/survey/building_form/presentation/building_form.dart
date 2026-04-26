@@ -4,6 +4,7 @@ import 'package:firecheck/features/survey/building_form/presentation/sections/co
 import 'package:firecheck/features/survey/building_form/presentation/sections/ff_facilities_section.dart';
 import 'package:firecheck/features/survey/building_form/presentation/sections/fire_load_section.dart';
 import 'package:firecheck/features/survey/building_form/presentation/sections/identity_section.dart';
+import 'package:firecheck/features/survey/olp_survey/presentation/olp_section.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -103,6 +104,11 @@ class BuildingForm extends ConsumerWidget {
           featureId: featureId,
           disabled: disabled,
         ),
+        if (!state.doesNotExist)
+          OlpSurveySection(
+            submissionId: submissionId,
+            featureId: featureId,
+          ),
       ],
     );
   }
