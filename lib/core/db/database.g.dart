@@ -2659,6 +2659,22 @@ class $HouseholdSurveysTable extends HouseholdSurveys
   late final GeneratedColumn<String> safetySuggestions =
       GeneratedColumn<String>('safety_suggestions', aliasedName, true,
           type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _homeownerAcknowledgedMeta =
+      const VerificationMeta('homeownerAcknowledged');
+  @override
+  late final GeneratedColumn<bool> homeownerAcknowledged =
+      GeneratedColumn<bool>('homeowner_acknowledged', aliasedName, false,
+          type: DriftSqlType.bool,
+          requiredDuringInsert: false,
+          defaultConstraints: GeneratedColumn.constraintIsAlways(
+              'CHECK ("homeowner_acknowledged" IN (0, 1))'),
+          defaultValue: const Constant(false));
+  static const VerificationMeta _completedAtMeta =
+      const VerificationMeta('completedAt');
+  @override
+  late final GeneratedColumn<DateTime> completedAt = GeneratedColumn<DateTime>(
+      'completed_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         submissionId,
@@ -2668,7 +2684,9 @@ class $HouseholdSurveysTable extends HouseholdSurveys
         kusinaJson,
         daananOLabasanJson,
         lebelNgKahinaan,
-        safetySuggestions
+        safetySuggestions,
+        homeownerAcknowledged,
+        completedAt
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2732,6 +2750,18 @@ class $HouseholdSurveysTable extends HouseholdSurveys
           safetySuggestions.isAcceptableOrUnknown(
               data['safety_suggestions']!, _safetySuggestionsMeta));
     }
+    if (data.containsKey('homeowner_acknowledged')) {
+      context.handle(
+          _homeownerAcknowledgedMeta,
+          homeownerAcknowledged.isAcceptableOrUnknown(
+              data['homeowner_acknowledged']!, _homeownerAcknowledgedMeta));
+    }
+    if (data.containsKey('completed_at')) {
+      context.handle(
+          _completedAtMeta,
+          completedAt.isAcceptableOrUnknown(
+              data['completed_at']!, _completedAtMeta));
+    }
     return context;
   }
 
@@ -2759,6 +2789,10 @@ class $HouseholdSurveysTable extends HouseholdSurveys
           DriftSqlType.string, data['${effectivePrefix}lebel_ng_kahinaan']),
       safetySuggestions: attachedDatabase.typeMapping.read(
           DriftSqlType.string, data['${effectivePrefix}safety_suggestions']),
+      homeownerAcknowledged: attachedDatabase.typeMapping.read(
+          DriftSqlType.bool, data['${effectivePrefix}homeowner_acknowledged'])!,
+      completedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}completed_at']),
     );
   }
 
@@ -2777,6 +2811,8 @@ class HouseholdSurvey extends DataClass implements Insertable<HouseholdSurvey> {
   final String daananOLabasanJson;
   final String? lebelNgKahinaan;
   final String? safetySuggestions;
+  final bool homeownerAcknowledged;
+  final DateTime? completedAt;
   const HouseholdSurvey(
       {required this.submissionId,
       required this.constructionDetailsJson,
@@ -2785,7 +2821,9 @@ class HouseholdSurvey extends DataClass implements Insertable<HouseholdSurvey> {
       required this.kusinaJson,
       required this.daananOLabasanJson,
       this.lebelNgKahinaan,
-      this.safetySuggestions});
+      this.safetySuggestions,
+      required this.homeownerAcknowledged,
+      this.completedAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -2802,6 +2840,10 @@ class HouseholdSurvey extends DataClass implements Insertable<HouseholdSurvey> {
     }
     if (!nullToAbsent || safetySuggestions != null) {
       map['safety_suggestions'] = Variable<String>(safetySuggestions);
+    }
+    map['homeowner_acknowledged'] = Variable<bool>(homeownerAcknowledged);
+    if (!nullToAbsent || completedAt != null) {
+      map['completed_at'] = Variable<DateTime>(completedAt);
     }
     return map;
   }
@@ -2820,6 +2862,10 @@ class HouseholdSurvey extends DataClass implements Insertable<HouseholdSurvey> {
       safetySuggestions: safetySuggestions == null && nullToAbsent
           ? const Value.absent()
           : Value(safetySuggestions),
+      homeownerAcknowledged: Value(homeownerAcknowledged),
+      completedAt: completedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(completedAt),
     );
   }
 
@@ -2839,6 +2885,9 @@ class HouseholdSurvey extends DataClass implements Insertable<HouseholdSurvey> {
       lebelNgKahinaan: serializer.fromJson<String?>(json['lebelNgKahinaan']),
       safetySuggestions:
           serializer.fromJson<String?>(json['safetySuggestions']),
+      homeownerAcknowledged:
+          serializer.fromJson<bool>(json['homeownerAcknowledged']),
+      completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
     );
   }
   @override
@@ -2855,6 +2904,8 @@ class HouseholdSurvey extends DataClass implements Insertable<HouseholdSurvey> {
       'daananOLabasanJson': serializer.toJson<String>(daananOLabasanJson),
       'lebelNgKahinaan': serializer.toJson<String?>(lebelNgKahinaan),
       'safetySuggestions': serializer.toJson<String?>(safetySuggestions),
+      'homeownerAcknowledged': serializer.toJson<bool>(homeownerAcknowledged),
+      'completedAt': serializer.toJson<DateTime?>(completedAt),
     };
   }
 
@@ -2866,7 +2917,9 @@ class HouseholdSurvey extends DataClass implements Insertable<HouseholdSurvey> {
           String? kusinaJson,
           String? daananOLabasanJson,
           Value<String?> lebelNgKahinaan = const Value.absent(),
-          Value<String?> safetySuggestions = const Value.absent()}) =>
+          Value<String?> safetySuggestions = const Value.absent(),
+          bool? homeownerAcknowledged,
+          Value<DateTime?> completedAt = const Value.absent()}) =>
       HouseholdSurvey(
         submissionId: submissionId ?? this.submissionId,
         constructionDetailsJson:
@@ -2882,6 +2935,9 @@ class HouseholdSurvey extends DataClass implements Insertable<HouseholdSurvey> {
         safetySuggestions: safetySuggestions.present
             ? safetySuggestions.value
             : this.safetySuggestions,
+        homeownerAcknowledged:
+            homeownerAcknowledged ?? this.homeownerAcknowledged,
+        completedAt: completedAt.present ? completedAt.value : this.completedAt,
       );
   HouseholdSurvey copyWithCompanion(HouseholdSurveysCompanion data) {
     return HouseholdSurvey(
@@ -2908,6 +2964,11 @@ class HouseholdSurvey extends DataClass implements Insertable<HouseholdSurvey> {
       safetySuggestions: data.safetySuggestions.present
           ? data.safetySuggestions.value
           : this.safetySuggestions,
+      homeownerAcknowledged: data.homeownerAcknowledged.present
+          ? data.homeownerAcknowledged.value
+          : this.homeownerAcknowledged,
+      completedAt:
+          data.completedAt.present ? data.completedAt.value : this.completedAt,
     );
   }
 
@@ -2921,7 +2982,9 @@ class HouseholdSurvey extends DataClass implements Insertable<HouseholdSurvey> {
           ..write('kusinaJson: $kusinaJson, ')
           ..write('daananOLabasanJson: $daananOLabasanJson, ')
           ..write('lebelNgKahinaan: $lebelNgKahinaan, ')
-          ..write('safetySuggestions: $safetySuggestions')
+          ..write('safetySuggestions: $safetySuggestions, ')
+          ..write('homeownerAcknowledged: $homeownerAcknowledged, ')
+          ..write('completedAt: $completedAt')
           ..write(')'))
         .toString();
   }
@@ -2935,7 +2998,9 @@ class HouseholdSurvey extends DataClass implements Insertable<HouseholdSurvey> {
       kusinaJson,
       daananOLabasanJson,
       lebelNgKahinaan,
-      safetySuggestions);
+      safetySuggestions,
+      homeownerAcknowledged,
+      completedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2947,7 +3012,9 @@ class HouseholdSurvey extends DataClass implements Insertable<HouseholdSurvey> {
           other.kusinaJson == this.kusinaJson &&
           other.daananOLabasanJson == this.daananOLabasanJson &&
           other.lebelNgKahinaan == this.lebelNgKahinaan &&
-          other.safetySuggestions == this.safetySuggestions);
+          other.safetySuggestions == this.safetySuggestions &&
+          other.homeownerAcknowledged == this.homeownerAcknowledged &&
+          other.completedAt == this.completedAt);
 }
 
 class HouseholdSurveysCompanion extends UpdateCompanion<HouseholdSurvey> {
@@ -2959,6 +3026,8 @@ class HouseholdSurveysCompanion extends UpdateCompanion<HouseholdSurvey> {
   final Value<String> daananOLabasanJson;
   final Value<String?> lebelNgKahinaan;
   final Value<String?> safetySuggestions;
+  final Value<bool> homeownerAcknowledged;
+  final Value<DateTime?> completedAt;
   final Value<int> rowid;
   const HouseholdSurveysCompanion({
     this.submissionId = const Value.absent(),
@@ -2969,6 +3038,8 @@ class HouseholdSurveysCompanion extends UpdateCompanion<HouseholdSurvey> {
     this.daananOLabasanJson = const Value.absent(),
     this.lebelNgKahinaan = const Value.absent(),
     this.safetySuggestions = const Value.absent(),
+    this.homeownerAcknowledged = const Value.absent(),
+    this.completedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   HouseholdSurveysCompanion.insert({
@@ -2980,6 +3051,8 @@ class HouseholdSurveysCompanion extends UpdateCompanion<HouseholdSurvey> {
     this.daananOLabasanJson = const Value.absent(),
     this.lebelNgKahinaan = const Value.absent(),
     this.safetySuggestions = const Value.absent(),
+    this.homeownerAcknowledged = const Value.absent(),
+    this.completedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : submissionId = Value(submissionId);
   static Insertable<HouseholdSurvey> custom({
@@ -2991,6 +3064,8 @@ class HouseholdSurveysCompanion extends UpdateCompanion<HouseholdSurvey> {
     Expression<String>? daananOLabasanJson,
     Expression<String>? lebelNgKahinaan,
     Expression<String>? safetySuggestions,
+    Expression<bool>? homeownerAcknowledged,
+    Expression<DateTime>? completedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -3005,6 +3080,9 @@ class HouseholdSurveysCompanion extends UpdateCompanion<HouseholdSurvey> {
         'daanan_o_labasan_json': daananOLabasanJson,
       if (lebelNgKahinaan != null) 'lebel_ng_kahinaan': lebelNgKahinaan,
       if (safetySuggestions != null) 'safety_suggestions': safetySuggestions,
+      if (homeownerAcknowledged != null)
+        'homeowner_acknowledged': homeownerAcknowledged,
+      if (completedAt != null) 'completed_at': completedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -3018,6 +3096,8 @@ class HouseholdSurveysCompanion extends UpdateCompanion<HouseholdSurvey> {
       Value<String>? daananOLabasanJson,
       Value<String?>? lebelNgKahinaan,
       Value<String?>? safetySuggestions,
+      Value<bool>? homeownerAcknowledged,
+      Value<DateTime?>? completedAt,
       Value<int>? rowid}) {
     return HouseholdSurveysCompanion(
       submissionId: submissionId ?? this.submissionId,
@@ -3030,6 +3110,9 @@ class HouseholdSurveysCompanion extends UpdateCompanion<HouseholdSurvey> {
       daananOLabasanJson: daananOLabasanJson ?? this.daananOLabasanJson,
       lebelNgKahinaan: lebelNgKahinaan ?? this.lebelNgKahinaan,
       safetySuggestions: safetySuggestions ?? this.safetySuggestions,
+      homeownerAcknowledged:
+          homeownerAcknowledged ?? this.homeownerAcknowledged,
+      completedAt: completedAt ?? this.completedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -3063,6 +3146,13 @@ class HouseholdSurveysCompanion extends UpdateCompanion<HouseholdSurvey> {
     if (safetySuggestions.present) {
       map['safety_suggestions'] = Variable<String>(safetySuggestions.value);
     }
+    if (homeownerAcknowledged.present) {
+      map['homeowner_acknowledged'] =
+          Variable<bool>(homeownerAcknowledged.value);
+    }
+    if (completedAt.present) {
+      map['completed_at'] = Variable<DateTime>(completedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -3080,6 +3170,8 @@ class HouseholdSurveysCompanion extends UpdateCompanion<HouseholdSurvey> {
           ..write('daananOLabasanJson: $daananOLabasanJson, ')
           ..write('lebelNgKahinaan: $lebelNgKahinaan, ')
           ..write('safetySuggestions: $safetySuggestions, ')
+          ..write('homeownerAcknowledged: $homeownerAcknowledged, ')
+          ..write('completedAt: $completedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -6050,6 +6142,8 @@ typedef $$HouseholdSurveysTableCreateCompanionBuilder
   Value<String> daananOLabasanJson,
   Value<String?> lebelNgKahinaan,
   Value<String?> safetySuggestions,
+  Value<bool> homeownerAcknowledged,
+  Value<DateTime?> completedAt,
   Value<int> rowid,
 });
 typedef $$HouseholdSurveysTableUpdateCompanionBuilder
@@ -6062,6 +6156,8 @@ typedef $$HouseholdSurveysTableUpdateCompanionBuilder
   Value<String> daananOLabasanJson,
   Value<String?> lebelNgKahinaan,
   Value<String?> safetySuggestions,
+  Value<bool> homeownerAcknowledged,
+  Value<DateTime?> completedAt,
   Value<int> rowid,
 });
 
@@ -6102,6 +6198,13 @@ class $$HouseholdSurveysTableFilterComposer
   ColumnFilters<String> get safetySuggestions => $composableBuilder(
       column: $table.safetySuggestions,
       builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get homeownerAcknowledged => $composableBuilder(
+      column: $table.homeownerAcknowledged,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get completedAt => $composableBuilder(
+      column: $table.completedAt, builder: (column) => ColumnFilters(column));
 }
 
 class $$HouseholdSurveysTableOrderingComposer
@@ -6143,6 +6246,13 @@ class $$HouseholdSurveysTableOrderingComposer
   ColumnOrderings<String> get safetySuggestions => $composableBuilder(
       column: $table.safetySuggestions,
       builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get homeownerAcknowledged => $composableBuilder(
+      column: $table.homeownerAcknowledged,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get completedAt => $composableBuilder(
+      column: $table.completedAt, builder: (column) => ColumnOrderings(column));
 }
 
 class $$HouseholdSurveysTableAnnotationComposer
@@ -6177,6 +6287,12 @@ class $$HouseholdSurveysTableAnnotationComposer
 
   GeneratedColumn<String> get safetySuggestions => $composableBuilder(
       column: $table.safetySuggestions, builder: (column) => column);
+
+  GeneratedColumn<bool> get homeownerAcknowledged => $composableBuilder(
+      column: $table.homeownerAcknowledged, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get completedAt => $composableBuilder(
+      column: $table.completedAt, builder: (column) => column);
 }
 
 class $$HouseholdSurveysTableTableManager extends RootTableManager<
@@ -6214,6 +6330,8 @@ class $$HouseholdSurveysTableTableManager extends RootTableManager<
             Value<String> daananOLabasanJson = const Value.absent(),
             Value<String?> lebelNgKahinaan = const Value.absent(),
             Value<String?> safetySuggestions = const Value.absent(),
+            Value<bool> homeownerAcknowledged = const Value.absent(),
+            Value<DateTime?> completedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               HouseholdSurveysCompanion(
@@ -6225,6 +6343,8 @@ class $$HouseholdSurveysTableTableManager extends RootTableManager<
             daananOLabasanJson: daananOLabasanJson,
             lebelNgKahinaan: lebelNgKahinaan,
             safetySuggestions: safetySuggestions,
+            homeownerAcknowledged: homeownerAcknowledged,
+            completedAt: completedAt,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -6236,6 +6356,8 @@ class $$HouseholdSurveysTableTableManager extends RootTableManager<
             Value<String> daananOLabasanJson = const Value.absent(),
             Value<String?> lebelNgKahinaan = const Value.absent(),
             Value<String?> safetySuggestions = const Value.absent(),
+            Value<bool> homeownerAcknowledged = const Value.absent(),
+            Value<DateTime?> completedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               HouseholdSurveysCompanion.insert(
@@ -6247,6 +6369,8 @@ class $$HouseholdSurveysTableTableManager extends RootTableManager<
             daananOLabasanJson: daananOLabasanJson,
             lebelNgKahinaan: lebelNgKahinaan,
             safetySuggestions: safetySuggestions,
+            homeownerAcknowledged: homeownerAcknowledged,
+            completedAt: completedAt,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0

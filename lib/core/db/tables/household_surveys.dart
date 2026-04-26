@@ -12,6 +12,9 @@ class HouseholdSurveys extends Table {
       text().withDefault(const Constant('{}'))();
   TextColumn get lebelNgKahinaan => text().nullable()();
   TextColumn get safetySuggestions => text().nullable()();
+  BoolColumn get homeownerAcknowledged =>
+      boolean().withDefault(const Constant(false))();
+  DateTimeColumn get completedAt => dateTime().nullable()();
 
   @override
   Set<Column> get primaryKey => {submissionId};
