@@ -75,6 +75,7 @@ void main() {
       campaignId: 'c1',
       boundaryPolygonGeojson: boundary,
       status: 'assigned',
+      closedRemotely: false,
       createdAt: DateTime.now(),
     );
 
