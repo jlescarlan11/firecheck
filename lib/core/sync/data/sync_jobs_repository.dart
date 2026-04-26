@@ -27,7 +27,31 @@ class SyncJobsRepository {
               WHERE s.id = j.blocks_on_submission_id AND s.sync_status = 'uploaded'
             )
           )
-        ORDER BY (CASE WHEN j.entity_type = ? THEN 0 ELSE 1 END), j.created_at
+          -- Gate: a submission job whose feature is_new=true must wait for the
+          -- corresponding new_feature job to reach success. Otherwise the
+          -- submission's feature_id FK fails on the server.
+          AND NOT (
+            j.entity_type = 'submission'
+            AND EXISTS (
+              SELECT 1 FROM submissions s2
+              JOIN features f2 ON f2.id = s2.feature_id
+              WHERE s2.id = j.entity_id
+                AND f2.is_new = 1
+                AND NOT EXISTS (
+                  SELECT 1 FROM sync_jobs nf
+                  WHERE nf.entity_type = 'new_feature'
+                    AND nf.entity_id = f2.id
+                    AND nf.status = 'success'
+                )
+            )
+          )
+        ORDER BY (
+          CASE j.entity_type
+            WHEN 'new_feature' THEN 0
+            WHEN ?           THEN 1
+            ELSE                  2
+          END
+        ), j.created_at
         LIMIT ?
         ''',
         variables: [
@@ -36,7 +60,7 @@ class SyncJobsRepository {
           Variable.withString(SyncEntityType.submission),
           Variable.withInt(n),
         ],
-        readsFrom: {_db.syncJobs, _db.submissions},
+        readsFrom: {_db.syncJobs, _db.submissions, _db.features},
       ).get();
       final claimed = raw.map((row) => _db.syncJobs.map(row.data)).toList();
       for (final j in claimed) {
