@@ -5,6 +5,7 @@ import 'package:firecheck/features/auth/presentation/login_screen.dart';
 import 'package:firecheck/features/home/presentation/home_screen.dart';
 import 'package:firecheck/features/map/presentation/map_screen.dart';
 import 'package:firecheck/features/survey/building_form/presentation/submission_detail_screen.dart';
+import 'package:firecheck/features/survey/olp_survey/presentation/result/olp_result_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -55,6 +56,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => SubmissionDetailScreen(
           featureId: state.pathParameters['featureId']!,
         ),
+      ),
+      GoRoute(
+        path: '/feature/:featureId/olp/result',
+        builder: (context, state) {
+          final featureId = state.pathParameters['featureId']!;
+          final submissionId = state.uri.queryParameters['submissionId'] ?? '';
+          return OlpResultScreen(
+            submissionId: submissionId,
+            featureId: featureId,
+          );
+        },
       ),
     ],
   );
