@@ -56,9 +56,11 @@ class SupabaseSyncApi implements SyncApi {
     required String storagePath,
   }) async {
     try {
+      // Only storage_path is server-side; upload_status is local-only per
+      // master spec §6. The worker flips local photos.upload_status after
+      // this returns Success.
       await _client.from('photos').update({
         'storage_path': storagePath,
-        'upload_status': 'uploaded',
       }).eq('id', photoId);
       return const Success();
     } on PostgrestException catch (e) {
