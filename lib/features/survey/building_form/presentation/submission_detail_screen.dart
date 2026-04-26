@@ -231,6 +231,13 @@ class _Footer extends ConsumerWidget {
                         await ref
                             .read(submissionRepositoryProvider)
                             .markStatus(submissionId, 'ready_to_upload');
+                        // Recompute the feature's color-coded status so the
+                        // map polygon flips green immediately. Without this,
+                        // the polygon stays yellow until the next autosave or
+                        // re-tap triggers markFeatureStatus.
+                        await ref
+                            .read(featureRepositoryProvider)
+                            .markFeatureStatus(featureId);
                         if (context.mounted) context.go('/map');
                       }
                     : null,
