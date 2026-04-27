@@ -813,4 +813,29 @@ class AppLocalizationsTl extends AppLocalizations {
   @override
   String get olpItemE35Suggestion =>
       'Magkabit ng karagdagang ilaw kung kailangan';
+
+  @override
+  String summaryFeatures(int n) {
+    return '$n na istruktura';
+  }
+
+  @override
+  String summaryComplete(int n) {
+    return '$n tapos na';
+  }
+
+  @override
+  String summaryIncomplete(int n) {
+    return '$n kulang pa';
+  }
+
+  @override
+  String summaryNewFeatures(int n) {
+    return '$n bagong idinagdag';
+  }
+
+  @override
+  String summaryPhotosPending(int n) {
+    return '$n larawan ang kulang';
+  }
 }

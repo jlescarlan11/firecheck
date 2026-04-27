@@ -1573,6 +1573,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Install additional lighting if needed'**
   String get olpItemE35Suggestion;
+
+  /// No description provided for @summaryFeatures.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} features'**
+  String summaryFeatures(int n);
+
+  /// No description provided for @summaryComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} complete'**
+  String summaryComplete(int n);
+
+  /// No description provided for @summaryIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} incomplete'**
+  String summaryIncomplete(int n);
+
+  /// No description provided for @summaryNewFeatures.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} new features added'**
+  String summaryNewFeatures(int n);
+
+  /// No description provided for @summaryPhotosPending.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} photos pending'**
+  String summaryPhotosPending(int n);
 }
 
 class _AppLocalizationsDelegate

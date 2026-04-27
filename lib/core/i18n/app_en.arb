@@ -289,5 +289,15 @@
   "olpItemE34Statement": "Interior pathways are well-kept",
   "olpItemE34Suggestion": "Clean interior pathways",
   "olpItemE35Statement": "Adequate interior lighting",
-  "olpItemE35Suggestion": "Install additional lighting if needed"
+  "olpItemE35Suggestion": "Install additional lighting if needed",
+  "summaryFeatures": "{n} features",
+  "@summaryFeatures": { "placeholders": { "n": {"type": "int"} } },
+  "summaryComplete": "{n} complete",
+  "@summaryComplete": { "placeholders": { "n": {"type": "int"} } },
+  "summaryIncomplete": "{n} incomplete",
+  "@summaryIncomplete": { "placeholders": { "n": {"type": "int"} } },
+  "summaryNewFeatures": "{n} new features added",
+  "@summaryNewFeatures": { "placeholders": { "n": {"type": "int"} } },
+  "summaryPhotosPending": "{n} photos pending",
+  "@summaryPhotosPending": { "placeholders": { "n": {"type": "int"} } }
 }

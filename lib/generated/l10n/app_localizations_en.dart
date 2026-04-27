@@ -790,4 +790,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get olpItemE35Suggestion => 'Install additional lighting if needed';
+
+  @override
+  String summaryFeatures(int n) {
+    return '$n features';
+  }
+
+  @override
+  String summaryComplete(int n) {
+    return '$n complete';
+  }
+
+  @override
+  String summaryIncomplete(int n) {
+    return '$n incomplete';
+  }
+
+  @override
+  String summaryNewFeatures(int n) {
+    return '$n new features added';
+  }
+
+  @override
+  String summaryPhotosPending(int n) {
+    return '$n photos pending';
+  }
 }
