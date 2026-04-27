@@ -49,7 +49,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final assignmentAsync = ref.watch(currentAssignmentProvider);
     // Subscribe so the GPS stream is hot from mount, not first tap.
     ref.watch(currentPositionProvider);
-    final isLocked = ref.watch(isAssignmentLockedProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(l.mapTitle)),
@@ -102,16 +101,27 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   onTap: () => setState(() => _followMe = !_followMe),
                 ),
                 const SizedBox(width: 6),
+                // Scoped Consumer so lock-state stream emissions don't
+                // rebuild the whole map (which would re-mount the Mapbox
+                // renderer and lose its tap handlers — Bug 11, surfaced
+                // during the first manual happy path).
                 Expanded(
-                  child: _pill(
-                    _addModeActive
-                        ? l.addModePillActiveLabel
-                        : l.newFeaturePlaceholder,
-                    on: _addModeActive,
-                    disabled: isLocked,
-                    key: const Key('map.add-feature-pill'),
-                    onTap: () =>
-                        setState(() => _addModeActive = !_addModeActive),
+                  child: Consumer(
+                    builder: (context, ref2, _) {
+                      final isLocked =
+                          ref2.watch(isAssignmentLockedProvider);
+                      return _pill(
+                        _addModeActive
+                            ? l.addModePillActiveLabel
+                            : l.newFeaturePlaceholder,
+                        on: _addModeActive,
+                        disabled: isLocked,
+                        key: const Key('map.add-feature-pill'),
+                        onTap: () => setState(
+                          () => _addModeActive = !_addModeActive,
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],
