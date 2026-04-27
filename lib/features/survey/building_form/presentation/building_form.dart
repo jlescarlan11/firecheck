@@ -4,6 +4,7 @@ import 'package:firecheck/features/survey/building_form/presentation/sections/co
 import 'package:firecheck/features/survey/building_form/presentation/sections/ff_facilities_section.dart';
 import 'package:firecheck/features/survey/building_form/presentation/sections/fire_load_section.dart';
 import 'package:firecheck/features/survey/building_form/presentation/sections/identity_section.dart';
+import 'package:firecheck/features/survey/olp_survey/presentation/olp_section.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,11 +13,17 @@ class BuildingForm extends ConsumerWidget {
   const BuildingForm({
     required this.submissionId,
     required this.featureId,
+    this.readOnly = false,
     super.key,
   });
 
   final String submissionId;
   final String featureId;
+
+  /// When true, every input is disabled but the form remains scrollable.
+  /// Used by `SubmissionDetailScreen` when the assignment is locked
+  /// (Submitted or ClosedRemotely). Bug 15.
+  final bool readOnly;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -27,7 +34,7 @@ class BuildingForm extends ConsumerWidget {
     );
     final state = ref.watch(buildingFormNotifierProvider(key));
     final notifier = ref.read(buildingFormNotifierProvider(key).notifier);
-    final disabled = state.doesNotExist;
+    final disabled = state.doesNotExist || readOnly;
 
     return ListView(
       padding: const EdgeInsets.all(12),
@@ -71,8 +78,10 @@ class BuildingForm extends ConsumerWidget {
               Switch(
                 value: state.doesNotExist,
                 activeThumbColor: const Color(0xFFC53030),
-                onChanged: (v) =>
-                    notifier.update((s) => s.copyWith(doesNotExist: v)),
+                onChanged: readOnly
+                    ? null
+                    : (v) =>
+                        notifier.update((s) => s.copyWith(doesNotExist: v)),
               ),
             ],
           ),
@@ -103,6 +112,11 @@ class BuildingForm extends ConsumerWidget {
           featureId: featureId,
           disabled: disabled,
         ),
+        if (!state.doesNotExist)
+          OlpSurveySection(
+            submissionId: submissionId,
+            featureId: featureId,
+          ),
       ],
     );
   }

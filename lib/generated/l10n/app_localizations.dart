@@ -943,6 +943,834 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Feature not found'**
   String get featureNotFound;
+
+  /// No description provided for @olpSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'OLP household survey · Optional'**
+  String get olpSectionTitle;
+
+  /// No description provided for @olpSectionA.
+  ///
+  /// In en, this message translates to:
+  /// **'Construction details (descriptive)'**
+  String get olpSectionA;
+
+  /// No description provided for @olpSectionB.
+  ///
+  /// In en, this message translates to:
+  /// **'Kaayusan ng Tahanan'**
+  String get olpSectionB;
+
+  /// No description provided for @olpSectionC.
+  ///
+  /// In en, this message translates to:
+  /// **'Koneksyong Elektrikal'**
+  String get olpSectionC;
+
+  /// No description provided for @olpSectionD.
+  ///
+  /// In en, this message translates to:
+  /// **'Kusina'**
+  String get olpSectionD;
+
+  /// No description provided for @olpSectionE.
+  ///
+  /// In en, this message translates to:
+  /// **'Daanan o Labasan sa Bahay'**
+  String get olpSectionE;
+
+  /// No description provided for @olpDisclaimerVoluntary.
+  ///
+  /// In en, this message translates to:
+  /// **'This survey is voluntary, not mandatory.'**
+  String get olpDisclaimerVoluntary;
+
+  /// No description provided for @olpDisclaimerSurveyorRole.
+  ///
+  /// In en, this message translates to:
+  /// **'The surveyor is a guide, not an enforcer.'**
+  String get olpDisclaimerSurveyorRole;
+
+  /// No description provided for @olpDisclaimerNoSelling.
+  ///
+  /// In en, this message translates to:
+  /// **'The surveyor cannot sell or recommend fire extinguishers.'**
+  String get olpDisclaimerNoSelling;
+
+  /// No description provided for @olpHomeownerAgreesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Homeowner agrees'**
+  String get olpHomeownerAgreesLabel;
+
+  /// No description provided for @olpScoreLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Score'**
+  String get olpScoreLabel;
+
+  /// No description provided for @olpScoreFraction.
+  ///
+  /// In en, this message translates to:
+  /// **'{score} / {max}'**
+  String olpScoreFraction(Object score, Object max);
+
+  /// No description provided for @olpViewBreakdown.
+  ///
+  /// In en, this message translates to:
+  /// **'View breakdown →'**
+  String get olpViewBreakdown;
+
+  /// No description provided for @olpMarkComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark survey complete'**
+  String get olpMarkComplete;
+
+  /// No description provided for @olpAcknowledgmentRequiredTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Homeowner must agree first'**
+  String get olpAcknowledgmentRequiredTooltip;
+
+  /// No description provided for @olpResultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Survey result'**
+  String get olpResultTitle;
+
+  /// No description provided for @olpResultSurveyComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Survey complete'**
+  String get olpResultSurveyComplete;
+
+  /// No description provided for @olpClassLigtas.
+  ///
+  /// In en, this message translates to:
+  /// **'Ligtas ang Iyong Tahanan'**
+  String get olpClassLigtas;
+
+  /// No description provided for @olpClassMayroong.
+  ///
+  /// In en, this message translates to:
+  /// **'Mayroong Dapat Ipangamba'**
+  String get olpClassMayroong;
+
+  /// No description provided for @olpClassLabis.
+  ///
+  /// In en, this message translates to:
+  /// **'Labis na Mapanganib'**
+  String get olpClassLabis;
+
+  /// No description provided for @olpElementRoof.
+  ///
+  /// In en, this message translates to:
+  /// **'Roof'**
+  String get olpElementRoof;
+
+  /// No description provided for @olpElementCeiling.
+  ///
+  /// In en, this message translates to:
+  /// **'Ceiling'**
+  String get olpElementCeiling;
+
+  /// No description provided for @olpElementRoomPartitions.
+  ///
+  /// In en, this message translates to:
+  /// **'Room partitions'**
+  String get olpElementRoomPartitions;
+
+  /// No description provided for @olpElementTrusses.
+  ///
+  /// In en, this message translates to:
+  /// **'Trusses'**
+  String get olpElementTrusses;
+
+  /// No description provided for @olpElementWindows.
+  ///
+  /// In en, this message translates to:
+  /// **'Windows'**
+  String get olpElementWindows;
+
+  /// No description provided for @olpElementCorridorWalls.
+  ///
+  /// In en, this message translates to:
+  /// **'Corridor walls'**
+  String get olpElementCorridorWalls;
+
+  /// No description provided for @olpElementColumns.
+  ///
+  /// In en, this message translates to:
+  /// **'Columns'**
+  String get olpElementColumns;
+
+  /// No description provided for @olpElementMainDoor.
+  ///
+  /// In en, this message translates to:
+  /// **'Main door'**
+  String get olpElementMainDoor;
+
+  /// No description provided for @olpElementExteriorWall.
+  ///
+  /// In en, this message translates to:
+  /// **'Exterior wall'**
+  String get olpElementExteriorWall;
+
+  /// No description provided for @olpElementBeams.
+  ///
+  /// In en, this message translates to:
+  /// **'Beams'**
+  String get olpElementBeams;
+
+  /// No description provided for @olpMaterialKahoy.
+  ///
+  /// In en, this message translates to:
+  /// **'Wood'**
+  String get olpMaterialKahoy;
+
+  /// No description provided for @olpMaterialSemento.
+  ///
+  /// In en, this message translates to:
+  /// **'Concrete'**
+  String get olpMaterialSemento;
+
+  /// No description provided for @olpMaterialBakal.
+  ///
+  /// In en, this message translates to:
+  /// **'Steel'**
+  String get olpMaterialBakal;
+
+  /// No description provided for @olpMaterialOthers.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get olpMaterialOthers;
+
+  /// No description provided for @olpMaterialOthersHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Specify other material'**
+  String get olpMaterialOthersHint;
+
+  /// No description provided for @olpItemB01Statement.
+  ///
+  /// In en, this message translates to:
+  /// **'No accumulated trash inside the home'**
+  String get olpItemB01Statement;
+
+  /// No description provided for @olpItemB01Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispose of trash in proper bins daily'**
+  String get olpItemB01Suggestion;
+
+  /// No description provided for @olpItemB02Statement.
+  ///
+  /// In en, this message translates to:
+  /// **'No deep-stored materials in walkways'**
+  String get olpItemB02Statement;
+
+  /// No description provided for @olpItemB02Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Move items to separate storage to keep walkways clear'**
+  String get olpItemB02Suggestion;
+
+  /// No description provided for @olpItemB03Statement.
+  ///
+  /// In en, this message translates to:
+  /// **'Clothes are not piled on the bed'**
+  String get olpItemB03Statement;
+
+  /// No description provided for @olpItemB03Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Store clothes in a closet or cabinet'**
+  String get olpItemB03Suggestion;
+
+  /// No description provided for @olpItemB04Statement.
+  ///
+  /// In en, this message translates to:
+  /// **'Kitchen items are arranged properly'**
+  String get olpItemB04Statement;
+
+  /// No description provided for @olpItemB04Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a rack or shelf for kitchen utensils'**
+  String get olpItemB04Suggestion;
+
+  /// No description provided for @olpItemB05Statement.
+  ///
+  /// In en, this message translates to:
+  /// **'Doorways are not blocked'**
+  String get olpItemB05Statement;
+
+  /// No description provided for @olpItemB05Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Move items blocking doorways'**
+  String get olpItemB05Suggestion;
+
+  /// No description provided for @olpItemB06Statement.
+  ///
+  /// In en, this message translates to:
+  /// **'Windows are not stuck or sealed shut'**
+  String get olpItemB06Statement;
+
+  /// No description provided for @olpItemB06Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Inspect and repair windows so they open easily'**
+  String get olpItemB06Suggestion;
+
+  /// No description provided for @olpItemB07Statement.
+  ///
+  /// In en, this message translates to:
+  /// **'No piles of paper or cardboard inside'**
+  String get olpItemB07Statement;
+
+  /// No description provided for @olpItemB07Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Recycle or dispose of old paper and cardboard'**
+  String get olpItemB07Suggestion;
+
+  /// No description provided for @olpItemB08Statement.
+  ///
+  /// In en, this message translates to:
+  /// **'Long-stored items are properly stored'**
+  String get olpItemB08Statement;
+
+  /// No description provided for @olpItemB08Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Use cabinets or storage boxes'**
+  String get olpItemB08Suggestion;
+
+  /// No description provided for @olpItemB09Statement.
+  ///
+  /// In en, this message translates to:
+  /// **'No trash material under the house'**
+  String get olpItemB09Statement;
+
+  /// No description provided for @olpItemB09Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Clean under the house regularly'**
+  String get olpItemB09Suggestion;
+
+  /// No description provided for @olpItemB10Statement.
+  ///
+  /// In en, this message translates to:
+  /// **'There is a designated trash container'**
+  String get olpItemB10Statement;
+
+  /// No description provided for @olpItemB10Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Place a trash container outside the house'**
+  String get olpItemB10Suggestion;
+
+  /// No description provided for @olpItemB11Statement.
+  ///
+  /// In en, this message translates to:
+  /// **'No cardboard or items piled inside cabinets'**
+  String get olpItemB11Statement;
+
+  /// No description provided for @olpItemB11Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Organize items inside cabinets'**
+  String get olpItemB11Suggestion;
+
+  /// No description provided for @olpItemB12Statement.
+  ///
+  /// In en, this message translates to:
+  /// **'The LPG tank has a rubber hose'**
+  String get olpItemB12Statement;
+
+  /// No description provided for @olpItemB12Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Buy a rubber hose for the LPG tank'**
+  String get olpItemB12Suggestion;
+
+  /// No description provided for @olpItemB13Statement.
+  ///
+  /// In en, this message translates to:
+  /// **'Fire prevention is properly prepared'**
+  String get olpItemB13Statement;
+
+  /// No description provided for @olpItemB13Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Check fire prevention measures'**
+  String get olpItemB13Suggestion;
+
+  /// No description provided for @olpItemB14Statement.
+  ///
+  /// In en, this message translates to:
+  /// **'No bottles of alcohol or paint stored in the room'**
+  String get olpItemB14Statement;
+
+  /// No description provided for @olpItemB14Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Move flammable liquids out of the room'**
+  String get olpItemB14Suggestion;
+
+  /// No description provided for @olpItemB15Statement.
+  ///
+  /// In en, this message translates to:
+  /// **'There is a posted evacuation plan in case of fire'**
+  String get olpItemB15Statement;
+
+  /// No description provided for @olpItemB15Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Create and post an evacuation plan'**
+  String get olpItemB15Suggestion;
+
+  /// No description provided for @olpItemC10Statement.
+  ///
+  /// In en, this message translates to:
+  /// **'There is a circuit breaker'**
+  String get olpItemC10Statement;
+
+  /// No description provided for @olpItemC10Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Install a circuit breaker on the main electrical line'**
+  String get olpItemC10Suggestion;
+
+  /// No description provided for @olpItemC11Statement.
+  ///
+  /// In en, this message translates to:
+  /// **'The electrical panel has a cover'**
+  String get olpItemC11Statement;
+
+  /// No description provided for @olpItemC11Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Install a cover on the electrical panel'**
+  String get olpItemC11Suggestion;
+
+  /// No description provided for @olpItemC12Statement.
+  ///
+  /// In en, this message translates to:
+  /// **'Junction boxes have covers'**
+  String get olpItemC12Statement;
+
+  /// No description provided for @olpItemC12Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Install covers on all junction boxes'**
+  String get olpItemC12Suggestion;
+
+  /// No description provided for @olpItemC13Statement.
+  ///
+  /// In en, this message translates to:
+  /// **'Outlets have covers'**
+  String get olpItemC13Statement;
+
+  /// No description provided for @olpItemC13Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Install covers on all outlets'**
+  String get olpItemC13Suggestion;
+
+  /// No description provided for @olpItemC14Statement.
+  ///
+  /// In en, this message translates to:
+  /// **'Switches have covers'**
+  String get olpItemC14Statement;
+
+  /// No description provided for @olpItemC14Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Install covers on all switches'**
+  String get olpItemC14Suggestion;
+
+  /// No description provided for @olpItemC15Statement.
+  ///
+  /// In en, this message translates to:
+  /// **'Extension cords are used properly'**
+  String get olpItemC15Statement;
+
+  /// No description provided for @olpItemC15Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Avoid overloading extension cords'**
+  String get olpItemC15Suggestion;
+
+  /// No description provided for @olpItemC16Statement.
+  ///
+  /// In en, this message translates to:
+  /// **'No exposed electrical wires'**
+  String get olpItemC16Statement;
+
+  /// No description provided for @olpItemC16Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Cover all exposed wires'**
+  String get olpItemC16Suggestion;
+
+  /// No description provided for @olpItemC17Statement.
+  ///
+  /// In en, this message translates to:
+  /// **'Outlets and switches are in good condition'**
+  String get olpItemC17Statement;
+
+  /// No description provided for @olpItemC17Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace damaged outlets and switches'**
+  String get olpItemC17Suggestion;
+
+  /// No description provided for @olpItemC18Statement.
+  ///
+  /// In en, this message translates to:
+  /// **'Correct wire gauge is used'**
+  String get olpItemC18Statement;
+
+  /// No description provided for @olpItemC18Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Consult an electrician for the correct gauge'**
+  String get olpItemC18Suggestion;
+
+  /// No description provided for @olpItemD25Statement.
+  ///
+  /// In en, this message translates to:
+  /// **'No water leaks in the kitchen'**
+  String get olpItemD25Statement;
+
+  /// No description provided for @olpItemD25Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Repair leaking pipes'**
+  String get olpItemD25Suggestion;
+
+  /// No description provided for @olpItemD26Statement.
+  ///
+  /// In en, this message translates to:
+  /// **'No flammable items near the stove'**
+  String get olpItemD26Statement;
+
+  /// No description provided for @olpItemD26Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Move flammable items away from the stove'**
+  String get olpItemD26Suggestion;
+
+  /// No description provided for @olpItemD27Statement.
+  ///
+  /// In en, this message translates to:
+  /// **'Kitchen equipment is regularly inspected'**
+  String get olpItemD27Statement;
+
+  /// No description provided for @olpItemD27Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Conduct weekly checks of stove and LPG'**
+  String get olpItemD27Suggestion;
+
+  /// No description provided for @olpItemD28Statement.
+  ///
+  /// In en, this message translates to:
+  /// **'Sufficient smoke ventilation'**
+  String get olpItemD28Statement;
+
+  /// No description provided for @olpItemD28Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Install an exhaust or add a window'**
+  String get olpItemD28Suggestion;
+
+  /// No description provided for @olpItemD29Statement.
+  ///
+  /// In en, this message translates to:
+  /// **'Candles and lighters stored in proper containers'**
+  String get olpItemD29Statement;
+
+  /// No description provided for @olpItemD29Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Designate containers for candles and lighters'**
+  String get olpItemD29Suggestion;
+
+  /// No description provided for @olpItemE30Statement.
+  ///
+  /// In en, this message translates to:
+  /// **'Doorways and windows are clear and unblocked'**
+  String get olpItemE30Statement;
+
+  /// No description provided for @olpItemE30Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Move items that are blocking'**
+  String get olpItemE30Suggestion;
+
+  /// No description provided for @olpItemE31Statement.
+  ///
+  /// In en, this message translates to:
+  /// **'No dry leaves around the house'**
+  String get olpItemE31Statement;
+
+  /// No description provided for @olpItemE31Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear dry leaves regularly'**
+  String get olpItemE31Suggestion;
+
+  /// No description provided for @olpItemE32Statement.
+  ///
+  /// In en, this message translates to:
+  /// **'Easy escape during fire'**
+  String get olpItemE32Statement;
+
+  /// No description provided for @olpItemE32Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Practice evacuation with family'**
+  String get olpItemE32Suggestion;
+
+  /// No description provided for @olpItemE33Statement.
+  ///
+  /// In en, this message translates to:
+  /// **'The house is close to a road'**
+  String get olpItemE33Statement;
+
+  /// No description provided for @olpItemE33Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Ensure easy access to a public road'**
+  String get olpItemE33Suggestion;
+
+  /// No description provided for @olpItemE34Statement.
+  ///
+  /// In en, this message translates to:
+  /// **'Interior pathways are well-kept'**
+  String get olpItemE34Statement;
+
+  /// No description provided for @olpItemE34Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Clean interior pathways'**
+  String get olpItemE34Suggestion;
+
+  /// No description provided for @olpItemE35Statement.
+  ///
+  /// In en, this message translates to:
+  /// **'Adequate interior lighting'**
+  String get olpItemE35Statement;
+
+  /// No description provided for @olpItemE35Suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Install additional lighting if needed'**
+  String get olpItemE35Suggestion;
+
+  /// No description provided for @summaryFeatures.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} features'**
+  String summaryFeatures(int n);
+
+  /// No description provided for @summaryComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} complete'**
+  String summaryComplete(int n);
+
+  /// No description provided for @summaryIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} incomplete'**
+  String summaryIncomplete(int n);
+
+  /// No description provided for @summaryNewFeatures.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} new features added'**
+  String summaryNewFeatures(int n);
+
+  /// No description provided for @summaryPhotosPending.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} photos pending'**
+  String summaryPhotosPending(int n);
+
+  /// No description provided for @failedJobsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed ({n})'**
+  String failedJobsTitle(int n);
+
+  /// No description provided for @retryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retryButton;
+
+  /// No description provided for @retryAllButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry all'**
+  String get retryAllButton;
+
+  /// No description provided for @validationBlockersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Must fix before upload ({n})'**
+  String validationBlockersTitle(int n);
+
+  /// No description provided for @validationWarningsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended ({n})'**
+  String validationWarningsTitle(int n);
+
+  /// No description provided for @goToFeature.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to feature'**
+  String get goToFeature;
+
+  /// No description provided for @issuePhotoRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'At least one photo required'**
+  String get issuePhotoRequired;
+
+  /// No description provided for @issueRa9514Required.
+  ///
+  /// In en, this message translates to:
+  /// **'RA 9514 type not selected'**
+  String get issueRa9514Required;
+
+  /// No description provided for @issueWidthRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Width must be greater than 0 m'**
+  String get issueWidthRequired;
+
+  /// No description provided for @issueOlpResidential.
+  ///
+  /// In en, this message translates to:
+  /// **'OLP household survey not completed'**
+  String get issueOlpResidential;
+
+  /// No description provided for @issueCostAmountMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact cost selected but amount is empty'**
+  String get issueCostAmountMissing;
+
+  /// No description provided for @issueFeatureNoSubmission.
+  ///
+  /// In en, this message translates to:
+  /// **'Feature has no finalized submission'**
+  String get issueFeatureNoSubmission;
+
+  /// No description provided for @startUploadButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Upload'**
+  String get startUploadButton;
+
+  /// No description provided for @startUploadDisabledTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Fix the blockers above first'**
+  String get startUploadDisabledTooltip;
+
+  /// No description provided for @uploadProgressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading {done} of {total} items…'**
+  String uploadProgressLabel(int done, int total);
+
+  /// No description provided for @uploadProgressShowDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Show details'**
+  String get uploadProgressShowDetails;
+
+  /// No description provided for @uploadCompleteSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'All {n} items uploaded.'**
+  String uploadCompleteSuccess(int n);
+
+  /// No description provided for @uploadCompleteWithFailures.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} items failed. Check Failed section.'**
+  String uploadCompleteWithFailures(int n);
+
+  /// No description provided for @reviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review & Upload'**
+  String get reviewTitle;
+
+  /// No description provided for @submittedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitted ✓'**
+  String get submittedBadge;
+
+  /// No description provided for @submittedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitted on {date}'**
+  String submittedAt(String date);
+
+  /// No description provided for @readOnlyBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'This assignment was submitted. Read-only.'**
+  String get readOnlyBanner;
+
+  /// No description provided for @readOnlyBannerClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignment closed remotely. Read-only.'**
+  String get readOnlyBannerClosed;
+
+  /// No description provided for @biometricGateReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify it\'s you to upload'**
+  String get biometricGateReason;
+
+  /// No description provided for @biometricFailedSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Biometric verification failed. Try again.'**
+  String get biometricFailedSnackbar;
+
+  /// No description provided for @assignmentClosedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignment closed'**
+  String get assignmentClosedTitle;
+
+  /// No description provided for @assignmentClosedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This assignment was closed remotely. Tap Share to send your local data to your supervisor.'**
+  String get assignmentClosedBody;
+
+  /// No description provided for @shareBundleAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Share bundle'**
+  String get shareBundleAction;
 }
 
 class _AppLocalizationsDelegate

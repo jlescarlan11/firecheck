@@ -9,6 +9,7 @@ class Assignments extends Table {
   DateTimeColumn get submittedAt => dateTime().nullable()();
   TextColumn get status =>
       text().withDefault(const Constant('assigned'))(); // assigned|in_progress|submitted
+  BoolColumn get closedRemotely => boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime()();
 
   @override

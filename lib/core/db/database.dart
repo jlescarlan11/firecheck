@@ -40,7 +40,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -65,6 +65,13 @@ class AppDatabase extends _$AppDatabase {
           if (from < 3) {
             // v2 → v3: distance Override flow records a free-text reason.
             await m.addColumn(submissions, submissions.overrideReason);
+          }
+          if (from < 4) {
+            await m.addColumn(householdSurveys, householdSurveys.homeownerAcknowledged);
+            await m.addColumn(householdSurveys, householdSurveys.completedAt);
+          }
+          if (from < 5) {
+            await m.addColumn(assignments, assignments.closedRemotely);
           }
         },
         beforeOpen: (details) async {

@@ -325,6 +325,16 @@ class $AssignmentsTable extends Assignments
       type: DriftSqlType.string,
       requiredDuringInsert: false,
       defaultValue: const Constant('assigned'));
+  static const VerificationMeta _closedRemotelyMeta =
+      const VerificationMeta('closedRemotely');
+  @override
+  late final GeneratedColumn<bool> closedRemotely = GeneratedColumn<bool>(
+      'closed_remotely', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("closed_remotely" IN (0, 1))'),
+      defaultValue: const Constant(false));
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -340,6 +350,7 @@ class $AssignmentsTable extends Assignments
         downloadedAt,
         submittedAt,
         status,
+        closedRemotely,
         createdAt
       ];
   @override
@@ -397,6 +408,12 @@ class $AssignmentsTable extends Assignments
       context.handle(_statusMeta,
           status.isAcceptableOrUnknown(data['status']!, _statusMeta));
     }
+    if (data.containsKey('closed_remotely')) {
+      context.handle(
+          _closedRemotelyMeta,
+          closedRemotely.isAcceptableOrUnknown(
+              data['closed_remotely']!, _closedRemotelyMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -427,6 +444,8 @@ class $AssignmentsTable extends Assignments
           .read(DriftSqlType.dateTime, data['${effectivePrefix}submitted_at']),
       status: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
+      closedRemotely: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}closed_remotely'])!,
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
     );
@@ -446,6 +465,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
   final DateTime? downloadedAt;
   final DateTime? submittedAt;
   final String status;
+  final bool closedRemotely;
   final DateTime createdAt;
   const Assignment(
       {required this.id,
@@ -455,6 +475,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
       this.downloadedAt,
       this.submittedAt,
       required this.status,
+      required this.closedRemotely,
       required this.createdAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -470,6 +491,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
       map['submitted_at'] = Variable<DateTime>(submittedAt);
     }
     map['status'] = Variable<String>(status);
+    map['closed_remotely'] = Variable<bool>(closedRemotely);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -487,6 +509,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
           ? const Value.absent()
           : Value(submittedAt),
       status: Value(status),
+      closedRemotely: Value(closedRemotely),
       createdAt: Value(createdAt),
     );
   }
@@ -503,6 +526,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
       downloadedAt: serializer.fromJson<DateTime?>(json['downloadedAt']),
       submittedAt: serializer.fromJson<DateTime?>(json['submittedAt']),
       status: serializer.fromJson<String>(json['status']),
+      closedRemotely: serializer.fromJson<bool>(json['closedRemotely']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -518,6 +542,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
       'downloadedAt': serializer.toJson<DateTime?>(downloadedAt),
       'submittedAt': serializer.toJson<DateTime?>(submittedAt),
       'status': serializer.toJson<String>(status),
+      'closedRemotely': serializer.toJson<bool>(closedRemotely),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -530,6 +555,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
           Value<DateTime?> downloadedAt = const Value.absent(),
           Value<DateTime?> submittedAt = const Value.absent(),
           String? status,
+          bool? closedRemotely,
           DateTime? createdAt}) =>
       Assignment(
         id: id ?? this.id,
@@ -541,6 +567,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
             downloadedAt.present ? downloadedAt.value : this.downloadedAt,
         submittedAt: submittedAt.present ? submittedAt.value : this.submittedAt,
         status: status ?? this.status,
+        closedRemotely: closedRemotely ?? this.closedRemotely,
         createdAt: createdAt ?? this.createdAt,
       );
   Assignment copyWithCompanion(AssignmentsCompanion data) {
@@ -560,6 +587,9 @@ class Assignment extends DataClass implements Insertable<Assignment> {
       submittedAt:
           data.submittedAt.present ? data.submittedAt.value : this.submittedAt,
       status: data.status.present ? data.status.value : this.status,
+      closedRemotely: data.closedRemotely.present
+          ? data.closedRemotely.value
+          : this.closedRemotely,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -574,14 +604,23 @@ class Assignment extends DataClass implements Insertable<Assignment> {
           ..write('downloadedAt: $downloadedAt, ')
           ..write('submittedAt: $submittedAt, ')
           ..write('status: $status, ')
+          ..write('closedRemotely: $closedRemotely, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, enumeratorId, campaignId,
-      boundaryPolygonGeojson, downloadedAt, submittedAt, status, createdAt);
+  int get hashCode => Object.hash(
+      id,
+      enumeratorId,
+      campaignId,
+      boundaryPolygonGeojson,
+      downloadedAt,
+      submittedAt,
+      status,
+      closedRemotely,
+      createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -593,6 +632,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
           other.downloadedAt == this.downloadedAt &&
           other.submittedAt == this.submittedAt &&
           other.status == this.status &&
+          other.closedRemotely == this.closedRemotely &&
           other.createdAt == this.createdAt);
 }
 
@@ -604,6 +644,7 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
   final Value<DateTime?> downloadedAt;
   final Value<DateTime?> submittedAt;
   final Value<String> status;
+  final Value<bool> closedRemotely;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const AssignmentsCompanion({
@@ -614,6 +655,7 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
     this.downloadedAt = const Value.absent(),
     this.submittedAt = const Value.absent(),
     this.status = const Value.absent(),
+    this.closedRemotely = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -625,6 +667,7 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
     this.downloadedAt = const Value.absent(),
     this.submittedAt = const Value.absent(),
     this.status = const Value.absent(),
+    this.closedRemotely = const Value.absent(),
     required DateTime createdAt,
     this.rowid = const Value.absent(),
   })  : id = Value(id),
@@ -640,6 +683,7 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
     Expression<DateTime>? downloadedAt,
     Expression<DateTime>? submittedAt,
     Expression<String>? status,
+    Expression<bool>? closedRemotely,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -652,6 +696,7 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
       if (downloadedAt != null) 'downloaded_at': downloadedAt,
       if (submittedAt != null) 'submitted_at': submittedAt,
       if (status != null) 'status': status,
+      if (closedRemotely != null) 'closed_remotely': closedRemotely,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -665,6 +710,7 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
       Value<DateTime?>? downloadedAt,
       Value<DateTime?>? submittedAt,
       Value<String>? status,
+      Value<bool>? closedRemotely,
       Value<DateTime>? createdAt,
       Value<int>? rowid}) {
     return AssignmentsCompanion(
@@ -676,6 +722,7 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
       downloadedAt: downloadedAt ?? this.downloadedAt,
       submittedAt: submittedAt ?? this.submittedAt,
       status: status ?? this.status,
+      closedRemotely: closedRemotely ?? this.closedRemotely,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -706,6 +753,9 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
     if (status.present) {
       map['status'] = Variable<String>(status.value);
     }
+    if (closedRemotely.present) {
+      map['closed_remotely'] = Variable<bool>(closedRemotely.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -725,6 +775,7 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
           ..write('downloadedAt: $downloadedAt, ')
           ..write('submittedAt: $submittedAt, ')
           ..write('status: $status, ')
+          ..write('closedRemotely: $closedRemotely, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -2659,6 +2710,22 @@ class $HouseholdSurveysTable extends HouseholdSurveys
   late final GeneratedColumn<String> safetySuggestions =
       GeneratedColumn<String>('safety_suggestions', aliasedName, true,
           type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _homeownerAcknowledgedMeta =
+      const VerificationMeta('homeownerAcknowledged');
+  @override
+  late final GeneratedColumn<bool> homeownerAcknowledged =
+      GeneratedColumn<bool>('homeowner_acknowledged', aliasedName, false,
+          type: DriftSqlType.bool,
+          requiredDuringInsert: false,
+          defaultConstraints: GeneratedColumn.constraintIsAlways(
+              'CHECK ("homeowner_acknowledged" IN (0, 1))'),
+          defaultValue: const Constant(false));
+  static const VerificationMeta _completedAtMeta =
+      const VerificationMeta('completedAt');
+  @override
+  late final GeneratedColumn<DateTime> completedAt = GeneratedColumn<DateTime>(
+      'completed_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         submissionId,
@@ -2668,7 +2735,9 @@ class $HouseholdSurveysTable extends HouseholdSurveys
         kusinaJson,
         daananOLabasanJson,
         lebelNgKahinaan,
-        safetySuggestions
+        safetySuggestions,
+        homeownerAcknowledged,
+        completedAt
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2732,6 +2801,18 @@ class $HouseholdSurveysTable extends HouseholdSurveys
           safetySuggestions.isAcceptableOrUnknown(
               data['safety_suggestions']!, _safetySuggestionsMeta));
     }
+    if (data.containsKey('homeowner_acknowledged')) {
+      context.handle(
+          _homeownerAcknowledgedMeta,
+          homeownerAcknowledged.isAcceptableOrUnknown(
+              data['homeowner_acknowledged']!, _homeownerAcknowledgedMeta));
+    }
+    if (data.containsKey('completed_at')) {
+      context.handle(
+          _completedAtMeta,
+          completedAt.isAcceptableOrUnknown(
+              data['completed_at']!, _completedAtMeta));
+    }
     return context;
   }
 
@@ -2759,6 +2840,10 @@ class $HouseholdSurveysTable extends HouseholdSurveys
           DriftSqlType.string, data['${effectivePrefix}lebel_ng_kahinaan']),
       safetySuggestions: attachedDatabase.typeMapping.read(
           DriftSqlType.string, data['${effectivePrefix}safety_suggestions']),
+      homeownerAcknowledged: attachedDatabase.typeMapping.read(
+          DriftSqlType.bool, data['${effectivePrefix}homeowner_acknowledged'])!,
+      completedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}completed_at']),
     );
   }
 
@@ -2777,6 +2862,8 @@ class HouseholdSurvey extends DataClass implements Insertable<HouseholdSurvey> {
   final String daananOLabasanJson;
   final String? lebelNgKahinaan;
   final String? safetySuggestions;
+  final bool homeownerAcknowledged;
+  final DateTime? completedAt;
   const HouseholdSurvey(
       {required this.submissionId,
       required this.constructionDetailsJson,
@@ -2785,7 +2872,9 @@ class HouseholdSurvey extends DataClass implements Insertable<HouseholdSurvey> {
       required this.kusinaJson,
       required this.daananOLabasanJson,
       this.lebelNgKahinaan,
-      this.safetySuggestions});
+      this.safetySuggestions,
+      required this.homeownerAcknowledged,
+      this.completedAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -2802,6 +2891,10 @@ class HouseholdSurvey extends DataClass implements Insertable<HouseholdSurvey> {
     }
     if (!nullToAbsent || safetySuggestions != null) {
       map['safety_suggestions'] = Variable<String>(safetySuggestions);
+    }
+    map['homeowner_acknowledged'] = Variable<bool>(homeownerAcknowledged);
+    if (!nullToAbsent || completedAt != null) {
+      map['completed_at'] = Variable<DateTime>(completedAt);
     }
     return map;
   }
@@ -2820,6 +2913,10 @@ class HouseholdSurvey extends DataClass implements Insertable<HouseholdSurvey> {
       safetySuggestions: safetySuggestions == null && nullToAbsent
           ? const Value.absent()
           : Value(safetySuggestions),
+      homeownerAcknowledged: Value(homeownerAcknowledged),
+      completedAt: completedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(completedAt),
     );
   }
 
@@ -2839,6 +2936,9 @@ class HouseholdSurvey extends DataClass implements Insertable<HouseholdSurvey> {
       lebelNgKahinaan: serializer.fromJson<String?>(json['lebelNgKahinaan']),
       safetySuggestions:
           serializer.fromJson<String?>(json['safetySuggestions']),
+      homeownerAcknowledged:
+          serializer.fromJson<bool>(json['homeownerAcknowledged']),
+      completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
     );
   }
   @override
@@ -2855,6 +2955,8 @@ class HouseholdSurvey extends DataClass implements Insertable<HouseholdSurvey> {
       'daananOLabasanJson': serializer.toJson<String>(daananOLabasanJson),
       'lebelNgKahinaan': serializer.toJson<String?>(lebelNgKahinaan),
       'safetySuggestions': serializer.toJson<String?>(safetySuggestions),
+      'homeownerAcknowledged': serializer.toJson<bool>(homeownerAcknowledged),
+      'completedAt': serializer.toJson<DateTime?>(completedAt),
     };
   }
 
@@ -2866,7 +2968,9 @@ class HouseholdSurvey extends DataClass implements Insertable<HouseholdSurvey> {
           String? kusinaJson,
           String? daananOLabasanJson,
           Value<String?> lebelNgKahinaan = const Value.absent(),
-          Value<String?> safetySuggestions = const Value.absent()}) =>
+          Value<String?> safetySuggestions = const Value.absent(),
+          bool? homeownerAcknowledged,
+          Value<DateTime?> completedAt = const Value.absent()}) =>
       HouseholdSurvey(
         submissionId: submissionId ?? this.submissionId,
         constructionDetailsJson:
@@ -2882,6 +2986,9 @@ class HouseholdSurvey extends DataClass implements Insertable<HouseholdSurvey> {
         safetySuggestions: safetySuggestions.present
             ? safetySuggestions.value
             : this.safetySuggestions,
+        homeownerAcknowledged:
+            homeownerAcknowledged ?? this.homeownerAcknowledged,
+        completedAt: completedAt.present ? completedAt.value : this.completedAt,
       );
   HouseholdSurvey copyWithCompanion(HouseholdSurveysCompanion data) {
     return HouseholdSurvey(
@@ -2908,6 +3015,11 @@ class HouseholdSurvey extends DataClass implements Insertable<HouseholdSurvey> {
       safetySuggestions: data.safetySuggestions.present
           ? data.safetySuggestions.value
           : this.safetySuggestions,
+      homeownerAcknowledged: data.homeownerAcknowledged.present
+          ? data.homeownerAcknowledged.value
+          : this.homeownerAcknowledged,
+      completedAt:
+          data.completedAt.present ? data.completedAt.value : this.completedAt,
     );
   }
 
@@ -2921,7 +3033,9 @@ class HouseholdSurvey extends DataClass implements Insertable<HouseholdSurvey> {
           ..write('kusinaJson: $kusinaJson, ')
           ..write('daananOLabasanJson: $daananOLabasanJson, ')
           ..write('lebelNgKahinaan: $lebelNgKahinaan, ')
-          ..write('safetySuggestions: $safetySuggestions')
+          ..write('safetySuggestions: $safetySuggestions, ')
+          ..write('homeownerAcknowledged: $homeownerAcknowledged, ')
+          ..write('completedAt: $completedAt')
           ..write(')'))
         .toString();
   }
@@ -2935,7 +3049,9 @@ class HouseholdSurvey extends DataClass implements Insertable<HouseholdSurvey> {
       kusinaJson,
       daananOLabasanJson,
       lebelNgKahinaan,
-      safetySuggestions);
+      safetySuggestions,
+      homeownerAcknowledged,
+      completedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2947,7 +3063,9 @@ class HouseholdSurvey extends DataClass implements Insertable<HouseholdSurvey> {
           other.kusinaJson == this.kusinaJson &&
           other.daananOLabasanJson == this.daananOLabasanJson &&
           other.lebelNgKahinaan == this.lebelNgKahinaan &&
-          other.safetySuggestions == this.safetySuggestions);
+          other.safetySuggestions == this.safetySuggestions &&
+          other.homeownerAcknowledged == this.homeownerAcknowledged &&
+          other.completedAt == this.completedAt);
 }
 
 class HouseholdSurveysCompanion extends UpdateCompanion<HouseholdSurvey> {
@@ -2959,6 +3077,8 @@ class HouseholdSurveysCompanion extends UpdateCompanion<HouseholdSurvey> {
   final Value<String> daananOLabasanJson;
   final Value<String?> lebelNgKahinaan;
   final Value<String?> safetySuggestions;
+  final Value<bool> homeownerAcknowledged;
+  final Value<DateTime?> completedAt;
   final Value<int> rowid;
   const HouseholdSurveysCompanion({
     this.submissionId = const Value.absent(),
@@ -2969,6 +3089,8 @@ class HouseholdSurveysCompanion extends UpdateCompanion<HouseholdSurvey> {
     this.daananOLabasanJson = const Value.absent(),
     this.lebelNgKahinaan = const Value.absent(),
     this.safetySuggestions = const Value.absent(),
+    this.homeownerAcknowledged = const Value.absent(),
+    this.completedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   HouseholdSurveysCompanion.insert({
@@ -2980,6 +3102,8 @@ class HouseholdSurveysCompanion extends UpdateCompanion<HouseholdSurvey> {
     this.daananOLabasanJson = const Value.absent(),
     this.lebelNgKahinaan = const Value.absent(),
     this.safetySuggestions = const Value.absent(),
+    this.homeownerAcknowledged = const Value.absent(),
+    this.completedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : submissionId = Value(submissionId);
   static Insertable<HouseholdSurvey> custom({
@@ -2991,6 +3115,8 @@ class HouseholdSurveysCompanion extends UpdateCompanion<HouseholdSurvey> {
     Expression<String>? daananOLabasanJson,
     Expression<String>? lebelNgKahinaan,
     Expression<String>? safetySuggestions,
+    Expression<bool>? homeownerAcknowledged,
+    Expression<DateTime>? completedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -3005,6 +3131,9 @@ class HouseholdSurveysCompanion extends UpdateCompanion<HouseholdSurvey> {
         'daanan_o_labasan_json': daananOLabasanJson,
       if (lebelNgKahinaan != null) 'lebel_ng_kahinaan': lebelNgKahinaan,
       if (safetySuggestions != null) 'safety_suggestions': safetySuggestions,
+      if (homeownerAcknowledged != null)
+        'homeowner_acknowledged': homeownerAcknowledged,
+      if (completedAt != null) 'completed_at': completedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -3018,6 +3147,8 @@ class HouseholdSurveysCompanion extends UpdateCompanion<HouseholdSurvey> {
       Value<String>? daananOLabasanJson,
       Value<String?>? lebelNgKahinaan,
       Value<String?>? safetySuggestions,
+      Value<bool>? homeownerAcknowledged,
+      Value<DateTime?>? completedAt,
       Value<int>? rowid}) {
     return HouseholdSurveysCompanion(
       submissionId: submissionId ?? this.submissionId,
@@ -3030,6 +3161,9 @@ class HouseholdSurveysCompanion extends UpdateCompanion<HouseholdSurvey> {
       daananOLabasanJson: daananOLabasanJson ?? this.daananOLabasanJson,
       lebelNgKahinaan: lebelNgKahinaan ?? this.lebelNgKahinaan,
       safetySuggestions: safetySuggestions ?? this.safetySuggestions,
+      homeownerAcknowledged:
+          homeownerAcknowledged ?? this.homeownerAcknowledged,
+      completedAt: completedAt ?? this.completedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -3063,6 +3197,13 @@ class HouseholdSurveysCompanion extends UpdateCompanion<HouseholdSurvey> {
     if (safetySuggestions.present) {
       map['safety_suggestions'] = Variable<String>(safetySuggestions.value);
     }
+    if (homeownerAcknowledged.present) {
+      map['homeowner_acknowledged'] =
+          Variable<bool>(homeownerAcknowledged.value);
+    }
+    if (completedAt.present) {
+      map['completed_at'] = Variable<DateTime>(completedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -3080,6 +3221,8 @@ class HouseholdSurveysCompanion extends UpdateCompanion<HouseholdSurvey> {
           ..write('daananOLabasanJson: $daananOLabasanJson, ')
           ..write('lebelNgKahinaan: $lebelNgKahinaan, ')
           ..write('safetySuggestions: $safetySuggestions, ')
+          ..write('homeownerAcknowledged: $homeownerAcknowledged, ')
+          ..write('completedAt: $completedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4939,6 +5082,7 @@ typedef $$AssignmentsTableCreateCompanionBuilder = AssignmentsCompanion
   Value<DateTime?> downloadedAt,
   Value<DateTime?> submittedAt,
   Value<String> status,
+  Value<bool> closedRemotely,
   required DateTime createdAt,
   Value<int> rowid,
 });
@@ -4951,6 +5095,7 @@ typedef $$AssignmentsTableUpdateCompanionBuilder = AssignmentsCompanion
   Value<DateTime?> downloadedAt,
   Value<DateTime?> submittedAt,
   Value<String> status,
+  Value<bool> closedRemotely,
   Value<DateTime> createdAt,
   Value<int> rowid,
 });
@@ -4985,6 +5130,10 @@ class $$AssignmentsTableFilterComposer
 
   ColumnFilters<String> get status => $composableBuilder(
       column: $table.status, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get closedRemotely => $composableBuilder(
+      column: $table.closedRemotely,
+      builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -5023,6 +5172,10 @@ class $$AssignmentsTableOrderingComposer
   ColumnOrderings<String> get status => $composableBuilder(
       column: $table.status, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<bool> get closedRemotely => $composableBuilder(
+      column: $table.closedRemotely,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 }
@@ -5056,6 +5209,9 @@ class $$AssignmentsTableAnnotationComposer
 
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<bool> get closedRemotely => $composableBuilder(
+      column: $table.closedRemotely, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -5091,6 +5247,7 @@ class $$AssignmentsTableTableManager extends RootTableManager<
             Value<DateTime?> downloadedAt = const Value.absent(),
             Value<DateTime?> submittedAt = const Value.absent(),
             Value<String> status = const Value.absent(),
+            Value<bool> closedRemotely = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -5102,6 +5259,7 @@ class $$AssignmentsTableTableManager extends RootTableManager<
             downloadedAt: downloadedAt,
             submittedAt: submittedAt,
             status: status,
+            closedRemotely: closedRemotely,
             createdAt: createdAt,
             rowid: rowid,
           ),
@@ -5113,6 +5271,7 @@ class $$AssignmentsTableTableManager extends RootTableManager<
             Value<DateTime?> downloadedAt = const Value.absent(),
             Value<DateTime?> submittedAt = const Value.absent(),
             Value<String> status = const Value.absent(),
+            Value<bool> closedRemotely = const Value.absent(),
             required DateTime createdAt,
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -5124,6 +5283,7 @@ class $$AssignmentsTableTableManager extends RootTableManager<
             downloadedAt: downloadedAt,
             submittedAt: submittedAt,
             status: status,
+            closedRemotely: closedRemotely,
             createdAt: createdAt,
             rowid: rowid,
           ),
@@ -6050,6 +6210,8 @@ typedef $$HouseholdSurveysTableCreateCompanionBuilder
   Value<String> daananOLabasanJson,
   Value<String?> lebelNgKahinaan,
   Value<String?> safetySuggestions,
+  Value<bool> homeownerAcknowledged,
+  Value<DateTime?> completedAt,
   Value<int> rowid,
 });
 typedef $$HouseholdSurveysTableUpdateCompanionBuilder
@@ -6062,6 +6224,8 @@ typedef $$HouseholdSurveysTableUpdateCompanionBuilder
   Value<String> daananOLabasanJson,
   Value<String?> lebelNgKahinaan,
   Value<String?> safetySuggestions,
+  Value<bool> homeownerAcknowledged,
+  Value<DateTime?> completedAt,
   Value<int> rowid,
 });
 
@@ -6102,6 +6266,13 @@ class $$HouseholdSurveysTableFilterComposer
   ColumnFilters<String> get safetySuggestions => $composableBuilder(
       column: $table.safetySuggestions,
       builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get homeownerAcknowledged => $composableBuilder(
+      column: $table.homeownerAcknowledged,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get completedAt => $composableBuilder(
+      column: $table.completedAt, builder: (column) => ColumnFilters(column));
 }
 
 class $$HouseholdSurveysTableOrderingComposer
@@ -6143,6 +6314,13 @@ class $$HouseholdSurveysTableOrderingComposer
   ColumnOrderings<String> get safetySuggestions => $composableBuilder(
       column: $table.safetySuggestions,
       builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get homeownerAcknowledged => $composableBuilder(
+      column: $table.homeownerAcknowledged,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get completedAt => $composableBuilder(
+      column: $table.completedAt, builder: (column) => ColumnOrderings(column));
 }
 
 class $$HouseholdSurveysTableAnnotationComposer
@@ -6177,6 +6355,12 @@ class $$HouseholdSurveysTableAnnotationComposer
 
   GeneratedColumn<String> get safetySuggestions => $composableBuilder(
       column: $table.safetySuggestions, builder: (column) => column);
+
+  GeneratedColumn<bool> get homeownerAcknowledged => $composableBuilder(
+      column: $table.homeownerAcknowledged, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get completedAt => $composableBuilder(
+      column: $table.completedAt, builder: (column) => column);
 }
 
 class $$HouseholdSurveysTableTableManager extends RootTableManager<
@@ -6214,6 +6398,8 @@ class $$HouseholdSurveysTableTableManager extends RootTableManager<
             Value<String> daananOLabasanJson = const Value.absent(),
             Value<String?> lebelNgKahinaan = const Value.absent(),
             Value<String?> safetySuggestions = const Value.absent(),
+            Value<bool> homeownerAcknowledged = const Value.absent(),
+            Value<DateTime?> completedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               HouseholdSurveysCompanion(
@@ -6225,6 +6411,8 @@ class $$HouseholdSurveysTableTableManager extends RootTableManager<
             daananOLabasanJson: daananOLabasanJson,
             lebelNgKahinaan: lebelNgKahinaan,
             safetySuggestions: safetySuggestions,
+            homeownerAcknowledged: homeownerAcknowledged,
+            completedAt: completedAt,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -6236,6 +6424,8 @@ class $$HouseholdSurveysTableTableManager extends RootTableManager<
             Value<String> daananOLabasanJson = const Value.absent(),
             Value<String?> lebelNgKahinaan = const Value.absent(),
             Value<String?> safetySuggestions = const Value.absent(),
+            Value<bool> homeownerAcknowledged = const Value.absent(),
+            Value<DateTime?> completedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               HouseholdSurveysCompanion.insert(
@@ -6247,6 +6437,8 @@ class $$HouseholdSurveysTableTableManager extends RootTableManager<
             daananOLabasanJson: daananOLabasanJson,
             lebelNgKahinaan: lebelNgKahinaan,
             safetySuggestions: safetySuggestions,
+            homeownerAcknowledged: homeownerAcknowledged,
+            completedAt: completedAt,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0

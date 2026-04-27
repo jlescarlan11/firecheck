@@ -457,4 +457,488 @@ class AppLocalizationsTl extends AppLocalizations {
 
   @override
   String get featureNotFound => 'Hindi nahanap ang feature';
+
+  @override
+  String get olpSectionTitle => 'Survey ng pamilya OLP · Opsyonal';
+
+  @override
+  String get olpSectionA => 'Detalye ng konstruksyon (deskriptibo)';
+
+  @override
+  String get olpSectionB => 'Kaayusan ng Tahanan';
+
+  @override
+  String get olpSectionC => 'Koneksyong Elektrikal';
+
+  @override
+  String get olpSectionD => 'Kusina';
+
+  @override
+  String get olpSectionE => 'Daanan o Labasan sa Bahay';
+
+  @override
+  String get olpDisclaimerVoluntary =>
+      'Ang sarbey na ito ay boluntaryo, hindi sapilitan.';
+
+  @override
+  String get olpDisclaimerSurveyorRole =>
+      'Ang surveyor ay isang gabay, hindi tagapagpatupad.';
+
+  @override
+  String get olpDisclaimerNoSelling =>
+      'Hindi maaaring magbenta o magrekomenda ng fire extinguisher ang surveyor.';
+
+  @override
+  String get olpHomeownerAgreesLabel => 'Pumayag ang nakatira';
+
+  @override
+  String get olpScoreLabel => 'Iskor';
+
+  @override
+  String olpScoreFraction(Object score, Object max) {
+    return '$score / $max';
+  }
+
+  @override
+  String get olpViewBreakdown => 'Tingnan ang detalye →';
+
+  @override
+  String get olpMarkComplete => 'Markahan ang sarbey bilang kompleto';
+
+  @override
+  String get olpAcknowledgmentRequiredTooltip =>
+      'Kailangan munang pumayag ang nakatira';
+
+  @override
+  String get olpResultTitle => 'Resulta ng sarbey';
+
+  @override
+  String get olpResultSurveyComplete => 'Kompleto na ang sarbey';
+
+  @override
+  String get olpClassLigtas => 'Ligtas ang Iyong Tahanan';
+
+  @override
+  String get olpClassMayroong => 'Mayroong Dapat Ipangamba';
+
+  @override
+  String get olpClassLabis => 'Labis na Mapanganib';
+
+  @override
+  String get olpElementRoof => 'Bubong';
+
+  @override
+  String get olpElementCeiling => 'Kisame';
+
+  @override
+  String get olpElementRoomPartitions => 'Mga partisyon ng silid';
+
+  @override
+  String get olpElementTrusses => 'Mga troso';
+
+  @override
+  String get olpElementWindows => 'Mga bintana';
+
+  @override
+  String get olpElementCorridorWalls => 'Pader ng pasilyo';
+
+  @override
+  String get olpElementColumns => 'Mga haligi';
+
+  @override
+  String get olpElementMainDoor => 'Pangunahing pintuan';
+
+  @override
+  String get olpElementExteriorWall => 'Panlabas na pader';
+
+  @override
+  String get olpElementBeams => 'Mga sako';
+
+  @override
+  String get olpMaterialKahoy => 'Kahoy';
+
+  @override
+  String get olpMaterialSemento => 'Semento';
+
+  @override
+  String get olpMaterialBakal => 'Bakal';
+
+  @override
+  String get olpMaterialOthers => 'Iba pa';
+
+  @override
+  String get olpMaterialOthersHint => 'Ilarawan ang ibang materyales';
+
+  @override
+  String get olpItemB01Statement =>
+      'Walang nakatambak na basura sa loob ng bahay';
+
+  @override
+  String get olpItemB01Suggestion =>
+      'Itapon ang basura sa tamang lalagyan araw-araw';
+
+  @override
+  String get olpItemB02Statement =>
+      'Walang nakaimbak na malalalim na materyales sa daanan';
+
+  @override
+  String get olpItemB02Suggestion =>
+      'Ilipat ang mga gamit sa hiwalay na lalagyan upang malinis ang daanan';
+
+  @override
+  String get olpItemB03Statement => 'Hindi nakatambak ang mga damit sa kama';
+
+  @override
+  String get olpItemB03Suggestion => 'Itago ang damit sa armaryo o cabinet';
+
+  @override
+  String get olpItemB04Statement =>
+      'Maayos ang pagkakahanay ng mga gamit-pang kusina';
+
+  @override
+  String get olpItemB04Suggestion =>
+      'Magdagdag ng rack o shelf para sa mga gamit-pang kusina';
+
+  @override
+  String get olpItemB05Statement =>
+      'May espasyo na hindi nakaharang sa mga pintuan';
+
+  @override
+  String get olpItemB05Suggestion =>
+      'Ilipat ang mga gamit na nakaharang sa pintuan';
+
+  @override
+  String get olpItemB06Statement => 'Hindi nakaipit o nakasara ang mga bintana';
+
+  @override
+  String get olpItemB06Suggestion =>
+      'Suriin at ayusin ang mga bintana upang madaling buksan';
+
+  @override
+  String get olpItemB07Statement =>
+      'Walang nakatambak na papel o karton sa loob';
+
+  @override
+  String get olpItemB07Suggestion =>
+      'I-recycle o itapon ang lumang papel at karton';
+
+  @override
+  String get olpItemB08Statement =>
+      'Maayos ang pagkakatago ng mga gamit-na-malalim';
+
+  @override
+  String get olpItemB08Suggestion => 'Gumamit ng mga aparador o storage box';
+
+  @override
+  String get olpItemB09Statement => 'Walang basurang materyal sa silong';
+
+  @override
+  String get olpItemB09Suggestion => 'Linisin nang regular ang silong';
+
+  @override
+  String get olpItemB10Statement => 'May nakatakdang lalagyan ng basura';
+
+  @override
+  String get olpItemB10Suggestion =>
+      'Maglagay ng lalagyan ng basura sa labas ng bahay';
+
+  @override
+  String get olpItemB11Statement =>
+      'Walang nakatambak na karton at gamit sa loob ng kabinet';
+
+  @override
+  String get olpItemB11Suggestion => 'Ayusin ang mga gamit sa loob ng kabinet';
+
+  @override
+  String get olpItemB12Statement =>
+      'May rubber hose ang tubig sa silindrong gas (LPG)';
+
+  @override
+  String get olpItemB12Suggestion => 'Bumili ng rubber hose para sa LPG';
+
+  @override
+  String get olpItemB13Statement =>
+      'Maayos ang pagkakahanda sa pag-iwas sa apoy';
+
+  @override
+  String get olpItemB13Suggestion => 'Suriin ang mga panangga laban sa apoy';
+
+  @override
+  String get olpItemB14Statement =>
+      'Walang nakaimbak na bote ng alkohol o pintura sa silid';
+
+  @override
+  String get olpItemB14Suggestion =>
+      'Ilipat ang mga nasusunog na likido sa labas ng silid';
+
+  @override
+  String get olpItemB15Statement =>
+      'May nakapostang plano ng paglabas kung magkasunog';
+
+  @override
+  String get olpItemB15Suggestion => 'Gumawa at i-post ang plano ng paglabas';
+
+  @override
+  String get olpItemC10Statement => 'May circuit breaker';
+
+  @override
+  String get olpItemC10Suggestion =>
+      'Magkabit ng circuit breaker sa main electrical line';
+
+  @override
+  String get olpItemC11Statement => 'May takip ang electrical panel';
+
+  @override
+  String get olpItemC11Suggestion => 'Magkabit ng takip sa electrical panel';
+
+  @override
+  String get olpItemC12Statement => 'May takip ang junction boxes';
+
+  @override
+  String get olpItemC12Suggestion =>
+      'Magkabit ng takip sa lahat ng junction boxes';
+
+  @override
+  String get olpItemC13Statement => 'May takip ang outlets';
+
+  @override
+  String get olpItemC13Suggestion => 'Magkabit ng takip sa lahat ng outlets';
+
+  @override
+  String get olpItemC14Statement => 'May takip ang switches';
+
+  @override
+  String get olpItemC14Suggestion => 'Magkabit ng takip sa lahat ng switches';
+
+  @override
+  String get olpItemC15Statement => 'Tama ang paggamit ng extension cord';
+
+  @override
+  String get olpItemC15Suggestion =>
+      'Iwasan ang sobrang load sa extension cord';
+
+  @override
+  String get olpItemC16Statement => 'Walang exposed na electrical wires';
+
+  @override
+  String get olpItemC16Suggestion => 'Takipan ang lahat ng exposed wires';
+
+  @override
+  String get olpItemC17Statement =>
+      'Maayos ang kondisyon ng outlets at switches';
+
+  @override
+  String get olpItemC17Suggestion => 'Palitan ang sirang outlets at switches';
+
+  @override
+  String get olpItemC18Statement => 'Tamang gauge ng wire ang ginagamit';
+
+  @override
+  String get olpItemC18Suggestion =>
+      'Sumangguni sa elektrisyan para sa tamang gauge';
+
+  @override
+  String get olpItemD25Statement => 'Walang water leak sa kusina';
+
+  @override
+  String get olpItemD25Suggestion => 'Ayusin ang mga tubo na may leak';
+
+  @override
+  String get olpItemD26Statement =>
+      'Walang nasusunog na bagay malapit sa kalan';
+
+  @override
+  String get olpItemD26Suggestion =>
+      'Ilayo ang mga nasusunog na bagay sa kalan';
+
+  @override
+  String get olpItemD27Statement => 'Sinusuri nang regular ang gamit-kusina';
+
+  @override
+  String get olpItemD27Suggestion =>
+      'Magkaroon ng lingguhang pagsusuri sa kalan at LPG';
+
+  @override
+  String get olpItemD28Statement => 'Sapat ang bentilasyon para sa usok';
+
+  @override
+  String get olpItemD28Suggestion =>
+      'Magkabit ng exhaust o magdagdag ng bintana';
+
+  @override
+  String get olpItemD29Statement =>
+      'Naitatago ang kandila at lighter sa tamang lalagyan';
+
+  @override
+  String get olpItemD29Suggestion =>
+      'Maglagay ng nakatakdang lalagyan para sa kandila at lighter';
+
+  @override
+  String get olpItemE30Statement =>
+      'Malinis at hindi nakaharang ang mga pintuan at bintana';
+
+  @override
+  String get olpItemE30Suggestion => 'Ilipat ang mga gamit na nakaharang';
+
+  @override
+  String get olpItemE31Statement => 'Walang tuyong dahon sa paligid ng bahay';
+
+  @override
+  String get olpItemE31Suggestion =>
+      'Linisin ang mga tuyong dahon nang regular';
+
+  @override
+  String get olpItemE32Statement => 'Madaling makalabas kung magkasunog';
+
+  @override
+  String get olpItemE32Suggestion =>
+      'Mag-ehersisyo ng paglabas kasama ang pamilya';
+
+  @override
+  String get olpItemE33Statement => 'Malapit ang bahay sa daan';
+
+  @override
+  String get olpItemE33Suggestion =>
+      'Tiyakin na may madaling daan papunta sa pampublikong kalsada';
+
+  @override
+  String get olpItemE34Statement => 'Maayos ang panloob na daanan';
+
+  @override
+  String get olpItemE34Suggestion => 'Linisin ang mga daanan sa loob ng bahay';
+
+  @override
+  String get olpItemE35Statement => 'Sapat ang ilaw sa loob ng bahay';
+
+  @override
+  String get olpItemE35Suggestion =>
+      'Magkabit ng karagdagang ilaw kung kailangan';
+
+  @override
+  String summaryFeatures(int n) {
+    return '$n na istruktura';
+  }
+
+  @override
+  String summaryComplete(int n) {
+    return '$n tapos na';
+  }
+
+  @override
+  String summaryIncomplete(int n) {
+    return '$n kulang pa';
+  }
+
+  @override
+  String summaryNewFeatures(int n) {
+    return '$n bagong idinagdag';
+  }
+
+  @override
+  String summaryPhotosPending(int n) {
+    return '$n larawan ang kulang';
+  }
+
+  @override
+  String failedJobsTitle(int n) {
+    return 'Nabigo ($n)';
+  }
+
+  @override
+  String get retryButton => 'Subukan muli';
+
+  @override
+  String get retryAllButton => 'Subukan lahat';
+
+  @override
+  String validationBlockersTitle(int n) {
+    return 'Kailangang ayusin bago i-upload ($n)';
+  }
+
+  @override
+  String validationWarningsTitle(int n) {
+    return 'Inirerekomenda ($n)';
+  }
+
+  @override
+  String get goToFeature => 'Pumunta sa feature';
+
+  @override
+  String get issuePhotoRequired => 'Kailangan ng kahit isang larawan';
+
+  @override
+  String get issueRa9514Required => 'Hindi pa napipili ang uri ng RA 9514';
+
+  @override
+  String get issueWidthRequired => 'Ang lapad ay dapat higit sa 0 m';
+
+  @override
+  String get issueOlpResidential =>
+      'Hindi pa kumpleto ang OLP household survey';
+
+  @override
+  String get issueCostAmountMissing =>
+      'Napili ang eksaktong halaga pero walang halaga';
+
+  @override
+  String get issueFeatureNoSubmission =>
+      'Walang natapos na submission para sa feature na ito';
+
+  @override
+  String get startUploadButton => 'Simulan ang Pag-upload';
+
+  @override
+  String get startUploadDisabledTooltip =>
+      'Ayusin muna ang mga problema sa itaas';
+
+  @override
+  String uploadProgressLabel(int done, int total) {
+    return 'Ina-upload ang $done sa $total items…';
+  }
+
+  @override
+  String get uploadProgressShowDetails => 'Ipakita ang detalye';
+
+  @override
+  String uploadCompleteSuccess(int n) {
+    return 'Lahat ng $n items ay naka-upload na.';
+  }
+
+  @override
+  String uploadCompleteWithFailures(int n) {
+    return '$n items ang nabigo. Tingnan ang Failed.';
+  }
+
+  @override
+  String get reviewTitle => 'Suriin at I-upload';
+
+  @override
+  String get submittedBadge => 'Naipasa na ✓';
+
+  @override
+  String submittedAt(String date) {
+    return 'Naipasa noong $date';
+  }
+
+  @override
+  String get readOnlyBanner => 'Naipasa na ang takda. Read-only.';
+
+  @override
+  String get readOnlyBannerClosed => 'Sarado ang takda. Read-only.';
+
+  @override
+  String get biometricGateReason => 'Patunayan ang sarili para mag-upload';
+
+  @override
+  String get biometricFailedSnackbar => 'Hindi nakumpirma. Subukan muli.';
+
+  @override
+  String get assignmentClosedTitle => 'Sarado na ang takda';
+
+  @override
+  String get assignmentClosedBody =>
+      'Sarado na ang takda na ito sa server. I-tap ang Share para ipadala ang lokal na datos sa supervisor mo.';
+
+  @override
+  String get shareBundleAction => 'Ibahagi ang bundle';
 }

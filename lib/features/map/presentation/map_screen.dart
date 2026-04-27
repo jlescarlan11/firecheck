@@ -1,11 +1,13 @@
 import 'dart:async';
 
+import 'package:firecheck/core/auth/current_user_provider.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/geo/centroid.dart';
 import 'package:firecheck/core/geo/point_in_polygon.dart';
 import 'package:firecheck/core/geo/polyline_midpoint.dart';
 import 'package:firecheck/core/location/distance.dart';
 import 'package:firecheck/core/location/location_providers.dart';
+import 'package:firecheck/features/assignment/presentation/assignment_lock_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
 import 'package:firecheck/features/map/presentation/map_providers.dart';
 import 'package:firecheck/features/new_feature/presentation/feature_type_picker.dart';
@@ -48,27 +50,33 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     // Subscribe so the GPS stream is hot from mount, not first tap.
     ref.watch(currentPositionProvider);
 
+    // Bug 13b: don't mount the Mapbox renderer until BOTH the assignment
+    // AND the features list have loaded. currentFeaturesProvider returns
+    // Stream.value([]) while the assignment is null (loading), so without
+    // this gate the renderer would mount with an empty features list,
+    // _onMapCreated would attach the click listener to a manager with 0
+    // annotations, and subsequent feature emissions wouldn't register
+    // tappable polygons (mapbox_maps_flutter 2.22 quirk — listener bound
+    // to an empty manager doesn't pick up later annotations cleanly).
+    final assignment = assignmentAsync.value;
+    final features = featuresAsync.value;
+    final mapReady = assignment != null && features != null;
+
     return Scaffold(
       appBar: AppBar(title: Text(l.mapTitle)),
       body: Stack(
         children: [
           SizedBox.expand(
-            child: featuresAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('Error: $e')),
-              data: (features) {
-                final boundary =
-                    assignmentAsync.value?.boundaryPolygonGeojson ?? '';
-                return renderer.build(
-                  context,
-                  features: features,
-                  boundaryGeojson: boundary,
-                  onFeatureTap: _handleFeatureTap,
-                  onLongPress: _handleLongPress,
-                  addModeActive: _addModeActive,
-                );
-              },
-            ),
+            child: !mapReady
+                ? const Center(child: CircularProgressIndicator())
+                : renderer.build(
+                    context,
+                    features: features,
+                    boundaryGeojson: assignment.boundaryPolygonGeojson,
+                    onFeatureTap: _handleFeatureTap,
+                    onLongPress: _handleLongPress,
+                    addModeActive: _addModeActive,
+                  ),
           ),
           if (_addModeActive)
             Positioned(
@@ -99,15 +107,27 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   onTap: () => setState(() => _followMe = !_followMe),
                 ),
                 const SizedBox(width: 6),
+                // Scoped Consumer so lock-state stream emissions don't
+                // rebuild the whole map (which would re-mount the Mapbox
+                // renderer and lose its tap handlers — Bug 11, surfaced
+                // during the first manual happy path).
                 Expanded(
-                  child: _pill(
-                    _addModeActive
-                        ? l.addModePillActiveLabel
-                        : l.newFeaturePlaceholder,
-                    on: _addModeActive,
-                    key: const Key('map.add-feature-pill'),
-                    onTap: () =>
-                        setState(() => _addModeActive = !_addModeActive),
+                  child: Consumer(
+                    builder: (context, ref2, _) {
+                      final isLocked =
+                          ref2.watch(isAssignmentLockedProvider);
+                      return _pill(
+                        _addModeActive
+                            ? l.addModePillActiveLabel
+                            : l.newFeaturePlaceholder,
+                        on: _addModeActive,
+                        disabled: isLocked,
+                        key: const Key('map.add-feature-pill'),
+                        onTap: () => setState(
+                          () => _addModeActive = !_addModeActive,
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],
@@ -154,36 +174,51 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   Future<void> _handleFeatureTap(Feature f) async {
     final pos = await _resolvePosition();
-    if (pos == null || !mounted) return;
+    if (!mounted) return;
 
-    final LatLng centroid;
-    if (f.featureType == 'road') {
-      final coords = decodePolylineGeojson(f.geometryGeojson);
-      if (coords == null || coords.isEmpty) return;
-      centroid = polylineMidpoint(coords);
-    } else {
-      final ring = decodePolygonGeojson(f.geometryGeojson);
-      if (ring == null || ring.isEmpty) return;
-      centroid = polygonCentroid(ring);
-    }
-    final meters =
-        haversineMeters(pos.latitude, pos.longitude, centroid.lat, centroid.lng);
-
+    // Bug 14: GPS may be unavailable (denied permission, no fix yet on
+    // emulator). The proximity check is best-effort — if we have a
+    // position we enforce the 50m rule; if not, we proceed to the detail
+    // screen without an override reason. The check is for compliance,
+    // not security; the server doesn't reject far-away submissions.
     String? reason;
-    if (meters > 50.0) {
-      if (!mounted) return;
-      reason = await showOverrideReasonDialog(
-        context,
-        distanceMeters: meters,
+    if (pos != null) {
+      final LatLng centroid;
+      if (f.featureType == 'road') {
+        final coords = decodePolylineGeojson(f.geometryGeojson);
+        if (coords == null || coords.isEmpty) return;
+        centroid = polylineMidpoint(coords);
+      } else {
+        final ring = decodePolygonGeojson(f.geometryGeojson);
+        if (ring == null || ring.isEmpty) return;
+        centroid = polygonCentroid(ring);
+      }
+      final meters = haversineMeters(
+        pos.latitude,
+        pos.longitude,
+        centroid.lat,
+        centroid.lng,
       );
-      if (reason == null || reason.trim().isEmpty) return;
+
+      if (meters > 50.0) {
+        if (!mounted) return;
+        reason = await showOverrideReasonDialog(
+          context,
+          distanceMeters: meters,
+        );
+        if (reason == null || reason.trim().isEmpty) return;
+      }
     }
 
     if (!mounted) return;
     final submissionRepo = ref.read(submissionRepositoryProvider);
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) {
+      throw StateError('Map tap without authenticated user');
+    }
     final submission = await submissionRepo.ensureDraftForFeature(
       featureId: f.id,
-      enumeratorId: 'admin',
+      enumeratorId: userId,
     );
 
     if (reason != null) {
@@ -199,7 +234,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   /// fix doesn't arrive within the timeout.
   Future<Position?> _resolvePosition() async {
     final l = AppLocalizations.of(context)!;
-    final cached = ref.read(currentPositionProvider).value;
+    // .valueOrNull instead of .value: AsyncValue.value re-throws when the
+    // provider is in error state (location permission denied). Bug 14.
+    final cached = ref.read(currentPositionProvider).valueOrNull;
     if (cached != null) return cached;
 
     unawaited(showDialog<void>(

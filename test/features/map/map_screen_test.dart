@@ -1,4 +1,6 @@
 import 'package:firecheck/core/db/database.dart';
+import 'package:firecheck/features/assignment/presentation/assignment_lock_providers.dart';
+import 'package:firecheck/features/assignment/presentation/assignment_lock_state.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
 import 'package:firecheck/features/map/presentation/map_providers.dart';
 import 'package:firecheck/features/map/presentation/map_renderer.dart';
@@ -19,6 +21,8 @@ void main() {
         currentFeaturesProvider.overrideWith((ref) => Stream.value(features)),
         currentAssignmentProvider
             .overrideWith((ref) => Stream.value(assignment)),
+        assignmentLockStateProvider
+            .overrideWith((_) => Stream.value(const Unlocked())),
       ],
       child: const MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -45,7 +49,16 @@ void main() {
       status: 'unfilled',
       createdAt: DateTime.now(),
     );
-    await tester.pumpWidget(buildSubject(features: [f]));
+    final a = Assignment(
+      id: 'a1',
+      enumeratorId: 'e1',
+      campaignId: 'c1',
+      boundaryPolygonGeojson: '{}',
+      status: 'assigned',
+      closedRemotely: false,
+      createdAt: DateTime.now(),
+    );
+    await tester.pumpWidget(buildSubject(features: [f], assignment: a));
     await tester.pump();
     expect(find.byKey(const Key('fake-map-feature-f1')), findsOneWidget);
   });

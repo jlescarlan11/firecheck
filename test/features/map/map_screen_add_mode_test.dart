@@ -1,5 +1,7 @@
 import 'package:drift/native.dart';
 import 'package:firecheck/core/db/database.dart';
+import 'package:firecheck/features/assignment/presentation/assignment_lock_providers.dart';
+import 'package:firecheck/features/assignment/presentation/assignment_lock_state.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
 import 'package:firecheck/features/home/presentation/home_providers.dart';
 import 'package:firecheck/features/map/presentation/map_providers.dart';
@@ -13,11 +15,23 @@ import 'package:go_router/go_router.dart';
 
 void main() {
   Widget subject() {
+    final stubAssignment = Assignment(
+      id: 'a1',
+      enumeratorId: 'e1',
+      campaignId: 'c1',
+      boundaryPolygonGeojson: '{}',
+      status: 'assigned',
+      closedRemotely: false,
+      createdAt: DateTime.now(),
+    );
     return ProviderScope(
       overrides: [
         mapRendererProvider.overrideWithValue(FakeMapRenderer()),
         currentFeaturesProvider.overrideWith((ref) => Stream.value(const [])),
-        currentAssignmentProvider.overrideWith((ref) => Stream.value(null)),
+        currentAssignmentProvider
+            .overrideWith((ref) => Stream.value(stubAssignment)),
+        assignmentLockStateProvider
+            .overrideWith((_) => Stream.value(const Unlocked())),
       ],
       child: const MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -75,6 +89,7 @@ void main() {
       campaignId: 'c1',
       boundaryPolygonGeojson: boundary,
       status: 'assigned',
+      closedRemotely: false,
       createdAt: DateTime.now(),
     );
 
@@ -86,6 +101,8 @@ void main() {
           currentFeaturesProvider.overrideWith((ref) => Stream.value(const [])),
           currentAssignmentProvider
               .overrideWith((ref) => Stream.value(assignment)),
+          assignmentLockStateProvider
+              .overrideWith((_) => Stream.value(const Unlocked())),
         ],
         child: MaterialApp.router(
           routerConfig: GoRouter(
