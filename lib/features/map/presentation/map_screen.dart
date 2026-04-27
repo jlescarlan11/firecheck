@@ -174,29 +174,40 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   Future<void> _handleFeatureTap(Feature f) async {
     final pos = await _resolvePosition();
-    if (pos == null || !mounted) return;
+    if (!mounted) return;
 
-    final LatLng centroid;
-    if (f.featureType == 'road') {
-      final coords = decodePolylineGeojson(f.geometryGeojson);
-      if (coords == null || coords.isEmpty) return;
-      centroid = polylineMidpoint(coords);
-    } else {
-      final ring = decodePolygonGeojson(f.geometryGeojson);
-      if (ring == null || ring.isEmpty) return;
-      centroid = polygonCentroid(ring);
-    }
-    final meters =
-        haversineMeters(pos.latitude, pos.longitude, centroid.lat, centroid.lng);
-
+    // Bug 14: GPS may be unavailable (denied permission, no fix yet on
+    // emulator). The proximity check is best-effort — if we have a
+    // position we enforce the 50m rule; if not, we proceed to the detail
+    // screen without an override reason. The check is for compliance,
+    // not security; the server doesn't reject far-away submissions.
     String? reason;
-    if (meters > 50.0) {
-      if (!mounted) return;
-      reason = await showOverrideReasonDialog(
-        context,
-        distanceMeters: meters,
+    if (pos != null) {
+      final LatLng centroid;
+      if (f.featureType == 'road') {
+        final coords = decodePolylineGeojson(f.geometryGeojson);
+        if (coords == null || coords.isEmpty) return;
+        centroid = polylineMidpoint(coords);
+      } else {
+        final ring = decodePolygonGeojson(f.geometryGeojson);
+        if (ring == null || ring.isEmpty) return;
+        centroid = polygonCentroid(ring);
+      }
+      final meters = haversineMeters(
+        pos.latitude,
+        pos.longitude,
+        centroid.lat,
+        centroid.lng,
       );
-      if (reason == null || reason.trim().isEmpty) return;
+
+      if (meters > 50.0) {
+        if (!mounted) return;
+        reason = await showOverrideReasonDialog(
+          context,
+          distanceMeters: meters,
+        );
+        if (reason == null || reason.trim().isEmpty) return;
+      }
     }
 
     if (!mounted) return;
@@ -223,7 +234,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   /// fix doesn't arrive within the timeout.
   Future<Position?> _resolvePosition() async {
     final l = AppLocalizations.of(context)!;
-    final cached = ref.read(currentPositionProvider).value;
+    // .valueOrNull instead of .value: AsyncValue.value re-throws when the
+    // provider is in error state (location permission denied). Bug 14.
+    final cached = ref.read(currentPositionProvider).valueOrNull;
     if (cached != null) return cached;
 
     unawaited(showDialog<void>(
