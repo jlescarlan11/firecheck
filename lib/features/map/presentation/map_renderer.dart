@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:firecheck/core/db/database.dart';
@@ -170,14 +171,20 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
       // Swallow — location is a nice-to-have here.
     }
 
-    // Two managers so feature + boundary paint properties don't collide.
-    _featureManager = await map.annotations.createPolygonAnnotationManager();
+    // Boundary manager FIRST so it sits BENEATH features in the layer stack.
+    // Mapbox stacks annotation managers by creation order: later managers
+    // render on top. Features must be on top so polygon taps hit them
+    // (Bug 13 — caught manually). The boundary's polygon is fully
+    // transparent, but Mapbox still hit-tests it; if it sat on top, every
+    // tap inside the assignment area would land on the (listener-less)
+    // boundary polygon and never reach the feature manager.
     _boundaryManager = await map.annotations.createPolygonAnnotationManager();
-    // Point manager for is_new=true features (blue pins).
+    _featureManager = await map.annotations.createPolygonAnnotationManager();
+    // Point manager for is_new=true features (blue pins) — topmost.
     _pointManager = await map.annotations.createPointAnnotationManager();
 
-    await _renderFeatures();
     await _renderBoundary();
+    await _renderFeatures();
     await _renderNewFeatures();
 
     // ignore: deprecated_member_use
@@ -187,6 +194,43 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
         onTap: widget.onFeatureTap,
       ),
     );
+  }
+
+  @override
+  void didUpdateWidget(covariant _MapboxMapView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // If the features list arrives AFTER _onMapCreated fires (provider
+    // stream still loading on first map open), re-render polygons so the
+    // annotation→feature map gets populated and taps register. Same logic
+    // for boundary changes.
+    final featuresChanged = oldWidget.features != widget.features;
+    final boundaryChanged = oldWidget.boundaryGeojson != widget.boundaryGeojson;
+    if (featuresChanged && _featureManager != null) {
+      unawaited(_rerenderFeatures());
+    }
+    if (boundaryChanged && _boundaryManager != null) {
+      unawaited(_rerenderBoundary());
+    }
+  }
+
+  Future<void> _rerenderFeatures() async {
+    final manager = _featureManager;
+    if (manager == null) return;
+    await manager.deleteAll();
+    _annotationToFeature.clear();
+    await _renderFeatures();
+    final pointManager = _pointManager;
+    if (pointManager != null) {
+      await pointManager.deleteAll();
+      await _renderNewFeatures();
+    }
+  }
+
+  Future<void> _rerenderBoundary() async {
+    final manager = _boundaryManager;
+    if (manager == null) return;
+    await manager.deleteAll();
+    await _renderBoundary();
   }
 
   Future<void> _renderFeatures() async {
