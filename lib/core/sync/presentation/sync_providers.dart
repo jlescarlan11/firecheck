@@ -6,6 +6,7 @@ import 'package:firecheck/core/sync/failure/assignment_lock_repository.dart';
 import 'package:firecheck/core/sync/failure/pending_work_bundle.dart';
 import 'package:firecheck/core/sync/worker/sync_controller.dart';
 import 'package:firecheck/core/sync/worker/sync_worker.dart';
+import 'package:firecheck/features/assignment/data/submitted_assignment_lock.dart';
 import 'package:firecheck/features/home/presentation/home_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
@@ -43,4 +44,8 @@ final syncControllerProvider = Provider<SyncController>((ref) {
   final controller = SyncController(ref.watch(syncWorkerProvider));
   ref.onDispose(controller.stop);
   return controller;
+});
+
+final submittedAssignmentLockProvider = Provider<SubmittedAssignmentLock>((ref) {
+  return SubmittedAssignmentLock(ref.watch(appDatabaseProvider));
 });
