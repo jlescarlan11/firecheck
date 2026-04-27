@@ -274,5 +274,8 @@
   "submittedBadge": "Naipasa na ✓",
   "submittedAt": "Naipasa noong {date}",
   "biometricGateReason": "Patunayan ang sarili para mag-upload",
-  "biometricFailedSnackbar": "Hindi nakumpirma. Subukan muli."
+  "biometricFailedSnackbar": "Hindi nakumpirma. Subukan muli.",
+  "assignmentClosedTitle": "Sarado na ang takda",
+  "assignmentClosedBody": "Sarado na ang takda na ito sa server. I-tap ang Share para ipadala ang lokal na datos sa supervisor mo.",
+  "shareBundleAction": "Ibahagi ang bundle"
 }

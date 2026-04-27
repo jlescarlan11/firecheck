@@ -329,5 +329,8 @@
   "submittedAt": "Submitted on {date}",
   "@submittedAt": { "placeholders": { "date": {"type": "String"} } },
   "biometricGateReason": "Verify it's you to upload",
-  "biometricFailedSnackbar": "Biometric verification failed. Try again."
+  "biometricFailedSnackbar": "Biometric verification failed. Try again.",
+  "assignmentClosedTitle": "Assignment closed",
+  "assignmentClosedBody": "This assignment was closed remotely. Tap Share to send your local data to your supervisor.",
+  "shareBundleAction": "Share bundle"
 }

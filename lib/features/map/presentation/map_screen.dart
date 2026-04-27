@@ -7,6 +7,7 @@ import 'package:firecheck/core/geo/point_in_polygon.dart';
 import 'package:firecheck/core/geo/polyline_midpoint.dart';
 import 'package:firecheck/core/location/distance.dart';
 import 'package:firecheck/core/location/location_providers.dart';
+import 'package:firecheck/features/assignment/presentation/assignment_lock_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
 import 'package:firecheck/features/map/presentation/map_providers.dart';
 import 'package:firecheck/features/new_feature/presentation/feature_type_picker.dart';
@@ -48,6 +49,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final assignmentAsync = ref.watch(currentAssignmentProvider);
     // Subscribe so the GPS stream is hot from mount, not first tap.
     ref.watch(currentPositionProvider);
+    final isLocked = ref.watch(isAssignmentLockedProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(l.mapTitle)),
@@ -106,6 +108,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                         ? l.addModePillActiveLabel
                         : l.newFeaturePlaceholder,
                     on: _addModeActive,
+                    disabled: isLocked,
                     key: const Key('map.add-feature-pill'),
                     onTap: () =>
                         setState(() => _addModeActive = !_addModeActive),

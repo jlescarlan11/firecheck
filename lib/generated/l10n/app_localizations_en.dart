@@ -900,4 +900,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get biometricFailedSnackbar =>
       'Biometric verification failed. Try again.';
+
+  @override
+  String get assignmentClosedTitle => 'Assignment closed';
+
+  @override
+  String get assignmentClosedBody =>
+      'This assignment was closed remotely. Tap Share to send your local data to your supervisor.';
+
+  @override
+  String get shareBundleAction => 'Share bundle';
 }

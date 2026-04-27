@@ -925,4 +925,14 @@ class AppLocalizationsTl extends AppLocalizations {
 
   @override
   String get biometricFailedSnackbar => 'Hindi nakumpirma. Subukan muli.';
+
+  @override
+  String get assignmentClosedTitle => 'Sarado na ang takda';
+
+  @override
+  String get assignmentClosedBody =>
+      'Sarado na ang takda na ito sa server. I-tap ang Share para ipadala ang lokal na datos sa supervisor mo.';
+
+  @override
+  String get shareBundleAction => 'Ibahagi ang bundle';
 }

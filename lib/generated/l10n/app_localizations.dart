@@ -1741,6 +1741,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Biometric verification failed. Try again.'**
   String get biometricFailedSnackbar;
+
+  /// No description provided for @assignmentClosedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignment closed'**
+  String get assignmentClosedTitle;
+
+  /// No description provided for @assignmentClosedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This assignment was closed remotely. Tap Share to send your local data to your supervisor.'**
+  String get assignmentClosedBody;
+
+  /// No description provided for @shareBundleAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Share bundle'**
+  String get shareBundleAction;
 }
 
 class _AppLocalizationsDelegate
