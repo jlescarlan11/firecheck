@@ -273,6 +273,8 @@
   "reviewTitle": "Suriin at I-upload",
   "submittedBadge": "Naipasa na ✓",
   "submittedAt": "Naipasa noong {date}",
+  "readOnlyBanner": "Naipasa na ang takda. Read-only.",
+  "readOnlyBannerClosed": "Sarado ang takda. Read-only.",
   "biometricGateReason": "Patunayan ang sarili para mag-upload",
   "biometricFailedSnackbar": "Hindi nakumpirma. Subukan muli.",
   "assignmentClosedTitle": "Sarado na ang takda",

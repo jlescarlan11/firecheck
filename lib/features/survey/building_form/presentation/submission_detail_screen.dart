@@ -2,6 +2,7 @@ import 'package:firecheck/core/auth/current_user_provider.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/photos/photo_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_lock_providers.dart';
+import 'package:firecheck/features/assignment/presentation/assignment_lock_state.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
 import 'package:firecheck/features/home/presentation/home_providers.dart';
 import 'package:firecheck/features/survey/building_form/domain/building_form_validator.dart';
@@ -122,6 +123,54 @@ class _SubmissionDetailScreenState
               final active = submissions[_activeIndex];
               return Column(
                 children: [
+                  // Read-only banner when the assignment is locked. Renders
+                  // above SubmissionTabs so it's the first thing the user
+                  // sees on a previously-submitted feature. Bug 15 follow-up.
+                  Consumer(
+                    builder: (context, ref2, _) {
+                      final lock = ref2.watch(assignmentLockStateProvider).value;
+                      if (lock is! Submitted && lock is! ClosedRemotely) {
+                        return const SizedBox.shrink();
+                      }
+                      final isClosed = lock is ClosedRemotely;
+                      return Container(
+                        width: double.infinity,
+                        color: isClosed
+                            ? const Color(0xFFFEE2E2)
+                            : const Color(0xFFFEF3C7),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.lock_outline,
+                              size: 16,
+                              color: isClosed
+                                  ? const Color(0xFFC53030)
+                                  : const Color(0xFFB7791F),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                isClosed
+                                    ? l.readOnlyBannerClosed
+                                    : l.readOnlyBanner,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isClosed
+                                      ? const Color(0xFFC53030)
+                                      : const Color(0xFFB7791F),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                   SubmissionTabs(
                     submissions: submissions,
                     activeIndex: _activeIndex,

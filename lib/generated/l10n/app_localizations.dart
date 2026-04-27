@@ -1730,6 +1730,18 @@ abstract class AppLocalizations {
   /// **'Submitted on {date}'**
   String submittedAt(String date);
 
+  /// No description provided for @readOnlyBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'This assignment was submitted. Read-only.'**
+  String get readOnlyBanner;
+
+  /// No description provided for @readOnlyBannerClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignment closed remotely. Read-only.'**
+  String get readOnlyBannerClosed;
+
   /// No description provided for @biometricGateReason.
   ///
   /// In en, this message translates to:

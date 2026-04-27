@@ -895,6 +895,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get readOnlyBanner => 'This assignment was submitted. Read-only.';
+
+  @override
+  String get readOnlyBannerClosed => 'Assignment closed remotely. Read-only.';
+
+  @override
   String get biometricGateReason => 'Verify it\'s you to upload';
 
   @override

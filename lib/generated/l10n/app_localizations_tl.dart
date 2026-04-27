@@ -921,6 +921,12 @@ class AppLocalizationsTl extends AppLocalizations {
   }
 
   @override
+  String get readOnlyBanner => 'Naipasa na ang takda. Read-only.';
+
+  @override
+  String get readOnlyBannerClosed => 'Sarado ang takda. Read-only.';
+
+  @override
   String get biometricGateReason => 'Patunayan ang sarili para mag-upload';
 
   @override
