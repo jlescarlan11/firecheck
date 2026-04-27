@@ -2,7 +2,7 @@
 
 Offline-first Flutter Android app for the **Philippine Bureau of Fire Protection (BFP)** — replaces two legacy paper-and-tablet apps (Attribution + Household Survey) with one tool that an enumerator can use in the field, fully offline, then upload everything when back on Wi-Fi.
 
-**Status:** MVP shipped. Tag `phase-4b-upload-flow`. PR [#3](https://github.com/jlescarlan11/firecheck/pull/3) covers the latest phase. Pilot-ready for internal testing. See [the phase roadmap](#phase-roadmap) for what comes next.
+**Status:** MVP shipped. Tag `phase-4b-upload-flow`. Pilot-ready for internal testing. See [the phase history](#phase-history) for what's already in.
 
 ---
 
@@ -124,7 +124,7 @@ test/                       # 294 tests, mirrors lib/ structure
 
 ---
 
-## Phase roadmap
+## Phase history
 
 The app shipped in 7 phases. See `docs/superpowers/specs/` for the design behind each.
 
@@ -137,7 +137,6 @@ The app shipped in 7 phases. See `docs/superpowers/specs/` for the design behind
 | 3b — OLP | `phase-3b-olp` | Household survey + Lebel ng Kahinaan scoring |
 | 4a — Sync engine | `phase-4a-sync-engine` | Outbox, worker, retry, WorkManager, 409 bundle |
 | 4b — Upload flow | `phase-4b-upload-flow` | Review screen, Upload Data, biometric gate, lock state |
-| **5 — Polish** *(next)* | — | Sentry, EN+TL review, accessibility, field-walk script |
 
 ---
 
@@ -154,7 +153,7 @@ The app shipped in 7 phases. See `docs/superpowers/specs/` for the design behind
 
 Read [`docs/ONBOARDING.md`](docs/ONBOARDING.md) first. Then, in order:
 
-1. Pick something from Phase 5 (or open a discussion for a new phase).
+1. Open a team discussion to scope the new feature or phase.
 2. Write a design spec in `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md` and get team review.
 3. Write a TDD-style implementation plan in `docs/superpowers/plans/YYYY-MM-DD-<feature>.md`.
 4. Implement task-by-task; commit per task with a descriptive message.

@@ -327,30 +327,11 @@ If after a clean install polygons don't respond to taps, check `adb logcat -d | 
 | Debug a sync issue on-device | `adb logcat -d \| grep -i "sync\|outbox"` |
 | Reset the local DB | `adb shell pm clear ph.gov.bfp.firecheck` |
 | See what tests exist | `find test -name "*.dart"` — they mirror `lib/` |
-| See what's planned for Phase 5 | `docs/superpowers/specs/2026-04-27-firecheck-phase-4b-design.md` §13 ("Open items / Phase 5 dependencies") |
+| See known limitations + deferred work | `docs/superpowers/specs/2026-04-24-firecheck-mobile-design.md` §15 + per-phase specs' "Out of scope" sections |
 
 ---
 
-## 8. What's next (for the team to discuss)
-
-The MVP is shippable as-is for an internal pilot. **Phase 5** is the production-hardening pass. Pick what matters most for your timeline:
-
-| Item | Effort | Value |
-|---|---|---|
-| Sentry crash reporting | 1 day | High — field crashes are otherwise invisible |
-| EN+TL translation review with a Tagalog-speaking reviewer | 1 day | Medium — strings work, terminology may be off |
-| Get Maps biometric gate (matches Upload Data) | 0.5 day | Low — only matters if device is shared |
-| Stricter Storage RLS (per-user-owner policies) | 0.5 day | Medium — currently any authenticated user can read any photo |
-| Multi-device "submitted" sync (poll Supabase on app launch) | 1 day | Medium — handles the edge case of the same enumerator on two devices |
-| Password fallback for biometric cancel | 0.5 day | Low — `local_auth` already falls back to PIN automatically |
-| Field-walk script (formal QA protocol) | 1 day | High before pilot; turns the manual happy path into a checklist |
-| Accessibility sweep (TalkBack, contrast, touch targets) | 1-2 days | Medium |
-
-Discuss as a team, write a Phase 5 spec, and execute. Or if there's a specific feature your group wants beyond the BFP scope (e.g., a different reporting flow, a different form type), brainstorm it as a new phase.
-
----
-
-## 9. Where to ask for help
+## 8. Where to ask for help
 
 - **Code questions** — read the spec for the area first, then ping the team.
 - **Process questions** — re-read §4 above; the spec → plan → implement loop is intentionally explicit.
