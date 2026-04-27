@@ -316,5 +316,12 @@
   "issueCostAmountMissing": "Exact cost selected but amount is empty",
   "issueFeatureNoSubmission": "Feature has no finalized submission",
   "startUploadButton": "Start Upload",
-  "startUploadDisabledTooltip": "Fix the blockers above first"
+  "startUploadDisabledTooltip": "Fix the blockers above first",
+  "uploadProgressLabel": "Uploading {done} of {total} items…",
+  "@uploadProgressLabel": { "placeholders": { "done": {"type": "int"}, "total": {"type": "int"} } },
+  "uploadProgressShowDetails": "Show details",
+  "uploadCompleteSuccess": "All {n} items uploaded.",
+  "@uploadCompleteSuccess": { "placeholders": { "n": {"type": "int"} } },
+  "uploadCompleteWithFailures": "{n} items failed. Check Failed section.",
+  "@uploadCompleteWithFailures": { "placeholders": { "n": {"type": "int"} } }
 }

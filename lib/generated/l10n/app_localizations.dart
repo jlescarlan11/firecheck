@@ -1687,6 +1687,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fix the blockers above first'**
   String get startUploadDisabledTooltip;
+
+  /// No description provided for @uploadProgressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading {done} of {total} items…'**
+  String uploadProgressLabel(int done, int total);
+
+  /// No description provided for @uploadProgressShowDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Show details'**
+  String get uploadProgressShowDetails;
+
+  /// No description provided for @uploadCompleteSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'All {n} items uploaded.'**
+  String uploadCompleteSuccess(int n);
+
+  /// No description provided for @uploadCompleteWithFailures.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} items failed. Check Failed section.'**
+  String uploadCompleteWithFailures(int n);
 }
 
 class _AppLocalizationsDelegate

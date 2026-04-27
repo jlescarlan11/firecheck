@@ -265,5 +265,9 @@
   "issueCostAmountMissing": "Napili ang eksaktong halaga pero walang halaga",
   "issueFeatureNoSubmission": "Walang natapos na submission para sa feature na ito",
   "startUploadButton": "Simulan ang Pag-upload",
-  "startUploadDisabledTooltip": "Ayusin muna ang mga problema sa itaas"
+  "startUploadDisabledTooltip": "Ayusin muna ang mga problema sa itaas",
+  "uploadProgressLabel": "Ina-upload ang {done} sa {total} items…",
+  "uploadProgressShowDetails": "Ipakita ang detalye",
+  "uploadCompleteSuccess": "Lahat ng {n} items ay naka-upload na.",
+  "uploadCompleteWithFailures": "{n} items ang nabigo. Tingnan ang Failed."
 }

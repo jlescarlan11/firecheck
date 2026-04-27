@@ -890,4 +890,22 @@ class AppLocalizationsTl extends AppLocalizations {
   @override
   String get startUploadDisabledTooltip =>
       'Ayusin muna ang mga problema sa itaas';
+
+  @override
+  String uploadProgressLabel(int done, int total) {
+    return 'Ina-upload ang $done sa $total items…';
+  }
+
+  @override
+  String get uploadProgressShowDetails => 'Ipakita ang detalye';
+
+  @override
+  String uploadCompleteSuccess(int n) {
+    return 'Lahat ng $n items ay naka-upload na.';
+  }
+
+  @override
+  String uploadCompleteWithFailures(int n) {
+    return '$n items ang nabigo. Tingnan ang Failed.';
+  }
 }

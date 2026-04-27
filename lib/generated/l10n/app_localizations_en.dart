@@ -864,4 +864,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get startUploadDisabledTooltip => 'Fix the blockers above first';
+
+  @override
+  String uploadProgressLabel(int done, int total) {
+    return 'Uploading $done of $total items…';
+  }
+
+  @override
+  String get uploadProgressShowDetails => 'Show details';
+
+  @override
+  String uploadCompleteSuccess(int n) {
+    return 'All $n items uploaded.';
+  }
+
+  @override
+  String uploadCompleteWithFailures(int n) {
+    return '$n items failed. Check Failed section.';
+  }
 }
