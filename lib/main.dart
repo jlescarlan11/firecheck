@@ -79,6 +79,21 @@ class _SyncBootstrapState extends ConsumerState<_SyncBootstrap> {
     super.initState();
     Future.microtask(() async {
       await ref.read(syncControllerProvider).start();
+      _attachSubmittedLock();
+    });
+  }
+
+  void _attachSubmittedLock() {
+    // Pull the current assignment lazily and kick off the watcher.
+    // Subscription lives for the rest of the app session.
+    Future.microtask(() async {
+      final repo = ref.read(assignmentRepositoryProvider);
+      final assignment = await repo.getCurrentAssignment();
+      if (assignment == null) return;
+      ref
+          .read(submittedAssignmentLockProvider)
+          .watchAndStamp(assignment.id)
+          .listen((_) {});
     });
   }
 

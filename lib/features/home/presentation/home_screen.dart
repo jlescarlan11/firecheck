@@ -1,6 +1,9 @@
-import 'package:firecheck/core/sync/domain/finalize_submission.dart';
-import 'package:firecheck/core/sync/presentation/sync_providers.dart';
+import 'package:firecheck/core/security/biometric_gate_provider.dart';
+import 'package:firecheck/features/assignment/presentation/assignment_lock_providers.dart';
+import 'package:firecheck/features/assignment/presentation/assignment_lock_state.dart';
+import 'package:firecheck/features/assignment/presentation/submitted_banner.dart';
 import 'package:firecheck/features/home/presentation/home_providers.dart';
+import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,7 +13,10 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context)!;
     final asyncSnap = ref.watch(progressProvider);
+    final lock = ref.watch(assignmentLockStateProvider).value;
+    final isLocked = lock is Submitted || lock is ClosedRemotely;
 
     return Scaffold(
       appBar: AppBar(title: const Text('FireCheck')),
@@ -21,37 +27,28 @@ class HomeScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              GestureDetector(
-                onLongPress: () async {
-                  final db = ref.read(appDatabaseProvider);
-                  final messenger = ScaffoldMessenger.of(context);
-                  final readyRows = await (db.select(db.submissions)
-                        ..where((t) => t.syncStatus.equals('ready_to_upload')))
-                      .get();
-                  final useCase = FinalizeSubmissionUseCase(db);
-                  for (final s in readyRows) {
-                    await useCase.execute(s.id);
-                  }
-                  messenger.showSnackBar(
-                    SnackBar(
-                      content: Text('Queued ${readyRows.length} submission(s)'),
-                    ),
-                  );
-                  await ref.read(syncControllerProvider).triggerNow();
-                },
-                child: Card(
+              if (lock is Submitted)
+                SubmittedBanner(submittedAt: lock.submittedAt)
+              else
+                Card(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Assignment progress',
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        Text(
+                          l.assignmentProgress,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${snap.completedFeatures} of ${snap.totalFeatures} features',
+                          l.featuresLabel(
+                            snap.completedFeatures,
+                            snap.totalFeatures,
+                          ),
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
@@ -64,30 +61,34 @@ class HomeScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          '${snap.queuedJobs} queued · ${snap.failedJobs} failed · ${snap.deadJobs} dead',
+                          l.jobCountsLabel(
+                            snap.queuedJobs,
+                            snap.failedJobs,
+                            snap.deadJobs,
+                          ),
                           style: const TextStyle(fontSize: 12),
                         ),
                       ],
                     ),
                   ),
                 ),
-              ),
               const SizedBox(height: 12),
               _ActionTile(
-                title: 'Gather Data',
-                subtitle: 'Resume where you left off',
+                title: l.gatherData,
+                subtitle: l.gatherDataSubtitle,
                 onTap: () => context.go('/map'),
               ),
               _ActionTile(
-                title: 'Get Maps',
-                subtitle: 'Download your assignment',
+                title: l.getMaps,
+                subtitle: l.getMapsSubtitle,
                 onTap: () => context.go('/get-maps'),
               ),
-              _ActionTile(
-                title: 'Upload Data',
-                subtitle: 'Send completed work',
-                onTap: () => _showComingSoon(context, 'Phase 4'),
-              ),
+              if (!isLocked)
+                _ActionTile(
+                  title: l.uploadData,
+                  subtitle: l.uploadDataSubtitle,
+                  onTap: () => _onUploadDataTap(context, ref, l),
+                ),
             ],
           ),
         ),
@@ -95,10 +96,27 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  void _showComingSoon(BuildContext context, String phase) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Coming in $phase')),
-    );
+  Future<void> _onUploadDataTap(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l,
+  ) async {
+    final biometric = ref.read(biometricGateProvider);
+    final available = await biometric.isAvailable();
+    if (!available) {
+      if (context.mounted) context.go('/review');
+      return;
+    }
+    final ok = await biometric.authenticate(reason: l.biometricGateReason);
+    if (!ok) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l.biometricFailedSnackbar)),
+        );
+      }
+      return;
+    }
+    if (context.mounted) context.go('/review');
   }
 }
 

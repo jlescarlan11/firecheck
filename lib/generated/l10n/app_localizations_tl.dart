@@ -813,4 +813,132 @@ class AppLocalizationsTl extends AppLocalizations {
   @override
   String get olpItemE35Suggestion =>
       'Magkabit ng karagdagang ilaw kung kailangan';
+
+  @override
+  String summaryFeatures(int n) {
+    return '$n na istruktura';
+  }
+
+  @override
+  String summaryComplete(int n) {
+    return '$n tapos na';
+  }
+
+  @override
+  String summaryIncomplete(int n) {
+    return '$n kulang pa';
+  }
+
+  @override
+  String summaryNewFeatures(int n) {
+    return '$n bagong idinagdag';
+  }
+
+  @override
+  String summaryPhotosPending(int n) {
+    return '$n larawan ang kulang';
+  }
+
+  @override
+  String failedJobsTitle(int n) {
+    return 'Nabigo ($n)';
+  }
+
+  @override
+  String get retryButton => 'Subukan muli';
+
+  @override
+  String get retryAllButton => 'Subukan lahat';
+
+  @override
+  String validationBlockersTitle(int n) {
+    return 'Kailangang ayusin bago i-upload ($n)';
+  }
+
+  @override
+  String validationWarningsTitle(int n) {
+    return 'Inirerekomenda ($n)';
+  }
+
+  @override
+  String get goToFeature => 'Pumunta sa feature';
+
+  @override
+  String get issuePhotoRequired => 'Kailangan ng kahit isang larawan';
+
+  @override
+  String get issueRa9514Required => 'Hindi pa napipili ang uri ng RA 9514';
+
+  @override
+  String get issueWidthRequired => 'Ang lapad ay dapat higit sa 0 m';
+
+  @override
+  String get issueOlpResidential =>
+      'Hindi pa kumpleto ang OLP household survey';
+
+  @override
+  String get issueCostAmountMissing =>
+      'Napili ang eksaktong halaga pero walang halaga';
+
+  @override
+  String get issueFeatureNoSubmission =>
+      'Walang natapos na submission para sa feature na ito';
+
+  @override
+  String get startUploadButton => 'Simulan ang Pag-upload';
+
+  @override
+  String get startUploadDisabledTooltip =>
+      'Ayusin muna ang mga problema sa itaas';
+
+  @override
+  String uploadProgressLabel(int done, int total) {
+    return 'Ina-upload ang $done sa $total items…';
+  }
+
+  @override
+  String get uploadProgressShowDetails => 'Ipakita ang detalye';
+
+  @override
+  String uploadCompleteSuccess(int n) {
+    return 'Lahat ng $n items ay naka-upload na.';
+  }
+
+  @override
+  String uploadCompleteWithFailures(int n) {
+    return '$n items ang nabigo. Tingnan ang Failed.';
+  }
+
+  @override
+  String get reviewTitle => 'Suriin at I-upload';
+
+  @override
+  String get submittedBadge => 'Naipasa na ✓';
+
+  @override
+  String submittedAt(String date) {
+    return 'Naipasa noong $date';
+  }
+
+  @override
+  String get readOnlyBanner => 'Naipasa na ang takda. Read-only.';
+
+  @override
+  String get readOnlyBannerClosed => 'Sarado ang takda. Read-only.';
+
+  @override
+  String get biometricGateReason => 'Patunayan ang sarili para mag-upload';
+
+  @override
+  String get biometricFailedSnackbar => 'Hindi nakumpirma. Subukan muli.';
+
+  @override
+  String get assignmentClosedTitle => 'Sarado na ang takda';
+
+  @override
+  String get assignmentClosedBody =>
+      'Sarado na ang takda na ito sa server. I-tap ang Share para ipadala ang lokal na datos sa supervisor mo.';
+
+  @override
+  String get shareBundleAction => 'Ibahagi ang bundle';
 }

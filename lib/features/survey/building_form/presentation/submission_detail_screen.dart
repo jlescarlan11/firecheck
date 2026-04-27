@@ -1,6 +1,10 @@
+import 'package:firecheck/core/auth/current_user_provider.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/photos/photo_providers.dart';
+import 'package:firecheck/features/assignment/presentation/assignment_lock_providers.dart';
+import 'package:firecheck/features/assignment/presentation/assignment_lock_state.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
+import 'package:firecheck/features/home/presentation/home_providers.dart';
 import 'package:firecheck/features/survey/building_form/domain/building_form_validator.dart';
 import 'package:firecheck/features/survey/building_form/presentation/building_form.dart';
 import 'package:firecheck/features/survey/building_form/presentation/building_form_providers.dart';
@@ -57,17 +61,25 @@ class _SubmissionDetailScreenState
 
   Future<void> _ensureFirst() async {
     final repo = ref.read(submissionRepositoryProvider);
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) {
+      throw StateError('SubmissionDetailScreen reached without an authenticated user');
+    }
     await repo.ensureDraftForFeature(
       featureId: widget.featureId,
-      enumeratorId: 'admin', // Phase 4 will wire real auth
+      enumeratorId: userId,
     );
   }
 
   Future<void> _addTab() async {
     final repo = ref.read(submissionRepositoryProvider);
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) {
+      throw StateError('SubmissionDetailScreen._addTab without authenticated user');
+    }
     await repo.createAdditionalSubmission(
       featureId: widget.featureId,
-      enumeratorId: 'admin',
+      enumeratorId: userId,
     );
     final submissions =
         await repo.watchSubmissionsForFeature(widget.featureId).first;
@@ -111,6 +123,54 @@ class _SubmissionDetailScreenState
               final active = submissions[_activeIndex];
               return Column(
                 children: [
+                  // Read-only banner when the assignment is locked. Renders
+                  // above SubmissionTabs so it's the first thing the user
+                  // sees on a previously-submitted feature. Bug 15 follow-up.
+                  Consumer(
+                    builder: (context, ref2, _) {
+                      final lock = ref2.watch(assignmentLockStateProvider).value;
+                      if (lock is! Submitted && lock is! ClosedRemotely) {
+                        return const SizedBox.shrink();
+                      }
+                      final isClosed = lock is ClosedRemotely;
+                      return Container(
+                        width: double.infinity,
+                        color: isClosed
+                            ? const Color(0xFFFEE2E2)
+                            : const Color(0xFFFEF3C7),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.lock_outline,
+                              size: 16,
+                              color: isClosed
+                                  ? const Color(0xFFC53030)
+                                  : const Color(0xFFB7791F),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                isClosed
+                                    ? l.readOnlyBannerClosed
+                                    : l.readOnlyBanner,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isClosed
+                                      ? const Color(0xFFC53030)
+                                      : const Color(0xFFB7791F),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                   SubmissionTabs(
                     submissions: submissions,
                     activeIndex: _activeIndex,
@@ -119,17 +179,39 @@ class _SubmissionDetailScreenState
                     canAddMore: submissions.length < _softCap,
                     softCapTooltip: l.tabSoftCapTooltip,
                   ),
-                  PhotoStrip(submissionId: active.id),
+                  Consumer(
+                    builder: (context, ref2, _) {
+                      final locked = ref2.watch(isAssignmentLockedProvider);
+                      return IgnorePointer(
+                        ignoring: locked,
+                        child: PhotoStrip(submissionId: active.id),
+                      );
+                    },
+                  ),
                   Expanded(
-                    child: isRoad
-                        ? RoadForm(
-                            submissionId: active.id,
-                            featureId: widget.featureId,
-                          )
-                        : BuildingForm(
-                            submissionId: active.id,
-                            featureId: widget.featureId,
-                          ),
+                    child: Consumer(
+                      builder: (context, ref2, _) {
+                        final locked = ref2.watch(isAssignmentLockedProvider);
+                        // Bug 15: pass readOnly: locked instead of wrapping
+                        // the form in IgnorePointer. IgnorePointer blocks
+                        // ALL pointer events including scroll, so users
+                        // couldn't review submitted data on a long form.
+                        // The form's existing `disabled` plumbing already
+                        // disables every input via enabled:/onChanged:null;
+                        // readOnly just OR's that on top of doesNotExist.
+                        return isRoad
+                            ? RoadForm(
+                                submissionId: active.id,
+                                featureId: widget.featureId,
+                                readOnly: locked,
+                              )
+                            : BuildingForm(
+                                submissionId: active.id,
+                                featureId: widget.featureId,
+                                readOnly: locked,
+                              );
+                      },
+                    ),
                   ),
                   _Footer(
                     submissionId: active.id,
@@ -160,6 +242,8 @@ class _Footer extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context)!;
+    final isLocked = ref.watch(isAssignmentLockedProvider);
+    if (isLocked) return const SizedBox.shrink();
     final photoCountAsync = ref.watch(_photoCountProvider(submissionId));
 
     final ready = photoCountAsync.maybeWhen(
@@ -228,9 +312,28 @@ class _Footer extends ConsumerWidget {
                               .read(buildingFormNotifierProvider(key).notifier)
                               .flushNow();
                         }
+                        // Forward-only transition: don't regress a submission
+                        // that's already past ready_to_upload. Re-tapping Done
+                        // on an uploaded submission must not flip its local
+                        // sync_status back, or its already-uploaded photos
+                        // would get stuck waiting for a parent that's no
+                        // longer 'uploaded'.
+                        final db = ref.read(appDatabaseProvider);
+                        final current = await (db.select(db.submissions)
+                              ..where((t) => t.id.equals(submissionId)))
+                            .getSingleOrNull();
+                        const advancable = {'draft', 'in_progress'};
+                        if (current != null &&
+                            advancable.contains(current.syncStatus)) {
+                          await ref
+                              .read(submissionRepositoryProvider)
+                              .markStatus(submissionId, 'ready_to_upload');
+                        }
+                        // Recompute the feature's color-coded status so the
+                        // map polygon flips green immediately.
                         await ref
-                            .read(submissionRepositoryProvider)
-                            .markStatus(submissionId, 'ready_to_upload');
+                            .read(featureRepositoryProvider)
+                            .markFeatureStatus(featureId);
                         if (context.mounted) context.go('/map');
                       }
                     : null,

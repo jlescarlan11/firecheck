@@ -790,4 +790,130 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get olpItemE35Suggestion => 'Install additional lighting if needed';
+
+  @override
+  String summaryFeatures(int n) {
+    return '$n features';
+  }
+
+  @override
+  String summaryComplete(int n) {
+    return '$n complete';
+  }
+
+  @override
+  String summaryIncomplete(int n) {
+    return '$n incomplete';
+  }
+
+  @override
+  String summaryNewFeatures(int n) {
+    return '$n new features added';
+  }
+
+  @override
+  String summaryPhotosPending(int n) {
+    return '$n photos pending';
+  }
+
+  @override
+  String failedJobsTitle(int n) {
+    return 'Failed ($n)';
+  }
+
+  @override
+  String get retryButton => 'Retry';
+
+  @override
+  String get retryAllButton => 'Retry all';
+
+  @override
+  String validationBlockersTitle(int n) {
+    return 'Must fix before upload ($n)';
+  }
+
+  @override
+  String validationWarningsTitle(int n) {
+    return 'Recommended ($n)';
+  }
+
+  @override
+  String get goToFeature => 'Go to feature';
+
+  @override
+  String get issuePhotoRequired => 'At least one photo required';
+
+  @override
+  String get issueRa9514Required => 'RA 9514 type not selected';
+
+  @override
+  String get issueWidthRequired => 'Width must be greater than 0 m';
+
+  @override
+  String get issueOlpResidential => 'OLP household survey not completed';
+
+  @override
+  String get issueCostAmountMissing =>
+      'Exact cost selected but amount is empty';
+
+  @override
+  String get issueFeatureNoSubmission => 'Feature has no finalized submission';
+
+  @override
+  String get startUploadButton => 'Start Upload';
+
+  @override
+  String get startUploadDisabledTooltip => 'Fix the blockers above first';
+
+  @override
+  String uploadProgressLabel(int done, int total) {
+    return 'Uploading $done of $total items…';
+  }
+
+  @override
+  String get uploadProgressShowDetails => 'Show details';
+
+  @override
+  String uploadCompleteSuccess(int n) {
+    return 'All $n items uploaded.';
+  }
+
+  @override
+  String uploadCompleteWithFailures(int n) {
+    return '$n items failed. Check Failed section.';
+  }
+
+  @override
+  String get reviewTitle => 'Review & Upload';
+
+  @override
+  String get submittedBadge => 'Submitted ✓';
+
+  @override
+  String submittedAt(String date) {
+    return 'Submitted on $date';
+  }
+
+  @override
+  String get readOnlyBanner => 'This assignment was submitted. Read-only.';
+
+  @override
+  String get readOnlyBannerClosed => 'Assignment closed remotely. Read-only.';
+
+  @override
+  String get biometricGateReason => 'Verify it\'s you to upload';
+
+  @override
+  String get biometricFailedSnackbar =>
+      'Biometric verification failed. Try again.';
+
+  @override
+  String get assignmentClosedTitle => 'Assignment closed';
+
+  @override
+  String get assignmentClosedBody =>
+      'This assignment was closed remotely. Tap Share to send your local data to your supervisor.';
+
+  @override
+  String get shareBundleAction => 'Share bundle';
 }

@@ -1573,6 +1573,204 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Install additional lighting if needed'**
   String get olpItemE35Suggestion;
+
+  /// No description provided for @summaryFeatures.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} features'**
+  String summaryFeatures(int n);
+
+  /// No description provided for @summaryComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} complete'**
+  String summaryComplete(int n);
+
+  /// No description provided for @summaryIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} incomplete'**
+  String summaryIncomplete(int n);
+
+  /// No description provided for @summaryNewFeatures.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} new features added'**
+  String summaryNewFeatures(int n);
+
+  /// No description provided for @summaryPhotosPending.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} photos pending'**
+  String summaryPhotosPending(int n);
+
+  /// No description provided for @failedJobsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed ({n})'**
+  String failedJobsTitle(int n);
+
+  /// No description provided for @retryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retryButton;
+
+  /// No description provided for @retryAllButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry all'**
+  String get retryAllButton;
+
+  /// No description provided for @validationBlockersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Must fix before upload ({n})'**
+  String validationBlockersTitle(int n);
+
+  /// No description provided for @validationWarningsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended ({n})'**
+  String validationWarningsTitle(int n);
+
+  /// No description provided for @goToFeature.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to feature'**
+  String get goToFeature;
+
+  /// No description provided for @issuePhotoRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'At least one photo required'**
+  String get issuePhotoRequired;
+
+  /// No description provided for @issueRa9514Required.
+  ///
+  /// In en, this message translates to:
+  /// **'RA 9514 type not selected'**
+  String get issueRa9514Required;
+
+  /// No description provided for @issueWidthRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Width must be greater than 0 m'**
+  String get issueWidthRequired;
+
+  /// No description provided for @issueOlpResidential.
+  ///
+  /// In en, this message translates to:
+  /// **'OLP household survey not completed'**
+  String get issueOlpResidential;
+
+  /// No description provided for @issueCostAmountMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact cost selected but amount is empty'**
+  String get issueCostAmountMissing;
+
+  /// No description provided for @issueFeatureNoSubmission.
+  ///
+  /// In en, this message translates to:
+  /// **'Feature has no finalized submission'**
+  String get issueFeatureNoSubmission;
+
+  /// No description provided for @startUploadButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Upload'**
+  String get startUploadButton;
+
+  /// No description provided for @startUploadDisabledTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Fix the blockers above first'**
+  String get startUploadDisabledTooltip;
+
+  /// No description provided for @uploadProgressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading {done} of {total} items…'**
+  String uploadProgressLabel(int done, int total);
+
+  /// No description provided for @uploadProgressShowDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Show details'**
+  String get uploadProgressShowDetails;
+
+  /// No description provided for @uploadCompleteSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'All {n} items uploaded.'**
+  String uploadCompleteSuccess(int n);
+
+  /// No description provided for @uploadCompleteWithFailures.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} items failed. Check Failed section.'**
+  String uploadCompleteWithFailures(int n);
+
+  /// No description provided for @reviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review & Upload'**
+  String get reviewTitle;
+
+  /// No description provided for @submittedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitted ✓'**
+  String get submittedBadge;
+
+  /// No description provided for @submittedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitted on {date}'**
+  String submittedAt(String date);
+
+  /// No description provided for @readOnlyBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'This assignment was submitted. Read-only.'**
+  String get readOnlyBanner;
+
+  /// No description provided for @readOnlyBannerClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignment closed remotely. Read-only.'**
+  String get readOnlyBannerClosed;
+
+  /// No description provided for @biometricGateReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify it\'s you to upload'**
+  String get biometricGateReason;
+
+  /// No description provided for @biometricFailedSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Biometric verification failed. Try again.'**
+  String get biometricFailedSnackbar;
+
+  /// No description provided for @assignmentClosedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignment closed'**
+  String get assignmentClosedTitle;
+
+  /// No description provided for @assignmentClosedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This assignment was closed remotely. Tap Share to send your local data to your supervisor.'**
+  String get assignmentClosedBody;
+
+  /// No description provided for @shareBundleAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Share bundle'**
+  String get shareBundleAction;
 }
 
 class _AppLocalizationsDelegate
