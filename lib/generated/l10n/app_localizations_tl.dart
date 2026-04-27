@@ -911,4 +911,18 @@ class AppLocalizationsTl extends AppLocalizations {
 
   @override
   String get reviewTitle => 'Suriin at I-upload';
+
+  @override
+  String get submittedBadge => 'Naipasa na ✓';
+
+  @override
+  String submittedAt(String date) {
+    return 'Naipasa noong $date';
+  }
+
+  @override
+  String get biometricGateReason => 'Patunayan ang sarili para mag-upload';
+
+  @override
+  String get biometricFailedSnackbar => 'Hindi nakumpirma. Subukan muli.';
 }

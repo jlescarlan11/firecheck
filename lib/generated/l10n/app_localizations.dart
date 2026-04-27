@@ -1717,6 +1717,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Review & Upload'**
   String get reviewTitle;
+
+  /// No description provided for @submittedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitted ✓'**
+  String get submittedBadge;
+
+  /// No description provided for @submittedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitted on {date}'**
+  String submittedAt(String date);
+
+  /// No description provided for @biometricGateReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify it\'s you to upload'**
+  String get biometricGateReason;
+
+  /// No description provided for @biometricFailedSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Biometric verification failed. Try again.'**
+  String get biometricFailedSnackbar;
 }
 
 class _AppLocalizationsDelegate

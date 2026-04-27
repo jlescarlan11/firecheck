@@ -270,5 +270,9 @@
   "uploadProgressShowDetails": "Ipakita ang detalye",
   "uploadCompleteSuccess": "Lahat ng {n} items ay naka-upload na.",
   "uploadCompleteWithFailures": "{n} items ang nabigo. Tingnan ang Failed.",
-  "reviewTitle": "Suriin at I-upload"
+  "reviewTitle": "Suriin at I-upload",
+  "submittedBadge": "Naipasa na ✓",
+  "submittedAt": "Naipasa noong {date}",
+  "biometricGateReason": "Patunayan ang sarili para mag-upload",
+  "biometricFailedSnackbar": "Hindi nakumpirma. Subukan muli."
 }

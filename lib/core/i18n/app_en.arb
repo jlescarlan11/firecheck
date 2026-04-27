@@ -324,5 +324,10 @@
   "@uploadCompleteSuccess": { "placeholders": { "n": {"type": "int"} } },
   "uploadCompleteWithFailures": "{n} items failed. Check Failed section.",
   "@uploadCompleteWithFailures": { "placeholders": { "n": {"type": "int"} } },
-  "reviewTitle": "Review & Upload"
+  "reviewTitle": "Review & Upload",
+  "submittedBadge": "Submitted ✓",
+  "submittedAt": "Submitted on {date}",
+  "@submittedAt": { "placeholders": { "date": {"type": "String"} } },
+  "biometricGateReason": "Verify it's you to upload",
+  "biometricFailedSnackbar": "Biometric verification failed. Try again."
 }

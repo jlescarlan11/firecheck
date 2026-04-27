@@ -885,4 +885,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reviewTitle => 'Review & Upload';
+
+  @override
+  String get submittedBadge => 'Submitted ✓';
+
+  @override
+  String submittedAt(String date) {
+    return 'Submitted on $date';
+  }
+
+  @override
+  String get biometricGateReason => 'Verify it\'s you to upload';
+
+  @override
+  String get biometricFailedSnackbar =>
+      'Biometric verification failed. Try again.';
 }
