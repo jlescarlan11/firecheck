@@ -263,5 +263,7 @@
   "issueWidthRequired": "Ang lapad ay dapat higit sa 0 m",
   "issueOlpResidential": "Hindi pa kumpleto ang OLP household survey",
   "issueCostAmountMissing": "Napili ang eksaktong halaga pero walang halaga",
-  "issueFeatureNoSubmission": "Walang natapos na submission para sa feature na ito"
+  "issueFeatureNoSubmission": "Walang natapos na submission para sa feature na ito",
+  "startUploadButton": "Simulan ang Pag-upload",
+  "startUploadDisabledTooltip": "Ayusin muna ang mga problema sa itaas"
 }

@@ -314,5 +314,7 @@
   "issueWidthRequired": "Width must be greater than 0 m",
   "issueOlpResidential": "OLP household survey not completed",
   "issueCostAmountMissing": "Exact cost selected but amount is empty",
-  "issueFeatureNoSubmission": "Feature has no finalized submission"
+  "issueFeatureNoSubmission": "Feature has no finalized submission",
+  "startUploadButton": "Start Upload",
+  "startUploadDisabledTooltip": "Fix the blockers above first"
 }

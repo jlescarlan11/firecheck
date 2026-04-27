@@ -858,4 +858,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get issueFeatureNoSubmission => 'Feature has no finalized submission';
+
+  @override
+  String get startUploadButton => 'Start Upload';
+
+  @override
+  String get startUploadDisabledTooltip => 'Fix the blockers above first';
 }

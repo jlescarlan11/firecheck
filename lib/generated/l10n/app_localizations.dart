@@ -1675,6 +1675,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Feature has no finalized submission'**
   String get issueFeatureNoSubmission;
+
+  /// No description provided for @startUploadButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Upload'**
+  String get startUploadButton;
+
+  /// No description provided for @startUploadDisabledTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Fix the blockers above first'**
+  String get startUploadDisabledTooltip;
 }
 
 class _AppLocalizationsDelegate

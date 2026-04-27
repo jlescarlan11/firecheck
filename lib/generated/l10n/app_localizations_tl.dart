@@ -883,4 +883,11 @@ class AppLocalizationsTl extends AppLocalizations {
   @override
   String get issueFeatureNoSubmission =>
       'Walang natapos na submission para sa feature na ito';
+
+  @override
+  String get startUploadButton => 'Simulan ang Pag-upload';
+
+  @override
+  String get startUploadDisabledTooltip =>
+      'Ayusin muna ang mga problema sa itaas';
 }
