@@ -1,6 +1,7 @@
 import 'package:firecheck/core/auth/current_user_provider.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/photos/photo_providers.dart';
+import 'package:firecheck/features/assignment/presentation/assignment_lock_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
 import 'package:firecheck/features/home/presentation/home_providers.dart';
 import 'package:firecheck/features/survey/building_form/domain/building_form_validator.dart';
@@ -129,17 +130,29 @@ class _SubmissionDetailScreenState
                     canAddMore: submissions.length < _softCap,
                     softCapTooltip: l.tabSoftCapTooltip,
                   ),
-                  PhotoStrip(submissionId: active.id),
+                  Consumer(builder: (context, ref2, _) {
+                    final locked = ref2.watch(isAssignmentLockedProvider);
+                    return IgnorePointer(
+                      ignoring: locked,
+                      child: PhotoStrip(submissionId: active.id),
+                    );
+                  }),
                   Expanded(
-                    child: isRoad
-                        ? RoadForm(
-                            submissionId: active.id,
-                            featureId: widget.featureId,
-                          )
-                        : BuildingForm(
-                            submissionId: active.id,
-                            featureId: widget.featureId,
-                          ),
+                    child: Consumer(
+                      builder: (context, ref2, _) {
+                        final locked = ref2.watch(isAssignmentLockedProvider);
+                        final form = isRoad
+                            ? RoadForm(
+                                submissionId: active.id,
+                                featureId: widget.featureId,
+                              )
+                            : BuildingForm(
+                                submissionId: active.id,
+                                featureId: widget.featureId,
+                              );
+                        return IgnorePointer(ignoring: locked, child: form);
+                      },
+                    ),
                   ),
                   _Footer(
                     submissionId: active.id,
@@ -170,6 +183,8 @@ class _Footer extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context)!;
+    final isLocked = ref.watch(isAssignmentLockedProvider);
+    if (isLocked) return const SizedBox.shrink();
     final photoCountAsync = ref.watch(_photoCountProvider(submissionId));
 
     final ready = photoCountAsync.maybeWhen(
