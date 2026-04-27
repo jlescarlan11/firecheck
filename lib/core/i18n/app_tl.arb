@@ -251,5 +251,8 @@
   "summaryComplete": "{n} tapos na",
   "summaryIncomplete": "{n} kulang pa",
   "summaryNewFeatures": "{n} bagong idinagdag",
-  "summaryPhotosPending": "{n} larawan ang kulang"
+  "summaryPhotosPending": "{n} larawan ang kulang",
+  "failedJobsTitle": "Nabigo ({n})",
+  "retryButton": "Subukan muli",
+  "retryAllButton": "Subukan lahat"
 }

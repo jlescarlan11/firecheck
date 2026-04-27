@@ -815,4 +815,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String summaryPhotosPending(int n) {
     return '$n photos pending';
   }
+
+  @override
+  String failedJobsTitle(int n) {
+    return 'Failed ($n)';
+  }
+
+  @override
+  String get retryButton => 'Retry';
+
+  @override
+  String get retryAllButton => 'Retry all';
 }

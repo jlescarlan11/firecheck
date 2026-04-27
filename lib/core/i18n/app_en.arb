@@ -299,5 +299,9 @@
   "summaryNewFeatures": "{n} new features added",
   "@summaryNewFeatures": { "placeholders": { "n": {"type": "int"} } },
   "summaryPhotosPending": "{n} photos pending",
-  "@summaryPhotosPending": { "placeholders": { "n": {"type": "int"} } }
+  "@summaryPhotosPending": { "placeholders": { "n": {"type": "int"} } },
+  "failedJobsTitle": "Failed ({n})",
+  "@failedJobsTitle": { "placeholders": { "n": {"type": "int"} } },
+  "retryButton": "Retry",
+  "retryAllButton": "Retry all"
 }

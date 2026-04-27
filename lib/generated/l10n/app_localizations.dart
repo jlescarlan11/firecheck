@@ -1603,6 +1603,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{n} photos pending'**
   String summaryPhotosPending(int n);
+
+  /// No description provided for @failedJobsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed ({n})'**
+  String failedJobsTitle(int n);
+
+  /// No description provided for @retryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retryButton;
+
+  /// No description provided for @retryAllButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry all'**
+  String get retryAllButton;
 }
 
 class _AppLocalizationsDelegate

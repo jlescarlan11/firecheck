@@ -838,4 +838,15 @@ class AppLocalizationsTl extends AppLocalizations {
   String summaryPhotosPending(int n) {
     return '$n larawan ang kulang';
   }
+
+  @override
+  String failedJobsTitle(int n) {
+    return 'Nabigo ($n)';
+  }
+
+  @override
+  String get retryButton => 'Subukan muli';
+
+  @override
+  String get retryAllButton => 'Subukan lahat';
 }
