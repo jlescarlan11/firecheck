@@ -50,11 +50,19 @@ class SubmittedAssignmentLock {
           ..where((t) => t.id.equals(assignmentId)))
         .getSingleOrNull();
     if (assignment == null || assignment.submittedAt != null) return false;
-    final activeJobs = await _db.customSelect(
+    // Bug 12 (caught during the first manual happy path): the prior version
+    // only required "no non-terminal jobs". An assignment that has had no
+    // Start Upload tap yet has zero sync_jobs at all — vacuously satisfying
+    // that condition — so submitted_at would stamp the moment a draft was
+    // saved. We now also require AT LEAST ONE success job to exist, so the
+    // lock fires only after the worker has actually drained an upload.
+    final counts = await _db.customSelect(
       '''
-      SELECT count(*) as c FROM sync_jobs j
-      WHERE j.status IN ('pending', 'in_progress', 'dead')
-      AND (
+      SELECT
+        SUM(CASE WHEN j.status IN ('pending', 'in_progress', 'dead') THEN 1 ELSE 0 END) as active,
+        SUM(CASE WHEN j.status = 'success' THEN 1 ELSE 0 END) as success
+      FROM sync_jobs j
+      WHERE
         (j.entity_type = 'submission' AND j.entity_id IN (
           SELECT s.id FROM submissions s
           JOIN features f ON f.id = s.feature_id
@@ -69,7 +77,6 @@ class SubmittedAssignmentLock {
         OR (j.entity_type = 'new_feature' AND j.entity_id IN (
           SELECT id FROM features WHERE assignment_id = ?
         ))
-      )
       ''',
       variables: [
         Variable.withString(assignmentId),
@@ -77,6 +84,8 @@ class SubmittedAssignmentLock {
         Variable.withString(assignmentId),
       ],
     ).getSingle();
-    return activeJobs.read<int>('c') == 0;
+    final active = counts.read<int?>('active') ?? 0;
+    final success = counts.read<int?>('success') ?? 0;
+    return active == 0 && success > 0;
   }
 }

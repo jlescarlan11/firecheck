@@ -113,6 +113,22 @@ void main() {
     expect(a.submittedAt, isNull);
   });
 
+  test('does NOT stamp when there are zero sync_jobs (Bug 12)', () async {
+    // Regression: an assignment that has had no Start Upload tap yet has
+    // zero sync_jobs at all. The prior implementation vacuously satisfied
+    // "no non-terminal jobs" and stamped immediately. The lock must wait
+    // for at least one success job before stamping.
+    await seedAssignment();
+
+    final sub = lock.watchAndStamp('a-1').listen((_) {});
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    await sub.cancel();
+
+    final a = await (db.select(db.assignments)..where((t) => t.id.equals('a-1')))
+        .getSingle();
+    expect(a.submittedAt, isNull);
+  });
+
   test('idempotent — does not overwrite existing submittedAt', () async {
     final original = DateTime(2026);
     await seedAssignment(submittedAt: original);
