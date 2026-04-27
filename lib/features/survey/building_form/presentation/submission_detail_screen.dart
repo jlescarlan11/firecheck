@@ -1,3 +1,4 @@
+import 'package:firecheck/core/auth/current_user_provider.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/photos/photo_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
@@ -58,17 +59,25 @@ class _SubmissionDetailScreenState
 
   Future<void> _ensureFirst() async {
     final repo = ref.read(submissionRepositoryProvider);
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) {
+      throw StateError('SubmissionDetailScreen reached without an authenticated user');
+    }
     await repo.ensureDraftForFeature(
       featureId: widget.featureId,
-      enumeratorId: 'admin', // Phase 4 will wire real auth
+      enumeratorId: userId,
     );
   }
 
   Future<void> _addTab() async {
     final repo = ref.read(submissionRepositoryProvider);
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) {
+      throw StateError('SubmissionDetailScreen._addTab without authenticated user');
+    }
     await repo.createAdditionalSubmission(
       featureId: widget.featureId,
-      enumeratorId: 'admin',
+      enumeratorId: userId,
     );
     final submissions =
         await repo.watchSubmissionsForFeature(widget.featureId).first;

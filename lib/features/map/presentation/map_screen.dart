@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firecheck/core/auth/current_user_provider.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/geo/centroid.dart';
 import 'package:firecheck/core/geo/point_in_polygon.dart';
@@ -181,9 +182,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
     if (!mounted) return;
     final submissionRepo = ref.read(submissionRepositoryProvider);
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) {
+      throw StateError('Map tap without authenticated user');
+    }
     final submission = await submissionRepo.ensureDraftForFeature(
       featureId: f.id,
-      enumeratorId: 'admin',
+      enumeratorId: userId,
     );
 
     if (reason != null) {
