@@ -130,13 +130,15 @@ class _SubmissionDetailScreenState
                     canAddMore: submissions.length < _softCap,
                     softCapTooltip: l.tabSoftCapTooltip,
                   ),
-                  Consumer(builder: (context, ref2, _) {
-                    final locked = ref2.watch(isAssignmentLockedProvider);
-                    return IgnorePointer(
-                      ignoring: locked,
-                      child: PhotoStrip(submissionId: active.id),
-                    );
-                  }),
+                  Consumer(
+                    builder: (context, ref2, _) {
+                      final locked = ref2.watch(isAssignmentLockedProvider);
+                      return IgnorePointer(
+                        ignoring: locked,
+                        child: PhotoStrip(submissionId: active.id),
+                      );
+                    },
+                  ),
                   Expanded(
                     child: Consumer(
                       builder: (context, ref2, _) {

@@ -120,13 +120,15 @@ class ReviewRepository {
     ).get();
 
     final deadJobs = deadJobRows
-        .map((r) => DeadJobRow(
-              jobId: r.read<String>('id'),
-              entityType: r.read<String>('entity_type'),
-              entityId: r.read<String>('entity_id'),
-              attempts: r.read<int>('attempts'),
-              lastError: r.read<String?>('last_error') ?? '',
-            ))
+        .map(
+          (r) => DeadJobRow(
+            jobId: r.read<String>('id'),
+            entityType: r.read<String>('entity_type'),
+            entityId: r.read<String>('entity_id'),
+            attempts: r.read<int>('attempts'),
+            lastError: r.read<String?>('last_error') ?? '',
+          ),
+        )
         .toList();
 
     return ReviewSourceData(

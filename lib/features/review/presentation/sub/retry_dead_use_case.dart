@@ -12,22 +12,22 @@ class RetryDeadUseCase {
     await (db.update(db.syncJobs)
           ..where((t) => t.id.equals(jobId) & t.status.equals('dead')))
         .write(const SyncJobsCompanion(
-      status: Value('pending'),
-      attempts: Value(0),
-      lastError: Value(null),
-      nextRetryAt: Value(null),
-    ));
+          status: Value('pending'),
+          attempts: Value(0),
+          lastError: Value(null),
+          nextRetryAt: Value(null),
+        ),);
     await triggerNow();
   }
 
   Future<void> retryAll() async {
     await (db.update(db.syncJobs)..where((t) => t.status.equals('dead')))
         .write(const SyncJobsCompanion(
-      status: Value('pending'),
-      attempts: Value(0),
-      lastError: Value(null),
-      nextRetryAt: Value(null),
-    ));
+          status: Value('pending'),
+          attempts: Value(0),
+          lastError: Value(null),
+          nextRetryAt: Value(null),
+        ),);
     await triggerNow();
   }
 }

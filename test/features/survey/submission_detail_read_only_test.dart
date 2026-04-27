@@ -28,7 +28,7 @@ void main() {
           boundaryPolygonGeojson: '{}',
           createdAt: DateTime(2026, 4, 27),
           submittedAt: Value(DateTime(2026, 4, 27)),
-        ));
+        ),);
     // Use road type so RoadForm (not BuildingForm) mounts.
     // RoadFormNotifier captures state upfront in _flush() before any await,
     // so dispose-time best-effort flushes never access state after
@@ -39,7 +39,7 @@ void main() {
           featureType: 'road',
           geometryGeojson: '{}',
           createdAt: DateTime(2026, 4, 27),
-        ));
+        ),);
     await db.into(db.submissions).insert(SubmissionsCompanion.insert(
           id: 's-1',
           featureId: 'f-1',
@@ -47,7 +47,7 @@ void main() {
           syncStatus: const Value('uploaded'),
           createdAt: DateTime(2026, 4, 27),
           updatedAt: DateTime(2026, 4, 27),
-        ));
+        ),);
 
     await tester.pumpWidget(
       ProviderScope(
@@ -58,10 +58,10 @@ void main() {
             (_) => Stream.value(Submitted(submittedAt: DateTime(2026, 4, 27))),
           ),
         ],
-        child: MaterialApp(
+        child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const SubmissionDetailScreen(featureId: 'f-1'),
+          home: SubmissionDetailScreen(featureId: 'f-1'),
         ),
       ),
     );

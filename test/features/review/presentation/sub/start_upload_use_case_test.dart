@@ -26,24 +26,24 @@ void main() {
   });
   tearDown(() async => db.close());
 
-  Future<void> _seedAssignment() async {
+  Future<void> seedAssignment() async {
     await db.into(db.assignments).insert(AssignmentsCompanion.insert(
           id: 'a-1',
           enumeratorId: 'e-1',
           campaignId: 'c-1',
           boundaryPolygonGeojson: '{}',
           createdAt: DateTime(2026, 4, 27),
-        ));
+        ),);
     await db.into(db.features).insert(FeaturesCompanion.insert(
           id: 'f-1',
           assignmentId: 'a-1',
           featureType: 'building',
           geometryGeojson: '{}',
           createdAt: DateTime(2026, 4, 27),
-        ));
+        ),);
   }
 
-  Future<void> _seedSubmission(String id, String status) async {
+  Future<void> seedSubmission(String id, String status) async {
     await db.into(db.submissions).insert(SubmissionsCompanion.insert(
           id: id,
           featureId: 'f-1',
@@ -51,14 +51,14 @@ void main() {
           syncStatus: Value(status),
           createdAt: DateTime(2026, 4, 27),
           updatedAt: DateTime(2026, 4, 27),
-        ));
+        ),);
   }
 
   test('finalizes only ready_to_upload submissions, returns count', () async {
-    await _seedAssignment();
-    await _seedSubmission('s-ready', 'ready_to_upload');
-    await _seedSubmission('s-draft', 'draft');
-    await _seedSubmission('s-uploaded', 'uploaded');
+    await seedAssignment();
+    await seedSubmission('s-ready', 'ready_to_upload');
+    await seedSubmission('s-draft', 'draft');
+    await seedSubmission('s-uploaded', 'uploaded');
 
     final result = await useCase.execute('a-1');
     expect(result.finalizedCount, 1);
@@ -71,8 +71,8 @@ void main() {
   });
 
   test('idempotent — re-running with no remaining ready_to_upload returns 0', () async {
-    await _seedAssignment();
-    await _seedSubmission('s-1', 'ready_to_upload');
+    await seedAssignment();
+    await seedSubmission('s-1', 'ready_to_upload');
     await useCase.execute('a-1');
     final result = await useCase.execute('a-1');
     expect(result.finalizedCount, 0);

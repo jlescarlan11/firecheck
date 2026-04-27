@@ -17,10 +17,10 @@ void main() {
           (ref) => Stream.value(const Unlocked()),
         ),
       ],
-      child: MaterialApp(
+      child: const MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const HomeScreen(),
+        home: HomeScreen(),
       ),
     );
   }

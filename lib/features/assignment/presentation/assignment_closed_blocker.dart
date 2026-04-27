@@ -40,7 +40,11 @@ class AssignmentClosedBlocker extends ConsumerWidget {
                     icon: const Icon(Icons.share),
                     label: Text(l.shareBundleAction),
                     onPressed: () async {
-                      await Share.shareXFiles([XFile(lock.bundleFile!.path)]);
+                      await SharePlus.instance.share(
+                        ShareParams(
+                          files: [XFile(lock.bundleFile!.path)],
+                        ),
+                      );
                     },
                   ),
               ],

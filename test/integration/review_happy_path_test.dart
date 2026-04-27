@@ -26,7 +26,7 @@ void main() {
           campaignId: 'c-1',
           boundaryPolygonGeojson: '{}',
           createdAt: DateTime(2026, 4, 27),
-        ));
+        ),);
     for (final i in [1, 2]) {
       await db.into(db.features).insert(FeaturesCompanion.insert(
             id: 'f-$i',
@@ -34,7 +34,7 @@ void main() {
             featureType: 'building',
             geometryGeojson: '{}',
             createdAt: DateTime(2026, 4, 27),
-          ));
+          ),);
       await db.into(db.submissions).insert(SubmissionsCompanion.insert(
             id: 's-$i',
             featureId: 'f-$i',
@@ -42,19 +42,19 @@ void main() {
             syncStatus: const Value('ready_to_upload'),
             createdAt: DateTime(2026, 4, 27),
             updatedAt: DateTime(2026, 4, 27),
-          ));
+          ),);
       await db.into(db.buildingAttributes).insert(BuildingAttributesCompanion.insert(
             submissionId: 's-$i',
             buildingName: Value('Bldg $i'),
             ra9514Type: const Value('C'),
-          ));
+          ),);
       await db.into(db.photos).insert(PhotosCompanion.insert(
             id: 'p-$i',
             submissionId: 's-$i',
             localPath: '/tmp/p-$i.jpg',
             capturedAt: DateTime(2026, 4, 27),
             createdAt: DateTime(2026, 4, 27),
-          ));
+          ),);
     }
 
     final fakeApi = FakeSyncApi();
@@ -68,10 +68,10 @@ void main() {
             (_) => '00000000-0000-0000-0000-000000000001',
           ),
         ],
-        child: MaterialApp(
+        child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const ReviewScreen(),
+          home: ReviewScreen(),
         ),
       ),
     );
@@ -94,7 +94,7 @@ void main() {
     final a = await (db.select(db.assignments)..where((t) => t.id.equals('a-1')))
         .getSingle();
     expect(a.submittedAt, isNotNull, reason: 'submitted_at should be stamped');
-  }, skip: true);
+  }, skip: true,);
   // Marked skip: requires the SyncController triggerNow to be wired with
   // its real worker — manual happy path on the emulator covers this in
   // Task 25. The integration test stays in tree as a documentation

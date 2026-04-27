@@ -7,12 +7,12 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   testWidgets('InProgress shows progress bar with done/total label', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
+      const MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: UploadProgressSection(
-            progress: const InProgress(done: 2, total: 5),
+            progress: InProgress(done: 2, total: 5),
           ),
         ),
       ),
@@ -25,11 +25,11 @@ void main() {
 
   testWidgets('Completed(0) shows success message', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
+      const MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
-          body: UploadProgressSection(progress: const Completed(failedCount: 0)),
+          body: UploadProgressSection(progress: Completed(failedCount: 0)),
         ),
       ),
     );

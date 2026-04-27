@@ -34,7 +34,7 @@ class _FakeAuthRepository extends AuthRepository {
 }
 
 /// Subclasses [AuthStateNotifier] to set an explicit initial [AuthState]
-/// before [_bootstrap] can overwrite it.
+/// before `_bootstrap` can overwrite it.
 class _StubAuthNotifier extends AuthStateNotifier {
   _StubAuthNotifier(AuthState initial) : super(_FakeAuthRepository()) {
     state = initial;

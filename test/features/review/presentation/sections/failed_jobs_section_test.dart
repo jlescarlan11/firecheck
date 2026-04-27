@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   testWidgets('returns SizedBox.shrink when no dead jobs', (tester) async {
     var retryAllCount = 0;
-    var retryOneIds = <String>[];
+    final retryOneIds = <String>[];
 
     await tester.pumpWidget(
       MaterialApp(
@@ -17,7 +17,7 @@ void main() {
           body: FailedJobsSection(
             deadJobs: const [],
             onRetryAll: () => retryAllCount++,
-            onRetryOne: (id) => retryOneIds.add(id),
+            onRetryOne: retryOneIds.add,
           ),
         ),
       ),
@@ -27,7 +27,7 @@ void main() {
 
   testWidgets('renders 1 row + Retry all + per-row Retry', (tester) async {
     var retryAllCount = 0;
-    var retryOneIds = <String>[];
+    final retryOneIds = <String>[];
 
     await tester.pumpWidget(
       MaterialApp(

@@ -11,9 +11,6 @@ SyncJob _job(String id, String status) => SyncJob(
       entityId: 'e-$id',
       status: status,
       attempts: 0,
-      blocksOnSubmissionId: null,
-      lastError: null,
-      nextRetryAt: null,
       createdAt: DateTime(2026, 4, 27),
     );
 
@@ -28,8 +25,8 @@ void main() {
   test('beginUpload + non-empty stream emits InProgress with done/total', () async {
     final ctrl = StreamController<List<SyncJob>>();
     addTearDown(ctrl.close);
-    final notifier = UploadProgressController(jobsStream: ctrl.stream);
-    notifier.beginUpload();
+    final notifier = UploadProgressController(jobsStream: ctrl.stream)
+      ..beginUpload();
 
     ctrl.add([_job('a', 'pending'), _job('b', 'in_progress'), _job('c', 'success')]);
     await Future<void>.delayed(const Duration(milliseconds: 10));
@@ -43,8 +40,8 @@ void main() {
   test('all-success → Completed(failedCount: 0)', () async {
     final ctrl = StreamController<List<SyncJob>>();
     addTearDown(ctrl.close);
-    final notifier = UploadProgressController(jobsStream: ctrl.stream);
-    notifier.beginUpload();
+    final notifier = UploadProgressController(jobsStream: ctrl.stream)
+      ..beginUpload();
     ctrl.add([_job('a', 'success'), _job('b', 'success')]);
     await Future<void>.delayed(const Duration(milliseconds: 10));
 
@@ -55,8 +52,8 @@ void main() {
   test('any dead → Completed(failedCount: N)', () async {
     final ctrl = StreamController<List<SyncJob>>();
     addTearDown(ctrl.close);
-    final notifier = UploadProgressController(jobsStream: ctrl.stream);
-    notifier.beginUpload();
+    final notifier = UploadProgressController(jobsStream: ctrl.stream)
+      ..beginUpload();
     ctrl.add([_job('a', 'success'), _job('b', 'dead')]);
     await Future<void>.delayed(const Duration(milliseconds: 10));
 
@@ -67,8 +64,8 @@ void main() {
   test('reset() returns to Idle', () async {
     final ctrl = StreamController<List<SyncJob>>();
     addTearDown(ctrl.close);
-    final notifier = UploadProgressController(jobsStream: ctrl.stream);
-    notifier.beginUpload();
+    final notifier = UploadProgressController(jobsStream: ctrl.stream)
+      ..beginUpload();
     ctrl.add([_job('a', 'success')]);
     await Future<void>.delayed(const Duration(milliseconds: 10));
     notifier.reset();

@@ -21,13 +21,13 @@ void main() {
   });
   tearDown(() async => db.close());
 
-  Future<String> _seedDeadJob({String id = 'j-1'}) async {
+  Future<String> seedDeadJob({String id = 'j-1'}) async {
     await db.into(db.syncJobs).insert(SyncJobsCompanion.insert(
           id: id,
           entityType: 'submission',
           entityId: 's-1',
           createdAt: DateTime(2026, 4, 27),
-        ));
+        ),);
     await (db.update(db.syncJobs)..where((t) => t.id.equals(id))).write(
       SyncJobsCompanion(
         status: const Value('dead'),
@@ -40,7 +40,7 @@ void main() {
   }
 
   test('retryOne flips dead → pending and resets attempts/error/retry_at', () async {
-    final jobId = await _seedDeadJob();
+    final jobId = await seedDeadJob();
     await useCase.retryOne(jobId);
 
     final row = await (db.select(db.syncJobs)..where((t) => t.id.equals(jobId)))
@@ -53,8 +53,8 @@ void main() {
   });
 
   test('retryAll flips every dead job to pending', () async {
-    await _seedDeadJob(id: 'j-1');
-    await _seedDeadJob(id: 'j-2');
+    await seedDeadJob();
+    await seedDeadJob(id: 'j-2');
     await useCase.retryAll();
 
     final rows = await db.select(db.syncJobs).get();
@@ -70,7 +70,7 @@ void main() {
           entityType: 'submission',
           entityId: 's-1',
           createdAt: DateTime(2026, 4, 27),
-        ));
+        ),);
     await useCase.retryOne('j-1');
 
     final row = await (db.select(db.syncJobs)..where((t) => t.id.equals('j-1')))

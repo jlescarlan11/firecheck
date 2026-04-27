@@ -35,9 +35,7 @@ Submission _sub(
       featureId: featureId,
       submittedBy: 'u-1',
       doesNotExist: doesNotExist,
-      remarks: null,
       syncStatus: syncStatus,
-      overrideReason: null,
       createdAt: DateTime(2026, 4, 27),
       updatedAt: DateTime(2026, 4, 27),
     );
@@ -51,7 +49,6 @@ BuildingAttribute _bldg(
 }) =>
     BuildingAttribute(
       submissionId: submissionId,
-      cbmsId: null,
       buildingName: 'name',
       ra9514Type: ra9514Type,
       storeys: 1,
@@ -70,7 +67,6 @@ RoadAttribute _roadAttrs(String submissionId, {double? widthMeters}) =>
       roadName: 'Main',
       widthMeters: widthMeters,
       roadFeaturesJson: '[]',
-      othersDescription: null,
     );
 
 void main() {
@@ -133,7 +129,7 @@ void main() {
       ReviewSourceData(
         features: [_building('f-1')],
         submissions: [_sub('s-1', 'f-1')],
-        buildingAttrs: [_bldg('s-1', ra9514Type: null)],
+        buildingAttrs: [_bldg('s-1')],
         roadAttrs: const [],
         householdSurveys: const [],
         photoCountsBySubmission: const {'s-1': 1},
@@ -205,7 +201,7 @@ void main() {
       ReviewSourceData(
         features: [_building('f-1')],
         submissions: [_sub('s-1', 'f-1', doesNotExist: true)],
-        buildingAttrs: [_bldg('s-1', ra9514Type: null)],
+        buildingAttrs: [_bldg('s-1')],
         roadAttrs: const [],
         householdSurveys: const [],
         photoCountsBySubmission: const {'s-1': 0},
@@ -224,14 +220,14 @@ void main() {
 
   test('dead jobs surface as DeadJobRow rows', () {
     final state = buildReviewState(
-      ReviewSourceData(
-        features: const [],
-        submissions: const [],
-        buildingAttrs: const [],
-        roadAttrs: const [],
-        householdSurveys: const [],
-        photoCountsBySubmission: const {},
-        deadJobs: const [
+      const ReviewSourceData(
+        features: [],
+        submissions: [],
+        buildingAttrs: [],
+        roadAttrs: [],
+        householdSurveys: [],
+        photoCountsBySubmission: {},
+        deadJobs: [
           DeadJobRow(
             jobId: 'j-1',
             entityType: 'photo',
@@ -256,7 +252,7 @@ void main() {
         ],
         buildingAttrs: [
           _bldg('s-1', ra9514Type: 'C'),
-          _bldg('s-2', ra9514Type: null),
+          _bldg('s-2'),
         ],
         roadAttrs: const [],
         householdSurveys: const [],

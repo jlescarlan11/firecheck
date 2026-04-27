@@ -17,10 +17,10 @@ void main() {
             (_) => Stream.value(const ClosedRemotely(bundleFile: null)),
           ),
         ],
-        child: MaterialApp(
+        child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const AssignmentClosedBlocker(),
+          home: AssignmentClosedBlocker(),
         ),
       ),
     );
@@ -41,10 +41,10 @@ void main() {
             (_) => Stream.value(ClosedRemotely(bundleFile: tempFile)),
           ),
         ],
-        child: MaterialApp(
+        child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const AssignmentClosedBlocker(),
+          home: AssignmentClosedBlocker(),
         ),
       ),
     );

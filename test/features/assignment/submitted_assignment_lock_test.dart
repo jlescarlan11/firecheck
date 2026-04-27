@@ -14,7 +14,7 @@ void main() {
   });
   tearDown(() async => db.close());
 
-  Future<void> _seedAssignment({DateTime? submittedAt}) async {
+  Future<void> seedAssignment({DateTime? submittedAt}) async {
     await db.into(db.assignments).insert(AssignmentsCompanion.insert(
           id: 'a-1',
           enumeratorId: 'e-1',
@@ -22,30 +22,30 @@ void main() {
           boundaryPolygonGeojson: '{}',
           createdAt: DateTime(2026, 4, 27),
           submittedAt: Value(submittedAt),
-        ));
+        ),);
     await db.into(db.features).insert(FeaturesCompanion.insert(
           id: 'f-1',
           assignmentId: 'a-1',
           featureType: 'building',
           geometryGeojson: '{}',
           createdAt: DateTime(2026, 4, 27),
-        ));
+        ),);
     await db.into(db.submissions).insert(SubmissionsCompanion.insert(
           id: 's-1',
           featureId: 'f-1',
           submittedBy: const Value('u-1'),
           createdAt: DateTime(2026, 4, 27),
           updatedAt: DateTime(2026, 4, 27),
-        ));
+        ),);
   }
 
-  Future<void> _addJob(String id, String status, {String entityType = 'submission', String entityId = 's-1'}) async {
+  Future<void> addJob(String id, String status, {String entityType = 'submission', String entityId = 's-1'}) async {
     await db.into(db.syncJobs).insert(SyncJobsCompanion.insert(
           id: id,
           entityType: entityType,
           entityId: entityId,
           createdAt: DateTime(2026, 4, 27),
-        ));
+        ),);
     if (status != 'pending') {
       await (db.update(db.syncJobs)..where((t) => t.id.equals(id))).write(
         SyncJobsCompanion(status: Value(status)),
@@ -54,8 +54,8 @@ void main() {
   }
 
   test('stamps submittedAt when no non-terminal jobs remain', () async {
-    await _seedAssignment();
-    await _addJob('j-1', 'success');
+    await seedAssignment();
+    await addJob('j-1', 'success');
 
     final sub = lock.watchAndStamp('a-1').listen((_) {});
     await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -67,8 +67,8 @@ void main() {
   });
 
   test('does NOT stamp when a pending submission job remains', () async {
-    await _seedAssignment();
-    await _addJob('j-1', 'pending');
+    await seedAssignment();
+    await addJob('j-1', 'pending');
 
     final sub = lock.watchAndStamp('a-1').listen((_) {});
     await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -80,16 +80,16 @@ void main() {
   });
 
   test('does NOT stamp when a pending photo job remains', () async {
-    await _seedAssignment();
+    await seedAssignment();
     await db.into(db.photos).insert(PhotosCompanion.insert(
           id: 'p-1',
           submissionId: 's-1',
           localPath: '/tmp/x.jpg',
           capturedAt: DateTime(2026, 4, 27),
           createdAt: DateTime(2026, 4, 27),
-        ));
-    await _addJob('j-1', 'success'); // submission job done
-    await _addJob('j-2', 'pending', entityType: 'photo', entityId: 'p-1');
+        ),);
+    await addJob('j-1', 'success'); // submission job done
+    await addJob('j-2', 'pending', entityType: 'photo', entityId: 'p-1');
 
     final sub = lock.watchAndStamp('a-1').listen((_) {});
     await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -101,8 +101,8 @@ void main() {
   });
 
   test('does NOT stamp when a dead job remains', () async {
-    await _seedAssignment();
-    await _addJob('j-1', 'dead');
+    await seedAssignment();
+    await addJob('j-1', 'dead');
 
     final sub = lock.watchAndStamp('a-1').listen((_) {});
     await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -114,9 +114,9 @@ void main() {
   });
 
   test('idempotent — does not overwrite existing submittedAt', () async {
-    final original = DateTime(2026, 1, 1);
-    await _seedAssignment(submittedAt: original);
-    await _addJob('j-1', 'success');
+    final original = DateTime(2026);
+    await seedAssignment(submittedAt: original);
+    await addJob('j-1', 'success');
 
     final sub = lock.watchAndStamp('a-1').listen((_) {});
     await Future<void>.delayed(const Duration(milliseconds: 50));

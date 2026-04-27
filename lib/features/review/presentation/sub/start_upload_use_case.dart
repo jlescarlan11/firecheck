@@ -26,8 +26,10 @@ class StartUploadUseCase {
     final ready = await (db.select(db.submissions).join([
       innerJoin(db.features, db.features.id.equalsExp(db.submissions.featureId)),
     ])
-          ..where(db.features.assignmentId.equals(assignmentId) &
-              db.submissions.syncStatus.equals('ready_to_upload')))
+          ..where(
+            db.features.assignmentId.equals(assignmentId) &
+                db.submissions.syncStatus.equals('ready_to_upload'),
+          ))
         .map((row) => row.readTable(db.submissions))
         .get();
 

@@ -7,7 +7,6 @@ import 'package:firecheck/features/review/presentation/sections/start_upload_but
 import 'package:firecheck/features/review/presentation/sections/summary_card.dart';
 import 'package:firecheck/features/review/presentation/sections/upload_progress_section.dart';
 import 'package:firecheck/features/review/presentation/sections/validation_section.dart';
-import 'package:firecheck/features/review/presentation/upload_progress_controller.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -70,8 +69,7 @@ class ReviewScreen extends ConsumerWidget {
   }
 
   Future<void> _start(BuildContext context, WidgetRef ref) async {
-    final controller = ref.read(uploadProgressControllerProvider.notifier);
-    controller.beginUpload();
+    ref.read(uploadProgressControllerProvider.notifier).beginUpload();
     final useCase = ref.read(startUploadUseCaseProvider);
     final repo = ref.read(assignmentRepositoryProvider);
     final assignment = await repo.getCurrentAssignment();

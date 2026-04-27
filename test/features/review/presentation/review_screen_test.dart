@@ -43,10 +43,10 @@ void main() {
             (ref) => _NoOpAssignmentRepository(_StubClient(), db),
           ),
         ],
-        child: MaterialApp(
+        child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const ReviewScreen(),
+          home: ReviewScreen(),
         ),
       ),
     );
