@@ -143,16 +143,24 @@ class _SubmissionDetailScreenState
                     child: Consumer(
                       builder: (context, ref2, _) {
                         final locked = ref2.watch(isAssignmentLockedProvider);
-                        final form = isRoad
+                        // Bug 15: pass readOnly: locked instead of wrapping
+                        // the form in IgnorePointer. IgnorePointer blocks
+                        // ALL pointer events including scroll, so users
+                        // couldn't review submitted data on a long form.
+                        // The form's existing `disabled` plumbing already
+                        // disables every input via enabled:/onChanged:null;
+                        // readOnly just OR's that on top of doesNotExist.
+                        return isRoad
                             ? RoadForm(
                                 submissionId: active.id,
                                 featureId: widget.featureId,
+                                readOnly: locked,
                               )
                             : BuildingForm(
                                 submissionId: active.id,
                                 featureId: widget.featureId,
+                                readOnly: locked,
                               );
-                        return IgnorePointer(ignoring: locked, child: form);
                       },
                     ),
                   ),

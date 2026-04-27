@@ -10,11 +10,17 @@ class RoadForm extends ConsumerWidget {
   const RoadForm({
     required this.submissionId,
     required this.featureId,
+    this.readOnly = false,
     super.key,
   });
 
   final String submissionId;
   final String featureId;
+
+  /// When true, every input is disabled but the form remains scrollable.
+  /// Used by `SubmissionDetailScreen` when the assignment is locked
+  /// (Submitted or ClosedRemotely). Bug 15.
+  final bool readOnly;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -22,7 +28,7 @@ class RoadForm extends ConsumerWidget {
     final key = RoadFormKey(submissionId: submissionId, featureId: featureId);
     final state = ref.watch(roadFormNotifierProvider(key));
     final notifier = ref.read(roadFormNotifierProvider(key).notifier);
-    final disabled = state.doesNotExist;
+    final disabled = state.doesNotExist || readOnly;
 
     return ListView(
       padding: const EdgeInsets.all(12),
@@ -60,9 +66,11 @@ class RoadForm extends ConsumerWidget {
               Switch(
                 value: state.doesNotExist,
                 activeThumbColor: const Color(0xFFC53030),
-                onChanged: (v) => notifier.update(
-                  (s) => s.copyWith(doesNotExist: v),
-                ),
+                onChanged: readOnly
+                    ? null
+                    : (v) => notifier.update(
+                          (s) => s.copyWith(doesNotExist: v),
+                        ),
               ),
             ],
           ),
