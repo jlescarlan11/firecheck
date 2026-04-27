@@ -826,4 +826,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get retryAllButton => 'Retry all';
+
+  @override
+  String validationBlockersTitle(int n) {
+    return 'Must fix before upload ($n)';
+  }
+
+  @override
+  String validationWarningsTitle(int n) {
+    return 'Recommended ($n)';
+  }
+
+  @override
+  String get goToFeature => 'Go to feature';
+
+  @override
+  String get issuePhotoRequired => 'At least one photo required';
+
+  @override
+  String get issueRa9514Required => 'RA 9514 type not selected';
+
+  @override
+  String get issueWidthRequired => 'Width must be greater than 0 m';
+
+  @override
+  String get issueOlpResidential => 'OLP household survey not completed';
+
+  @override
+  String get issueCostAmountMissing =>
+      'Exact cost selected but amount is empty';
+
+  @override
+  String get issueFeatureNoSubmission => 'Feature has no finalized submission';
 }

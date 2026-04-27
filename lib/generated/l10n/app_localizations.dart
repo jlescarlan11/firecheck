@@ -1621,6 +1621,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Retry all'**
   String get retryAllButton;
+
+  /// No description provided for @validationBlockersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Must fix before upload ({n})'**
+  String validationBlockersTitle(int n);
+
+  /// No description provided for @validationWarningsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended ({n})'**
+  String validationWarningsTitle(int n);
+
+  /// No description provided for @goToFeature.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to feature'**
+  String get goToFeature;
+
+  /// No description provided for @issuePhotoRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'At least one photo required'**
+  String get issuePhotoRequired;
+
+  /// No description provided for @issueRa9514Required.
+  ///
+  /// In en, this message translates to:
+  /// **'RA 9514 type not selected'**
+  String get issueRa9514Required;
+
+  /// No description provided for @issueWidthRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Width must be greater than 0 m'**
+  String get issueWidthRequired;
+
+  /// No description provided for @issueOlpResidential.
+  ///
+  /// In en, this message translates to:
+  /// **'OLP household survey not completed'**
+  String get issueOlpResidential;
+
+  /// No description provided for @issueCostAmountMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact cost selected but amount is empty'**
+  String get issueCostAmountMissing;
+
+  /// No description provided for @issueFeatureNoSubmission.
+  ///
+  /// In en, this message translates to:
+  /// **'Feature has no finalized submission'**
+  String get issueFeatureNoSubmission;
 }
 
 class _AppLocalizationsDelegate

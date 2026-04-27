@@ -303,5 +303,16 @@
   "failedJobsTitle": "Failed ({n})",
   "@failedJobsTitle": { "placeholders": { "n": {"type": "int"} } },
   "retryButton": "Retry",
-  "retryAllButton": "Retry all"
+  "retryAllButton": "Retry all",
+  "validationBlockersTitle": "Must fix before upload ({n})",
+  "@validationBlockersTitle": { "placeholders": { "n": {"type": "int"} } },
+  "validationWarningsTitle": "Recommended ({n})",
+  "@validationWarningsTitle": { "placeholders": { "n": {"type": "int"} } },
+  "goToFeature": "Go to feature",
+  "issuePhotoRequired": "At least one photo required",
+  "issueRa9514Required": "RA 9514 type not selected",
+  "issueWidthRequired": "Width must be greater than 0 m",
+  "issueOlpResidential": "OLP household survey not completed",
+  "issueCostAmountMissing": "Exact cost selected but amount is empty",
+  "issueFeatureNoSubmission": "Feature has no finalized submission"
 }

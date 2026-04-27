@@ -254,5 +254,14 @@
   "summaryPhotosPending": "{n} larawan ang kulang",
   "failedJobsTitle": "Nabigo ({n})",
   "retryButton": "Subukan muli",
-  "retryAllButton": "Subukan lahat"
+  "retryAllButton": "Subukan lahat",
+  "validationBlockersTitle": "Kailangang ayusin bago i-upload ({n})",
+  "validationWarningsTitle": "Inirerekomenda ({n})",
+  "goToFeature": "Pumunta sa feature",
+  "issuePhotoRequired": "Kailangan ng kahit isang larawan",
+  "issueRa9514Required": "Hindi pa napipili ang uri ng RA 9514",
+  "issueWidthRequired": "Ang lapad ay dapat higit sa 0 m",
+  "issueOlpResidential": "Hindi pa kumpleto ang OLP household survey",
+  "issueCostAmountMissing": "Napili ang eksaktong halaga pero walang halaga",
+  "issueFeatureNoSubmission": "Walang natapos na submission para sa feature na ito"
 }

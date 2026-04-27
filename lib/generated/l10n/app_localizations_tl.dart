@@ -849,4 +849,38 @@ class AppLocalizationsTl extends AppLocalizations {
 
   @override
   String get retryAllButton => 'Subukan lahat';
+
+  @override
+  String validationBlockersTitle(int n) {
+    return 'Kailangang ayusin bago i-upload ($n)';
+  }
+
+  @override
+  String validationWarningsTitle(int n) {
+    return 'Inirerekomenda ($n)';
+  }
+
+  @override
+  String get goToFeature => 'Pumunta sa feature';
+
+  @override
+  String get issuePhotoRequired => 'Kailangan ng kahit isang larawan';
+
+  @override
+  String get issueRa9514Required => 'Hindi pa napipili ang uri ng RA 9514';
+
+  @override
+  String get issueWidthRequired => 'Ang lapad ay dapat higit sa 0 m';
+
+  @override
+  String get issueOlpResidential =>
+      'Hindi pa kumpleto ang OLP household survey';
+
+  @override
+  String get issueCostAmountMissing =>
+      'Napili ang eksaktong halaga pero walang halaga';
+
+  @override
+  String get issueFeatureNoSubmission =>
+      'Walang natapos na submission para sa feature na ito';
 }
