@@ -224,6 +224,17 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
       await pointManager.deleteAll();
       await _renderNewFeatures();
     }
+    // Re-attach the click listener AFTER annotations exist. Belt-and-
+    // braces against the mapbox_maps_flutter 2.22 quirk where a listener
+    // attached to an empty manager doesn't pick up annotations added
+    // later. Bug 13.
+    // ignore: deprecated_member_use
+    manager.addOnPolygonAnnotationClickListener(
+      _FeatureClickHandler(
+        annotationToFeature: _annotationToFeature,
+        onTap: widget.onFeatureTap,
+      ),
+    );
   }
 
   Future<void> _rerenderBoundary() async {

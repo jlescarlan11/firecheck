@@ -15,11 +15,21 @@ import 'package:go_router/go_router.dart';
 
 void main() {
   Widget subject() {
+    final stubAssignment = Assignment(
+      id: 'a1',
+      enumeratorId: 'e1',
+      campaignId: 'c1',
+      boundaryPolygonGeojson: '{}',
+      status: 'assigned',
+      closedRemotely: false,
+      createdAt: DateTime.now(),
+    );
     return ProviderScope(
       overrides: [
         mapRendererProvider.overrideWithValue(FakeMapRenderer()),
         currentFeaturesProvider.overrideWith((ref) => Stream.value(const [])),
-        currentAssignmentProvider.overrideWith((ref) => Stream.value(null)),
+        currentAssignmentProvider
+            .overrideWith((ref) => Stream.value(stubAssignment)),
         assignmentLockStateProvider
             .overrideWith((_) => Stream.value(const Unlocked())),
       ],

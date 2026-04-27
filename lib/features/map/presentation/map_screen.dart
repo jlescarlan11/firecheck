@@ -50,27 +50,33 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     // Subscribe so the GPS stream is hot from mount, not first tap.
     ref.watch(currentPositionProvider);
 
+    // Bug 13b: don't mount the Mapbox renderer until BOTH the assignment
+    // AND the features list have loaded. currentFeaturesProvider returns
+    // Stream.value([]) while the assignment is null (loading), so without
+    // this gate the renderer would mount with an empty features list,
+    // _onMapCreated would attach the click listener to a manager with 0
+    // annotations, and subsequent feature emissions wouldn't register
+    // tappable polygons (mapbox_maps_flutter 2.22 quirk — listener bound
+    // to an empty manager doesn't pick up later annotations cleanly).
+    final assignment = assignmentAsync.value;
+    final features = featuresAsync.value;
+    final mapReady = assignment != null && features != null;
+
     return Scaffold(
       appBar: AppBar(title: Text(l.mapTitle)),
       body: Stack(
         children: [
           SizedBox.expand(
-            child: featuresAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('Error: $e')),
-              data: (features) {
-                final boundary =
-                    assignmentAsync.value?.boundaryPolygonGeojson ?? '';
-                return renderer.build(
-                  context,
-                  features: features,
-                  boundaryGeojson: boundary,
-                  onFeatureTap: _handleFeatureTap,
-                  onLongPress: _handleLongPress,
-                  addModeActive: _addModeActive,
-                );
-              },
-            ),
+            child: !mapReady
+                ? const Center(child: CircularProgressIndicator())
+                : renderer.build(
+                    context,
+                    features: features,
+                    boundaryGeojson: assignment.boundaryPolygonGeojson,
+                    onFeatureTap: _handleFeatureTap,
+                    onLongPress: _handleLongPress,
+                    addModeActive: _addModeActive,
+                  ),
           ),
           if (_addModeActive)
             Positioned(

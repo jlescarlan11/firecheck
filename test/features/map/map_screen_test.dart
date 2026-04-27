@@ -49,7 +49,16 @@ void main() {
       status: 'unfilled',
       createdAt: DateTime.now(),
     );
-    await tester.pumpWidget(buildSubject(features: [f]));
+    final a = Assignment(
+      id: 'a1',
+      enumeratorId: 'e1',
+      campaignId: 'c1',
+      boundaryPolygonGeojson: '{}',
+      status: 'assigned',
+      closedRemotely: false,
+      createdAt: DateTime.now(),
+    );
+    await tester.pumpWidget(buildSubject(features: [f], assignment: a));
     await tester.pump();
     expect(find.byKey(const Key('fake-map-feature-f1')), findsOneWidget);
   });
