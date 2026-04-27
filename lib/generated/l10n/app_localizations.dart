@@ -1711,6 +1711,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{n} items failed. Check Failed section.'**
   String uploadCompleteWithFailures(int n);
+
+  /// No description provided for @reviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review & Upload'**
+  String get reviewTitle;
 }
 
 class _AppLocalizationsDelegate

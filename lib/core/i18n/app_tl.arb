@@ -269,5 +269,6 @@
   "uploadProgressLabel": "Ina-upload ang {done} sa {total} items…",
   "uploadProgressShowDetails": "Ipakita ang detalye",
   "uploadCompleteSuccess": "Lahat ng {n} items ay naka-upload na.",
-  "uploadCompleteWithFailures": "{n} items ang nabigo. Tingnan ang Failed."
+  "uploadCompleteWithFailures": "{n} items ang nabigo. Tingnan ang Failed.",
+  "reviewTitle": "Suriin at I-upload"
 }

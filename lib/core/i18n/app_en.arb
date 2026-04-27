@@ -323,5 +323,6 @@
   "uploadCompleteSuccess": "All {n} items uploaded.",
   "@uploadCompleteSuccess": { "placeholders": { "n": {"type": "int"} } },
   "uploadCompleteWithFailures": "{n} items failed. Check Failed section.",
-  "@uploadCompleteWithFailures": { "placeholders": { "n": {"type": "int"} } }
+  "@uploadCompleteWithFailures": { "placeholders": { "n": {"type": "int"} } },
+  "reviewTitle": "Review & Upload"
 }

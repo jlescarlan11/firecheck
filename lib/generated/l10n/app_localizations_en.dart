@@ -882,4 +882,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String uploadCompleteWithFailures(int n) {
     return '$n items failed. Check Failed section.';
   }
+
+  @override
+  String get reviewTitle => 'Review & Upload';
 }

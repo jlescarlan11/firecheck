@@ -908,4 +908,7 @@ class AppLocalizationsTl extends AppLocalizations {
   String uploadCompleteWithFailures(int n) {
     return '$n items ang nabigo. Tingnan ang Failed.';
   }
+
+  @override
+  String get reviewTitle => 'Suriin at I-upload';
 }
