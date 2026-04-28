@@ -10,6 +10,7 @@ import 'package:firecheck/core/geo/point_in_polygon.dart';
 import 'package:firecheck/core/geo/polyline_midpoint.dart';
 import 'package:firecheck/core/location/distance.dart';
 import 'package:firecheck/core/location/location_providers.dart';
+import 'package:firecheck/core/location/location_service.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_lock_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
 import 'package:firecheck/features/map/presentation/map_providers.dart';
@@ -253,11 +254,23 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final analytics = ref.read(analyticsServiceProvider);
     final locationService = ref.read(locationServiceProvider);
 
-    final perm = await locationService.checkPermission();
+    var perm = await locationService.checkPermission();
+
+    // Rationale + OS prompt path lands in Task 15. For now, treat plain
+    // `denied` the same as deniedForever — bail without a snackbar but
+    // also without a fly. (Behavior tightened in Task 15.)
+
+    if (perm == LocationPermission.deniedForever ||
+        perm == LocationPermission.unableToDetermine) {
+      _showSettingsShortcutSnackbar(locationService);
+      analytics.track('map.recenter.tapped', properties: {
+        'outcome': 'permission_denied_forever',
+      });
+      return;
+    }
     if (perm != LocationPermission.whileInUse &&
         perm != LocationPermission.always) {
-      // Branches handled in later tasks (rationale, deniedForever).
-      return;
+      return; // tightened in Task 15
     }
 
     if (seq != _recenterRequestSeq) return;
@@ -363,6 +376,21 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final l = AppLocalizations.of(context)!;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(l.locationSnackbarLowAccuracy)),
+    );
+  }
+
+  void _showSettingsShortcutSnackbar(LocationService locationService) {
+    if (!mounted) return;
+    final l = AppLocalizations.of(context)!;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(l.locationSnackbarPermanentlyDenied),
+        duration: const Duration(seconds: 6),
+        action: SnackBarAction(
+          label: l.locationSnackbarOpenSettings,
+          onPressed: () => locationService.openAppSettings(),
+        ),
+      ),
     );
   }
 

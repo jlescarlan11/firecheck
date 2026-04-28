@@ -225,4 +225,45 @@ void main() {
       },
     );
   });
+
+  group('AC5 deniedForever', () {
+    testWidgets(
+      'tap → snackbar with Open settings; tap action → openAppSettingsCalled',
+      (tester) async {
+        final renderer = FakeMapRenderer();
+        final loc = FakeLocationService(
+          checkPermissionResult: LocationPermission.deniedForever,
+        );
+        final analytics = RecordingAnalyticsService();
+
+        await pumpMap(
+          tester,
+          renderer: renderer,
+          locationService: loc,
+          analytics: analytics,
+          positionStream: const Stream<Position>.empty(),
+        );
+
+        await tester.tap(find.byType(RecenterButton));
+        await tester.pump();
+
+        expect(
+          find.text('Location permission denied. Open settings to enable it.'),
+          findsOneWidget,
+        );
+        expect(renderer.cameraTargetHistory, isEmpty);
+        expect(analytics.events.last.properties, {
+          'outcome': 'permission_denied_forever',
+        });
+
+        // SnackBarAction is off-screen in test; use ensureVisible to scroll it into view,
+        // or tap it directly via the widget hierarchy.
+        await tester.ensureVisible(find.text('Open settings'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Open settings'));
+        await tester.pump();
+        expect(loc.openAppSettingsCalled, isTrue);
+      },
+    );
+  });
 }
