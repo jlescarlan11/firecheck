@@ -287,7 +287,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         'accuracy_m': accurate.accuracy.round(),
       });
     } on TimeoutException {
-      // Handled in Task 13.
+      if (!mounted || seq != _recenterRequestSeq) return;
+      final best = ref.read(currentPositionProvider).valueOrNull;
+      if (best != null) _flyTo(best, seq: seq);
+      _showLowAccuracySnackbar();
+      analytics.track('map.recenter.tapped', properties: {
+        'outcome': 'low_accuracy_timeout',
+        'accuracy_m': best?.accuracy.round(),
+      });
     } finally {
       if (mounted && seq == _recenterRequestSeq) {
         setState(() => _recenterState = RecenterButtonState.idle);
@@ -349,6 +356,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       if (mounted) Navigator.of(context, rootNavigator: true).pop();
       return null;
     }
+  }
+
+  void _showLowAccuracySnackbar() {
+    if (!mounted) return;
+    final l = AppLocalizations.of(context)!;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l.locationSnackbarLowAccuracy)),
+    );
   }
 
   Widget _pill(

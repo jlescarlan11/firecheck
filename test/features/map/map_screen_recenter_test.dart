@@ -175,4 +175,54 @@ void main() {
       },
     );
   });
+
+  group('AC6/AC7 timeout', () {
+    testWidgets(
+      'stream emits only poor fixes → after 8s, best-effort recenter + warning',
+      (tester) async {
+        final renderer = FakeMapRenderer();
+        final poor = fakePos(lat: 10.0, lng: 123.0, accuracy: 250);
+        // Stream that never emits — slow path's firstWhere blocks until .timeout fires.
+        final controller = StreamController<Position>();
+        final loc = FakeLocationService(
+          checkPermissionResult: LocationPermission.whileInUse,
+          positions: controller.stream,
+        );
+        final analytics = RecordingAnalyticsService();
+
+        await pumpMap(
+          tester,
+          renderer: renderer,
+          locationService: loc,
+          analytics: analytics,
+          // Cache returns poor (>100m) so orchestration enters slow path.
+          positionStream: Stream.value(poor),
+        );
+
+        await tester.runAsync(() async {
+          await tester.tap(find.byType(RecenterButton));
+          await tester.pump();
+          // Real-time wait so .timeout(8s) actually fires.
+          await Future<void>.delayed(const Duration(seconds: 9));
+        });
+        // Pump to flush widget updates after timeout's setState/snackbar.
+        await tester.pump();
+        await tester.pump();
+
+        expect(
+          find.text('Location accuracy is low. Showing your approximate position.'),
+          findsOneWidget,
+        );
+        expect(renderer.cameraTargetHistory, hasLength(1));
+        expect(renderer.cameraTargetHistory.first.lat, 10.0);
+        expect(analytics.events.last.properties, {
+          'outcome': 'low_accuracy_timeout',
+          'accuracy_m': 250,
+        });
+        expect(find.byIcon(Icons.my_location), findsOneWidget);
+
+        await controller.close();
+      },
+    );
+  });
 }
