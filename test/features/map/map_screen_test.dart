@@ -93,7 +93,7 @@ void main() {
         supportedLocales: AppLocalizations.supportedLocales,
         home: MapScreen(),
       ),
-    ));
+    ),);
     await tester.pump();
 
     expect(renderer.lastInitialCameraTarget, isNotNull);

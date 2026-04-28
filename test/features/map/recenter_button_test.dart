@@ -10,7 +10,7 @@ void main() {
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(body: Center(child: child)),
-    ));
+    ),);
     await tester.pump();
   }
 

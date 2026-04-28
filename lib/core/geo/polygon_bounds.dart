@@ -27,8 +27,10 @@ PolygonBounds? polygonBoundsFromGeojson(String geojson) {
   if (coords is! List<Object?>) return null;
   if (coords.isEmpty) return null;
 
-  double minLat = double.infinity, maxLat = -double.infinity;
-  double minLng = double.infinity, maxLng = -double.infinity;
+  var minLat = double.infinity;
+  var maxLat = -double.infinity;
+  var minLng = double.infinity;
+  var maxLng = -double.infinity;
   var pointCount = 0;
 
   for (final ring in coords) {

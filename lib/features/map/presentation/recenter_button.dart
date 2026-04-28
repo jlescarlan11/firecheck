@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 
 class RecenterButton extends StatelessWidget {
   const RecenterButton({
-    super.key,
     required this.state,
     required this.onTap,
+    super.key,
   });
 
   final RecenterButtonState state;

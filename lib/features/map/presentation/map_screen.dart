@@ -4,15 +4,15 @@ import 'package:firecheck/core/analytics/analytics_providers.dart';
 import 'package:firecheck/core/auth/current_user_provider.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/geo/centroid.dart';
-import 'package:firecheck/core/geo/polygon_bounds.dart';
-import 'package:firecheck/features/map/presentation/camera_target.dart';
 import 'package:firecheck/core/geo/point_in_polygon.dart';
+import 'package:firecheck/core/geo/polygon_bounds.dart';
 import 'package:firecheck/core/geo/polyline_midpoint.dart';
 import 'package:firecheck/core/location/distance.dart';
 import 'package:firecheck/core/location/location_providers.dart';
 import 'package:firecheck/core/location/location_service.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_lock_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
+import 'package:firecheck/features/map/presentation/camera_target.dart';
 import 'package:firecheck/features/map/presentation/map_providers.dart';
 import 'package:firecheck/features/map/presentation/recenter_button.dart';
 import 'package:firecheck/features/map/presentation/recenter_button_state.dart';
@@ -261,7 +261,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       if (allow != true) {
         analytics.track('map.recenter.tapped', properties: {
           'outcome': 'permission_rationale_dismissed',
-        });
+        },);
         return;
       }
       perm = await locationService.requestPermission();
@@ -272,14 +272,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       _showSettingsShortcutSnackbar(locationService);
       analytics.track('map.recenter.tapped', properties: {
         'outcome': 'permission_denied_forever',
-      });
+      },);
       return;
     }
 
     if (perm == LocationPermission.denied) {
       analytics.track('map.recenter.tapped', properties: {
         'outcome': 'permission_denied',
-      });
+      },);
       return;
     }
 
@@ -291,7 +291,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       analytics.track('map.recenter.tapped', properties: {
         'outcome': 'recentered_from_cache',
         'accuracy_m': cached.accuracy.round(),
-      });
+      },);
       return;
     }
 
@@ -308,7 +308,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       analytics.track('map.recenter.tapped', properties: {
         'outcome': 'recentered_after_wait',
         'accuracy_m': accurate.accuracy.round(),
-      });
+      },);
     } on TimeoutException {
       if (!mounted || seq != _recenterRequestSeq) return;
       final best = ref.read(currentPositionProvider).valueOrNull;
@@ -317,7 +317,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       analytics.track('map.recenter.tapped', properties: {
         'outcome': 'low_accuracy_timeout',
         'accuracy_m': best?.accuracy.round(),
-      });
+      },);
     } finally {
       if (mounted && seq == _recenterRequestSeq) {
         setState(() => _recenterState = RecenterButtonState.idle);

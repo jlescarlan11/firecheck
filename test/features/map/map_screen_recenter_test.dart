@@ -26,7 +26,7 @@ Position fakePos({
   return Position(
     latitude: lat,
     longitude: lng,
-    timestamp: DateTime.utc(2026, 1, 1),
+    timestamp: DateTime.utc(2026),
     accuracy: accuracy,
     altitude: 0,
     altitudeAccuracy: 0,
@@ -73,7 +73,7 @@ Future<void> pumpMap(
       supportedLocales: AppLocalizations.supportedLocales,
       home: MapScreen(),
     ),
-  ));
+  ),);
   await tester.pump();
   await tester.pump();
 }
@@ -84,9 +84,7 @@ void main() {
       'tap → flies to cached accurate fix; analytics outcome=recentered_from_cache',
       (tester) async {
         final renderer = FakeMapRenderer();
-        final loc = FakeLocationService(
-          checkPermissionResult: LocationPermission.whileInUse,
-        );
+        final loc = FakeLocationService();
         final analytics = RecordingAnalyticsService();
         final cached = fakePos(lat: 10.31, lng: 123.88, accuracy: 20);
 
@@ -125,7 +123,6 @@ void main() {
         final renderer = FakeMapRenderer();
         final controller = StreamController<Position>();
         final loc = FakeLocationService(
-          checkPermissionResult: LocationPermission.whileInUse,
           positions: controller.stream,
         );
         final analytics = RecordingAnalyticsService();
@@ -149,7 +146,7 @@ void main() {
           expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
           // Emit a poor fix — should not satisfy the predicate.
-          controller.add(fakePos(lat: 10.0, lng: 123.0, accuracy: 250));
+          controller.add(fakePos(lat: 10, lng: 123, accuracy: 250));
           await tester.pump();
           expect(renderer.cameraTargetHistory, isEmpty);
 
@@ -181,11 +178,10 @@ void main() {
       'stream emits only poor fixes → after 8s, best-effort recenter + warning',
       (tester) async {
         final renderer = FakeMapRenderer();
-        final poor = fakePos(lat: 10.0, lng: 123.0, accuracy: 250);
+        final poor = fakePos(lat: 10, lng: 123, accuracy: 250);
         // Stream that never emits — slow path's firstWhere blocks until .timeout fires.
         final controller = StreamController<Position>();
         final loc = FakeLocationService(
-          checkPermissionResult: LocationPermission.whileInUse,
           positions: controller.stream,
         );
         final analytics = RecordingAnalyticsService();
@@ -274,7 +270,6 @@ void main() {
         final renderer = FakeMapRenderer();
         final loc = FakeLocationService(
           checkPermissionResult: LocationPermission.denied,
-          requestPermissionResult: LocationPermission.whileInUse,
         );
         final analytics = RecordingAnalyticsService();
         final cached = fakePos(lat: 10.31, lng: 123.88, accuracy: 25);
@@ -315,7 +310,6 @@ void main() {
         final loc = FakeLocationService(
           checkPermissionResult: LocationPermission.denied,
           // requestPermissionResult is irrelevant — should not be called.
-          requestPermissionResult: LocationPermission.whileInUse,
         );
         final analytics = RecordingAnalyticsService();
 
