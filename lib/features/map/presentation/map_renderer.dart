@@ -218,6 +218,16 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
         onTap: widget.onFeatureTap,
       ),
     );
+
+    // Replay any cameraTarget that arrived BEFORE the map was ready. On
+    // cold start the user can tap recenter while Mapbox is still booting:
+    // _flyToCameraTarget would early-return on the null _mapboxMap, and
+    // didUpdateWidget wouldn't fire again because the target is unchanged.
+    // Without this replay, the first tap appears to do nothing.
+    final pending = widget.cameraTarget;
+    if (pending != null) {
+      unawaited(_flyToCameraTarget(pending));
+    }
   }
 
   @override
