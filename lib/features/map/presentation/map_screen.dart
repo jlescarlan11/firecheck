@@ -27,19 +27,7 @@ class MapScreen extends ConsumerStatefulWidget {
 }
 
 class _MapScreenState extends ConsumerState<MapScreen> {
-  bool _followMe = true;
   bool _addModeActive = false;
-
-  @override
-  void initState() {
-    super.initState();
-    // Kick the OS permission prompt so currentPositionProvider can emit.
-    // Without this, geolocator's stream silently errors on a denied
-    // permission and taps just see a stuck "waiting for GPS" state.
-    Future.microtask(() async {
-      await ref.read(locationServiceProvider).requestPermission();
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -101,12 +89,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             bottom: 18,
             child: Row(
               children: [
-                _pill(
-                  l.followMe,
-                  on: _followMe,
-                  onTap: () => setState(() => _followMe = !_followMe),
-                ),
-                const SizedBox(width: 6),
                 // Scoped Consumer so lock-state stream emissions don't
                 // rebuild the whole map (which would re-mount the Mapbox
                 // renderer and lose its tap handlers — Bug 11, surfaced

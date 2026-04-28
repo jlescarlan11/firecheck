@@ -32,11 +32,12 @@ void main() {
     );
   }
 
-  testWidgets('renders title + follow-me toggle', (tester) async {
+  testWidgets('renders title; no Follow-me pill (deleted in US-12)',
+      (tester) async {
     await tester.pumpWidget(buildSubject(features: const []));
     await tester.pump();
     expect(find.text('Gather Data'), findsOneWidget);
-    expect(find.text('Follow'), findsOneWidget);
+    expect(find.text('Follow'), findsNothing);
   });
 
   testWidgets('renders one fake-map tile per feature', (tester) async {
