@@ -115,7 +115,7 @@ void main() {
       final renderer = FakeMapRenderer();
       await pumpMap(tester, renderer: renderer);
 
-      await renderer.simulateCameraChanged(22.0, 10.318, 123.883);
+      await renderer.simulateCameraChanged(22, 10.318, 123.883);
       await tester.pump();
 
       final priorHistoryLen = renderer.cameraTargetHistory.length;
@@ -135,7 +135,7 @@ void main() {
       final renderer = FakeMapRenderer();
       await pumpMap(tester, renderer: renderer);
 
-      await renderer.simulateCameraChanged(0.0, 10.318, 123.883);
+      await renderer.simulateCameraChanged(0, 10.318, 123.883);
       await tester.pump();
 
       final priorHistoryLen = renderer.cameraTargetHistory.length;
@@ -155,12 +155,12 @@ void main() {
       await pumpMap(tester, renderer: renderer);
 
       // Start at a normal zoom — zoom-in button is idle (full opacity).
-      await renderer.simulateCameraChanged(15.0, 10.318, 123.883);
+      await renderer.simulateCameraChanged(15, 10.318, 123.883);
       await tester.pump();
       expect(opacityForIcon(tester, Icons.add).opacity, 1.0);
 
       // User pinches outward; renderer reports max zoom.
-      await renderer.simulateCameraChanged(22.0, 10.318, 123.883);
+      await renderer.simulateCameraChanged(22, 10.318, 123.883);
       await tester.pump();
 
       expect(opacityForIcon(tester, Icons.add).opacity, 0.5);
