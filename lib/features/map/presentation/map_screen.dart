@@ -426,6 +426,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   void _flyTo(Position p, {required int seq}) {
     setState(() {
+      // Recenter supersedes any in-flight zoom command; clear the commanded-
+      // zoom anchor so the next zoom tap re-anchors on the post-recenter
+      // display zoom rather than the stale pre-recenter target.
+      _animationSettleTimer?.cancel();
+      _commandedZoom = null;
       _cameraTarget = CameraTarget(
         lat: p.latitude,
         lng: p.longitude,
