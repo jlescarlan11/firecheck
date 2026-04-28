@@ -2,15 +2,14 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:firecheck/core/db/database.dart';
+import 'package:firecheck/features/map/presentation/camera_target.dart';
 import 'package:flutter/material.dart';
 // Hide Feature because the Drift-generated row class (imported above) shares
 // the same name with `mapbox_maps_flutter`'s GeoJSON Feature wrapper.
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' hide Feature;
 
 /// Minimal surface the map screen actually needs. Lets tests substitute a
-/// renderer that doesn't require a GL context. Intentionally an abstract
-/// class rather than a typedef so concrete implementations (Fake + real
-/// Mapbox) can be distinguished by type in tests and provider overrides.
+/// renderer that doesn't require a GL context.
 // ignore: one_member_abstracts
 abstract class MapRenderer {
   Widget build(
@@ -20,6 +19,8 @@ abstract class MapRenderer {
     required void Function(Feature) onFeatureTap,
     void Function(double lat, double lng)? onLongPress,
     bool addModeActive,
+    CameraTarget? cameraTarget,
+    CameraTarget? initialCameraTarget,
   });
 }
 
@@ -27,6 +28,9 @@ abstract class MapRenderer {
 /// a real map. Matches the real renderer's tap contract.
 class FakeMapRenderer implements MapRenderer {
   void Function(double, double)? _lastOnLongPress;
+  CameraTarget? lastCameraTarget;
+  CameraTarget? lastInitialCameraTarget;
+  final List<CameraTarget> cameraTargetHistory = [];
 
   /// Test seam: simulates a long-press at the given coordinates. Invokes the
   /// most recently stored onLongPress callback; no-op if none was provided.
@@ -43,8 +47,15 @@ class FakeMapRenderer implements MapRenderer {
     required void Function(Feature) onFeatureTap,
     void Function(double lat, double lng)? onLongPress,
     bool addModeActive = false,
+    CameraTarget? cameraTarget,
+    CameraTarget? initialCameraTarget,
   }) {
     _lastOnLongPress = onLongPress;
+    lastInitialCameraTarget = initialCameraTarget;
+    if (cameraTarget != null && cameraTarget != lastCameraTarget) {
+      cameraTargetHistory.add(cameraTarget);
+    }
+    lastCameraTarget = cameraTarget;
     return ListView(
       shrinkWrap: true,
       children: [
@@ -101,6 +112,8 @@ class MapboxMapRenderer implements MapRenderer {
     required void Function(Feature) onFeatureTap,
     void Function(double lat, double lng)? onLongPress,
     bool addModeActive = false,
+    CameraTarget? cameraTarget,
+    CameraTarget? initialCameraTarget,
   }) {
     return _MapboxMapView(
       features: features,
@@ -108,6 +121,8 @@ class MapboxMapRenderer implements MapRenderer {
       onFeatureTap: onFeatureTap,
       onLongPress: onLongPress,
       addModeActive: addModeActive,
+      cameraTarget: cameraTarget,
+      initialCameraTarget: initialCameraTarget,
     );
   }
 }
@@ -119,6 +134,8 @@ class _MapboxMapView extends StatefulWidget {
     required this.onFeatureTap,
     this.onLongPress,
     this.addModeActive = false,
+    this.cameraTarget,
+    this.initialCameraTarget,
   });
 
   final List<Feature> features;
@@ -126,6 +143,8 @@ class _MapboxMapView extends StatefulWidget {
   final void Function(Feature) onFeatureTap;
   final void Function(double lat, double lng)? onLongPress;
   final bool addModeActive;
+  final CameraTarget? cameraTarget;
+  final CameraTarget? initialCameraTarget;
 
   @override
   State<_MapboxMapView> createState() => _MapboxMapViewState();
@@ -135,6 +154,7 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
   PolygonAnnotationManager? _featureManager;
   PolygonAnnotationManager? _boundaryManager;
   PointAnnotationManager? _pointManager;
+  MapboxMap? _mapboxMap;
 
   // Map annotation-id to feature. Populated as each polygon is created so
   // the tap listener can resolve the Drift row from the tapped annotation.
@@ -142,10 +162,13 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
 
   @override
   Widget build(BuildContext context) {
+    final initial = widget.initialCameraTarget;
     return MapWidget(
       cameraOptions: CameraOptions(
-        center: Point(coordinates: Position(123.88270, 10.31810)),
-        zoom: 15,
+        center: initial != null
+            ? Point(coordinates: Position(initial.lng, initial.lat))
+            : Point(coordinates: Position(123.88270, 10.31810)),
+        zoom: initial?.zoom ?? 15,
       ),
       // Without an explicit styleUri the map renders a black background
       // because no style is loaded. Streets v12 is the Phase 1 spec choice.
@@ -161,6 +184,7 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
   }
 
   Future<void> _onMapCreated(MapboxMap map) async {
+    _mapboxMap = map;
     // Enable the built-in GPS pin. Non-fatal — permission might not be
     // granted yet; in that case the puck simply doesn't appear.
     try {
@@ -211,6 +235,22 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
     if (boundaryChanged && _boundaryManager != null) {
       unawaited(_rerenderBoundary());
     }
+    final target = widget.cameraTarget;
+    if (target != null && target != oldWidget.cameraTarget) {
+      unawaited(_flyToCameraTarget(target));
+    }
+  }
+
+  Future<void> _flyToCameraTarget(CameraTarget t) async {
+    final map = _mapboxMap;
+    if (map == null) return; // _onMapCreated hasn't run yet
+    await map.flyTo(
+      CameraOptions(
+        center: Point(coordinates: Position(t.lng, t.lat)),
+        zoom: t.zoom,
+      ),
+      MapAnimationOptions(duration: 750),
+    );
   }
 
   Future<void> _rerenderFeatures() async {
