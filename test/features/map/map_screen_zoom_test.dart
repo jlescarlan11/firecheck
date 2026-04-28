@@ -100,4 +100,70 @@ void main() {
       expect(last.animation, CameraAnimation.ease);
     });
   });
+
+  group('US-13 zoom buttons — disabled state', () {
+    // Same pattern recenter_button_test.dart uses: trace from a uniquely-
+    // identifying icon up to its single Opacity ancestor.
+    Opacity opacityForIcon(WidgetTester tester, IconData icon) {
+      return tester.widget<Opacity>(
+        find.ancestor(of: find.byIcon(icon), matching: find.byType(Opacity)),
+      );
+    }
+
+    testWidgets('AC4: at zoom 22, zoom-in button is disabled and ignores taps',
+        (tester) async {
+      final renderer = FakeMapRenderer();
+      await pumpMap(tester, renderer: renderer);
+
+      await renderer.simulateCameraChanged(22.0, 10.318, 123.883);
+      await tester.pump();
+
+      final priorHistoryLen = renderer.cameraTargetHistory.length;
+
+      await tester.tap(
+        find.byKey(const Key('map.zoom-in-button')),
+        warnIfMissed: false,
+      );
+      await tester.pump();
+
+      expect(renderer.cameraTargetHistory.length, priorHistoryLen);
+      expect(opacityForIcon(tester, Icons.add).opacity, 0.5);
+    });
+
+    testWidgets('AC5: at zoom 0, zoom-out button is disabled and ignores taps',
+        (tester) async {
+      final renderer = FakeMapRenderer();
+      await pumpMap(tester, renderer: renderer);
+
+      await renderer.simulateCameraChanged(0.0, 10.318, 123.883);
+      await tester.pump();
+
+      final priorHistoryLen = renderer.cameraTargetHistory.length;
+
+      await tester.tap(
+        find.byKey(const Key('map.zoom-out-button')),
+        warnIfMissed: false,
+      );
+      await tester.pump();
+
+      expect(renderer.cameraTargetHistory.length, priorHistoryLen);
+      expect(opacityForIcon(tester, Icons.remove).opacity, 0.5);
+    });
+
+    testWidgets('AC6: pinching to max flips zoom-in to disabled', (tester) async {
+      final renderer = FakeMapRenderer();
+      await pumpMap(tester, renderer: renderer);
+
+      // Start at a normal zoom — zoom-in button is idle (full opacity).
+      await renderer.simulateCameraChanged(15.0, 10.318, 123.883);
+      await tester.pump();
+      expect(opacityForIcon(tester, Icons.add).opacity, 1.0);
+
+      // User pinches outward; renderer reports max zoom.
+      await renderer.simulateCameraChanged(22.0, 10.318, 123.883);
+      await tester.pump();
+
+      expect(opacityForIcon(tester, Icons.add).opacity, 0.5);
+    });
+  });
 }

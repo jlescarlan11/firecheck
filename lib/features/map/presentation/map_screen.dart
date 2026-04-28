@@ -130,7 +130,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             child: ZoomButton(
               key: const Key('map.zoom-out-button'),
               direction: ZoomDirection.zoomOut,
-              state: ZoomButtonState.idle,
+              state: _zoomOutState(),
               onTap: _onZoomOut,
             ),
           ),
@@ -140,7 +140,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             child: ZoomButton(
               key: const Key('map.zoom-in-button'),
               direction: ZoomDirection.zoomIn,
-              state: ZoomButtonState.idle,
+              state: _zoomInState(),
               onTap: _onZoomIn,
             ),
           ),
@@ -280,6 +280,18 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     if (prevRounded != zoom.round()) {
       setState(() {});
     }
+  }
+
+  ZoomButtonState _zoomInState() {
+    final z = _displayZoom?.round();
+    if (z == null) return ZoomButtonState.idle;
+    return z >= 22 ? ZoomButtonState.disabled : ZoomButtonState.idle;
+  }
+
+  ZoomButtonState _zoomOutState() {
+    final z = _displayZoom?.round();
+    if (z == null) return ZoomButtonState.idle;
+    return z <= 0 ? ZoomButtonState.disabled : ZoomButtonState.idle;
   }
 
   Future<void> _onZoomIn() => _onZoom(1);
