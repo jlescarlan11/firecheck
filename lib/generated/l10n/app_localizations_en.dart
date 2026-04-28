@@ -943,4 +943,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get locationSnackbarLowAccuracy =>
       'Location accuracy is low. Showing your approximate position.';
+
+  @override
+  String get zoomInButtonSemanticLabel => 'Zoom in';
+
+  @override
+  String get zoomOutButtonSemanticLabel => 'Zoom out';
 }

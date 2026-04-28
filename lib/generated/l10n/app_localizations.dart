@@ -1819,6 +1819,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Location accuracy is low. Showing your approximate position.'**
   String get locationSnackbarLowAccuracy;
+
+  /// No description provided for @zoomInButtonSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom in'**
+  String get zoomInButtonSemanticLabel;
+
+  /// No description provided for @zoomOutButtonSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom out'**
+  String get zoomOutButtonSemanticLabel;
 }
 
 class _AppLocalizationsDelegate
