@@ -117,4 +117,62 @@ void main() {
       },
     );
   });
+
+  group('AC2 slow path', () {
+    testWidgets(
+      'no cached fix; stream emits poor then accurate → flies + analytics',
+      (tester) async {
+        final renderer = FakeMapRenderer();
+        final controller = StreamController<Position>();
+        final loc = FakeLocationService(
+          checkPermissionResult: LocationPermission.whileInUse,
+          positions: controller.stream,
+        );
+        final analytics = RecordingAnalyticsService();
+
+        await pumpMap(
+          tester,
+          renderer: renderer,
+          locationService: loc,
+          analytics: analytics,
+          positionStream: const Stream<Position>.empty(),
+        );
+
+        // tester.runAsync escapes the fake-async zone so that real async
+        // delivery of stream events (via the StreamController) can proceed
+        // while we interleave widget pumps.
+        await tester.runAsync(() async {
+          await tester.tap(find.byType(RecenterButton));
+          // Pump to flush checkPermission microtask + establish subscription.
+          await tester.pump();
+          // The button should now be in loading state.
+          expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+          // Emit a poor fix — should not satisfy the predicate.
+          controller.add(fakePos(lat: 10.0, lng: 123.0, accuracy: 250));
+          await tester.pump();
+          expect(renderer.cameraTargetHistory, isEmpty);
+
+          // Emit an accurate fix — orchestration takes it.
+          controller.add(fakePos(lat: 10.5, lng: 123.5, accuracy: 30));
+          // Yield to let the stream delivery microtask run.
+          await Future<void>.delayed(Duration.zero);
+          // Pump to rebuild after setState calls in _flyTo + finally block.
+          await tester.pump();
+          await tester.pump();
+
+          expect(renderer.cameraTargetHistory, hasLength(1));
+          expect(renderer.cameraTargetHistory.first.lat, 10.5);
+          expect(analytics.events.first.properties, {
+            'outcome': 'recentered_after_wait',
+            'accuracy_m': 30,
+          });
+          // Button is back to idle (icon visible).
+          expect(find.byIcon(Icons.my_location), findsOneWidget);
+
+          await controller.close();
+        });
+      },
+    );
+  });
 }

@@ -272,7 +272,27 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       return;
     }
 
-    // Slow path — added in Task 12.
+    setState(() => _recenterState = RecenterButtonState.loading);
+
+    try {
+      final accurate = await locationService
+          .positionStream()
+          .firstWhere((p) => p.accuracy <= 100.0)
+          .timeout(const Duration(seconds: 8));
+
+      if (!mounted || seq != _recenterRequestSeq) return;
+      _flyTo(accurate, seq: seq);
+      analytics.track('map.recenter.tapped', properties: {
+        'outcome': 'recentered_after_wait',
+        'accuracy_m': accurate.accuracy.round(),
+      });
+    } on TimeoutException {
+      // Handled in Task 13.
+    } finally {
+      if (mounted && seq == _recenterRequestSeq) {
+        setState(() => _recenterState = RecenterButtonState.idle);
+      }
+    }
   }
 
   void _flyTo(Position p, {required int seq}) {
