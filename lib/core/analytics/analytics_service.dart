@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 /// impl is [NoopAnalyticsService]; debug builds use [ConsoleAnalyticsService]
 /// for visibility while developing. Test code can override the provider with
 /// [RecordingAnalyticsService] to assert on emitted events.
+// ignore: one_member_abstracts
 abstract class AnalyticsService {
   void track(String event, {Map<String, Object?>? properties});
 }
