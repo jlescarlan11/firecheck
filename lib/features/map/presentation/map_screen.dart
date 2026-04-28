@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firecheck/core/analytics/analytics_providers.dart';
 import 'package:firecheck/core/auth/current_user_provider.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/geo/centroid.dart';
@@ -12,6 +13,8 @@ import 'package:firecheck/core/location/location_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_lock_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
 import 'package:firecheck/features/map/presentation/map_providers.dart';
+import 'package:firecheck/features/map/presentation/recenter_button.dart';
+import 'package:firecheck/features/map/presentation/recenter_button_state.dart';
 import 'package:firecheck/features/new_feature/presentation/feature_type_picker.dart';
 import 'package:firecheck/features/survey/building_form/presentation/building_form_providers.dart';
 import 'package:firecheck/features/survey/building_form/presentation/override_reason_dialog.dart';
@@ -30,6 +33,11 @@ class MapScreen extends ConsumerStatefulWidget {
 
 class _MapScreenState extends ConsumerState<MapScreen> {
   bool _addModeActive = false;
+
+  RecenterButtonState _recenterState = RecenterButtonState.idle;
+  CameraTarget? _cameraTarget;
+  int _recenterRequestSeq = 0;
+  bool _rationaleVisible = false;
 
   @override
   Widget build(BuildContext context) {
@@ -79,6 +87,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     onLongPress: _handleLongPress,
                     addModeActive: _addModeActive,
                     initialCameraTarget: initialCameraTarget,
+                    cameraTarget: _cameraTarget,
                   ),
           ),
           if (_addModeActive)
@@ -98,6 +107,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 ),
               ),
             ),
+          Positioned(
+            right: 16,
+            bottom: 84,
+            child: RecenterButton(
+              state: _recenterState,
+              onTap: _onRecenterTap,
+            ),
+          ),
           Positioned(
             left: 12,
             right: 12,
@@ -224,6 +241,49 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
     if (!mounted) return;
     context.go('/feature/${f.id}');
+  }
+
+  Future<void> _onRecenterTap() async {
+    if (_recenterState != RecenterButtonState.idle) return;
+    if (_rationaleVisible) return;
+
+    // Single increment per tap — used both for slow-path supersedence
+    // detection AND as the CameraTarget.requestId for renderer dedup.
+    final seq = ++_recenterRequestSeq;
+    final analytics = ref.read(analyticsServiceProvider);
+    final locationService = ref.read(locationServiceProvider);
+
+    final perm = await locationService.checkPermission();
+    if (perm != LocationPermission.whileInUse &&
+        perm != LocationPermission.always) {
+      // Branches handled in later tasks (rationale, deniedForever).
+      return;
+    }
+
+    if (seq != _recenterRequestSeq) return;
+
+    final cached = ref.read(currentPositionProvider).valueOrNull;
+    if (cached != null && cached.accuracy <= 100.0) {
+      _flyTo(cached, seq: seq);
+      analytics.track('map.recenter.tapped', properties: {
+        'outcome': 'recentered_from_cache',
+        'accuracy_m': cached.accuracy.round(),
+      });
+      return;
+    }
+
+    // Slow path — added in Task 12.
+  }
+
+  void _flyTo(Position p, {required int seq}) {
+    setState(() {
+      _cameraTarget = CameraTarget(
+        lat: p.latitude,
+        lng: p.longitude,
+        zoom: 17,
+        requestId: seq,
+      );
+    });
   }
 
   /// Returns a fresh GPS fix, blocking the UI with a small spinner if the
