@@ -63,4 +63,45 @@ void main() {
     await tester.pump();
     expect(find.byKey(const Key('fake-map-feature-f1')), findsOneWidget);
   });
+
+  testWidgets('passes a boundary-derived initialCameraTarget to the renderer',
+      (tester) async {
+    final renderer = FakeMapRenderer();
+    final assignment = Assignment(
+      id: 'a1',
+      enumeratorId: 'e@example.com',
+      campaignId: 'c1',
+      boundaryPolygonGeojson:
+          '{"type":"Polygon","coordinates":[[ '
+          '[123.882,10.317],[123.884,10.317],'
+          '[123.884,10.319],[123.882,10.319],'
+          '[123.882,10.317]]]}',
+      status: 'assigned',
+      closedRemotely: false,
+      createdAt: DateTime.now(),
+    );
+
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        mapRendererProvider.overrideWithValue(renderer),
+        currentFeaturesProvider.overrideWith((_) => Stream.value(const [])),
+        currentAssignmentProvider.overrideWith((_) => Stream.value(assignment)),
+        assignmentLockStateProvider.overrideWith((_) => Stream.value(const Unlocked())),
+      ],
+      child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: MapScreen(),
+      ),
+    ));
+    await tester.pump();
+
+    expect(renderer.lastInitialCameraTarget, isNotNull);
+    expect(renderer.lastInitialCameraTarget!.lat, closeTo(10.318, 1e-3));
+    expect(renderer.lastInitialCameraTarget!.lng, closeTo(123.883, 1e-3));
+    expect(
+      renderer.lastInitialCameraTarget!.zoom,
+      inInclusiveRange(12.0, 18.0),
+    );
+  });
 }

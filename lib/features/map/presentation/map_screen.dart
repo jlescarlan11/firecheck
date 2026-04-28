@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:firecheck/core/auth/current_user_provider.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/geo/centroid.dart';
+import 'package:firecheck/core/geo/polygon_bounds.dart';
+import 'package:firecheck/features/map/presentation/camera_target.dart';
 import 'package:firecheck/core/geo/point_in_polygon.dart';
 import 'package:firecheck/core/geo/polyline_midpoint.dart';
 import 'package:firecheck/core/location/distance.dart';
@@ -50,6 +52,18 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final features = featuresAsync.value;
     final mapReady = assignment != null && features != null;
 
+    final bounds = assignment != null
+        ? polygonBoundsFromGeojson(assignment.boundaryPolygonGeojson)
+        : null;
+    final initialCameraTarget = bounds != null
+        ? CameraTarget(
+            lat: bounds.center.lat,
+            lng: bounds.center.lng,
+            zoom: bounds.zoom,
+            requestId: 0,
+          )
+        : null;
+
     return Scaffold(
       appBar: AppBar(title: Text(l.mapTitle)),
       body: Stack(
@@ -64,6 +78,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     onFeatureTap: _handleFeatureTap,
                     onLongPress: _handleLongPress,
                     addModeActive: _addModeActive,
+                    initialCameraTarget: initialCameraTarget,
                   ),
           ),
           if (_addModeActive)
