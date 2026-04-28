@@ -1,11 +1,7 @@
 import 'dart:convert';
 import 'dart:math' as math;
 
-class LatLng {
-  const LatLng(this.lat, this.lng);
-  final double lat;
-  final double lng;
-}
+import 'package:firecheck/core/geo/centroid.dart';
 
 class PolygonBounds {
   const PolygonBounds({required this.center, required this.zoom});
@@ -69,7 +65,7 @@ PolygonBounds? polygonBoundsFromGeojson(String geojson) {
   final rawZoom = math.log(156543.03 * cosLat / groundRes) / math.ln2;
   final zoom = rawZoom.clamp(12.0, 18.0);
 
-  return PolygonBounds(center: LatLng(centerLat, centerLng), zoom: zoom);
+  return PolygonBounds(center: LatLng(lat: centerLat, lng: centerLng), zoom: zoom);
 }
 
 double _haversineMeters(double lat1, double lng1, double lat2, double lng2) {
