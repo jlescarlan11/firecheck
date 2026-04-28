@@ -312,6 +312,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final newZoom = (base + delta).clamp(0, 22);
     if (newZoom == base) return;
 
+    ref.read(analyticsServiceProvider).track(
+      'map.zoom.tapped',
+      properties: {
+        'direction': delta > 0 ? 'in' : 'out',
+        'from_zoom': base,
+      },
+    );
+
     setState(() {
       _commandedZoom = newZoom.toDouble();
       _cameraTarget = CameraTarget(

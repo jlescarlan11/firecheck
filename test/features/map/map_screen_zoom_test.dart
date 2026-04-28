@@ -214,4 +214,63 @@ void main() {
       expect(renderer.cameraTargetHistory.last.zoom, 21);
     });
   });
+
+  group('US-13 zoom buttons — analytics', () {
+    testWidgets('zoom-in fires map.zoom.tapped with direction=in, from_zoom',
+        (tester) async {
+      final renderer = FakeMapRenderer();
+      final analytics = RecordingAnalyticsService();
+      await pumpMap(tester, renderer: renderer, analytics: analytics);
+
+      await renderer.simulateCameraChanged(15, 10.318, 123.883);
+      await tester.pump();
+
+      await tester.tap(find.byKey(const Key('map.zoom-in-button')));
+      await tester.pump();
+
+      expect(analytics.events, hasLength(1));
+      expect(analytics.events.single.event, 'map.zoom.tapped');
+      expect(
+        analytics.events.single.properties,
+        {'direction': 'in', 'from_zoom': 15},
+      );
+    });
+
+    testWidgets('zoom-out fires map.zoom.tapped with direction=out, from_zoom',
+        (tester) async {
+      final renderer = FakeMapRenderer();
+      final analytics = RecordingAnalyticsService();
+      await pumpMap(tester, renderer: renderer, analytics: analytics);
+
+      await renderer.simulateCameraChanged(15, 10.318, 123.883);
+      await tester.pump();
+
+      await tester.tap(find.byKey(const Key('map.zoom-out-button')));
+      await tester.pump();
+
+      expect(analytics.events, hasLength(1));
+      expect(analytics.events.single.event, 'map.zoom.tapped');
+      expect(
+        analytics.events.single.properties,
+        {'direction': 'out', 'from_zoom': 15},
+      );
+    });
+
+    testWidgets('disabled tap does NOT fire analytics', (tester) async {
+      final renderer = FakeMapRenderer();
+      final analytics = RecordingAnalyticsService();
+      await pumpMap(tester, renderer: renderer, analytics: analytics);
+
+      await renderer.simulateCameraChanged(22, 10.318, 123.883);
+      await tester.pump();
+
+      await tester.tap(
+        find.byKey(const Key('map.zoom-in-button')),
+        warnIfMissed: false,
+      );
+      await tester.pump();
+
+      expect(analytics.events, isEmpty);
+    });
+  });
 }
