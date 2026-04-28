@@ -916,4 +916,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shareBundleAction => 'Share bundle';
+
+  @override
+  String get recenterButtonSemanticLabel => 'Recenter map on my location';
+
+  @override
+  String get locationRationaleTitle => 'Use your location';
+
+  @override
+  String get locationRationaleBody =>
+      'FireCheck uses your GPS to center the map on you so you can quickly orient yourself in the field. We only access location while you have the app open.';
+
+  @override
+  String get locationRationaleAllow => 'Allow';
+
+  @override
+  String get locationRationaleNotNow => 'Not now';
+
+  @override
+  String get locationSnackbarPermanentlyDenied =>
+      'Location permission denied. Open settings to enable it.';
+
+  @override
+  String get locationSnackbarOpenSettings => 'Open settings';
+
+  @override
+  String get locationSnackbarLowAccuracy =>
+      'Location accuracy is low. Showing your approximate position.';
 }

@@ -1,15 +1,21 @@
 import 'dart:async';
 
+import 'package:firecheck/core/analytics/analytics_providers.dart';
 import 'package:firecheck/core/auth/current_user_provider.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/geo/centroid.dart';
 import 'package:firecheck/core/geo/point_in_polygon.dart';
+import 'package:firecheck/core/geo/polygon_bounds.dart';
 import 'package:firecheck/core/geo/polyline_midpoint.dart';
 import 'package:firecheck/core/location/distance.dart';
 import 'package:firecheck/core/location/location_providers.dart';
+import 'package:firecheck/core/location/location_service.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_lock_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
+import 'package:firecheck/features/map/presentation/camera_target.dart';
 import 'package:firecheck/features/map/presentation/map_providers.dart';
+import 'package:firecheck/features/map/presentation/recenter_button.dart';
+import 'package:firecheck/features/map/presentation/recenter_button_state.dart';
 import 'package:firecheck/features/new_feature/presentation/feature_type_picker.dart';
 import 'package:firecheck/features/survey/building_form/presentation/building_form_providers.dart';
 import 'package:firecheck/features/survey/building_form/presentation/override_reason_dialog.dart';
@@ -27,19 +33,12 @@ class MapScreen extends ConsumerStatefulWidget {
 }
 
 class _MapScreenState extends ConsumerState<MapScreen> {
-  bool _followMe = true;
   bool _addModeActive = false;
 
-  @override
-  void initState() {
-    super.initState();
-    // Kick the OS permission prompt so currentPositionProvider can emit.
-    // Without this, geolocator's stream silently errors on a denied
-    // permission and taps just see a stuck "waiting for GPS" state.
-    Future.microtask(() async {
-      await ref.read(locationServiceProvider).requestPermission();
-    });
-  }
+  RecenterButtonState _recenterState = RecenterButtonState.idle;
+  CameraTarget? _cameraTarget;
+  int _recenterRequestSeq = 0;
+  bool _rationaleVisible = false;
 
   @override
   Widget build(BuildContext context) {
@@ -62,6 +61,18 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final features = featuresAsync.value;
     final mapReady = assignment != null && features != null;
 
+    final bounds = assignment != null
+        ? polygonBoundsFromGeojson(assignment.boundaryPolygonGeojson)
+        : null;
+    final initialCameraTarget = bounds != null
+        ? CameraTarget(
+            lat: bounds.center.lat,
+            lng: bounds.center.lng,
+            zoom: bounds.zoom,
+            requestId: 0,
+          )
+        : null;
+
     return Scaffold(
       appBar: AppBar(title: Text(l.mapTitle)),
       body: Stack(
@@ -76,6 +87,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     onFeatureTap: _handleFeatureTap,
                     onLongPress: _handleLongPress,
                     addModeActive: _addModeActive,
+                    initialCameraTarget: initialCameraTarget,
+                    cameraTarget: _cameraTarget,
                   ),
           ),
           if (_addModeActive)
@@ -96,17 +109,19 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               ),
             ),
           Positioned(
+            right: 16,
+            bottom: 84,
+            child: RecenterButton(
+              state: _recenterState,
+              onTap: _onRecenterTap,
+            ),
+          ),
+          Positioned(
             left: 12,
             right: 12,
             bottom: 18,
             child: Row(
               children: [
-                _pill(
-                  l.followMe,
-                  on: _followMe,
-                  onTap: () => setState(() => _followMe = !_followMe),
-                ),
-                const SizedBox(width: 6),
                 // Scoped Consumer so lock-state stream emissions don't
                 // rebuild the whole map (which would re-mount the Mapbox
                 // renderer and lose its tap handlers — Bug 11, surfaced
@@ -229,6 +244,98 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     context.go('/feature/${f.id}');
   }
 
+  Future<void> _onRecenterTap() async {
+    if (_recenterState != RecenterButtonState.idle) return;
+    if (_rationaleVisible) return;
+
+    // Single increment per tap — used both for slow-path supersedence
+    // detection AND as the CameraTarget.requestId for renderer dedup.
+    final seq = ++_recenterRequestSeq;
+    final analytics = ref.read(analyticsServiceProvider);
+    final locationService = ref.read(locationServiceProvider);
+
+    var perm = await locationService.checkPermission();
+
+    if (perm == LocationPermission.denied) {
+      final allow = await _showLocationRationale();
+      if (allow != true) {
+        analytics.track('map.recenter.tapped', properties: {
+          'outcome': 'permission_rationale_dismissed',
+        },);
+        return;
+      }
+      perm = await locationService.requestPermission();
+    }
+
+    if (perm == LocationPermission.deniedForever ||
+        perm == LocationPermission.unableToDetermine) {
+      _showSettingsShortcutSnackbar(locationService);
+      analytics.track('map.recenter.tapped', properties: {
+        'outcome': 'permission_denied_forever',
+      },);
+      return;
+    }
+
+    if (perm == LocationPermission.denied) {
+      analytics.track('map.recenter.tapped', properties: {
+        'outcome': 'permission_denied',
+      },);
+      return;
+    }
+
+    if (seq != _recenterRequestSeq) return;
+
+    final cached = ref.read(currentPositionProvider).valueOrNull;
+    if (cached != null && cached.accuracy <= 100.0) {
+      _flyTo(cached, seq: seq);
+      analytics.track('map.recenter.tapped', properties: {
+        'outcome': 'recentered_from_cache',
+        'accuracy_m': cached.accuracy.round(),
+      },);
+      return;
+    }
+
+    setState(() => _recenterState = RecenterButtonState.loading);
+
+    try {
+      final accurate = await locationService
+          .positionStream()
+          .firstWhere((p) => p.accuracy <= 100.0)
+          .timeout(const Duration(seconds: 8));
+
+      if (!mounted || seq != _recenterRequestSeq) return;
+      _flyTo(accurate, seq: seq);
+      analytics.track('map.recenter.tapped', properties: {
+        'outcome': 'recentered_after_wait',
+        'accuracy_m': accurate.accuracy.round(),
+      },);
+    } on TimeoutException {
+      if (!mounted || seq != _recenterRequestSeq) return;
+      final best = ref.read(currentPositionProvider).valueOrNull;
+      if (best != null) _flyTo(best, seq: seq);
+      _showLowAccuracySnackbar();
+      analytics.track('map.recenter.tapped', properties: {
+        'outcome': 'low_accuracy_timeout',
+        'accuracy_m': best?.accuracy.round(),
+      },);
+    } finally {
+      if (mounted && seq == _recenterRequestSeq) {
+        setState(() => _recenterState = RecenterButtonState.idle);
+      }
+    }
+  }
+
+  void _flyTo(Position p, {required int seq}) {
+    setState(() {
+      _cameraTarget = CameraTarget(
+        lat: p.latitude,
+        lng: p.longitude,
+        zoom: 17,
+        requestId: seq,
+      );
+    });
+  }
+
   /// Returns a fresh GPS fix, blocking the UI with a small spinner if the
   /// stream hasn't emitted yet. Returns null if the user dismisses or the
   /// fix doesn't arrive within the timeout.
@@ -271,6 +378,57 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     } on Object {
       if (mounted) Navigator.of(context, rootNavigator: true).pop();
       return null;
+    }
+  }
+
+  void _showLowAccuracySnackbar() {
+    if (!mounted) return;
+    final l = AppLocalizations.of(context)!;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l.locationSnackbarLowAccuracy)),
+    );
+  }
+
+  void _showSettingsShortcutSnackbar(LocationService locationService) {
+    if (!mounted) return;
+    final l = AppLocalizations.of(context)!;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(l.locationSnackbarPermanentlyDenied),
+        duration: const Duration(seconds: 6),
+        action: SnackBarAction(
+          label: l.locationSnackbarOpenSettings,
+          onPressed: () => locationService.openAppSettings(),
+        ),
+      ),
+    );
+  }
+
+  Future<bool?> _showLocationRationale() async {
+    if (!mounted) return null;
+    _rationaleVisible = true;
+    try {
+      final l = AppLocalizations.of(context)!;
+      return await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogCtx) => AlertDialog(
+          title: Text(l.locationRationaleTitle),
+          content: Text(l.locationRationaleBody),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(false),
+              child: Text(l.locationRationaleNotNow),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(true),
+              child: Text(l.locationRationaleAllow),
+            ),
+          ],
+        ),
+      );
+    } finally {
+      _rationaleVisible = false;
     }
   }
 
