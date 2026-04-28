@@ -306,4 +306,40 @@ void main() {
       },
     );
   });
+
+  group('AC4 rationale → Not now', () {
+    testWidgets(
+      'denied → rationale dialog → Not now → no requestPermission, no fly',
+      (tester) async {
+        final renderer = FakeMapRenderer();
+        final loc = FakeLocationService(
+          checkPermissionResult: LocationPermission.denied,
+          // requestPermissionResult is irrelevant — should not be called.
+          requestPermissionResult: LocationPermission.whileInUse,
+        );
+        final analytics = RecordingAnalyticsService();
+
+        await pumpMap(
+          tester,
+          renderer: renderer,
+          locationService: loc,
+          analytics: analytics,
+          positionStream: const Stream<Position>.empty(),
+        );
+
+        await tester.tap(find.byType(RecenterButton));
+        await tester.pump();
+
+        expect(find.text('Use your location'), findsOneWidget);
+
+        await tester.tap(find.text('Not now'));
+        await tester.pumpAndSettle();
+
+        expect(renderer.cameraTargetHistory, isEmpty);
+        expect(analytics.events.last.properties, {
+          'outcome': 'permission_rationale_dismissed',
+        });
+      },
+    );
+  });
 }
