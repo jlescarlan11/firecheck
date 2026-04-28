@@ -279,5 +279,13 @@
   "biometricFailedSnackbar": "Hindi nakumpirma. Subukan muli.",
   "assignmentClosedTitle": "Sarado na ang takda",
   "assignmentClosedBody": "Sarado na ang takda na ito sa server. I-tap ang Share para ipadala ang lokal na datos sa supervisor mo.",
-  "shareBundleAction": "Ibahagi ang bundle"
+  "shareBundleAction": "Ibahagi ang bundle",
+  "recenterButtonSemanticLabel": "Recenter map on my location",
+  "locationRationaleTitle": "Use your location",
+  "locationRationaleBody": "FireCheck uses your GPS to center the map on you so you can quickly orient yourself in the field. We only access location while you have the app open.",
+  "locationRationaleAllow": "Allow",
+  "locationRationaleNotNow": "Not now",
+  "locationSnackbarPermanentlyDenied": "Location permission denied. Open settings to enable it.",
+  "locationSnackbarOpenSettings": "Open settings",
+  "locationSnackbarLowAccuracy": "Location accuracy is low. Showing your approximate position."
 }

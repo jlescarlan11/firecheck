@@ -1771,6 +1771,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Share bundle'**
   String get shareBundleAction;
+
+  /// No description provided for @recenterButtonSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Recenter map on my location'**
+  String get recenterButtonSemanticLabel;
+
+  /// No description provided for @locationRationaleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use your location'**
+  String get locationRationaleTitle;
+
+  /// No description provided for @locationRationaleBody.
+  ///
+  /// In en, this message translates to:
+  /// **'FireCheck uses your GPS to center the map on you so you can quickly orient yourself in the field. We only access location while you have the app open.'**
+  String get locationRationaleBody;
+
+  /// No description provided for @locationRationaleAllow.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow'**
+  String get locationRationaleAllow;
+
+  /// No description provided for @locationRationaleNotNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get locationRationaleNotNow;
+
+  /// No description provided for @locationSnackbarPermanentlyDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Location permission denied. Open settings to enable it.'**
+  String get locationSnackbarPermanentlyDenied;
+
+  /// No description provided for @locationSnackbarOpenSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open settings'**
+  String get locationSnackbarOpenSettings;
+
+  /// No description provided for @locationSnackbarLowAccuracy.
+  ///
+  /// In en, this message translates to:
+  /// **'Location accuracy is low. Showing your approximate position.'**
+  String get locationSnackbarLowAccuracy;
 }
 
 class _AppLocalizationsDelegate
