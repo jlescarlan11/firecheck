@@ -166,4 +166,52 @@ void main() {
       expect(opacityForIcon(tester, Icons.add).opacity, 0.5);
     });
   });
+
+  group('US-13 zoom buttons — rapid taps + settle timer', () {
+    testWidgets('three rapid taps from zoom 14 reach zoom 17', (tester) async {
+      final renderer = FakeMapRenderer();
+      await pumpMap(tester, renderer: renderer);
+
+      await renderer.simulateCameraChanged(14, 10.318, 123.883);
+      await tester.pump();
+
+      // Tap three times in a row, before the 350 ms settle timer fires.
+      for (var i = 0; i < 3; i++) {
+        await tester.tap(find.byKey(const Key('map.zoom-in-button')));
+        // Pump a few millis so setState applies and the next tap reads the
+        // latest commanded value, but stay well under 350 ms total.
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+
+      final last = renderer.cameraTargetHistory.last;
+      expect(last.zoom, 17);
+    });
+
+    testWidgets('settle timer drops _commandedZoom; later pinch re-anchors',
+        (tester) async {
+      final renderer = FakeMapRenderer();
+      await pumpMap(tester, renderer: renderer);
+
+      // Start at 15, tap zoom-in once → target 16.
+      await renderer.simulateCameraChanged(15, 10.318, 123.883);
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('map.zoom-in-button')));
+      await tester.pump();
+      expect(renderer.cameraTargetHistory.last.zoom, 16);
+
+      // Wait for the settle timer to fire (>350 ms).
+      await tester.pump(const Duration(milliseconds: 400));
+
+      // Simulate a pinch landing at zoom 20.
+      await renderer.simulateCameraChanged(20, 10.318, 123.883);
+      await tester.pump();
+
+      // Next zoom-in tap should anchor on the pinched display zoom (20),
+      // not the stale commanded zoom (16). Expected target: 21.
+      await tester.tap(find.byKey(const Key('map.zoom-in-button')));
+      await tester.pump();
+
+      expect(renderer.cameraTargetHistory.last.zoom, 21);
+    });
+  });
 }

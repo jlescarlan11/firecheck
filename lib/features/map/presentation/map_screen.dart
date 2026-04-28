@@ -47,6 +47,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   double? _displayLat;
   double? _displayLng;
 
+  double? _commandedZoom;
+  Timer? _animationSettleTimer;
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
@@ -283,13 +286,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   ZoomButtonState _zoomInState() {
-    final z = _displayZoom?.round();
+    final z = _commandedZoom?.round() ?? _displayZoom?.round();
     if (z == null) return ZoomButtonState.idle;
     return z >= 22 ? ZoomButtonState.disabled : ZoomButtonState.idle;
   }
 
   ZoomButtonState _zoomOutState() {
-    final z = _displayZoom?.round();
+    final z = _commandedZoom?.round() ?? _displayZoom?.round();
     if (z == null) return ZoomButtonState.idle;
     return z <= 0 ? ZoomButtonState.disabled : ZoomButtonState.idle;
   }
@@ -298,7 +301,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Future<void> _onZoomOut() => _onZoom(-1);
 
   Future<void> _onZoom(int delta) async {
-    final base = _displayZoom?.round();
+    // Anchor on commanded if a previous tap is still animating; otherwise
+    // anchor on the live display zoom. Bail out cleanly if neither is set
+    // (renderer hasn't fired its first onCameraChanged yet — sub-frame race).
+    final base = _commandedZoom?.round() ?? _displayZoom?.round();
     final lat = _displayLat;
     final lng = _displayLng;
     if (base == null || lat == null || lng == null) return;
@@ -307,6 +313,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     if (newZoom == base) return;
 
     setState(() {
+      _commandedZoom = newZoom.toDouble();
       _cameraTarget = CameraTarget(
         lat: lat,
         lng: lng,
@@ -314,6 +321,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         requestId: ++_cameraRequestSeq,
         animation: CameraAnimation.ease,
       );
+    });
+
+    _animationSettleTimer?.cancel();
+    _animationSettleTimer = Timer(const Duration(milliseconds: 350), () {
+      if (mounted) setState(() => _commandedZoom = null);
     });
   }
 
@@ -396,6 +408,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         setState(() => _recenterState = RecenterButtonState.idle);
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _animationSettleTimer?.cancel();
+    super.dispose();
   }
 
   void _flyTo(Position p, {required int seq}) {
