@@ -18,6 +18,7 @@ abstract class MapRenderer {
     required String boundaryGeojson,
     required void Function(Feature) onFeatureTap,
     void Function(double lat, double lng)? onLongPress,
+    void Function(double zoom, double lat, double lng)? onCameraChanged,
     bool addModeActive,
     CameraTarget? cameraTarget,
     CameraTarget? initialCameraTarget,
@@ -28,6 +29,7 @@ abstract class MapRenderer {
 /// a real map. Matches the real renderer's tap contract.
 class FakeMapRenderer implements MapRenderer {
   void Function(double, double)? _lastOnLongPress;
+  void Function(double, double, double)? _lastOnCameraChanged;
   CameraTarget? lastCameraTarget;
   CameraTarget? lastInitialCameraTarget;
   final List<CameraTarget> cameraTargetHistory = [];
@@ -39,6 +41,14 @@ class FakeMapRenderer implements MapRenderer {
     if (cb != null) cb(lat, lng);
   }
 
+  /// Test seam: simulates a camera-change event from the underlying map.
+  /// Invokes the most recently stored onCameraChanged callback; no-op if
+  /// none was provided.
+  Future<void> simulateCameraChanged(double zoom, double lat, double lng) async {
+    final cb = _lastOnCameraChanged;
+    if (cb != null) cb(zoom, lat, lng);
+  }
+
   @override
   Widget build(
     BuildContext context, {
@@ -46,11 +56,13 @@ class FakeMapRenderer implements MapRenderer {
     required String boundaryGeojson,
     required void Function(Feature) onFeatureTap,
     void Function(double lat, double lng)? onLongPress,
+    void Function(double zoom, double lat, double lng)? onCameraChanged,
     bool addModeActive = false,
     CameraTarget? cameraTarget,
     CameraTarget? initialCameraTarget,
   }) {
     _lastOnLongPress = onLongPress;
+    _lastOnCameraChanged = onCameraChanged;
     lastInitialCameraTarget = initialCameraTarget;
     if (cameraTarget != null && cameraTarget != lastCameraTarget) {
       cameraTargetHistory.add(cameraTarget);
@@ -111,6 +123,7 @@ class MapboxMapRenderer implements MapRenderer {
     required String boundaryGeojson,
     required void Function(Feature) onFeatureTap,
     void Function(double lat, double lng)? onLongPress,
+    void Function(double zoom, double lat, double lng)? onCameraChanged,
     bool addModeActive = false,
     CameraTarget? cameraTarget,
     CameraTarget? initialCameraTarget,
@@ -120,6 +133,7 @@ class MapboxMapRenderer implements MapRenderer {
       boundaryGeojson: boundaryGeojson,
       onFeatureTap: onFeatureTap,
       onLongPress: onLongPress,
+      onCameraChanged: onCameraChanged,
       addModeActive: addModeActive,
       cameraTarget: cameraTarget,
       initialCameraTarget: initialCameraTarget,
@@ -133,6 +147,7 @@ class _MapboxMapView extends StatefulWidget {
     required this.boundaryGeojson,
     required this.onFeatureTap,
     this.onLongPress,
+    this.onCameraChanged,
     this.addModeActive = false,
     this.cameraTarget,
     this.initialCameraTarget,
@@ -142,6 +157,7 @@ class _MapboxMapView extends StatefulWidget {
   final String boundaryGeojson;
   final void Function(Feature) onFeatureTap;
   final void Function(double lat, double lng)? onLongPress;
+  final void Function(double zoom, double lat, double lng)? onCameraChanged;
   final bool addModeActive;
   final CameraTarget? cameraTarget;
   final CameraTarget? initialCameraTarget;
@@ -179,6 +195,16 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
           final pos = ctx.point.coordinates;
           widget.onLongPress!(pos.lat.toDouble(), pos.lng.toDouble());
         }
+      },
+      onCameraChangeListener: (CameraChangedEventData data) {
+        final cb = widget.onCameraChanged;
+        if (cb == null) return;
+        final state = data.cameraState;
+        cb(
+          state.zoom,
+          state.center.coordinates.lat.toDouble(),
+          state.center.coordinates.lng.toDouble(),
+        );
       },
     );
   }
@@ -228,6 +254,16 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
     if (pending != null) {
       unawaited(_flyToCameraTarget(pending));
     }
+
+    // Guarantee the screen has at least one zoom/center sample by the time
+    // the user can interact. Without this, zoom-button taps in the first
+    // few frames bail out (no _displayZoom yet) — see US-13 spec §5.
+    final initialState = await map.getCameraState();
+    widget.onCameraChanged?.call(
+      initialState.zoom,
+      initialState.center.coordinates.lat.toDouble(),
+      initialState.center.coordinates.lng.toDouble(),
+    );
   }
 
   @override
@@ -254,13 +290,15 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
   Future<void> _flyToCameraTarget(CameraTarget t) async {
     final map = _mapboxMap;
     if (map == null) return; // _onMapCreated hasn't run yet
-    await map.flyTo(
-      CameraOptions(
-        center: Point(coordinates: Position(t.lng, t.lat)),
-        zoom: t.zoom,
-      ),
-      MapAnimationOptions(duration: 750),
+    final opts = CameraOptions(
+      center: Point(coordinates: Position(t.lng, t.lat)),
+      zoom: t.zoom,
     );
+    if (t.animation == CameraAnimation.ease) {
+      await map.easeTo(opts, MapAnimationOptions(duration: 250));
+    } else {
+      await map.flyTo(opts, MapAnimationOptions(duration: 750));
+    }
   }
 
   Future<void> _rerenderFeatures() async {
