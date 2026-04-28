@@ -266,4 +266,44 @@ void main() {
       },
     );
   });
+
+  group('AC4 rationale → allow', () {
+    testWidgets(
+      'denied → rationale dialog → Allow → requestPermission → recenter on cache',
+      (tester) async {
+        final renderer = FakeMapRenderer();
+        final loc = FakeLocationService(
+          checkPermissionResult: LocationPermission.denied,
+          requestPermissionResult: LocationPermission.whileInUse,
+        );
+        final analytics = RecordingAnalyticsService();
+        final cached = fakePos(lat: 10.31, lng: 123.88, accuracy: 25);
+
+        await pumpMap(
+          tester,
+          renderer: renderer,
+          locationService: loc,
+          analytics: analytics,
+          positionStream: Stream.value(cached),
+        );
+
+        await tester.tap(find.byType(RecenterButton));
+        await tester.pump();
+
+        // Rationale dialog is up.
+        expect(find.text('Use your location'), findsOneWidget);
+        expect(find.text('Allow'), findsOneWidget);
+        expect(find.text('Not now'), findsOneWidget);
+
+        await tester.tap(find.text('Allow'));
+        await tester.pumpAndSettle();
+
+        expect(renderer.cameraTargetHistory, hasLength(1));
+        expect(analytics.events.last.properties, {
+          'outcome': 'recentered_from_cache',
+          'accuracy_m': 25,
+        });
+      },
+    );
+  });
 }

@@ -256,9 +256,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
     var perm = await locationService.checkPermission();
 
-    // Rationale + OS prompt path lands in Task 15. For now, treat plain
-    // `denied` the same as deniedForever — bail without a snackbar but
-    // also without a fly. (Behavior tightened in Task 15.)
+    if (perm == LocationPermission.denied) {
+      final allow = await _showLocationRationale();
+      if (allow != true) {
+        analytics.track('map.recenter.tapped', properties: {
+          'outcome': 'permission_rationale_dismissed',
+        });
+        return;
+      }
+      perm = await locationService.requestPermission();
+    }
 
     if (perm == LocationPermission.deniedForever ||
         perm == LocationPermission.unableToDetermine) {
@@ -268,9 +275,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       });
       return;
     }
-    if (perm != LocationPermission.whileInUse &&
-        perm != LocationPermission.always) {
-      return; // tightened in Task 15
+
+    if (perm == LocationPermission.denied) {
+      analytics.track('map.recenter.tapped', properties: {
+        'outcome': 'permission_denied',
+      });
+      return;
     }
 
     if (seq != _recenterRequestSeq) return;
@@ -392,6 +402,34 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         ),
       ),
     );
+  }
+
+  Future<bool?> _showLocationRationale() async {
+    if (!mounted) return null;
+    _rationaleVisible = true;
+    try {
+      final l = AppLocalizations.of(context)!;
+      return await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogCtx) => AlertDialog(
+          title: Text(l.locationRationaleTitle),
+          content: Text(l.locationRationaleBody),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(false),
+              child: Text(l.locationRationaleNotNow),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(true),
+              child: Text(l.locationRationaleAllow),
+            ),
+          ],
+        ),
+      );
+    } finally {
+      _rationaleVisible = false;
+    }
   }
 
   Widget _pill(
