@@ -342,5 +342,7 @@
   "locationRationaleNotNow": "Not now",
   "locationSnackbarPermanentlyDenied": "Location permission denied. Open settings to enable it.",
   "locationSnackbarOpenSettings": "Open settings",
-  "locationSnackbarLowAccuracy": "Location accuracy is low. Showing your approximate position."
+  "locationSnackbarLowAccuracy": "Location accuracy is low. Showing your approximate position.",
+  "zoomInButtonSemanticLabel": "Zoom in",
+  "zoomOutButtonSemanticLabel": "Zoom out"
 }

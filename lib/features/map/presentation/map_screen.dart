@@ -16,6 +16,9 @@ import 'package:firecheck/features/map/presentation/camera_target.dart';
 import 'package:firecheck/features/map/presentation/map_providers.dart';
 import 'package:firecheck/features/map/presentation/recenter_button.dart';
 import 'package:firecheck/features/map/presentation/recenter_button_state.dart';
+import 'package:firecheck/features/map/presentation/zoom_button.dart';
+import 'package:firecheck/features/map/presentation/zoom_button_state.dart';
+import 'package:firecheck/features/map/presentation/zoom_direction.dart';
 import 'package:firecheck/features/new_feature/presentation/feature_type_picker.dart';
 import 'package:firecheck/features/survey/building_form/presentation/building_form_providers.dart';
 import 'package:firecheck/features/survey/building_form/presentation/override_reason_dialog.dart';
@@ -37,8 +40,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   RecenterButtonState _recenterState = RecenterButtonState.idle;
   CameraTarget? _cameraTarget;
-  int _recenterRequestSeq = 0;
+  int _cameraRequestSeq = 0;
   bool _rationaleVisible = false;
+
+  double? _displayZoom;
+  double? _displayLat;
+  double? _displayLng;
+
+  double? _commandedZoom;
+  Timer? _animationSettleTimer;
 
   @override
   Widget build(BuildContext context) {
@@ -86,6 +96,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     boundaryGeojson: assignment.boundaryPolygonGeojson,
                     onFeatureTap: _handleFeatureTap,
                     onLongPress: _handleLongPress,
+                    onCameraChanged: _onCameraChanged,
                     addModeActive: _addModeActive,
                     initialCameraTarget: initialCameraTarget,
                     cameraTarget: _cameraTarget,
@@ -114,6 +125,26 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             child: RecenterButton(
               state: _recenterState,
               onTap: _onRecenterTap,
+            ),
+          ),
+          Positioned(
+            right: 16,
+            bottom: 144,
+            child: ZoomButton(
+              key: const Key('map.zoom-out-button'),
+              direction: ZoomDirection.zoomOut,
+              state: _zoomOutState(),
+              onTap: _onZoomOut,
+            ),
+          ),
+          Positioned(
+            right: 16,
+            bottom: 204,
+            child: ZoomButton(
+              key: const Key('map.zoom-in-button'),
+              direction: ZoomDirection.zoomIn,
+              state: _zoomInState(),
+              onTap: _onZoomIn,
             ),
           ),
           Positioned(
@@ -244,13 +275,75 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     context.go('/feature/${f.id}');
   }
 
+  void _onCameraChanged(double zoom, double lat, double lng) {
+    final prevRounded = _displayZoom?.round();
+    _displayZoom = zoom;
+    _displayLat = lat;
+    _displayLng = lng;
+    if (prevRounded != zoom.round()) {
+      setState(() {});
+    }
+  }
+
+  ZoomButtonState _zoomInState() {
+    final z = _commandedZoom?.round() ?? _displayZoom?.round();
+    if (z == null) return ZoomButtonState.idle;
+    return z >= 22 ? ZoomButtonState.disabled : ZoomButtonState.idle;
+  }
+
+  ZoomButtonState _zoomOutState() {
+    final z = _commandedZoom?.round() ?? _displayZoom?.round();
+    if (z == null) return ZoomButtonState.idle;
+    return z <= 0 ? ZoomButtonState.disabled : ZoomButtonState.idle;
+  }
+
+  Future<void> _onZoomIn() => _onZoom(1);
+  Future<void> _onZoomOut() => _onZoom(-1);
+
+  Future<void> _onZoom(int delta) async {
+    // Anchor on commanded if a previous tap is still animating; otherwise
+    // anchor on the live display zoom. Bail out cleanly if neither is set
+    // (renderer hasn't fired its first onCameraChanged yet — sub-frame race).
+    final base = _commandedZoom?.round() ?? _displayZoom?.round();
+    final lat = _displayLat;
+    final lng = _displayLng;
+    if (base == null || lat == null || lng == null) return;
+
+    final newZoom = (base + delta).clamp(0, 22);
+    if (newZoom == base) return;
+
+    ref.read(analyticsServiceProvider).track(
+      'map.zoom.tapped',
+      properties: {
+        'direction': delta > 0 ? 'in' : 'out',
+        'from_zoom': base,
+      },
+    );
+
+    setState(() {
+      _commandedZoom = newZoom.toDouble();
+      _cameraTarget = CameraTarget(
+        lat: lat,
+        lng: lng,
+        zoom: newZoom.toDouble(),
+        requestId: ++_cameraRequestSeq,
+        animation: CameraAnimation.ease,
+      );
+    });
+
+    _animationSettleTimer?.cancel();
+    _animationSettleTimer = Timer(const Duration(milliseconds: 350), () {
+      if (mounted) setState(() => _commandedZoom = null);
+    });
+  }
+
   Future<void> _onRecenterTap() async {
     if (_recenterState != RecenterButtonState.idle) return;
     if (_rationaleVisible) return;
 
     // Single increment per tap — used both for slow-path supersedence
     // detection AND as the CameraTarget.requestId for renderer dedup.
-    final seq = ++_recenterRequestSeq;
+    final seq = ++_cameraRequestSeq;
     final analytics = ref.read(analyticsServiceProvider);
     final locationService = ref.read(locationServiceProvider);
 
@@ -283,7 +376,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       return;
     }
 
-    if (seq != _recenterRequestSeq) return;
+    if (seq != _cameraRequestSeq) return;
 
     final cached = ref.read(currentPositionProvider).valueOrNull;
     if (cached != null && cached.accuracy <= 100.0) {
@@ -303,14 +396,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           .firstWhere((p) => p.accuracy <= 100.0)
           .timeout(const Duration(seconds: 8));
 
-      if (!mounted || seq != _recenterRequestSeq) return;
+      if (!mounted || seq != _cameraRequestSeq) return;
       _flyTo(accurate, seq: seq);
       analytics.track('map.recenter.tapped', properties: {
         'outcome': 'recentered_after_wait',
         'accuracy_m': accurate.accuracy.round(),
       },);
     } on TimeoutException {
-      if (!mounted || seq != _recenterRequestSeq) return;
+      if (!mounted || seq != _cameraRequestSeq) return;
       final best = ref.read(currentPositionProvider).valueOrNull;
       if (best != null) _flyTo(best, seq: seq);
       _showLowAccuracySnackbar();
@@ -319,14 +412,25 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         'accuracy_m': best?.accuracy.round(),
       },);
     } finally {
-      if (mounted && seq == _recenterRequestSeq) {
+      if (mounted && seq == _cameraRequestSeq) {
         setState(() => _recenterState = RecenterButtonState.idle);
       }
     }
   }
 
+  @override
+  void dispose() {
+    _animationSettleTimer?.cancel();
+    super.dispose();
+  }
+
   void _flyTo(Position p, {required int seq}) {
     setState(() {
+      // Recenter supersedes any in-flight zoom command; clear the commanded-
+      // zoom anchor so the next zoom tap re-anchors on the post-recenter
+      // display zoom rather than the stale pre-recenter target.
+      _animationSettleTimer?.cancel();
+      _commandedZoom = null;
       _cameraTarget = CameraTarget(
         lat: p.latitude,
         lng: p.longitude,

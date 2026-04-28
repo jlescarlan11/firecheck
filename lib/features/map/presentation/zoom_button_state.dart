@@ -1,0 +1,1 @@
+enum ZoomButtonState { idle, disabled }

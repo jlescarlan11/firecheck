@@ -11,4 +11,23 @@ void main() {
     expect(a.hashCode, b.hashCode);
     expect(a, isNot(c));
   });
+
+  test('default animation is fly (recenter back-compat)', () {
+    const t = CameraTarget(lat: 10, lng: 123, zoom: 17, requestId: 1);
+    expect(t.animation, CameraAnimation.fly);
+  });
+
+  test('animation field does not affect equality', () {
+    const a = CameraTarget(
+      lat: 10, lng: 123, zoom: 17, requestId: 1,
+      // ignore: avoid_redundant_argument_values
+      animation: CameraAnimation.fly,
+    );
+    const b = CameraTarget(
+      lat: 10, lng: 123, zoom: 17, requestId: 1,
+      animation: CameraAnimation.ease,
+    );
+    expect(a, b);
+    expect(a.hashCode, b.hashCode);
+  });
 }

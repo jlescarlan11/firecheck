@@ -1,0 +1,1 @@
+enum ZoomDirection { zoomIn, zoomOut }
