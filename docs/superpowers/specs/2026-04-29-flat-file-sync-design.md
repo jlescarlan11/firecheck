@@ -41,8 +41,36 @@ architecture (Drift + Supabase) remains for the team's own use.
 
 ## Personas
 
-- **Enumerator (E)** — field worker using the FireCheck app.
-- **Course Supervisor (S)** — uploads input shapefiles to shared storage; downloads and reviews output shapefiles.
+- **Enumerator (E)** — field worker using the FireCheck app. The user stories below are written for this persona.
+- **Course Supervisor (S)** — uploads input shapefiles to shared storage; downloads and reviews output shapefiles. The supervisor uses **their own tools** (Drive web UI, QGIS, etc.) — they do **not** use the FireCheck app. Their workflow is captured below in the Preconditions section, not as user stories.
+
+---
+
+## Preconditions (supervisor responsibilities, outside the app)
+
+These are the things the supervisor must do for the app to have anything to read or write. They are **not features of the app**; they define the contract the app's stories rely on.
+
+**Pre-stage assignment input**
+
+- The supervisor uploads `input.zip` to `/firecheck/inbox/<assignment_id>/` in the shared Google Drive.
+- Zip contains exactly:
+  - `boundary.{shp,dbf,shx,prj}` — assignment polygon.
+  - `buildings.{shp,dbf,shx,prj}` — initial building polygons (attributes may be sparse).
+  - `roads.{shp,dbf,shx,prj}` — initial road polylines.
+- Nothing else inside — no `manifest.json`, no `readme.txt`, no images.
+- CRS = EPSG:32651 (WGS 84 / UTM zone 51N), declared via the `.prj` file. (Eastern-Mindanao assignments: EPSG:32652 instead.)
+- The supervisor uses their own GIS tools (QGIS, ArcGIS, etc.) to produce the bundle; the FireCheck app is **not** involved in this step.
+
+**Drive permissions**
+
+- The shared `/firecheck/inbox/<assignment_id>/` folder grants **read** access to assigned enumerators' Google accounts.
+- The shared `/firecheck/outbox/<assignment_id>/<enumerator_id>/` folder grants **write** access to that enumerator's Google account and **read** to the supervisor.
+
+**Folder & filename layout**
+
+- Documented in `docs/file-conventions.md` for both supervisor and enumerator reference.
+- Inbox: `/firecheck/inbox/<assignment_id>/input.zip`.
+- Outbox: `/firecheck/outbox/<assignment_id>/<enumerator_id>/output_<…>.zip` (+ sibling `photos/` folder).
 
 ---
 
@@ -50,22 +78,7 @@ architecture (Drift + Supabase) remains for the team's own use.
 
 ### Epic 1 — Input distribution
 
-#### FF-1 — Pre-stage assignment input shapefiles
-
-> **As a** Supervisor, **I want to** upload input shapefiles (boundary, buildings, roads) to a shared Google Drive folder, **so that** enumerators can download their assignment.
-
-**Acceptance criteria**
-
-- Drive path: `/firecheck/inbox/<assignment_id>/input.zip`.
-- Zip contains exactly:
-  - `boundary.{shp,dbf,shx,prj}` — assignment polygon.
-  - `buildings.{shp,dbf,shx,prj}` — initial building polygons (attributes may be sparse).
-  - `roads.{shp,dbf,shx,prj}` — initial road polylines.
-- Nothing else — no `manifest.json`, no `readme.txt`, no images.
-- CRS = EPSG:32651 (WGS 84 / UTM zone 51N), verified via the `.prj` file. (Eastern-Mindanao assignments: EPSG:32652 instead.)
-- Opens cleanly in QGIS with no warnings.
-
-#### FF-2 — Download assignment input on "Get Maps"
+#### FF-1 — Download assignment input on "Get Maps"
 
 > **As an** Enumerator, **I want** "Get Maps" to fetch my input shapefiles from Drive, **so that** I can work fully offline afterward.
 
@@ -76,7 +89,7 @@ architecture (Drift + Supabase) remains for the team's own use.
 - Existing Mapbox tile-pack download flow continues alongside this step.
 - Idempotent: re-tapping "Get Maps" while online refreshes only if Drive's `modifiedTime` on `input.zip` is newer than the locally stored value.
 
-#### FF-3 — Reject malformed input shapefiles
+#### FF-2 — Reject malformed input shapefiles
 
 > **As an** Enumerator, **I want** the app to reject a broken input shapefile at download time, **so that** I don't waste a day on an unusable assignment.
 
@@ -91,19 +104,19 @@ architecture (Drift + Supabase) remains for the team's own use.
 
 ### Epic 2 — Attribution (existing app behavior, confirmed)
 
-#### FF-4 — Attribute features offline
+#### FF-3 — Attribute features offline
 
 > **As an** Enumerator, **I want to** fill building, road, and OLP forms while offline, **so that** I can survey without connectivity.
 
 **Acceptance criteria**
 
 - Existing forms (Identity, Construction, Cost, Fire-fighting, Fire load, OLP) keep working unchanged.
-- Photos persist locally during fieldwork. At upload time (FF-7), the first 5 photos per structure are uploaded to Drive and their URLs are written into the shapefile's `.dbf` (see FF-5).
-- Multi-tab structures continue to work; each tab becomes a separate output row in FF-5 with its own photo set.
+- Photos persist locally during fieldwork. At upload time (FF-6), the first 5 photos per structure are uploaded to Drive and their URLs are written into the shapefile's `.dbf` (see FF-4).
+- Multi-tab structures continue to work; each tab becomes a separate output row in FF-4 with its own photo set.
 
 ### Epic 3 — Output packaging
 
-#### FF-5 — Export attributed shapefiles
+#### FF-4 — Export attributed shapefiles
 
 > **As an** Enumerator, **I want** the app to package my completed work as attributed shapefiles, **so that** I can hand it back in the format the course expects.
 
@@ -115,12 +128,12 @@ architecture (Drift + Supabase) remains for the team's own use.
   - `roads.{shp,dbf,shx,prj}` — attributed road polylines.
 - Nothing else inside the zip — no photos, no manifest, no readme.
 - `.dbf` column names ≤ 10 characters (shapefile spec).
-- `.dbf` includes columns `photo_1` … `photo_5` carrying the Drive shareable URL for each uploaded photo (resolved during FF-7). Empty for missing slots.
+- `.dbf` includes columns `photo_1` … `photo_5` carrying the Drive shareable URL for each uploaded photo (resolved during FF-6). Empty for missing slots.
 - All required survey fields populated per row; null values explicitly marked, not blank.
 - CRS = EPSG:32651 (WGS 84 / UTM zone 51N), declared in the `.prj` file. Geometries are reprojected from the in-app EPSG:4326 store to EPSG:32651 at export time. (Eastern-Mindanao assignments emit EPSG:32652 instead.)
-- Photos themselves live alongside the zip in a sibling `photos/` folder in Drive (see FF-7), not inside the zip.
+- Photos themselves live alongside the zip in a sibling `photos/` folder in Drive (see FF-6), not inside the zip.
 
-#### FF-6 — Pre-upload integrity check
+#### FF-5 — Pre-upload integrity check
 
 > **As an** Enumerator, **I want** the app to verify the shapefiles are complete before letting me upload, **so that** I don't deliver a broken submission.
 
@@ -138,7 +151,7 @@ architecture (Drift + Supabase) remains for the team's own use.
 
 ### Epic 4 — Upload
 
-#### FF-7 — Upload photos and attributed shapefiles to shared storage
+#### FF-6 — Upload photos and attributed shapefiles to shared storage
 
 > **As an** Enumerator, **I want to** upload my completed photos and shapefiles to Drive when I have Wi-Fi, **so that** the supervisor can review them in one place.
 
@@ -153,7 +166,7 @@ architecture (Drift + Supabase) remains for the team's own use.
 - Resumable across Wi-Fi drops (chunked upload or full retry — implementer's choice).
 - On both-phase success: assignment locks (existing behavior).
 
-#### FF-8 — Confirm upload landed
+#### FF-7 — Confirm upload landed
 
 > **As an** Enumerator, **I want** a clear confirmation including the remote path, **so that** I know the work is delivered.
 
@@ -164,7 +177,7 @@ architecture (Drift + Supabase) remains for the team's own use.
 
 ### Epic 5 — Cross-cutting
 
-#### FF-9 — Authenticate to shared storage
+#### FF-8 — Authenticate to shared storage
 
 > **As an** Enumerator, **I want to** sign in once with my UP Google account, **so that** all subsequent downloads and uploads are attributed to me.
 
@@ -175,23 +188,24 @@ architecture (Drift + Supabase) remains for the team's own use.
 - Auto-refresh; on refresh failure, prompt re-auth.
 - Sign-out option from settings.
 
-#### FF-10 — Predictable folder & filename convention
+#### FF-9 — Enforce predictable folder & filename convention
 
-> **As a** Supervisor, **I want** every input and output to follow a documented naming convention, **so that** I can locate any enumerator's work without guessing.
+> **As an** Enumerator, **I want** the app to enforce the documented Drive folder and filename convention on every upload, **so that** the supervisor (and any teammate inspecting the bucket) can locate my work without guessing.
 
 **Acceptance criteria**
 
-- `docs/file-conventions.md` documents the inbox / outbox layouts (per FF-1, FF-7).
+- `docs/file-conventions.md` documents the inbox / outbox layouts (cross-references the Preconditions section above and FF-6).
 - App refuses to upload if `assignment_id` or `enumerator_id` is missing or invalid.
+- Upload paths are constructed from the documented template; no free-form folders.
 - Different enumerators never collide — each lives in their own subfolder under the assignment.
 
-#### FF-11 — Open enumerator output directly in QGIS
+#### FF-10 — Produce QGIS-compatible output
 
-> **As a** Supervisor, **I want to** open any uploaded shapefile in QGIS without conversion, **so that** I can spot-check work using standard GIS tooling.
+> **As an** Enumerator, **I want** the app's exported shapefiles to load in QGIS without conversion or warnings, **so that** the supervisor can spot-check my work using standard GIS tooling.
 
 **Acceptance criteria**
 
-- Shapefile loads in QGIS with no warnings.
+- Exported shapefile loads in QGIS with no warnings.
 - Attributes are inspectable via QGIS's standard Attribute Table.
 - Photo URLs in `photo_1` … `photo_5` are clickable from the QGIS attribute form (Open URL action) and resolve to the corresponding JPEG in the sibling `photos/` Drive folder.
 - Geometry is valid (no self-intersections, all polygons closed).
@@ -202,6 +216,7 @@ architecture (Drift + Supabase) remains for the team's own use.
 
 - Photos *inside the zip* — they ride alongside in a sibling `photos/` Drive folder, referenced by URL in the `.dbf`.
 - A manifest or readme file in the deliverable.
+- Any feature for the supervisor to use *inside the FireCheck app* — the supervisor uses their own tools (Drive web, QGIS).
 - Real-time multi-enumerator collaboration on the same assignment.
 - Server-side validation or automated bounce-back of bad uploads — supervisor reviews manually.
 - Re-versioning input shapefiles after enumerators have started (input frozen at download time).
@@ -227,10 +242,10 @@ architecture (Drift + Supabase) remains for the team's own use.
 
 | Story | Touches |
 |---|---|
-| FF-2, FF-3 | `lib/features/assignment/` (Get Maps flow), new `lib/core/sync/shapefile/` for shapefile import |
-| FF-5, FF-6 | `lib/core/sync/` (replaces bundle export), new `lib/core/sync/shapefile/` for shapefile export |
-| FF-7, FF-8 | `lib/core/sync/worker/`, replace Supabase Storage adapter with Google Drive adapter |
-| FF-9 | `lib/core/auth/`, add Google OAuth alongside existing Supabase auth |
-| FF-10 | `docs/file-conventions.md` (new) |
+| FF-1, FF-2 | `lib/features/assignment/` (Get Maps flow), new `lib/core/sync/shapefile/` for shapefile import |
+| FF-4, FF-5 | `lib/core/sync/` (replaces bundle export), new `lib/core/sync/shapefile/` for shapefile export |
+| FF-6, FF-7 | `lib/core/sync/worker/`, replace Supabase Storage adapter with Google Drive adapter |
+| FF-8 | `lib/core/auth/`, add Google OAuth alongside existing Supabase auth |
+| FF-9 | `docs/file-conventions.md` (new) |
 
 The existing **outbox / retry / WorkManager** machinery from Phase 4a is kept — only the upload *destination* and *payload format* change.
