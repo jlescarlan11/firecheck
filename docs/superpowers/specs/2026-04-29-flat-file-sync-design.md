@@ -31,7 +31,8 @@ architecture (Drift + Supabase) remains for the team's own use.
 | Photos | Stay inside the app (Drift + Supabase Storage) for the team's own records; never part of the deliverable. | Photos can't go inside a shapefile, and the supervisor didn't ask for them. |
 | Storage backend | **Google Drive**. | UP accounts already exist, supervisor familiarity, stable API; FileZilla needs hosted FTP we don't have, GitHub is awkward for >100 MB updates. |
 | Multi-tab buildings | One row per structure with repeated geometry; `struct_idx` column distinguishes them. | Cleaner for GIS analysis than numbered columns; expected by QGIS. |
-| CRS | EPSG:4326 (WGS84) end-to-end. | Mapbox already operates here; no projection conversion needed. |
+| CRS — internal & Mapbox | EPSG:4326 (WGS84 lat/lon). | What GPS and Mapbox use natively; no transformation cost in the live map view. |
+| CRS — shapefile deliverable | **EPSG:32651 (WGS 84 / UTM zone 51N)**. | Projected to meters, so building footprints and road lengths measure correctly out of the box. Same WGS84 datum as GPS — no datum-shift error. Covers Cebu, Manila, Palawan, most of the Philippines (120°–126° E). PRS92 zones (3123–3125) considered but rejected: ~150 m datum offset from WGS84 introduces transformation uncertainty for a GPS-driven survey app. Assignments east of 126° E should switch to EPSG:32652 (UTM zone 52N) — implementation should make this configurable per assignment. |
 | Zip | Used only as transport for the multi-file shapefile set. Nothing else inside. | Convenience — Drive doesn't preserve directory grouping for loose `.shp/.dbf/.shx/.prj` uploads. |
 
 ---
@@ -59,7 +60,7 @@ architecture (Drift + Supabase) remains for the team's own use.
   - `buildings.{shp,dbf,shx,prj}` — initial building polygons (attributes may be sparse).
   - `roads.{shp,dbf,shx,prj}` — initial road polylines.
 - Nothing else — no `manifest.json`, no `readme.txt`, no images.
-- CRS = EPSG:4326 (verified via `.prj`).
+- CRS = EPSG:32651 (WGS 84 / UTM zone 51N), verified via the `.prj` file. (Eastern-Mindanao assignments: EPSG:32652 instead.)
 - Opens cleanly in QGIS with no warnings.
 
 #### FF-2 — Download assignment input on "Get Maps"
@@ -81,8 +82,9 @@ architecture (Drift + Supabase) remains for the team's own use.
 
 - Pre-import validation checks:
   - All required `.shp/.dbf/.shx/.prj` files present for each layer.
-  - CRS = EPSG:4326.
+  - CRS matches the configured assignment CRS (default EPSG:32651). Mismatched CRS is rejected — supervisor must reproject before re-uploading.
   - Required attribute columns present in `buildings.dbf` and `roads.dbf`.
+- On import, geometries are reprojected from the file CRS to EPSG:4326 (WGS84) for in-app storage and Mapbox display.
 - On any failure: clear error citing what's missing; no partial import.
 
 ### Epic 2 — Attribution (existing app behavior, confirmed)
@@ -112,7 +114,7 @@ architecture (Drift + Supabase) remains for the team's own use.
 - Nothing else — no photos, no manifest, no readme.
 - `.dbf` column names ≤ 10 characters (shapefile spec).
 - All required survey fields populated per row; null values explicitly marked, not blank.
-- CRS = EPSG:4326.
+- CRS = EPSG:32651 (WGS 84 / UTM zone 51N), declared in the `.prj` file. Geometries are reprojected from the in-app EPSG:4326 store to EPSG:32651 at export time. (Eastern-Mindanao assignments emit EPSG:32652 instead.)
 
 #### FF-6 — Pre-upload integrity check
 
@@ -206,6 +208,7 @@ architecture (Drift + Supabase) remains for the team's own use.
 3. **Required attribute columns** — confirm the supervisor's expected column list. The app currently captures dozens of fields; the supervisor may only want a subset.
 4. **Re-upload semantics** — confirm `_v2/_v3` suffixed sibling files (this design's choice) vs. timestamp-only filenames vs. overwriting.
 5. **Boundary in output** — confirm whether the supervisor wants `boundary.shp` echoed back in the output zip, or only `buildings` and `roads`.
+6. **CRS** — confirm EPSG:32651 (WGS 84 / UTM zone 51N) for the deliverable. Alternative for stricter government-style work: EPSG:3124 (PRS92 / Philippines zone 4) — the official Philippine national datum for the Cebu/Visayas area, but introduces a ~150 m datum-shift transformation from GPS source.
 
 ---
 
