@@ -19,6 +19,7 @@ import 'package:firecheck/features/map/presentation/recenter_button_state.dart';
 import 'package:firecheck/features/map/presentation/zoom_button.dart';
 import 'package:firecheck/features/map/presentation/zoom_button_state.dart';
 import 'package:firecheck/features/map/presentation/zoom_direction.dart';
+import 'package:firecheck/features/map/reshape/presentation/reshape_action_sheet.dart';
 import 'package:firecheck/features/new_feature/presentation/feature_type_picker.dart';
 import 'package:firecheck/features/survey/building_form/presentation/building_form_providers.dart';
 import 'package:firecheck/features/survey/building_form/presentation/override_reason_dialog.dart';
@@ -100,6 +101,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     addModeActive: _addModeActive,
                     initialCameraTarget: initialCameraTarget,
                     cameraTarget: _cameraTarget,
+                    onPolygonLongPress: _handlePolygonLongPress,
                   ),
           ),
           if (_addModeActive)
@@ -216,6 +218,27 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     if (!mounted) return;
     setState(() => _addModeActive = false);
     context.go('/feature/${feature.id}');
+  }
+
+  Future<void> _handlePolygonLongPress(Feature feature) async {
+    if (_addModeActive) return;
+    final l = AppLocalizations.of(context)!;
+    final locked = ref.read(isAssignmentLockedProvider);
+    if (locked) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l.reshapeLockedSnackbar)));
+      return;
+    }
+    if (!mounted) return;
+    final action = await showReshapeActionSheet(context, locked: locked);
+    if (!mounted || action == null) return;
+    switch (action) {
+      case ReshapeAction.openForm:
+        await _handleFeatureTap(feature);
+      case ReshapeAction.reshape:
+        // Distance gate + enterReshape handled in T19.
+        break;
+    }
   }
 
   Future<void> _handleFeatureTap(Feature f) async {
