@@ -114,4 +114,86 @@ void main() {
       expect(result.valid, isTrue);
     });
   });
+
+  group('rule 4 — vertexOutsideBoundary', () {
+    test('passes when all vertices are inside boundary', () {
+      final result = validateBuildingPolygon(
+        [
+          [
+            (lng: 123.880, lat: 10.320),
+            (lng: 123.881, lat: 10.320),
+            (lng: 123.880, lat: 10.321),
+          ],
+        ],
+        boundaryGeojson: boundary,
+      );
+      expect(result.valid, isTrue);
+    });
+
+    test('fails when one vertex is outside boundary', () {
+      final result = validateBuildingPolygon(
+        [
+          [
+            (lng: 123.880, lat: 10.320),
+            (lng: 124.000, lat: 10.320), // way outside
+            (lng: 123.880, lat: 10.321),
+          ],
+        ],
+        boundaryGeojson: boundary,
+      );
+      expect(result.valid, isFalse);
+      expect(result.error, PolygonValidationError.vertexOutsideBoundary);
+    });
+  });
+
+  group('rule 5 — zeroLengthEdge', () {
+    test('fails when two adjacent vertices are coincident', () {
+      final result = validateBuildingPolygon(
+        [
+          [
+            (lng: 123.880, lat: 10.320),
+            (lng: 123.880, lat: 10.320), // duplicate
+            (lng: 123.881, lat: 10.320),
+            (lng: 123.880, lat: 10.321),
+          ],
+        ],
+        boundaryGeojson: boundary,
+      );
+      expect(result.valid, isFalse);
+      expect(result.error, PolygonValidationError.zeroLengthEdge);
+    });
+
+    test('passes when adjacent vertices are 1cm apart (above epsilon)', () {
+      // ~1e-7 degrees is ~1cm at the equator — well above 1e-9 epsilon.
+      final result = validateBuildingPolygon(
+        [
+          [
+            (lng: 123.880, lat: 10.320),
+            (lng: 123.8800001, lat: 10.320), // 1cm east
+            (lng: 123.881, lat: 10.320),
+            (lng: 123.880, lat: 10.321),
+          ],
+        ],
+        boundaryGeojson: boundary,
+      );
+      expect(result.valid, isTrue);
+    });
+  });
+
+  group('rule ordering', () {
+    test('returns rule 1 when polygon also fails rule 3', () {
+      // 2 vertices fails rule 1; can't fail rule 3 simultaneously, so build
+      // a case that fails rule 1 + rule 5. Two vertices, both coincident.
+      final result = validateBuildingPolygon(
+        [
+          [
+            (lng: 123.880, lat: 10.320),
+            (lng: 123.880, lat: 10.320),
+          ],
+        ],
+        boundaryGeojson: boundary,
+      );
+      expect(result.error, PolygonValidationError.tooFewVertices);
+    });
+  });
 }

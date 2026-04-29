@@ -1,3 +1,5 @@
+import 'package:firecheck/core/geo/point_in_polygon.dart';
+
 typedef LngLat = ({double lng, double lat});
 
 // Identifies an intersecting pair of edges in the working outer ring.
@@ -68,6 +70,29 @@ PolygonValidationResult validateBuildingPolygon(
     return const PolygonValidationResult.invalid(
       PolygonValidationError.zeroOrNegativeArea,
     );
+  }
+
+  // Rule 4: every vertex inside the assignment boundary.
+  for (final v in outer) {
+    if (!pointInPolygonGeojson(v.lat, v.lng, boundaryGeojson)) {
+      return const PolygonValidationResult.invalid(
+        PolygonValidationError.vertexOutsideBoundary,
+      );
+    }
+  }
+
+  // Rule 5: no zero-length edges (adjacent vertices not coincident).
+  const epsilon = 1e-9;
+  for (var i = 0; i < outer.length; i++) {
+    final a = outer[i];
+    final b = outer[(i + 1) % outer.length];
+    final dLng = (b.lng - a.lng).abs();
+    final dLat = (b.lat - a.lat).abs();
+    if (dLng < epsilon && dLat < epsilon) {
+      return const PolygonValidationResult.invalid(
+        PolygonValidationError.zeroLengthEdge,
+      );
+    }
   }
 
   return const PolygonValidationResult.valid();
