@@ -12,13 +12,13 @@ The original FireCheck spec referenced a "server" for retrieving maps. The cours
 supervisor (Dulaca, R.C.) clarified on 2026-04-29 that no such API server exists
 or is intended. The supervisor's actual model is **flat file storage**: a shared
 repository where input shapefiles are placed for download, and attributed
-shapefiles are uploaded back. Acceptable storage media include a GitHub repo,
-Google Drive, or FileZilla/FTP.
+shapefiles are uploaded back. Acceptable storage media: GitHub repo, Google
+Drive, or FileZilla/FTP.
 
-This document scopes a small set of user stories to bring the FireCheck mobile
-app into compliance with that instruction by replacing the **delivery boundary**
-(currently Supabase REST + Storage) with a flat-file workflow built on
-shapefile bundles. Internal app architecture (Drift + Supabase) remains.
+This document scopes a small set of user stories that bring the FireCheck mobile
+app into compliance by replacing the **delivery boundary** (currently Supabase
+upload) with a strict shapefile in / shapefile out workflow. Internal app
+architecture (Drift + Supabase) remains for the team's own use.
 
 ---
 
@@ -27,17 +27,19 @@ shapefile bundles. Internal app architecture (Drift + Supabase) remains.
 | Topic | Choice | Rationale |
 |---|---|---|
 | Scope | Replace the delivery boundary, not the whole sync engine. | Follows the supervisor's instruction without scrapping working internal infra. |
-| Photos | Filename in .dbf column, photos in sibling `photos/` folder, zipped together. | Standard GIS convention; opens in QGIS; keeps the deliverable a real shapefile. |
-| Storage backend | **Google Drive**. | UP accounts already exist, supervisor familiarity, stable API; FileZilla needs hosted FTP we don't have, GitHub is awkward for >100 MB photo bundles. |
-| Multi-tab buildings | One row per structure with repeated geometry; `struct_idx` column distinguishes them. | Cleaner for GIS analysis than numbered columns. |
+| Deliverable contents | **Only shapefile component files** (`.shp/.dbf/.shx/.prj`). No photos, no manifest, no readme in the zip. | Strict reading of the supervisor's instruction: "download the shape files… upload the attributed shape files." |
+| Photos | Stay inside the app (Drift + Supabase Storage) for the team's own records; never part of the deliverable. | Photos can't go inside a shapefile, and the supervisor didn't ask for them. |
+| Storage backend | **Google Drive**. | UP accounts already exist, supervisor familiarity, stable API; FileZilla needs hosted FTP we don't have, GitHub is awkward for >100 MB updates. |
+| Multi-tab buildings | One row per structure with repeated geometry; `struct_idx` column distinguishes them. | Cleaner for GIS analysis than numbered columns; expected by QGIS. |
 | CRS | EPSG:4326 (WGS84) end-to-end. | Mapbox already operates here; no projection conversion needed. |
+| Zip | Used only as transport for the multi-file shapefile set. Nothing else inside. | Convenience — Drive doesn't preserve directory grouping for loose `.shp/.dbf/.shx/.prj` uploads. |
 
 ---
 
 ## Personas
 
 - **Enumerator (E)** — field worker using the FireCheck app.
-- **Course Supervisor (S)** — uploads input bundles to shared storage; downloads and reviews output.
+- **Course Supervisor (S)** — uploads input shapefiles to shared storage; downloads and reviews output shapefiles.
 
 ---
 
@@ -45,42 +47,41 @@ shapefile bundles. Internal app architecture (Drift + Supabase) remains.
 
 ### Epic 1 — Input distribution
 
-#### FF-1 — Pre-stage assignment input as a shapefile bundle
+#### FF-1 — Pre-stage assignment input shapefiles
 
-> **As a** Supervisor, **I want to** upload an input bundle (boundary + buildings + roads shapefiles) to a shared Google Drive folder, **so that** enumerators can download their assignment.
+> **As a** Supervisor, **I want to** upload input shapefiles (boundary, buildings, roads) to a shared Google Drive folder, **so that** enumerators can download their assignment.
 
 **Acceptance criteria**
 
-- Bundle is `input.zip` containing:
-  - `boundary.{shp,dbf,shx,prj}` — the assignment polygon
-  - `buildings.{shp,dbf,shx,prj}` — initial building polygons (may be empty attributes)
-  - `roads.{shp,dbf,shx,prj}` — initial road polylines
-  - `manifest.json` — `{ assignment_id, area_name, supervisor, generated_at }`
 - Drive path: `/firecheck/inbox/<assignment_id>/input.zip`.
+- Zip contains exactly:
+  - `boundary.{shp,dbf,shx,prj}` — assignment polygon.
+  - `buildings.{shp,dbf,shx,prj}` — initial building polygons (attributes may be sparse).
+  - `roads.{shp,dbf,shx,prj}` — initial road polylines.
+- Nothing else — no `manifest.json`, no `readme.txt`, no images.
 - CRS = EPSG:4326 (verified via `.prj`).
-- Bundle opens cleanly in QGIS with no warnings.
+- Opens cleanly in QGIS with no warnings.
 
 #### FF-2 — Download assignment input on "Get Maps"
 
-> **As an** Enumerator, **I want** "Get Maps" to fetch my input bundle from Drive, **so that** I can work fully offline afterward.
+> **As an** Enumerator, **I want** "Get Maps" to fetch my input shapefiles from Drive, **so that** I can work fully offline afterward.
 
 **Acceptance criteria**
 
 - Authenticates to Drive, lists assignments visible to the signed-in account.
-- Downloads `input.zip`, extracts, imports features into Drift, preserving original `feature_id` from `.dbf`.
-- Existing Mapbox tile-pack download flow continues to run alongside this step.
-- Idempotent: re-tapping "Get Maps" while online refreshes only if remote `manifest.json:generated_at` is newer than the locally stored value.
+- Downloads `input.zip`, extracts, imports features into Drift, preserving original `feature_id` from the `.dbf`.
+- Existing Mapbox tile-pack download flow continues alongside this step.
+- Idempotent: re-tapping "Get Maps" while online refreshes only if Drive's `modifiedTime` on `input.zip` is newer than the locally stored value.
 
-#### FF-3 — Reject malformed input bundles
+#### FF-3 — Reject malformed input shapefiles
 
-> **As an** Enumerator, **I want** the app to reject a broken input bundle at download time, **so that** I don't waste a day on an unusable assignment.
+> **As an** Enumerator, **I want** the app to reject a broken input shapefile at download time, **so that** I don't waste a day on an unusable assignment.
 
 **Acceptance criteria**
 
 - Pre-import validation checks:
-  - All required `.shp/.dbf/.shx/.prj` files present.
+  - All required `.shp/.dbf/.shx/.prj` files present for each layer.
   - CRS = EPSG:4326.
-  - `manifest.json` parseable and complete.
   - Required attribute columns present in `buildings.dbf` and `roads.dbf`.
 - On any failure: clear error citing what's missing; no partial import.
 
@@ -93,57 +94,52 @@ shapefile bundles. Internal app architecture (Drift + Supabase) remains.
 **Acceptance criteria**
 
 - Existing forms (Identity, Construction, Cost, Fire-fighting, Fire load, OLP) keep working unchanged.
-- Photos persist locally and are tagged with `feature_id` + `structure_idx`.
+- Photos persist locally for the team's own use; they are **not** included in the shapefile deliverable.
 - Multi-tab structures continue to work; each tab becomes a separate output row in FF-5.
 
 ### Epic 3 — Output packaging
 
-#### FF-5 — Export attributed features as a shapefile bundle
+#### FF-5 — Export attributed shapefiles
 
-> **As an** Enumerator, **I want** the app to package my completed work as a shapefile bundle, **so that** I can hand it back in the format the course expects.
+> **As an** Enumerator, **I want** the app to package my completed work as attributed shapefiles, **so that** I can hand it back in the format the course expects.
 
 **Acceptance criteria**
 
-- Output zip layout:
-  ```
-  output_<assignment_id>_<enumerator_id>_<yyyymmdd-hhmm>.zip
-    ├── buildings.{shp,dbf,shx,prj}   one row per structure (multi-tab → repeated geometry, distinct struct_idx)
-    ├── roads.{shp,dbf,shx,prj}       attributed road polylines
-    ├── photos/<feature_id>_<n>.jpg   photos referenced from .dbf
-    ├── manifest.json                  assignment_id, enumerator_id, completed_at, feature counts
-    └── readme.txt                     column dictionary mapping 10-char .dbf names → human-readable
-  ```
-- `.dbf` column names capped at 10 characters (shapefile spec).
-- `readme.txt` provides the short-name → long-name mapping.
-- Photo columns `photo_1`…`photo_n` hold filenames that resolve inside `photos/`.
-- All required survey fields present per row; null values explicitly marked, not blank.
+- Output zip name: `output_<assignment_id>_<enumerator_id>_<yyyymmdd-hhmm>.zip`.
+- Zip contains exactly:
+  - `buildings.{shp,dbf,shx,prj}` — one row per structure (multi-tab → repeated geometry, distinct `struct_idx`).
+  - `roads.{shp,dbf,shx,prj}` — attributed road polylines.
+- Nothing else — no photos, no manifest, no readme.
+- `.dbf` column names ≤ 10 characters (shapefile spec).
+- All required survey fields populated per row; null values explicitly marked, not blank.
+- CRS = EPSG:4326.
 
 #### FF-6 — Pre-upload integrity check
 
-> **As an** Enumerator, **I want** the app to verify the bundle is complete before letting me upload, **so that** I don't deliver a broken submission.
+> **As an** Enumerator, **I want** the app to verify the shapefiles are complete before letting me upload, **so that** I don't deliver a broken submission.
 
 **Acceptance criteria**
 
 - Runs automatically on the Review screen.
 - **Blockers** (must be zero before upload is enabled):
   - Any feature missing a required attribute.
-  - Any photo column referencing a file not in `photos/`.
+  - Any feature with invalid geometry (non-closed polygon, self-intersection, etc.).
 - **Warnings** (non-blocking):
   - Unusual values (e.g. `n_storeys > 50`).
 - Upload button is disabled until blockers = 0.
 
 ### Epic 4 — Upload
 
-#### FF-7 — Upload attributed bundle to shared storage
+#### FF-7 — Upload attributed shapefiles to shared storage
 
-> **As an** Enumerator, **I want to** upload my completed bundle to Drive when I have Wi-Fi, **so that** the supervisor can review it.
+> **As an** Enumerator, **I want to** upload my completed shapefiles to Drive when I have Wi-Fi, **so that** the supervisor can review them.
 
 **Acceptance criteria**
 
 - Triggered from existing Review-screen "Upload Data" button.
 - Biometric gate (existing behavior) intact.
 - Drive path: `/firecheck/outbox/<assignment_id>/<enumerator_id>/output_<…>.zip`.
-- **Idempotent:** re-uploading the same logical bundle saves a `_v2`, `_v3`, … sibling — it never overwrites the previous version.
+- **Idempotent:** re-uploading the same logical output saves a `_v2`, `_v3`, … sibling — never overwrites the previous version.
 - Resumable across Wi-Fi drops (chunked upload or full retry — implementer's choice).
 - On success: assignment locks (existing behavior).
 
@@ -181,21 +177,23 @@ shapefile bundles. Internal app architecture (Drift + Supabase) remains.
 
 #### FF-11 — Open enumerator output directly in QGIS
 
-> **As a** Supervisor, **I want to** open any uploaded bundle in QGIS without conversion, **so that** I can spot-check work using standard GIS tooling.
+> **As a** Supervisor, **I want to** open any uploaded shapefile in QGIS without conversion, **so that** I can spot-check work using standard GIS tooling.
 
 **Acceptance criteria**
 
-- Bundle loads in QGIS with no warnings.
-- A QGIS attribute-form action wired to the `photo_1` column previews the photo from `photos/`.
-- `manifest.json` counts let the supervisor sanity-check against the survey area.
+- Shapefile loads in QGIS with no warnings.
+- Attributes are inspectable via QGIS's standard Attribute Table.
+- Geometry is valid (no self-intersections, all polygons closed).
 
 ---
 
 ## Out of scope
 
+- Photos in the deliverable — they stay inside the app.
+- A manifest or readme file in the deliverable.
 - Real-time multi-enumerator collaboration on the same assignment.
 - Server-side validation or automated bounce-back of bad uploads — supervisor reviews manually.
-- Re-versioning input bundles after enumerators have started (input is frozen at download time).
+- Re-versioning input shapefiles after enumerators have started (input frozen at download time).
 - Migrating the rest of the app off Supabase — internal storage stays Drift + Supabase; only the **delivery boundary** changes.
 - Switching to GeoPackage or KMZ — supervisor explicitly mentioned shapefiles.
 
@@ -203,13 +201,11 @@ shapefile bundles. Internal app architecture (Drift + Supabase) remains.
 
 ## Open questions to confirm with supervisor
 
-These are flagged for explicit confirmation before implementation begins:
-
-1. **Photo handling convention** — confirm sibling `photos/` folder + filename in `.dbf` column is acceptable (vs. embedded GeoPackage).
-2. **Storage backend** — confirm Google Drive (vs. FileZilla / GitHub repo).
-3. **Multi-tab buildings** — confirm "one row per structure with repeated geometry" is the expected GIS shape (vs. numbered columns on a single row).
-4. **Required attribute fields** — confirm the supervisor's expected column list, not the app's internal field list. The `readme.txt` dictionary should match what the supervisor wants to see.
-5. **Re-upload semantics** — confirm `_v2/_v3` suffixed sibling files (this design's choice) vs. timestamp-only filenames vs. overwriting the previous version.
+1. **Storage backend** — confirm Google Drive (vs. FileZilla / GitHub repo).
+2. **Multi-tab buildings** — confirm "one row per structure with repeated geometry" is the expected GIS shape (vs. numbered columns on a single row).
+3. **Required attribute columns** — confirm the supervisor's expected column list. The app currently captures dozens of fields; the supervisor may only want a subset.
+4. **Re-upload semantics** — confirm `_v2/_v3` suffixed sibling files (this design's choice) vs. timestamp-only filenames vs. overwriting.
+5. **Boundary in output** — confirm whether the supervisor wants `boundary.shp` echoed back in the output zip, or only `buildings` and `roads`.
 
 ---
 
@@ -223,4 +219,4 @@ These are flagged for explicit confirmation before implementation begins:
 | FF-9 | `lib/core/auth/`, add Google OAuth alongside existing Supabase auth |
 | FF-10 | `docs/file-conventions.md` (new) |
 
-The existing **outbox / retry / WorkManager** machinery from Phase 4a should be kept — only the upload *destination* and *payload format* change.
+The existing **outbox / retry / WorkManager** machinery from Phase 4a is kept — only the upload *destination* and *payload format* change.
