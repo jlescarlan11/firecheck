@@ -974,4 +974,60 @@ class AppLocalizationsTl extends AppLocalizations {
 
   @override
   String get zoomOutButtonSemanticLabel => 'Zoom out';
+
+  @override
+  String get reshapeActionSheetTitle => 'Building polygon';
+
+  @override
+  String get reshapeActionSheetOpenForm => 'Open form';
+
+  @override
+  String get reshapeActionSheetReshape => 'Reshape';
+
+  @override
+  String reshapeBannerTitle(int count) {
+    return 'Reshape • $count edits';
+  }
+
+  @override
+  String get reshapeBannerSave => 'Save';
+
+  @override
+  String get reshapeRemoveConfirmTitle => 'Remove vertex?';
+
+  @override
+  String get reshapeRemoveConfirmBody => 'You can undo this from the banner.';
+
+  @override
+  String get reshapeRemoveConfirmRemove => 'Remove';
+
+  @override
+  String get reshapeErrorTooFewVertices =>
+      'Polygon must have at least 3 vertices';
+
+  @override
+  String get reshapeErrorZeroArea => 'Polygon area is too small';
+
+  @override
+  String get reshapeErrorSelfIntersection =>
+      'Edges cannot cross. Tap Undo or move a corner.';
+
+  @override
+  String get reshapeErrorOutsideBoundary =>
+      'Some vertices are outside the assignment area';
+
+  @override
+  String get reshapeErrorZeroLengthEdge =>
+      'Adjacent corners cannot be on the same spot';
+
+  @override
+  String get reshapeLockedSnackbar =>
+      'Assignment is closed; reshape unavailable';
+
+  @override
+  String get reshapeLockWhileDirtyBanner =>
+      'Assignment was closed by supervisor — your edits cannot be saved';
+
+  @override
+  String get reshapeLockExit => 'Exit';
 }
