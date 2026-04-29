@@ -15,9 +15,6 @@ class ReshapeModeController extends Notifier<ReshapeModeState> {
     state = ReshapeModeState(
       originalFeature: feature,
       workingRings: rings,
-      undoStack: const [],
-      selfIntersects: false,
-      saving: false,
       overrideReason: overrideReason,
     );
   }
@@ -96,7 +93,7 @@ class ReshapeModeController extends Notifier<ReshapeModeState> {
     );
   }
 
-  void markSaving(bool saving) {
+  void markSaving({required bool saving}) {
     state = state.copyWith(saving: saving);
   }
 
@@ -118,6 +115,7 @@ List<List<LngLat>> _parseGeojson(String s) {
       final pair = p as List;
       return (lng: (pair[0] as num).toDouble(), lat: (pair[1] as num).toDouble());
     }).toList();
+    // Strip the duplicated closing vertex if present (open form).
     if (list.length >= 2 && list.first == list.last) {
       list.removeLast();
     }
@@ -126,7 +124,7 @@ List<List<LngLat>> _parseGeojson(String s) {
 }
 
 List<List<LngLat>> _cloneRings(List<List<LngLat>> rings) {
-  return rings.map((r) => List<LngLat>.from(r)).toList();
+  return rings.map(List<LngLat>.from).toList();
 }
 
 bool _hasSelfIntersection(List<LngLat> outer) {
