@@ -4,4 +4,5 @@ class SyncEntityType {
   static const submission = 'submission';
   static const photo = 'photo';
   static const newFeature = 'new_feature';
+  static const featureGeometryUpdate = 'feature_geometry_update';
 }

@@ -10,6 +10,7 @@ import 'package:firecheck/core/sync/domain/sync_entity_type.dart';
 import 'package:firecheck/core/sync/domain/sync_outcome.dart';
 import 'package:firecheck/core/sync/failure/assignment_lock_repository.dart';
 import 'package:firecheck/core/sync/failure/pending_work_bundle.dart';
+import 'package:firecheck/features/map/reshape/data/feature_geometry_revisions_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 
 class SyncWorker {
@@ -69,6 +70,8 @@ class SyncWorker {
           return await _executePhoto(job.entityId);
         case SyncEntityType.newFeature:
           return await _executeNewFeature(job.entityId);
+        case SyncEntityType.featureGeometryUpdate:
+          return await _executeFeatureGeometryUpdate(job.entityId);
         default:
           return PermanentFailure('unknown entity_type: ${job.entityType}');
       }
@@ -124,6 +127,21 @@ class SyncWorker {
           ..where((t) => t.id.equals(featureId)))
         .getSingle();
     return api.uploadNewFeature(feature);
+  }
+
+  Future<SyncOutcome> _executeFeatureGeometryUpdate(String revisionId) async {
+    final repo = FeatureGeometryRevisionsRepository(db);
+    final rev = await repo.getById(revisionId);
+    if (rev == null) {
+      return const PermanentFailure('revision missing');
+    }
+    final outcome = await api.uploadFeatureGeometryUpdate(rev);
+    if (outcome is Success) {
+      await repo.markSynced(rev.id);
+    } else if (outcome is PermanentFailure) {
+      await repo.markFailed(rev.id);
+    }
+    return outcome;
   }
 
   Future<void> _applyOutcome(SyncJob job, SyncOutcome outcome) async {
