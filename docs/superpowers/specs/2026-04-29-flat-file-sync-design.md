@@ -31,7 +31,9 @@ architecture (Drift + Supabase) remains for the team's own use.
 | Photos | **Uploaded to a sibling `photos/` folder in Drive** (not inside the zip). The `.dbf` carries the resolved Drive URL in `photo_1` … `photo_5` columns. | Shapefile stays a real shapefile; photos still reach the supervisor; clicking the URL in QGIS opens the photo in a browser. |
 | Photo upload path | `/firecheck/outbox/<assignment_id>/<enumerator_id>/photos/<feature_id>_<n>.jpg`. | Sibling to the output zip — supervisor sees both in one folder; Drive ACL on the parent folder grants photo access automatically. |
 | Photo cap per feature | First **5** photos referenced by URL (`photo_1` … `photo_5`); additional photos kept locally for the team's records but not delivered. | Bounded `.dbf` schema; matches typical fire-survey expectations of front + 4 detail shots. |
-| Storage backend | **Google Drive**. | UP accounts already exist, supervisor familiarity, stable API; FileZilla needs hosted FTP we don't have, GitHub is awkward for >100 MB updates. |
+| Storage backend | **Google Drive**. | UP accounts already exist, supervisor familiarity, stable API. FileZilla considered and rejected: the client is free but needs an FTP *server* somewhere (dorm machine kept always-on, or paid VPS), which is operational overhead the team doesn't have. GitHub is awkward for >100 MB photo+shapefile bundles. |
+| Assignment discovery | App lists subfolders of `/firecheck/inbox/` that the signed-in user has been **shared on** in Drive. Each folder name *is* the `assignment_id`. | Uses Drive's native sharing model — supervisor shares the folder with the student's Google account (or a class Google Group); the app sees what Drive lets it see. No manifest file needed. |
+| Enumerator identity | `enumerator_id` = local-part of the signed-in Google email (`jlescarlan11@gmail.com` → `jlescarlan11`). | Deterministic across devices and reinstalls; stable Drive output paths; doesn't require a separate enrollment system. |
 | Multi-tab buildings | One row per structure with repeated geometry; `struct_idx` column distinguishes them. | Cleaner for GIS analysis than numbered columns; expected by QGIS. |
 | CRS — internal & Mapbox | EPSG:4326 (WGS84 lat/lon). | What GPS and Mapbox use natively; no transformation cost in the live map view. |
 | CRS — shapefile deliverable | **EPSG:32651 (WGS 84 / UTM zone 51N)**. | Projected to meters, so building footprints and road lengths measure correctly out of the box. Same WGS84 datum as GPS — no datum-shift error. Covers Cebu, Manila, Palawan, most of the Philippines (120°–126° E). PRS92 zones (3123–3125) considered but rejected: ~150 m datum offset from WGS84 introduces transformation uncertainty for a GPS-driven survey app. Assignments east of 126° E should switch to EPSG:32652 (UTM zone 52N) — implementation should make this configurable per assignment. |
@@ -61,10 +63,11 @@ These are the things the supervisor must do for the app to have anything to read
 - CRS = EPSG:32651 (WGS 84 / UTM zone 51N), declared via the `.prj` file. (Eastern-Mindanao assignments: EPSG:32652 instead.)
 - The supervisor uses their own GIS tools (QGIS, ArcGIS, etc.) to produce the bundle; the FireCheck app is **not** involved in this step.
 
-**Drive permissions**
+**Drive permissions** (this is how the app *discovers* assignments — see FF-1)
 
-- The shared `/firecheck/inbox/<assignment_id>/` folder grants **read** access to assigned enumerators' Google accounts.
-- The shared `/firecheck/outbox/<assignment_id>/<enumerator_id>/` folder grants **write** access to that enumerator's Google account and **read** to the supervisor.
+- For each assignment, the supervisor right-clicks the `/firecheck/inbox/<assignment_id>/` folder in Drive → **Share** → adds the assigned enumerator's Google account (or a class Google Group) with **Viewer** (read) permission.
+- The supervisor creates `/firecheck/outbox/<assignment_id>/<enumerator_id>/` (or accepts that the app creates it on first upload) and grants the enumerator **Editor** (write) permission and themselves **Viewer**.
+- The app does *not* maintain its own roster of who has which assignment. Drive's sharing list **is** the roster — that's how the app's "Get Maps" knows what to show.
 
 **Folder & filename layout**
 
@@ -84,8 +87,10 @@ These are the things the supervisor must do for the app to have anything to read
 
 **Acceptance criteria**
 
-- Authenticates to Drive, lists assignments visible to the signed-in account.
-- Downloads `input.zip`, extracts, imports features into Drift, preserving original `feature_id` from the `.dbf`.
+- **Discovery:** the app calls Drive's `files.list` API for subfolders of `/firecheck/inbox/` that the signed-in user can read. Each returned folder's name is treated as an `assignment_id`. Result is shown as a pick-list (folder name + last-modified date).
+- **Empty state:** if no assignment folders are visible, the app shows *"No assignments shared with you yet — ask your supervisor to share the assignment folder with your UP Google account."* — not a generic error.
+- **Selection:** if multiple assignments are visible, the user picks one before download begins.
+- Downloads `input.zip` from the selected folder, extracts, imports features into Drift, preserving original `feature_id` from the `.dbf`.
 - Existing Mapbox tile-pack download flow continues alongside this step.
 - Idempotent: re-tapping "Get Maps" while online refreshes only if Drive's `modifiedTime` on `input.zip` is newer than the locally stored value.
 
