@@ -71,6 +71,7 @@ Future<ProviderContainer> pumpMap(
   AnalyticsService? analytics,
   Stream<Position>? positionStream,
   AppDatabase? db,
+  ValueNotifier<bool>? lockNotifier,
 }) async {
   final container = ProviderContainer(
     overrides: [
@@ -84,6 +85,15 @@ Future<ProviderContainer> pumpMap(
       currentFeaturesProvider.overrideWith((_) => Stream.value(features)),
       currentAssignmentProvider.overrideWith((_) => Stream.value(fakeAssignment())),
       assignmentLockStateProvider.overrideWith((_) => Stream.value(const Unlocked())),
+      // For lock-blocker tests, route the synchronous bool through a
+      // mutable ValueNotifier so the test can flip the lock mid-flight.
+      if (lockNotifier != null)
+        isAssignmentLockedProvider.overrideWith((ref) {
+          void listener() => ref.invalidateSelf();
+          lockNotifier.addListener(listener);
+          ref.onDispose(() => lockNotifier.removeListener(listener));
+          return lockNotifier.value;
+        }),
       currentPositionProvider.overrideWith(
         (_) => positionStream ?? const Stream<Position>.empty(),
       ),
@@ -401,6 +411,84 @@ void main() {
             e.event == 'map.reshape.validation_failed' &&
             e.properties?['rule'] == 'selfIntersection',),
         isTrue,
+      );
+    });
+  });
+
+  group('US-9 T22 lock-while-reshape blocker', () {
+    testWidgets('lock-while-dirty shows non-dismissable dialog; Exit discards',
+        (tester) async {
+      final lockNotifier = ValueNotifier<bool>(false);
+      addTearDown(lockNotifier.dispose);
+      final fake = FakeMapRenderer();
+      final container = await pumpMap(
+        tester,
+        renderer: fake,
+        positionStream: Stream.value(fakePos(lat: 10.3180, lng: 123.8830)),
+        features: [fakeFeature()],
+        lockNotifier: lockNotifier,
+      );
+
+      await fake.simulatePolygonLongPress(fakeFeature());
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('reshape.actionsheet.reshape')));
+      await tester.pumpAndSettle();
+
+      // Make at least one edit so state.isDirty == true.
+      container.read(reshapeModeControllerProvider.notifier).moveVertex(
+            0,
+            0,
+            (lng: 123.8835, lat: 10.3185),
+          );
+      await tester.pumpAndSettle();
+
+      // Trigger lock mid-reshape.
+      lockNotifier.value = true;
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Assignment was closed'), findsOneWidget);
+      // Exit button text comes from l.reshapeLockExit ('Exit').
+      await tester.tap(find.text('Exit'));
+      await tester.pumpAndSettle();
+
+      // Reshape exited; banner gone.
+      expect(find.byKey(const Key('reshape.banner.save')), findsNothing);
+      expect(
+        container.read(reshapeModeControllerProvider).isActive,
+        isFalse,
+      );
+    });
+
+    testWidgets('lock-while-clean exits silently (no dialog)',
+        (tester) async {
+      final lockNotifier = ValueNotifier<bool>(false);
+      addTearDown(lockNotifier.dispose);
+      final fake = FakeMapRenderer();
+      final container = await pumpMap(
+        tester,
+        renderer: fake,
+        positionStream: Stream.value(fakePos(lat: 10.3180, lng: 123.8830)),
+        features: [fakeFeature()],
+        lockNotifier: lockNotifier,
+      );
+
+      await fake.simulatePolygonLongPress(fakeFeature());
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('reshape.actionsheet.reshape')));
+      await tester.pumpAndSettle();
+
+      // No edits made — state.isDirty == false.
+
+      // Trigger lock.
+      lockNotifier.value = true;
+      await tester.pumpAndSettle();
+
+      // No dialog.
+      expect(find.textContaining('Assignment was closed'), findsNothing);
+      // Reshape exited silently.
+      expect(
+        container.read(reshapeModeControllerProvider).isActive,
+        isFalse,
       );
     });
   });

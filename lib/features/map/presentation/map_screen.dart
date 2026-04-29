@@ -60,6 +60,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   MapProjection? _reshapeProjection;
 
+  bool _lockBlockerShown = false;
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
@@ -70,6 +72,24 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final reshapeActive = reshape.isActive;
     // Subscribe so the GPS stream is hot from mount, not first tap.
     ref.watch(currentPositionProvider);
+
+    // T22: lock-while-reshape — if the assignment locks while the user is
+    // mid-reshape, dirty edits are blocked behind a non-dismissable dialog
+    // (Exit discards), and a clean session exits silently.
+    final isLocked = ref.watch(isAssignmentLockedProvider);
+    if (reshapeActive && isLocked) {
+      if (reshape.isDirty && !_lockBlockerShown) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _showLockWhileDirtyBlocker();
+        });
+      } else if (!reshape.isDirty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          ref.read(reshapeModeControllerProvider.notifier).cancel();
+        });
+      }
+    }
 
     // Bug 13b: don't mount the Mapbox renderer until BOTH the assignment
     // AND the features list have loaded. currentFeaturesProvider returns
@@ -240,6 +260,28 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         'ops_made': ops,
       },
     );
+  }
+
+  Future<void> _showLockWhileDirtyBlocker() async {
+    if (!mounted) return;
+    setState(() => _lockBlockerShown = true);
+    final l = AppLocalizations.of(context)!;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        content: Text(l.reshapeLockWhileDirtyBanner),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(l.reshapeLockExit),
+          ),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    ref.read(reshapeModeControllerProvider.notifier).cancel();
+    setState(() => _lockBlockerShown = false);
   }
 
   Future<void> _onReshapeSave() async {
