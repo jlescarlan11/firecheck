@@ -181,7 +181,7 @@ void main() {
   });
 
   group('rule ordering', () {
-    test('returns rule 1 when polygon also fails rule 3', () {
+    test('returns rule 1 when polygon also fails rule 5', () {
       // 2 vertices fails rule 1; can't fail rule 3 simultaneously, so build
       // a case that fails rule 1 + rule 5. Two vertices, both coincident.
       final result = validateBuildingPolygon(
