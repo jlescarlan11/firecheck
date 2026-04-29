@@ -28,9 +28,17 @@ class ReshapeOverlay extends ConsumerWidget {
         child: GestureDetector(
           key: Key('reshape.vertex.$i'),
           onPanUpdate: (d) {
-            final newScreen = p + d.delta;
-            final newLngLat = projection.lngLatFromScreenPoint(newScreen);
-            notifier.moveVertex(0, i, newLngLat);
+            // Read live vertex position from state, not the build-time `p`.
+            // onPanUpdate fires multiple times per gesture; `d.delta` is the
+            // per-event delta, so adding it to a stale anchor under-tracks
+            // the finger.
+            final cur = ref.read(reshapeModeControllerProvider).workingRings[0];
+            if (i >= cur.length) return;
+            final cv = cur[i];
+            final screen = projection.screenPointFromLngLat(cv.lng, cv.lat);
+            final next = screen + d.delta;
+            final nextLngLat = projection.lngLatFromScreenPoint(next);
+            notifier.moveVertex(0, i, nextLngLat);
           },
           onLongPress: () async {
             final confirm = await showReshapeRemoveConfirm(

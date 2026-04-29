@@ -236,7 +236,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 editCount: reshape.undoStack.length,
                 undoEnabled: reshape.isDirty && !reshape.saving,
                 saveEnabled: reshape.isDirty && !reshape.saving,
-                onCancel: _onReshapeCancel,
+                // Disable Cancel while saving — the async commit transaction
+                // would otherwise still complete in the background after the
+                // UI exits edit mode, producing surprising state transitions.
+                onCancel: reshape.saving ? null : _onReshapeCancel,
                 onUndo: () => ref
                     .read(reshapeModeControllerProvider.notifier)
                     .undo(),

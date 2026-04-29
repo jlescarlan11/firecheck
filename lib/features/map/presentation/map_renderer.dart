@@ -343,6 +343,19 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
       // Swallow — location is a nice-to-have here.
     }
 
+    // Disable rotation and pitch globally. The reshape overlay's
+    // _MapboxProjection uses a north-up linear corner-calibration (spec §14
+    // first pass); rotated or pitched maps would make handle positions drift
+    // away from their polygon corners. The app UI is also designed top-down
+    // (no compass, no pitch indicator), so this matches the visual model.
+    try {
+      await map.gestures.updateSettings(
+        GesturesSettings(rotateEnabled: false, pitchEnabled: false),
+      );
+    } on Object {
+      // Non-fatal — gesture settings are a hardening measure, not load-bearing.
+    }
+
     // GL context reset (e.g., app evicted from background): null any
     // annotation references from a prior context so they're not double-deleted.
     _reshapeWorkingAnnotation = null;
