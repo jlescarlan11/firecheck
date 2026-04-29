@@ -1,11 +1,14 @@
+import 'package:drift/native.dart';
 import 'package:firecheck/core/analytics/analytics_providers.dart';
 import 'package:firecheck/core/analytics/analytics_service.dart';
+import 'package:firecheck/core/auth/current_user_provider.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/location/location_providers.dart';
 import 'package:firecheck/core/location/location_service.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_lock_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_lock_state.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
+import 'package:firecheck/features/home/presentation/home_providers.dart';
 import 'package:firecheck/features/map/presentation/map_providers.dart';
 import 'package:firecheck/features/map/presentation/map_renderer.dart';
 import 'package:firecheck/features/map/presentation/map_screen.dart';
@@ -67,13 +70,17 @@ Future<ProviderContainer> pumpMap(
   List<Feature> features = const [],
   AnalyticsService? analytics,
   Stream<Position>? positionStream,
+  AppDatabase? db,
 }) async {
   final container = ProviderContainer(
     overrides: [
       mapRendererProvider.overrideWithValue(renderer),
       locationServiceProvider.overrideWithValue(FakeLocationService()),
+      // Avoid the Supabase-dependent auth chain in widget tests.
+      currentUserIdProvider.overrideWithValue('admin'),
       if (analytics != null)
         analyticsServiceProvider.overrideWithValue(analytics),
+      if (db != null) appDatabaseProvider.overrideWithValue(db),
       currentFeaturesProvider.overrideWith((_) => Stream.value(features)),
       currentAssignmentProvider.overrideWith((_) => Stream.value(fakeAssignment())),
       assignmentLockStateProvider.overrideWith((_) => Stream.value(const Unlocked())),
@@ -273,6 +280,128 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('map.add-feature-pill')), findsOneWidget);
+    });
+  });
+
+  group('US-9 T21 Save flow', () {
+    testWidgets('Save with valid edits writes revision + sync_job, exits mode',
+        (tester) async {
+      final db = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(db.close);
+      // Persist the feature so saveReshape's UPDATE finds a row.
+      final feature = fakeFeature();
+      await db.into(db.assignments).insert(
+            AssignmentsCompanion.insert(
+              id: 'a1',
+              enumeratorId: 'admin',
+              campaignId: 'c1',
+              boundaryPolygonGeojson: fakeAssignment().boundaryPolygonGeojson,
+              createdAt: DateTime.now(),
+            ),
+          );
+      await db.into(db.features).insert(
+            FeaturesCompanion.insert(
+              id: feature.id,
+              assignmentId: feature.assignmentId,
+              featureType: feature.featureType,
+              geometryGeojson: feature.geometryGeojson,
+              createdAt: feature.createdAt,
+            ),
+          );
+
+      final fake = FakeMapRenderer();
+      final container = await pumpMap(
+        tester,
+        renderer: fake,
+        positionStream: Stream.value(fakePos(lat: 10.3180, lng: 123.8830)),
+        features: [feature],
+        db: db,
+      );
+
+      await fake.simulatePolygonLongPress(feature);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('reshape.actionsheet.reshape')));
+      await tester.pumpAndSettle();
+
+      // Drive the controller into a dirty state by performing a small valid
+      // move directly (avoids dependency on overlay layout):
+      container.read(reshapeModeControllerProvider.notifier).moveVertex(
+            0,
+            0,
+            (lng: 123.8826, lat: 10.3176),
+          );
+      await tester.pump();
+
+      await tester.tap(find.byKey(const Key('reshape.banner.save')));
+      // Drift's NativeDatabase does real async I/O; pumpAndSettle in FakeAsync
+      // hangs on the post-save rebuild. Pump a handful of frames instead.
+      for (var i = 0; i < 20; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+
+      // Mode is inactive in the controller.
+      expect(container.read(reshapeModeControllerProvider).isActive, isFalse);
+      // Save exited the mode (banner gone).
+      expect(find.byKey(const Key('reshape.banner.save')), findsNothing);
+
+      // Revision + sync_job persisted.
+      final revisions = await db.select(db.featureGeometryRevisions).get();
+      expect(revisions, hasLength(1));
+      expect(revisions.first.featureId, feature.id);
+      expect(revisions.first.syncStatus, 'ready_to_upload');
+      final jobs = await db.select(db.syncJobs).get();
+      expect(jobs, hasLength(1));
+      expect(jobs.first.entityType, 'feature_geometry_update');
+      expect(jobs.first.entityId, revisions.first.id);
+    });
+
+    testWidgets(
+        'Save with self-intersecting polygon shows snackbar; stays in mode',
+        (tester) async {
+      final fake = FakeMapRenderer();
+      final analytics = RecordingAnalyticsService();
+      final container = await pumpMap(
+        tester,
+        renderer: fake,
+        positionStream: Stream.value(fakePos(lat: 10.3180, lng: 123.8830)),
+        features: [fakeFeature()],
+        analytics: analytics,
+      );
+
+      await fake.simulatePolygonLongPress(fakeFeature());
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('reshape.actionsheet.reshape')));
+      await tester.pumpAndSettle();
+
+      // Drive into a transverse bowtie. Starting from a 4-vertex CCW square,
+      // swap two diagonally-opposite corners.
+      final n = container.read(reshapeModeControllerProvider.notifier);
+      final ring = container.read(reshapeModeControllerProvider).workingRings[0];
+      final c0 = ring[0];
+      final c2 = ring[2];
+      n
+        ..moveVertex(0, 0, c2) // 0 -> 2
+        ..moveVertex(0, 2, c0); // 2 -> 0 — produces a bowtie
+      await tester.pump();
+
+      await tester.tap(find.byKey(const Key('reshape.banner.save')));
+      // Validation snackbar — pump a few frames for it to mount.
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+
+      // Snackbar visible — exact text uses i18n. Check by ARB-key text.
+      expect(find.textContaining('cross'), findsWidgets);
+      // Still in reshape mode.
+      expect(container.read(reshapeModeControllerProvider).isActive, isTrue);
+
+      // Validation_failed analytics fired with the rule name.
+      expect(
+        analytics.events.any((e) =>
+            e.event == 'map.reshape.validation_failed' &&
+            e.properties?['rule'] == 'selfIntersection',),
+        isTrue,
+      );
     });
   });
 }

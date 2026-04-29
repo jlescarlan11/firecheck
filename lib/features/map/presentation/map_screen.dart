@@ -6,6 +6,7 @@ import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/geo/centroid.dart';
 import 'package:firecheck/core/geo/point_in_polygon.dart';
 import 'package:firecheck/core/geo/polygon_bounds.dart';
+import 'package:firecheck/core/geo/polygon_validator.dart';
 import 'package:firecheck/core/geo/polyline_midpoint.dart';
 import 'package:firecheck/core/location/distance.dart';
 import 'package:firecheck/core/location/location_providers.dart';
@@ -20,6 +21,7 @@ import 'package:firecheck/features/map/presentation/recenter_button_state.dart';
 import 'package:firecheck/features/map/presentation/zoom_button.dart';
 import 'package:firecheck/features/map/presentation/zoom_button_state.dart';
 import 'package:firecheck/features/map/presentation/zoom_direction.dart';
+import 'package:firecheck/features/map/reshape/domain/reshape_op.dart';
 import 'package:firecheck/features/map/reshape/presentation/reshape_action_sheet.dart';
 import 'package:firecheck/features/map/reshape/presentation/reshape_banner.dart';
 import 'package:firecheck/features/map/reshape/presentation/reshape_overlay.dart';
@@ -32,6 +34,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
+import 'package:uuid/uuid.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
@@ -240,7 +243,82 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   Future<void> _onReshapeSave() async {
-    // Implemented in T21.
+    final l = AppLocalizations.of(context)!;
+    final ctrl = ref.read(reshapeModeControllerProvider.notifier);
+    final s = ref.read(reshapeModeControllerProvider);
+    final assignment = ref.read(currentAssignmentProvider).value;
+    if (s.originalFeature == null || assignment == null) return;
+
+    final res = validateBuildingPolygon(
+      s.workingRings,
+      boundaryGeojson: assignment.boundaryPolygonGeojson,
+    );
+    if (!res.valid) {
+      final msg = _validationMessage(res.error!, l);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(msg)));
+      ref.read(analyticsServiceProvider).track(
+        'map.reshape.validation_failed',
+        properties: {
+          'feature_id': s.originalFeature!.id,
+          'rule': res.error!.name,
+        },
+      );
+      return;
+    }
+
+    ctrl.markSaving(saving: true);
+    final userId = ref.read(currentUserIdProvider) ?? '';
+    final repo = ref.read(reshapeRepositoryProvider);
+    final newGeojson = ctrl.serializeWorkingPolygon();
+    final revisionId = const Uuid().v4();
+    final start = DateTime.now();
+
+    try {
+      await repo.saveReshape(
+        revisionId: revisionId,
+        featureId: s.originalFeature!.id,
+        prevGeojson: s.originalFeature!.geometryGeojson,
+        newGeojson: newGeojson,
+        editedBy: userId,
+        editedAt: DateTime.now(),
+        overrideReason: s.overrideReason,
+      );
+      ref.read(analyticsServiceProvider).track(
+        'map.reshape.completed',
+        properties: {
+          'feature_id': s.originalFeature!.id,
+          'vertex_count_before':
+              _vertexCount(s.originalFeature!.geometryGeojson),
+          'vertex_count_after': s.workingRings[0].length,
+          'vertex_moves': s.undoStack.whereType<Move>().length,
+          'vertex_adds': s.undoStack.whereType<Add>().length,
+          'vertex_removes': s.undoStack.whereType<Remove>().length,
+          'override_used': s.overrideReason != null,
+          'duration_ms': DateTime.now().difference(start).inMilliseconds,
+        },
+      );
+      ctrl.cancel(); // exits edit mode
+    } on Object catch (e) {
+      ctrl.markSaving(saving: false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not save reshape: $e')),
+      );
+    }
+  }
+
+  String _validationMessage(PolygonValidationError err, AppLocalizations l) {
+    return switch (err) {
+      PolygonValidationError.tooFewVertices => l.reshapeErrorTooFewVertices,
+      PolygonValidationError.zeroOrNegativeArea => l.reshapeErrorZeroArea,
+      PolygonValidationError.selfIntersection =>
+        l.reshapeErrorSelfIntersection,
+      PolygonValidationError.vertexOutsideBoundary =>
+        l.reshapeErrorOutsideBoundary,
+      PolygonValidationError.zeroLengthEdge => l.reshapeErrorZeroLengthEdge,
+    };
   }
 
   Future<void> _handleLongPress(double lat, double lng) async {
