@@ -27,8 +27,10 @@ architecture (Drift + Supabase) remains for the team's own use.
 | Topic | Choice | Rationale |
 |---|---|---|
 | Scope | Replace the delivery boundary, not the whole sync engine. | Follows the supervisor's instruction without scrapping working internal infra. |
-| Deliverable contents | **Only shapefile component files** (`.shp/.dbf/.shx/.prj`). No photos, no manifest, no readme in the zip. | Strict reading of the supervisor's instruction: "download the shape files… upload the attributed shape files." |
-| Photos | Stay inside the app (Drift + Supabase Storage) for the team's own records; never part of the deliverable. | Photos can't go inside a shapefile, and the supervisor didn't ask for them. |
+| Deliverable contents (zip) | **Only shapefile component files** (`.shp/.dbf/.shx/.prj`). No photos, no manifest, no readme inside the zip. | Strict reading of the supervisor's instruction. Keeps the shapefile "pure" — opens cleanly in any GIS tool. |
+| Photos | **Uploaded to a sibling `photos/` folder in Drive** (not inside the zip). The `.dbf` carries the resolved Drive URL in `photo_1` … `photo_5` columns. | Shapefile stays a real shapefile; photos still reach the supervisor; clicking the URL in QGIS opens the photo in a browser. |
+| Photo upload path | `/firecheck/outbox/<assignment_id>/<enumerator_id>/photos/<feature_id>_<n>.jpg`. | Sibling to the output zip — supervisor sees both in one folder; Drive ACL on the parent folder grants photo access automatically. |
+| Photo cap per feature | First **5** photos referenced by URL (`photo_1` … `photo_5`); additional photos kept locally for the team's records but not delivered. | Bounded `.dbf` schema; matches typical fire-survey expectations of front + 4 detail shots. |
 | Storage backend | **Google Drive**. | UP accounts already exist, supervisor familiarity, stable API; FileZilla needs hosted FTP we don't have, GitHub is awkward for >100 MB updates. |
 | Multi-tab buildings | One row per structure with repeated geometry; `struct_idx` column distinguishes them. | Cleaner for GIS analysis than numbered columns; expected by QGIS. |
 | CRS — internal & Mapbox | EPSG:4326 (WGS84 lat/lon). | What GPS and Mapbox use natively; no transformation cost in the live map view. |
@@ -96,8 +98,8 @@ architecture (Drift + Supabase) remains for the team's own use.
 **Acceptance criteria**
 
 - Existing forms (Identity, Construction, Cost, Fire-fighting, Fire load, OLP) keep working unchanged.
-- Photos persist locally for the team's own use; they are **not** included in the shapefile deliverable.
-- Multi-tab structures continue to work; each tab becomes a separate output row in FF-5.
+- Photos persist locally during fieldwork. At upload time (FF-7), the first 5 photos per structure are uploaded to Drive and their URLs are written into the shapefile's `.dbf` (see FF-5).
+- Multi-tab structures continue to work; each tab becomes a separate output row in FF-5 with its own photo set.
 
 ### Epic 3 — Output packaging
 
@@ -111,10 +113,12 @@ architecture (Drift + Supabase) remains for the team's own use.
 - Zip contains exactly:
   - `buildings.{shp,dbf,shx,prj}` — one row per structure (multi-tab → repeated geometry, distinct `struct_idx`).
   - `roads.{shp,dbf,shx,prj}` — attributed road polylines.
-- Nothing else — no photos, no manifest, no readme.
+- Nothing else inside the zip — no photos, no manifest, no readme.
 - `.dbf` column names ≤ 10 characters (shapefile spec).
+- `.dbf` includes columns `photo_1` … `photo_5` carrying the Drive shareable URL for each uploaded photo (resolved during FF-7). Empty for missing slots.
 - All required survey fields populated per row; null values explicitly marked, not blank.
 - CRS = EPSG:32651 (WGS 84 / UTM zone 51N), declared in the `.prj` file. Geometries are reprojected from the in-app EPSG:4326 store to EPSG:32651 at export time. (Eastern-Mindanao assignments emit EPSG:32652 instead.)
+- Photos themselves live alongside the zip in a sibling `photos/` folder in Drive (see FF-7), not inside the zip.
 
 #### FF-6 — Pre-upload integrity check
 
@@ -126,24 +130,28 @@ architecture (Drift + Supabase) remains for the team's own use.
 - **Blockers** (must be zero before upload is enabled):
   - Any feature missing a required attribute.
   - Any feature with invalid geometry (non-closed polygon, self-intersection, etc.).
+  - Any required photo missing locally (file unreadable, deleted, or zero-byte).
 - **Warnings** (non-blocking):
   - Unusual values (e.g. `n_storeys > 50`).
+  - More than 5 photos captured for a feature (extras will not be linked in the deliverable).
 - Upload button is disabled until blockers = 0.
 
 ### Epic 4 — Upload
 
-#### FF-7 — Upload attributed shapefiles to shared storage
+#### FF-7 — Upload photos and attributed shapefiles to shared storage
 
-> **As an** Enumerator, **I want to** upload my completed shapefiles to Drive when I have Wi-Fi, **so that** the supervisor can review them.
+> **As an** Enumerator, **I want to** upload my completed photos and shapefiles to Drive when I have Wi-Fi, **so that** the supervisor can review them in one place.
 
 **Acceptance criteria**
 
 - Triggered from existing Review-screen "Upload Data" button.
 - Biometric gate (existing behavior) intact.
-- Drive path: `/firecheck/outbox/<assignment_id>/<enumerator_id>/output_<…>.zip`.
-- **Idempotent:** re-uploading the same logical output saves a `_v2`, `_v3`, … sibling — never overwrites the previous version.
+- Two-phase upload, executed atomically (failure of either phase rolls back the assignment to its un-uploaded state):
+  1. **Photos phase** — uploads the first 5 photos per structure to `/firecheck/outbox/<assignment_id>/<enumerator_id>/photos/<feature_id>_<n>.jpg` and captures each photo's Drive shareable URL.
+  2. **Shapefile phase** — backfills the captured URLs into the `.dbf` `photo_1` … `photo_5` columns, zips the shapefile components, and uploads `output_<…>.zip` to `/firecheck/outbox/<assignment_id>/<enumerator_id>/`.
+- **Idempotent:** re-running creates `_v2`, `_v3`, … siblings for the zip; photos are uploaded into a versioned subfolder (`photos/`, `photos_v2/`, …) so URLs in old `.dbf` versions remain valid.
 - Resumable across Wi-Fi drops (chunked upload or full retry — implementer's choice).
-- On success: assignment locks (existing behavior).
+- On both-phase success: assignment locks (existing behavior).
 
 #### FF-8 — Confirm upload landed
 
@@ -185,13 +193,14 @@ architecture (Drift + Supabase) remains for the team's own use.
 
 - Shapefile loads in QGIS with no warnings.
 - Attributes are inspectable via QGIS's standard Attribute Table.
+- Photo URLs in `photo_1` … `photo_5` are clickable from the QGIS attribute form (Open URL action) and resolve to the corresponding JPEG in the sibling `photos/` Drive folder.
 - Geometry is valid (no self-intersections, all polygons closed).
 
 ---
 
 ## Out of scope
 
-- Photos in the deliverable — they stay inside the app.
+- Photos *inside the zip* — they ride alongside in a sibling `photos/` Drive folder, referenced by URL in the `.dbf`.
 - A manifest or readme file in the deliverable.
 - Real-time multi-enumerator collaboration on the same assignment.
 - Server-side validation or automated bounce-back of bad uploads — supervisor reviews manually.
@@ -209,6 +218,8 @@ architecture (Drift + Supabase) remains for the team's own use.
 4. **Re-upload semantics** — confirm `_v2/_v3` suffixed sibling files (this design's choice) vs. timestamp-only filenames vs. overwriting.
 5. **Boundary in output** — confirm whether the supervisor wants `boundary.shp` echoed back in the output zip, or only `buildings` and `roads`.
 6. **CRS** — confirm EPSG:32651 (WGS 84 / UTM zone 51N) for the deliverable. Alternative for stricter government-style work: EPSG:3124 (PRS92 / Philippines zone 4) — the official Philippine national datum for the Cebu/Visayas area, but introduces a ~150 m datum-shift transformation from GPS source.
+7. **Photo cap (5 per structure)** — confirm 5 is enough, or set to a different limit (e.g. 3, or 10).
+8. **Drive permissions for photos** — confirm "anyone with the outbox folder access can read photos" is acceptable, vs. restricting photos to a smaller group.
 
 ---
 
