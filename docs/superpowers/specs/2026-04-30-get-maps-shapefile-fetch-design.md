@@ -67,7 +67,7 @@ Google OAuth is in scope. Google Sign-In has not previously existed in the app.
 | `DriveApi` (abstract) | `lib/core/drive/drive_api.dart` | List assignments, get zip metadata, stream zip download. |
 | `GoogleDriveApi` | `lib/core/drive/google_drive_api.dart` | Real impl: Drive REST v3 via `googleapis` package. |
 | `FakeDriveApi` | `lib/core/drive/fake_drive_api.dart` | Test impl: configurable assignment list and download events. |
-| `DriveAssignment` | `lib/core/drive/drive_assignment.dart` | Value type: `assignmentId`, `inputZipModifiedTime`, `alreadyDownloaded`. |
+| `DriveAssignment` | `lib/core/drive/drive_assignment.dart` | Value type: `assignmentId`, `inputZipModifiedTime`, `alreadyDownloaded`. `alreadyDownloaded` is set by `GetMapsNotifier` after comparing `inputZipModifiedTime` against the value stored in Drift — `DriveApi` is a pure network interface and has no Drift access. |
 | `DriveDownloadEvent` (sealed) | `lib/core/drive/drive_download_event.dart` | `DriveDownloadProgress(downloaded, total)` / `DriveDownloadComplete(bytes)`. |
 | `ShapefileImporter` | `lib/core/sync/shapefile/shapefile_importer.dart` | Unzip → validate → reproject → Drift write (single transaction). |
 | `ShapefileValidationFailure` | `lib/core/errors/failure.dart` | Typed failure for CRS mismatch, missing layers, missing columns. |
@@ -165,9 +165,10 @@ Called when the enumerator taps "Download Selected."
    If `available < needed` → `state = InsufficientStorage(...)` and return.
 
 2. **Delta check:**
-   If `selected.alreadyDownloaded` is true, the locally stored `drive_modified_time` already
-   matches the Drive value (this was evaluated when building the `DriveAssignment` list in
-   `start()`). Skip straight to step 5.
+   In `start()`, after receiving the Drive assignment list, the notifier fetches each assignment's
+   stored `drive_modified_time` from `AssignmentRepository` and sets `alreadyDownloaded = true`
+   when the Drive value matches the stored value. If `selected.alreadyDownloaded` is true here,
+   skip straight to step 5.
 
 3. **Download shapefiles:**
    `state = DownloadingShapefiles(downloaded: 0, total: 0)`
@@ -212,8 +213,10 @@ Unchanged.
 2. **Validate structure** — `boundary.{shp,dbf,shx,prj}`, `buildings.{shp,dbf,shx,prj}`,
    `roads.{shp,dbf,shx,prj}` must all be present. Throw `ShapefileValidationFailure` if any
    are missing.
-3. **Validate CRS** — read each `.prj` file; confirm EPSG:32651 (or the assignment's configured
-   CRS). Throw `ShapefileValidationFailure` with the mismatched CRS on failure.
+3. **Validate CRS** — read each `.prj` file; confirm EPSG:32651. For US-17 this is hardcoded;
+   per-assignment CRS configuration (e.g., EPSG:32652 for eastern Mindanao) is out of scope and
+   deferred to a later story. Throw `ShapefileValidationFailure` with the mismatched CRS on
+   failure.
 4. **Validate columns** — confirm required attribute columns are present in `buildings.dbf` and
    `roads.dbf`. Throw `ShapefileValidationFailure` listing missing columns.
 5. **Reproject geometries** — transform all coordinates from EPSG:32651 → EPSG:4326.
