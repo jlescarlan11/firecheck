@@ -101,6 +101,37 @@ class SupabaseSyncApi implements SyncApi {
     }
   }
 
+  @override
+  Future<SyncOutcome> uploadFeatureGeometryUpdate(
+    FeatureGeometryRevision revision,
+  ) async {
+    try {
+      await _client.rpc<dynamic>(
+        'update_feature_geometry',
+        params: {
+          'p_revision_id': revision.id,
+          'p_feature_id': revision.featureId,
+          'p_prev_geojson': revision.prevGeojson,
+          'p_new_geojson': revision.newGeojson,
+          'p_edited_at': revision.editedAt.toIso8601String(),
+          'p_override_reason': revision.overrideReason,
+        },
+      );
+      return const Success();
+    } on PostgrestException catch (e) {
+      // P0001 + 'geometry_conflict' → server has newer geometry; permanent.
+      // 42501 'forbidden' (RLS / auth) → permanent.
+      // Other PG codes route through the standard mapper which routes 4xx
+      // to PermanentFailure and 5xx/network to TransientFailure.
+      if (e.code == 'P0001' || e.code == '42501') {
+        return PermanentFailure('${e.code} ${e.message}');
+      }
+      return _mapPostgrestException(e, null);
+    } on Object catch (e) {
+      return TransientFailure(e.toString());
+    }
+  }
+
   SyncOutcome _mapPostgrestException(
     PostgrestException e,
     Map<String, dynamic>? submissionPayload,

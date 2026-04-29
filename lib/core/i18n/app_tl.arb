@@ -289,5 +289,21 @@
   "locationSnackbarOpenSettings": "Open settings",
   "locationSnackbarLowAccuracy": "Location accuracy is low. Showing your approximate position.",
   "zoomInButtonSemanticLabel": "Zoom in",
-  "zoomOutButtonSemanticLabel": "Zoom out"
+  "zoomOutButtonSemanticLabel": "Zoom out",
+  "reshapeActionSheetTitle": "Building polygon",
+  "reshapeActionSheetOpenForm": "Open form",
+  "reshapeActionSheetReshape": "Reshape",
+  "reshapeBannerTitle": "Reshape • {count} edits",
+  "reshapeBannerSave": "Save",
+  "reshapeRemoveConfirmTitle": "Remove vertex?",
+  "reshapeRemoveConfirmBody": "You can undo this from the banner.",
+  "reshapeRemoveConfirmRemove": "Remove",
+  "reshapeErrorTooFewVertices": "Polygon must have at least 3 vertices",
+  "reshapeErrorZeroArea": "Polygon area is too small",
+  "reshapeErrorSelfIntersection": "Edges cannot cross. Tap Undo or move a corner.",
+  "reshapeErrorOutsideBoundary": "Some vertices are outside the assignment area",
+  "reshapeErrorZeroLengthEdge": "Adjacent corners cannot be on the same spot",
+  "reshapeLockedSnackbar": "Assignment is closed; reshape unavailable",
+  "reshapeLockWhileDirtyBanner": "Assignment was closed by supervisor — your edits cannot be saved",
+  "reshapeLockExit": "Exit"
 }

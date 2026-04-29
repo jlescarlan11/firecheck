@@ -1831,6 +1831,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Zoom out'**
   String get zoomOutButtonSemanticLabel;
+
+  /// No description provided for @reshapeActionSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Building polygon'**
+  String get reshapeActionSheetTitle;
+
+  /// No description provided for @reshapeActionSheetOpenForm.
+  ///
+  /// In en, this message translates to:
+  /// **'Open form'**
+  String get reshapeActionSheetOpenForm;
+
+  /// No description provided for @reshapeActionSheetReshape.
+  ///
+  /// In en, this message translates to:
+  /// **'Reshape'**
+  String get reshapeActionSheetReshape;
+
+  /// No description provided for @reshapeBannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reshape • {count} edits'**
+  String reshapeBannerTitle(int count);
+
+  /// No description provided for @reshapeBannerSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get reshapeBannerSave;
+
+  /// No description provided for @reshapeRemoveConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove vertex?'**
+  String get reshapeRemoveConfirmTitle;
+
+  /// No description provided for @reshapeRemoveConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You can undo this from the banner.'**
+  String get reshapeRemoveConfirmBody;
+
+  /// No description provided for @reshapeRemoveConfirmRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get reshapeRemoveConfirmRemove;
+
+  /// No description provided for @reshapeErrorTooFewVertices.
+  ///
+  /// In en, this message translates to:
+  /// **'Polygon must have at least 3 vertices'**
+  String get reshapeErrorTooFewVertices;
+
+  /// No description provided for @reshapeErrorZeroArea.
+  ///
+  /// In en, this message translates to:
+  /// **'Polygon area is too small'**
+  String get reshapeErrorZeroArea;
+
+  /// No description provided for @reshapeErrorSelfIntersection.
+  ///
+  /// In en, this message translates to:
+  /// **'Edges cannot cross. Tap Undo or move a corner.'**
+  String get reshapeErrorSelfIntersection;
+
+  /// No description provided for @reshapeErrorOutsideBoundary.
+  ///
+  /// In en, this message translates to:
+  /// **'Some vertices are outside the assignment area'**
+  String get reshapeErrorOutsideBoundary;
+
+  /// No description provided for @reshapeErrorZeroLengthEdge.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjacent corners cannot be on the same spot'**
+  String get reshapeErrorZeroLengthEdge;
+
+  /// No description provided for @reshapeLockedSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignment is closed; reshape unavailable'**
+  String get reshapeLockedSnackbar;
+
+  /// No description provided for @reshapeLockWhileDirtyBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignment was closed by supervisor — your edits cannot be saved'**
+  String get reshapeLockWhileDirtyBanner;
+
+  /// No description provided for @reshapeLockExit.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit'**
+  String get reshapeLockExit;
 }
 
 class _AppLocalizationsDelegate

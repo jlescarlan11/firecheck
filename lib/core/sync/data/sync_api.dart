@@ -22,4 +22,6 @@ abstract class SyncApi {
   });
 
   Future<SyncOutcome> uploadNewFeature(Feature feature);
+
+  Future<SyncOutcome> uploadFeatureGeometryUpdate(FeatureGeometryRevision revision);
 }

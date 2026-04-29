@@ -1182,6 +1182,492 @@ class FeaturesCompanion extends UpdateCompanion<Feature> {
   }
 }
 
+class $FeatureGeometryRevisionsTable extends FeatureGeometryRevisions
+    with TableInfo<$FeatureGeometryRevisionsTable, FeatureGeometryRevision> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $FeatureGeometryRevisionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _featureIdMeta =
+      const VerificationMeta('featureId');
+  @override
+  late final GeneratedColumn<String> featureId = GeneratedColumn<String>(
+      'feature_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _prevGeojsonMeta =
+      const VerificationMeta('prevGeojson');
+  @override
+  late final GeneratedColumn<String> prevGeojson = GeneratedColumn<String>(
+      'prev_geojson', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _newGeojsonMeta =
+      const VerificationMeta('newGeojson');
+  @override
+  late final GeneratedColumn<String> newGeojson = GeneratedColumn<String>(
+      'new_geojson', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _editedByMeta =
+      const VerificationMeta('editedBy');
+  @override
+  late final GeneratedColumn<String> editedBy = GeneratedColumn<String>(
+      'edited_by', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _editedAtMeta =
+      const VerificationMeta('editedAt');
+  @override
+  late final GeneratedColumn<DateTime> editedAt = GeneratedColumn<DateTime>(
+      'edited_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _overrideReasonMeta =
+      const VerificationMeta('overrideReason');
+  @override
+  late final GeneratedColumn<String> overrideReason = GeneratedColumn<String>(
+      'override_reason', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _syncStatusMeta =
+      const VerificationMeta('syncStatus');
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+      'sync_status', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('pending'));
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        featureId,
+        prevGeojson,
+        newGeojson,
+        editedBy,
+        editedAt,
+        overrideReason,
+        syncStatus,
+        createdAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'feature_geometry_revisions';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<FeatureGeometryRevision> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('feature_id')) {
+      context.handle(_featureIdMeta,
+          featureId.isAcceptableOrUnknown(data['feature_id']!, _featureIdMeta));
+    } else if (isInserting) {
+      context.missing(_featureIdMeta);
+    }
+    if (data.containsKey('prev_geojson')) {
+      context.handle(
+          _prevGeojsonMeta,
+          prevGeojson.isAcceptableOrUnknown(
+              data['prev_geojson']!, _prevGeojsonMeta));
+    } else if (isInserting) {
+      context.missing(_prevGeojsonMeta);
+    }
+    if (data.containsKey('new_geojson')) {
+      context.handle(
+          _newGeojsonMeta,
+          newGeojson.isAcceptableOrUnknown(
+              data['new_geojson']!, _newGeojsonMeta));
+    } else if (isInserting) {
+      context.missing(_newGeojsonMeta);
+    }
+    if (data.containsKey('edited_by')) {
+      context.handle(_editedByMeta,
+          editedBy.isAcceptableOrUnknown(data['edited_by']!, _editedByMeta));
+    } else if (isInserting) {
+      context.missing(_editedByMeta);
+    }
+    if (data.containsKey('edited_at')) {
+      context.handle(_editedAtMeta,
+          editedAt.isAcceptableOrUnknown(data['edited_at']!, _editedAtMeta));
+    } else if (isInserting) {
+      context.missing(_editedAtMeta);
+    }
+    if (data.containsKey('override_reason')) {
+      context.handle(
+          _overrideReasonMeta,
+          overrideReason.isAcceptableOrUnknown(
+              data['override_reason']!, _overrideReasonMeta));
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+          _syncStatusMeta,
+          syncStatus.isAcceptableOrUnknown(
+              data['sync_status']!, _syncStatusMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  FeatureGeometryRevision map(Map<String, dynamic> data,
+      {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return FeatureGeometryRevision(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      featureId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}feature_id'])!,
+      prevGeojson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}prev_geojson'])!,
+      newGeojson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}new_geojson'])!,
+      editedBy: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}edited_by'])!,
+      editedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}edited_at'])!,
+      overrideReason: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}override_reason']),
+      syncStatus: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}sync_status'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $FeatureGeometryRevisionsTable createAlias(String alias) {
+    return $FeatureGeometryRevisionsTable(attachedDatabase, alias);
+  }
+}
+
+class FeatureGeometryRevision extends DataClass
+    implements Insertable<FeatureGeometryRevision> {
+  final String id;
+  final String featureId;
+  final String prevGeojson;
+  final String newGeojson;
+  final String editedBy;
+  final DateTime editedAt;
+  final String? overrideReason;
+  final String syncStatus;
+  final DateTime createdAt;
+  const FeatureGeometryRevision(
+      {required this.id,
+      required this.featureId,
+      required this.prevGeojson,
+      required this.newGeojson,
+      required this.editedBy,
+      required this.editedAt,
+      this.overrideReason,
+      required this.syncStatus,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['feature_id'] = Variable<String>(featureId);
+    map['prev_geojson'] = Variable<String>(prevGeojson);
+    map['new_geojson'] = Variable<String>(newGeojson);
+    map['edited_by'] = Variable<String>(editedBy);
+    map['edited_at'] = Variable<DateTime>(editedAt);
+    if (!nullToAbsent || overrideReason != null) {
+      map['override_reason'] = Variable<String>(overrideReason);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  FeatureGeometryRevisionsCompanion toCompanion(bool nullToAbsent) {
+    return FeatureGeometryRevisionsCompanion(
+      id: Value(id),
+      featureId: Value(featureId),
+      prevGeojson: Value(prevGeojson),
+      newGeojson: Value(newGeojson),
+      editedBy: Value(editedBy),
+      editedAt: Value(editedAt),
+      overrideReason: overrideReason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(overrideReason),
+      syncStatus: Value(syncStatus),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory FeatureGeometryRevision.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return FeatureGeometryRevision(
+      id: serializer.fromJson<String>(json['id']),
+      featureId: serializer.fromJson<String>(json['featureId']),
+      prevGeojson: serializer.fromJson<String>(json['prevGeojson']),
+      newGeojson: serializer.fromJson<String>(json['newGeojson']),
+      editedBy: serializer.fromJson<String>(json['editedBy']),
+      editedAt: serializer.fromJson<DateTime>(json['editedAt']),
+      overrideReason: serializer.fromJson<String?>(json['overrideReason']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'featureId': serializer.toJson<String>(featureId),
+      'prevGeojson': serializer.toJson<String>(prevGeojson),
+      'newGeojson': serializer.toJson<String>(newGeojson),
+      'editedBy': serializer.toJson<String>(editedBy),
+      'editedAt': serializer.toJson<DateTime>(editedAt),
+      'overrideReason': serializer.toJson<String?>(overrideReason),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  FeatureGeometryRevision copyWith(
+          {String? id,
+          String? featureId,
+          String? prevGeojson,
+          String? newGeojson,
+          String? editedBy,
+          DateTime? editedAt,
+          Value<String?> overrideReason = const Value.absent(),
+          String? syncStatus,
+          DateTime? createdAt}) =>
+      FeatureGeometryRevision(
+        id: id ?? this.id,
+        featureId: featureId ?? this.featureId,
+        prevGeojson: prevGeojson ?? this.prevGeojson,
+        newGeojson: newGeojson ?? this.newGeojson,
+        editedBy: editedBy ?? this.editedBy,
+        editedAt: editedAt ?? this.editedAt,
+        overrideReason:
+            overrideReason.present ? overrideReason.value : this.overrideReason,
+        syncStatus: syncStatus ?? this.syncStatus,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  FeatureGeometryRevision copyWithCompanion(
+      FeatureGeometryRevisionsCompanion data) {
+    return FeatureGeometryRevision(
+      id: data.id.present ? data.id.value : this.id,
+      featureId: data.featureId.present ? data.featureId.value : this.featureId,
+      prevGeojson:
+          data.prevGeojson.present ? data.prevGeojson.value : this.prevGeojson,
+      newGeojson:
+          data.newGeojson.present ? data.newGeojson.value : this.newGeojson,
+      editedBy: data.editedBy.present ? data.editedBy.value : this.editedBy,
+      editedAt: data.editedAt.present ? data.editedAt.value : this.editedAt,
+      overrideReason: data.overrideReason.present
+          ? data.overrideReason.value
+          : this.overrideReason,
+      syncStatus:
+          data.syncStatus.present ? data.syncStatus.value : this.syncStatus,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FeatureGeometryRevision(')
+          ..write('id: $id, ')
+          ..write('featureId: $featureId, ')
+          ..write('prevGeojson: $prevGeojson, ')
+          ..write('newGeojson: $newGeojson, ')
+          ..write('editedBy: $editedBy, ')
+          ..write('editedAt: $editedAt, ')
+          ..write('overrideReason: $overrideReason, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, featureId, prevGeojson, newGeojson,
+      editedBy, editedAt, overrideReason, syncStatus, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is FeatureGeometryRevision &&
+          other.id == this.id &&
+          other.featureId == this.featureId &&
+          other.prevGeojson == this.prevGeojson &&
+          other.newGeojson == this.newGeojson &&
+          other.editedBy == this.editedBy &&
+          other.editedAt == this.editedAt &&
+          other.overrideReason == this.overrideReason &&
+          other.syncStatus == this.syncStatus &&
+          other.createdAt == this.createdAt);
+}
+
+class FeatureGeometryRevisionsCompanion
+    extends UpdateCompanion<FeatureGeometryRevision> {
+  final Value<String> id;
+  final Value<String> featureId;
+  final Value<String> prevGeojson;
+  final Value<String> newGeojson;
+  final Value<String> editedBy;
+  final Value<DateTime> editedAt;
+  final Value<String?> overrideReason;
+  final Value<String> syncStatus;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const FeatureGeometryRevisionsCompanion({
+    this.id = const Value.absent(),
+    this.featureId = const Value.absent(),
+    this.prevGeojson = const Value.absent(),
+    this.newGeojson = const Value.absent(),
+    this.editedBy = const Value.absent(),
+    this.editedAt = const Value.absent(),
+    this.overrideReason = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  FeatureGeometryRevisionsCompanion.insert({
+    required String id,
+    required String featureId,
+    required String prevGeojson,
+    required String newGeojson,
+    required String editedBy,
+    required DateTime editedAt,
+    this.overrideReason = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    required DateTime createdAt,
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        featureId = Value(featureId),
+        prevGeojson = Value(prevGeojson),
+        newGeojson = Value(newGeojson),
+        editedBy = Value(editedBy),
+        editedAt = Value(editedAt),
+        createdAt = Value(createdAt);
+  static Insertable<FeatureGeometryRevision> custom({
+    Expression<String>? id,
+    Expression<String>? featureId,
+    Expression<String>? prevGeojson,
+    Expression<String>? newGeojson,
+    Expression<String>? editedBy,
+    Expression<DateTime>? editedAt,
+    Expression<String>? overrideReason,
+    Expression<String>? syncStatus,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (featureId != null) 'feature_id': featureId,
+      if (prevGeojson != null) 'prev_geojson': prevGeojson,
+      if (newGeojson != null) 'new_geojson': newGeojson,
+      if (editedBy != null) 'edited_by': editedBy,
+      if (editedAt != null) 'edited_at': editedAt,
+      if (overrideReason != null) 'override_reason': overrideReason,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  FeatureGeometryRevisionsCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? featureId,
+      Value<String>? prevGeojson,
+      Value<String>? newGeojson,
+      Value<String>? editedBy,
+      Value<DateTime>? editedAt,
+      Value<String?>? overrideReason,
+      Value<String>? syncStatus,
+      Value<DateTime>? createdAt,
+      Value<int>? rowid}) {
+    return FeatureGeometryRevisionsCompanion(
+      id: id ?? this.id,
+      featureId: featureId ?? this.featureId,
+      prevGeojson: prevGeojson ?? this.prevGeojson,
+      newGeojson: newGeojson ?? this.newGeojson,
+      editedBy: editedBy ?? this.editedBy,
+      editedAt: editedAt ?? this.editedAt,
+      overrideReason: overrideReason ?? this.overrideReason,
+      syncStatus: syncStatus ?? this.syncStatus,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (featureId.present) {
+      map['feature_id'] = Variable<String>(featureId.value);
+    }
+    if (prevGeojson.present) {
+      map['prev_geojson'] = Variable<String>(prevGeojson.value);
+    }
+    if (newGeojson.present) {
+      map['new_geojson'] = Variable<String>(newGeojson.value);
+    }
+    if (editedBy.present) {
+      map['edited_by'] = Variable<String>(editedBy.value);
+    }
+    if (editedAt.present) {
+      map['edited_at'] = Variable<DateTime>(editedAt.value);
+    }
+    if (overrideReason.present) {
+      map['override_reason'] = Variable<String>(overrideReason.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FeatureGeometryRevisionsCompanion(')
+          ..write('id: $id, ')
+          ..write('featureId: $featureId, ')
+          ..write('prevGeojson: $prevGeojson, ')
+          ..write('newGeojson: $newGeojson, ')
+          ..write('editedBy: $editedBy, ')
+          ..write('editedAt: $editedAt, ')
+          ..write('overrideReason: $overrideReason, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $SubmissionsTable extends Submissions
     with TableInfo<$SubmissionsTable, Submission> {
   @override
@@ -4875,6 +5361,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $EnumeratorsTable enumerators = $EnumeratorsTable(this);
   late final $AssignmentsTable assignments = $AssignmentsTable(this);
   late final $FeaturesTable features = $FeaturesTable(this);
+  late final $FeatureGeometryRevisionsTable featureGeometryRevisions =
+      $FeatureGeometryRevisionsTable(this);
   late final $SubmissionsTable submissions = $SubmissionsTable(this);
   late final $BuildingAttributesTable buildingAttributes =
       $BuildingAttributesTable(this);
@@ -4888,6 +5376,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $OfflineTilePacksTable(this);
   late final Index featuresAssignmentIdIdx = Index('features_assignment_id_idx',
       'CREATE INDEX features_assignment_id_idx ON features (assignment_id)');
+  late final Index fgrFeatureIdIdx = Index('fgr_feature_id_idx',
+      'CREATE INDEX fgr_feature_id_idx ON feature_geometry_revisions (feature_id)');
+  late final Index fgrSyncStatusIdx = Index('fgr_sync_status_idx',
+      'CREATE INDEX fgr_sync_status_idx ON feature_geometry_revisions (sync_status)');
   late final Index submissionsFeatureIdIdx = Index('submissions_feature_id_idx',
       'CREATE INDEX submissions_feature_id_idx ON submissions (feature_id)');
   late final Index buildingAttrsRa9514TypeIdx = Index(
@@ -4905,6 +5397,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         enumerators,
         assignments,
         features,
+        featureGeometryRevisions,
         submissions,
         buildingAttributes,
         roadAttributes,
@@ -4914,6 +5407,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         syncJobs,
         offlineTilePacks,
         featuresAssignmentIdIdx,
+        fgrFeatureIdIdx,
+        fgrSyncStatusIdx,
         submissionsFeatureIdIdx,
         buildingAttrsRa9514TypeIdx,
         photosSubmissionIdIdx,
@@ -5504,6 +5999,248 @@ typedef $$FeaturesTableProcessedTableManager = ProcessedTableManager<
     (Feature, BaseReferences<_$AppDatabase, $FeaturesTable, Feature>),
     Feature,
     PrefetchHooks Function()>;
+typedef $$FeatureGeometryRevisionsTableCreateCompanionBuilder
+    = FeatureGeometryRevisionsCompanion Function({
+  required String id,
+  required String featureId,
+  required String prevGeojson,
+  required String newGeojson,
+  required String editedBy,
+  required DateTime editedAt,
+  Value<String?> overrideReason,
+  Value<String> syncStatus,
+  required DateTime createdAt,
+  Value<int> rowid,
+});
+typedef $$FeatureGeometryRevisionsTableUpdateCompanionBuilder
+    = FeatureGeometryRevisionsCompanion Function({
+  Value<String> id,
+  Value<String> featureId,
+  Value<String> prevGeojson,
+  Value<String> newGeojson,
+  Value<String> editedBy,
+  Value<DateTime> editedAt,
+  Value<String?> overrideReason,
+  Value<String> syncStatus,
+  Value<DateTime> createdAt,
+  Value<int> rowid,
+});
+
+class $$FeatureGeometryRevisionsTableFilterComposer
+    extends Composer<_$AppDatabase, $FeatureGeometryRevisionsTable> {
+  $$FeatureGeometryRevisionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get featureId => $composableBuilder(
+      column: $table.featureId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get prevGeojson => $composableBuilder(
+      column: $table.prevGeojson, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get newGeojson => $composableBuilder(
+      column: $table.newGeojson, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get editedBy => $composableBuilder(
+      column: $table.editedBy, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get editedAt => $composableBuilder(
+      column: $table.editedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get overrideReason => $composableBuilder(
+      column: $table.overrideReason,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+      column: $table.syncStatus, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$FeatureGeometryRevisionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $FeatureGeometryRevisionsTable> {
+  $$FeatureGeometryRevisionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get featureId => $composableBuilder(
+      column: $table.featureId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get prevGeojson => $composableBuilder(
+      column: $table.prevGeojson, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get newGeojson => $composableBuilder(
+      column: $table.newGeojson, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get editedBy => $composableBuilder(
+      column: $table.editedBy, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get editedAt => $composableBuilder(
+      column: $table.editedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get overrideReason => $composableBuilder(
+      column: $table.overrideReason,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+      column: $table.syncStatus, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$FeatureGeometryRevisionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $FeatureGeometryRevisionsTable> {
+  $$FeatureGeometryRevisionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get featureId =>
+      $composableBuilder(column: $table.featureId, builder: (column) => column);
+
+  GeneratedColumn<String> get prevGeojson => $composableBuilder(
+      column: $table.prevGeojson, builder: (column) => column);
+
+  GeneratedColumn<String> get newGeojson => $composableBuilder(
+      column: $table.newGeojson, builder: (column) => column);
+
+  GeneratedColumn<String> get editedBy =>
+      $composableBuilder(column: $table.editedBy, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get editedAt =>
+      $composableBuilder(column: $table.editedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get overrideReason => $composableBuilder(
+      column: $table.overrideReason, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+      column: $table.syncStatus, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$FeatureGeometryRevisionsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $FeatureGeometryRevisionsTable,
+    FeatureGeometryRevision,
+    $$FeatureGeometryRevisionsTableFilterComposer,
+    $$FeatureGeometryRevisionsTableOrderingComposer,
+    $$FeatureGeometryRevisionsTableAnnotationComposer,
+    $$FeatureGeometryRevisionsTableCreateCompanionBuilder,
+    $$FeatureGeometryRevisionsTableUpdateCompanionBuilder,
+    (
+      FeatureGeometryRevision,
+      BaseReferences<_$AppDatabase, $FeatureGeometryRevisionsTable,
+          FeatureGeometryRevision>
+    ),
+    FeatureGeometryRevision,
+    PrefetchHooks Function()> {
+  $$FeatureGeometryRevisionsTableTableManager(
+      _$AppDatabase db, $FeatureGeometryRevisionsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$FeatureGeometryRevisionsTableFilterComposer(
+                  $db: db, $table: table),
+          createOrderingComposer: () =>
+              $$FeatureGeometryRevisionsTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$FeatureGeometryRevisionsTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> featureId = const Value.absent(),
+            Value<String> prevGeojson = const Value.absent(),
+            Value<String> newGeojson = const Value.absent(),
+            Value<String> editedBy = const Value.absent(),
+            Value<DateTime> editedAt = const Value.absent(),
+            Value<String?> overrideReason = const Value.absent(),
+            Value<String> syncStatus = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              FeatureGeometryRevisionsCompanion(
+            id: id,
+            featureId: featureId,
+            prevGeojson: prevGeojson,
+            newGeojson: newGeojson,
+            editedBy: editedBy,
+            editedAt: editedAt,
+            overrideReason: overrideReason,
+            syncStatus: syncStatus,
+            createdAt: createdAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String featureId,
+            required String prevGeojson,
+            required String newGeojson,
+            required String editedBy,
+            required DateTime editedAt,
+            Value<String?> overrideReason = const Value.absent(),
+            Value<String> syncStatus = const Value.absent(),
+            required DateTime createdAt,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              FeatureGeometryRevisionsCompanion.insert(
+            id: id,
+            featureId: featureId,
+            prevGeojson: prevGeojson,
+            newGeojson: newGeojson,
+            editedBy: editedBy,
+            editedAt: editedAt,
+            overrideReason: overrideReason,
+            syncStatus: syncStatus,
+            createdAt: createdAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$FeatureGeometryRevisionsTableProcessedTableManager
+    = ProcessedTableManager<
+        _$AppDatabase,
+        $FeatureGeometryRevisionsTable,
+        FeatureGeometryRevision,
+        $$FeatureGeometryRevisionsTableFilterComposer,
+        $$FeatureGeometryRevisionsTableOrderingComposer,
+        $$FeatureGeometryRevisionsTableAnnotationComposer,
+        $$FeatureGeometryRevisionsTableCreateCompanionBuilder,
+        $$FeatureGeometryRevisionsTableUpdateCompanionBuilder,
+        (
+          FeatureGeometryRevision,
+          BaseReferences<_$AppDatabase, $FeatureGeometryRevisionsTable,
+              FeatureGeometryRevision>
+        ),
+        FeatureGeometryRevision,
+        PrefetchHooks Function()>;
 typedef $$SubmissionsTableCreateCompanionBuilder = SubmissionsCompanion
     Function({
   required String id,
@@ -7289,6 +8026,9 @@ class $AppDatabaseManager {
       $$AssignmentsTableTableManager(_db, _db.assignments);
   $$FeaturesTableTableManager get features =>
       $$FeaturesTableTableManager(_db, _db.features);
+  $$FeatureGeometryRevisionsTableTableManager get featureGeometryRevisions =>
+      $$FeatureGeometryRevisionsTableTableManager(
+          _db, _db.featureGeometryRevisions);
   $$SubmissionsTableTableManager get submissions =>
       $$SubmissionsTableTableManager(_db, _db.submissions);
   $$BuildingAttributesTableTableManager get buildingAttributes =>

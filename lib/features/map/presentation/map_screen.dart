@@ -6,6 +6,7 @@ import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/geo/centroid.dart';
 import 'package:firecheck/core/geo/point_in_polygon.dart';
 import 'package:firecheck/core/geo/polygon_bounds.dart';
+import 'package:firecheck/core/geo/polygon_validator.dart';
 import 'package:firecheck/core/geo/polyline_midpoint.dart';
 import 'package:firecheck/core/location/distance.dart';
 import 'package:firecheck/core/location/location_providers.dart';
@@ -14,11 +15,17 @@ import 'package:firecheck/features/assignment/presentation/assignment_lock_provi
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
 import 'package:firecheck/features/map/presentation/camera_target.dart';
 import 'package:firecheck/features/map/presentation/map_providers.dart';
+import 'package:firecheck/features/map/presentation/map_renderer.dart';
 import 'package:firecheck/features/map/presentation/recenter_button.dart';
 import 'package:firecheck/features/map/presentation/recenter_button_state.dart';
 import 'package:firecheck/features/map/presentation/zoom_button.dart';
 import 'package:firecheck/features/map/presentation/zoom_button_state.dart';
 import 'package:firecheck/features/map/presentation/zoom_direction.dart';
+import 'package:firecheck/features/map/reshape/domain/reshape_op.dart';
+import 'package:firecheck/features/map/reshape/presentation/reshape_action_sheet.dart';
+import 'package:firecheck/features/map/reshape/presentation/reshape_banner.dart';
+import 'package:firecheck/features/map/reshape/presentation/reshape_overlay.dart';
+import 'package:firecheck/features/map/reshape/presentation/reshape_providers.dart';
 import 'package:firecheck/features/new_feature/presentation/feature_type_picker.dart';
 import 'package:firecheck/features/survey/building_form/presentation/building_form_providers.dart';
 import 'package:firecheck/features/survey/building_form/presentation/override_reason_dialog.dart';
@@ -27,6 +34,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
+import 'package:uuid/uuid.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
@@ -50,14 +58,38 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   double? _commandedZoom;
   Timer? _animationSettleTimer;
 
+  MapProjection? _reshapeProjection;
+
+  bool _lockBlockerShown = false;
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     final renderer = ref.watch(mapRendererProvider);
     final featuresAsync = ref.watch(currentFeaturesProvider);
     final assignmentAsync = ref.watch(currentAssignmentProvider);
+    final reshape = ref.watch(reshapeModeControllerProvider);
+    final reshapeActive = reshape.isActive;
     // Subscribe so the GPS stream is hot from mount, not first tap.
     ref.watch(currentPositionProvider);
+
+    // T22: lock-while-reshape — if the assignment locks while the user is
+    // mid-reshape, dirty edits are blocked behind a non-dismissable dialog
+    // (Exit discards), and a clean session exits silently.
+    final isLocked = ref.watch(isAssignmentLockedProvider);
+    if (reshapeActive && isLocked) {
+      if (reshape.isDirty && !_lockBlockerShown) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _showLockWhileDirtyBlocker();
+        });
+      } else if (!reshape.isDirty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          ref.read(reshapeModeControllerProvider.notifier).cancel();
+        });
+      }
+    }
 
     // Bug 13b: don't mount the Mapbox renderer until BOTH the assignment
     // AND the features list have loaded. currentFeaturesProvider returns
@@ -100,9 +132,24 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     addModeActive: _addModeActive,
                     initialCameraTarget: initialCameraTarget,
                     cameraTarget: _cameraTarget,
+                    onPolygonLongPress: _handlePolygonLongPress,
+                    reshapeWorkingPolygonGeojson: reshapeActive
+                        ? ref
+                            .read(reshapeModeControllerProvider.notifier)
+                            .serializeWorkingPolygon()
+                        : null,
+                    onProjectionReady: (p) {
+                      if (_reshapeProjection != p) {
+                        setState(() => _reshapeProjection = p);
+                      }
+                    },
                   ),
           ),
-          if (_addModeActive)
+          if (reshapeActive && _reshapeProjection != null)
+            Positioned.fill(
+              child: ReshapeOverlay(projection: _reshapeProjection!),
+            ),
+          if (!reshapeActive && _addModeActive)
             Positioned(
               top: 0,
               left: 0,
@@ -147,41 +194,176 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               onTap: _onZoomIn,
             ),
           ),
-          Positioned(
-            left: 12,
-            right: 12,
-            bottom: 18,
-            child: Row(
-              children: [
-                // Scoped Consumer so lock-state stream emissions don't
-                // rebuild the whole map (which would re-mount the Mapbox
-                // renderer and lose its tap handlers — Bug 11, surfaced
-                // during the first manual happy path).
-                Expanded(
-                  child: Consumer(
-                    builder: (context, ref2, _) {
-                      final isLocked =
-                          ref2.watch(isAssignmentLockedProvider);
-                      return _pill(
-                        _addModeActive
-                            ? l.addModePillActiveLabel
-                            : l.newFeaturePlaceholder,
-                        on: _addModeActive,
-                        disabled: isLocked,
-                        key: const Key('map.add-feature-pill'),
-                        onTap: () => setState(
-                          () => _addModeActive = !_addModeActive,
-                        ),
-                      );
-                    },
+          if (!reshapeActive)
+            Positioned(
+              left: 12,
+              right: 12,
+              bottom: 18,
+              child: Row(
+                children: [
+                  // Scoped Consumer so lock-state stream emissions don't
+                  // rebuild the whole map (which would re-mount the Mapbox
+                  // renderer and lose its tap handlers — Bug 11, surfaced
+                  // during the first manual happy path).
+                  Expanded(
+                    child: Consumer(
+                      builder: (context, ref2, _) {
+                        final isLocked =
+                            ref2.watch(isAssignmentLockedProvider);
+                        return _pill(
+                          _addModeActive
+                              ? l.addModePillActiveLabel
+                              : l.newFeaturePlaceholder,
+                          on: _addModeActive,
+                          disabled: isLocked,
+                          key: const Key('map.add-feature-pill'),
+                          onTap: () => setState(
+                            () => _addModeActive = !_addModeActive,
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
+          if (reshapeActive)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: ReshapeBanner(
+                editCount: reshape.undoStack.length,
+                undoEnabled: reshape.isDirty && !reshape.saving,
+                saveEnabled: reshape.isDirty && !reshape.saving,
+                // Disable Cancel while saving — the async commit transaction
+                // would otherwise still complete in the background after the
+                // UI exits edit mode, producing surprising state transitions.
+                onCancel: reshape.saving ? null : _onReshapeCancel,
+                onUndo: () => ref
+                    .read(reshapeModeControllerProvider.notifier)
+                    .undo(),
+                onSave: _onReshapeSave,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _onReshapeCancel() {
+    final state = ref.read(reshapeModeControllerProvider);
+    final featureId = state.originalFeature?.id ?? '';
+    final ops = state.undoStack.length;
+    ref.read(reshapeModeControllerProvider.notifier).cancel();
+    ref.read(analyticsServiceProvider).track(
+      'map.reshape.cancelled',
+      properties: {
+        'feature_id': featureId,
+        'ops_made': ops,
+      },
+    );
+  }
+
+  Future<void> _showLockWhileDirtyBlocker() async {
+    if (!mounted) return;
+    setState(() => _lockBlockerShown = true);
+    final l = AppLocalizations.of(context)!;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        content: Text(l.reshapeLockWhileDirtyBanner),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(l.reshapeLockExit),
           ),
         ],
       ),
     );
+    if (!mounted) return;
+    ref.read(reshapeModeControllerProvider.notifier).cancel();
+    setState(() => _lockBlockerShown = false);
+  }
+
+  Future<void> _onReshapeSave() async {
+    final l = AppLocalizations.of(context)!;
+    final ctrl = ref.read(reshapeModeControllerProvider.notifier);
+    final s = ref.read(reshapeModeControllerProvider);
+    final assignment = ref.read(currentAssignmentProvider).value;
+    if (s.originalFeature == null || assignment == null) return;
+
+    final res = validateBuildingPolygon(
+      s.workingRings,
+      boundaryGeojson: assignment.boundaryPolygonGeojson,
+    );
+    if (!res.valid) {
+      final msg = _validationMessage(res.error!, l);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(msg)));
+      ref.read(analyticsServiceProvider).track(
+        'map.reshape.validation_failed',
+        properties: {
+          'feature_id': s.originalFeature!.id,
+          'rule': res.error!.name,
+        },
+      );
+      return;
+    }
+
+    ctrl.markSaving(saving: true);
+    final userId = ref.read(currentUserIdProvider) ?? '';
+    final repo = ref.read(reshapeRepositoryProvider);
+    final newGeojson = ctrl.serializeWorkingPolygon();
+    final revisionId = const Uuid().v4();
+    final start = DateTime.now();
+
+    try {
+      await repo.saveReshape(
+        revisionId: revisionId,
+        featureId: s.originalFeature!.id,
+        prevGeojson: s.originalFeature!.geometryGeojson,
+        newGeojson: newGeojson,
+        editedBy: userId,
+        editedAt: DateTime.now(),
+        overrideReason: s.overrideReason,
+      );
+      ref.read(analyticsServiceProvider).track(
+        'map.reshape.completed',
+        properties: {
+          'feature_id': s.originalFeature!.id,
+          'vertex_count_before':
+              _vertexCount(s.originalFeature!.geometryGeojson),
+          'vertex_count_after': s.workingRings[0].length,
+          'vertex_moves': s.undoStack.whereType<Move>().length,
+          'vertex_adds': s.undoStack.whereType<Add>().length,
+          'vertex_removes': s.undoStack.whereType<Remove>().length,
+          'override_used': s.overrideReason != null,
+          'duration_ms': DateTime.now().difference(start).inMilliseconds,
+        },
+      );
+      ctrl.cancel(); // exits edit mode
+    } on Object catch (e) {
+      ctrl.markSaving(saving: false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not save reshape: $e')),
+      );
+    }
+  }
+
+  String _validationMessage(PolygonValidationError err, AppLocalizations l) {
+    return switch (err) {
+      PolygonValidationError.tooFewVertices => l.reshapeErrorTooFewVertices,
+      PolygonValidationError.zeroOrNegativeArea => l.reshapeErrorZeroArea,
+      PolygonValidationError.selfIntersection =>
+        l.reshapeErrorSelfIntersection,
+      PolygonValidationError.vertexOutsideBoundary =>
+        l.reshapeErrorOutsideBoundary,
+      PolygonValidationError.zeroLengthEdge => l.reshapeErrorZeroLengthEdge,
+    };
   }
 
   Future<void> _handleLongPress(double lat, double lng) async {
@@ -216,6 +398,80 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     if (!mounted) return;
     setState(() => _addModeActive = false);
     context.go('/feature/${feature.id}');
+  }
+
+  Future<void> _handlePolygonLongPress(Feature feature) async {
+    if (_addModeActive) return;
+    final l = AppLocalizations.of(context)!;
+    final locked = ref.read(isAssignmentLockedProvider);
+    if (locked) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l.reshapeLockedSnackbar)));
+      return;
+    }
+    if (!mounted) return;
+    final action = await showReshapeActionSheet(context, locked: locked);
+    if (!mounted || action == null) return;
+    switch (action) {
+      case ReshapeAction.openForm:
+        await _handleFeatureTap(feature);
+      case ReshapeAction.reshape:
+        await _enterReshape(feature);
+    }
+  }
+
+  Future<void> _enterReshape(Feature feature) async {
+    // Distance gate — mirrors _handleFeatureTap; await the resolved position.
+    final pos = await _resolvePosition();
+    if (!mounted) return;
+
+    String? overrideReason;
+    if (pos != null) {
+      final ring = decodePolygonGeojson(feature.geometryGeojson);
+      if (ring == null || ring.isEmpty) return;
+      final centroid = polygonCentroid(ring);
+      final meters = haversineMeters(
+        pos.latitude,
+        pos.longitude,
+        centroid.lat,
+        centroid.lng,
+      );
+      if (meters > 50.0) {
+        if (!mounted) return;
+        overrideReason = await showOverrideReasonDialog(
+          context,
+          distanceMeters: meters,
+        );
+        if (overrideReason == null || overrideReason.trim().isEmpty) {
+          return; // user cancelled or empty
+        }
+      }
+    }
+
+    if (!mounted) return;
+    ref.read(reshapeModeControllerProvider.notifier).enterReshape(
+          feature: feature,
+          overrideReason: overrideReason,
+        );
+
+    ref.read(analyticsServiceProvider).track(
+      'map.reshape.entered',
+      properties: {
+        'feature_id': feature.id,
+        'vertex_count': _vertexCount(feature.geometryGeojson),
+        'override_used': overrideReason != null,
+      },
+    );
+  }
+
+  int _vertexCount(String geojson) {
+    final ring = decodePolygonGeojson(geojson);
+    if (ring == null || ring.isEmpty) return 0;
+    // Strip the duplicated closing vertex if present.
+    if (ring.first[0] == ring.last[0] && ring.first[1] == ring.last[1]) {
+      return ring.length - 1;
+    }
+    return ring.length;
   }
 
   Future<void> _handleFeatureTap(Feature f) async {
