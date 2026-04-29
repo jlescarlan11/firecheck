@@ -250,12 +250,28 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
   _MapboxProjection? _projection;
   Size? _viewportSize;
 
+  // US-9 T13: set to true when _onMapCreated runs before the first
+  // LayoutBuilder pass so we can defer projection init until the viewport
+  // size is known.
+  bool _projectionReadyPending = false;
+
   @override
   Widget build(BuildContext context) {
     final initial = widget.initialCameraTarget;
     return LayoutBuilder(
       builder: (context, constraints) {
         _viewportSize = Size(constraints.maxWidth, constraints.maxHeight);
+
+        // If _onMapCreated ran before the first layout pass, finish projection
+        // initialization now that we have a viewport.
+        if (_projectionReadyPending && _projection != null) {
+          _projectionReadyPending = false;
+          final s = Size(constraints.maxWidth, constraints.maxHeight);
+          unawaited(_projection!.refresh(s.width, s.height).then((_) {
+            if (mounted) widget.onProjectionReady?.call(_projection!);
+          }),);
+        }
+
         return MapWidget(
           cameraOptions: CameraOptions(
             center: initial != null
@@ -327,6 +343,10 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
       // Swallow — location is a nice-to-have here.
     }
 
+    // GL context reset (e.g., app evicted from background): null any
+    // annotation references from a prior context so they're not double-deleted.
+    _reshapeWorkingAnnotation = null;
+
     // Boundary manager FIRST so it sits BENEATH features in the layer stack.
     // Mapbox stacks annotation managers by creation order: later managers
     // render on top. Features must be on top so polygon taps hit them
@@ -385,6 +405,9 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
         // Refresh failures are non-fatal; ReshapeOverlay tolerates a
         // not-yet-ready projection (returns Offset.zero).
       }
+    } else {
+      // Layout hasn't run yet. Defer to the next LayoutBuilder pass.
+      _projectionReadyPending = true;
     }
 
     // Render any working polygon supplied before the map booted.
@@ -409,8 +432,9 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
     if (boundaryChanged && _boundaryManager != null) {
       unawaited(_rerenderBoundary());
     }
-    if (oldWidget.reshapeWorkingPolygonGeojson !=
-        widget.reshapeWorkingPolygonGeojson) {
+    if (!featuresChanged &&
+        oldWidget.reshapeWorkingPolygonGeojson !=
+            widget.reshapeWorkingPolygonGeojson) {
       unawaited(_rerenderReshapeWorkingPolygon());
     }
     final target = widget.cameraTarget;
@@ -457,6 +481,7 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
     final manager = _featureManager;
     if (manager == null) return;
     await manager.deleteAll();
+    _reshapeWorkingAnnotation = null; // deleteAll() destroyed it too
     _annotationToFeature.clear();
     await _renderFeatures();
     final pointManager = _pointManager;
@@ -475,6 +500,14 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
         onTap: widget.onFeatureTap,
       ),
     );
+
+    // Re-render the in-progress reshape polygon if one is active. Doing this
+    // inside _rerenderFeatures serializes it after deleteAll() instead of
+    // racing it via a parallel unawaited call from didUpdateWidget.
+    if (widget.reshapeWorkingPolygonGeojson != null &&
+        widget.reshapeWorkingPolygonGeojson!.isNotEmpty) {
+      await _rerenderReshapeWorkingPolygon();
+    }
   }
 
   Future<void> _rerenderBoundary() async {
