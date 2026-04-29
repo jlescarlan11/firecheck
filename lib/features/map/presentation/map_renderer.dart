@@ -2,14 +2,17 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:firecheck/core/db/database.dart';
+import 'package:firecheck/core/geo/point_in_polygon.dart';
 import 'package:firecheck/features/map/presentation/camera_target.dart';
 import 'package:flutter/material.dart';
 // Hide Feature because the Drift-generated row class (imported above) shares
 // the same name with `mapbox_maps_flutter`'s GeoJSON Feature wrapper.
-import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' hide Feature;
+// Hide Size because mapbox_maps_flutter ships its own Size class that
+// shadows Flutter's `dart:ui` Size — we use Flutter's everywhere here.
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart'
+    hide Feature, Size;
 
-/// Minimal surface the map screen actually needs. Lets tests substitute a
-/// renderer that doesn't require a GL context.
+/// Minimal surface the map screen actually needs.
 // ignore: one_member_abstracts
 abstract class MapRenderer {
   Widget build(
@@ -22,7 +25,18 @@ abstract class MapRenderer {
     bool addModeActive,
     CameraTarget? cameraTarget,
     CameraTarget? initialCameraTarget,
+    // US-9 reshape additions:
+    void Function(Feature)? onPolygonLongPress,
+    String? reshapeWorkingPolygonGeojson,
+    String? reshapeInvalidEdgeGeojson,
+    void Function(MapProjection projection)? onProjectionReady,
   });
+}
+
+/// Lat/lng <-> screen-px projection seam exposed by the renderer to overlays.
+abstract class MapProjection {
+  Offset screenPointFromLngLat(double lng, double lat);
+  ({double lng, double lat}) lngLatFromScreenPoint(Offset point);
 }
 
 /// Fake for widget tests — renders one tappable tile per feature instead of
@@ -30,8 +44,11 @@ abstract class MapRenderer {
 class FakeMapRenderer implements MapRenderer {
   void Function(double, double)? _lastOnLongPress;
   void Function(double, double, double)? _lastOnCameraChanged;
+  void Function(Feature)? _lastOnPolygonLongPress;
   CameraTarget? lastCameraTarget;
   CameraTarget? lastInitialCameraTarget;
+  String? lastReshapeWorkingPolygonGeojson;
+  String? lastReshapeInvalidEdgeGeojson;
   final List<CameraTarget> cameraTargetHistory = [];
 
   /// Test seam: simulates a long-press at the given coordinates. Invokes the
@@ -44,9 +61,19 @@ class FakeMapRenderer implements MapRenderer {
   /// Test seam: simulates a camera-change event from the underlying map.
   /// Invokes the most recently stored onCameraChanged callback; no-op if
   /// none was provided.
-  Future<void> simulateCameraChanged(double zoom, double lat, double lng) async {
+  Future<void> simulateCameraChanged(
+    double zoom,
+    double lat,
+    double lng,
+  ) async {
     final cb = _lastOnCameraChanged;
     if (cb != null) cb(zoom, lat, lng);
+  }
+
+  /// Test seam: simulates a long-press on a polygon feature. Invokes the
+  /// most recently stored onPolygonLongPress callback.
+  Future<void> simulatePolygonLongPress(Feature f) async {
+    _lastOnPolygonLongPress?.call(f);
   }
 
   @override
@@ -60,14 +87,25 @@ class FakeMapRenderer implements MapRenderer {
     bool addModeActive = false,
     CameraTarget? cameraTarget,
     CameraTarget? initialCameraTarget,
+    void Function(Feature)? onPolygonLongPress,
+    String? reshapeWorkingPolygonGeojson,
+    String? reshapeInvalidEdgeGeojson,
+    void Function(MapProjection projection)? onProjectionReady,
   }) {
     _lastOnLongPress = onLongPress;
     _lastOnCameraChanged = onCameraChanged;
+    _lastOnPolygonLongPress = onPolygonLongPress;
     lastInitialCameraTarget = initialCameraTarget;
     if (cameraTarget != null && cameraTarget != lastCameraTarget) {
       cameraTargetHistory.add(cameraTarget);
     }
     lastCameraTarget = cameraTarget;
+    lastReshapeWorkingPolygonGeojson = reshapeWorkingPolygonGeojson;
+    lastReshapeInvalidEdgeGeojson = reshapeInvalidEdgeGeojson;
+
+    // Identity projection: each lng,lat maps to (lng, lat) screen pixels.
+    onProjectionReady?.call(_IdentityProjection());
+
     return ListView(
       shrinkWrap: true,
       children: [
@@ -80,6 +118,8 @@ class FakeMapRenderer implements MapRenderer {
           return GestureDetector(
             key: Key('fake-map-feature-${f.id}'),
             onTap: () => onFeatureTap(f),
+            onLongPress:
+                f.isNew ? null : () => onPolygonLongPress?.call(f),
             child: Container(
               key: f.isNew
                   ? Key('fake-map-new-feature-${f.id}')
@@ -107,6 +147,16 @@ class FakeMapRenderer implements MapRenderer {
   }
 }
 
+/// Identity-degree projection used by FakeMapRenderer for tests.
+class _IdentityProjection implements MapProjection {
+  @override
+  Offset screenPointFromLngLat(double lng, double lat) => Offset(lng, lat);
+
+  @override
+  ({double lng, double lat}) lngLatFromScreenPoint(Offset point) =>
+      (lng: point.dx, lat: point.dy);
+}
+
 // MapboxMapRenderer is exercised via FakeMapRenderer in widget tests and via
 // the manual happy path in plan Task 18. The Mapbox plugin does not render
 // in flutter_tester.
@@ -127,6 +177,10 @@ class MapboxMapRenderer implements MapRenderer {
     bool addModeActive = false,
     CameraTarget? cameraTarget,
     CameraTarget? initialCameraTarget,
+    void Function(Feature)? onPolygonLongPress,
+    String? reshapeWorkingPolygonGeojson,
+    String? reshapeInvalidEdgeGeojson,
+    void Function(MapProjection projection)? onProjectionReady,
   }) {
     return _MapboxMapView(
       features: features,
@@ -137,6 +191,10 @@ class MapboxMapRenderer implements MapRenderer {
       addModeActive: addModeActive,
       cameraTarget: cameraTarget,
       initialCameraTarget: initialCameraTarget,
+      onPolygonLongPress: onPolygonLongPress,
+      reshapeWorkingPolygonGeojson: reshapeWorkingPolygonGeojson,
+      reshapeInvalidEdgeGeojson: reshapeInvalidEdgeGeojson,
+      onProjectionReady: onProjectionReady,
     );
   }
 }
@@ -151,6 +209,10 @@ class _MapboxMapView extends StatefulWidget {
     this.addModeActive = false,
     this.cameraTarget,
     this.initialCameraTarget,
+    this.onPolygonLongPress,
+    this.reshapeWorkingPolygonGeojson,
+    this.reshapeInvalidEdgeGeojson,
+    this.onProjectionReady,
   });
 
   final List<Feature> features;
@@ -161,6 +223,10 @@ class _MapboxMapView extends StatefulWidget {
   final bool addModeActive;
   final CameraTarget? cameraTarget;
   final CameraTarget? initialCameraTarget;
+  final void Function(Feature)? onPolygonLongPress;
+  final String? reshapeWorkingPolygonGeojson;
+  final String? reshapeInvalidEdgeGeojson;
+  final void Function(MapProjection projection)? onProjectionReady;
 
   @override
   State<_MapboxMapView> createState() => _MapboxMapViewState();
@@ -176,37 +242,77 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
   // the tap listener can resolve the Drift row from the tapped annotation.
   final Map<String, Feature> _annotationToFeature = <String, Feature>{};
 
+  // US-9: working-polygon overlay rendered while reshape mode is active.
+  PolygonAnnotation? _reshapeWorkingAnnotation;
+
+  // US-9: lat/lng <-> screen-px projection state. Refreshed on camera change
+  // so ReshapeOverlay can read it synchronously during finger drags.
+  _MapboxProjection? _projection;
+  Size? _viewportSize;
+
   @override
   Widget build(BuildContext context) {
     final initial = widget.initialCameraTarget;
-    return MapWidget(
-      cameraOptions: CameraOptions(
-        center: initial != null
-            ? Point(coordinates: Position(initial.lng, initial.lat))
-            : Point(coordinates: Position(123.88270, 10.31810)),
-        zoom: initial?.zoom ?? 15,
-      ),
-      // Without an explicit styleUri the map renders a black background
-      // because no style is loaded. Streets v12 is the Phase 1 spec choice.
-      styleUri: 'mapbox://styles/mapbox/streets-v12',
-      onMapCreated: _onMapCreated,
-      onLongTapListener: (MapContentGestureContext ctx) {
-        if (widget.addModeActive && widget.onLongPress != null) {
-          final pos = ctx.point.coordinates;
-          widget.onLongPress!(pos.lat.toDouble(), pos.lng.toDouble());
-        }
-      },
-      onCameraChangeListener: (CameraChangedEventData data) {
-        final cb = widget.onCameraChanged;
-        if (cb == null) return;
-        final state = data.cameraState;
-        cb(
-          state.zoom,
-          state.center.coordinates.lat.toDouble(),
-          state.center.coordinates.lng.toDouble(),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        _viewportSize = Size(constraints.maxWidth, constraints.maxHeight);
+        return MapWidget(
+          cameraOptions: CameraOptions(
+            center: initial != null
+                ? Point(coordinates: Position(initial.lng, initial.lat))
+                : Point(coordinates: Position(123.88270, 10.31810)),
+            zoom: initial?.zoom ?? 15,
+          ),
+          // Without an explicit styleUri the map renders a black background
+          // because no style is loaded. Streets v12 is the Phase 1 spec choice.
+          styleUri: 'mapbox://styles/mapbox/streets-v12',
+          onMapCreated: _onMapCreated,
+          onLongTapListener: (MapContentGestureContext ctx) async {
+            // Add-mode placement remains unchanged.
+            if (widget.addModeActive && widget.onLongPress != null) {
+              final pos = ctx.point.coordinates;
+              widget.onLongPress!(pos.lat.toDouble(), pos.lng.toDouble());
+              return;
+            }
+            // Reshape entry: hit-test all rendered polygons against the
+            // long-press point.
+            final cb = widget.onPolygonLongPress;
+            if (cb == null) return;
+            final hit = _hitTestPolygon(
+              ctx.point.coordinates.lat.toDouble(),
+              ctx.point.coordinates.lng.toDouble(),
+            );
+            if (hit != null) cb(hit);
+          },
+          onCameraChangeListener: (CameraChangedEventData data) {
+            final cb = widget.onCameraChanged;
+            final state = data.cameraState;
+            cb?.call(
+              state.zoom,
+              state.center.coordinates.lat.toDouble(),
+              state.center.coordinates.lng.toDouble(),
+            );
+            final projection = _projection;
+            final size = _viewportSize;
+            if (projection != null && size != null) {
+              unawaited(
+                projection.refresh(size.width, size.height).then((_) {
+                  widget.onProjectionReady?.call(projection);
+                }),
+              );
+            }
+          },
         );
       },
     );
+  }
+
+  Feature? _hitTestPolygon(double lat, double lng) {
+    for (final f in widget.features) {
+      if (f.isNew) continue;
+      if (pointInPolygonGeojson(lat, lng, f.geometryGeojson)) return f;
+    }
+    return null;
   }
 
   Future<void> _onMapCreated(MapboxMap map) async {
@@ -264,6 +370,28 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
       initialState.center.coordinates.lat.toDouble(),
       initialState.center.coordinates.lng.toDouble(),
     );
+
+    // US-9: instantiate the projection now that the map is alive and run
+    // an initial refresh so ReshapeOverlay has correct screen-px math
+    // before the user's first drag.
+    final projection = _MapboxProjection(map);
+    _projection = projection;
+    final size = _viewportSize;
+    if (size != null) {
+      try {
+        await projection.refresh(size.width, size.height);
+        widget.onProjectionReady?.call(projection);
+      } on Object {
+        // Refresh failures are non-fatal; ReshapeOverlay tolerates a
+        // not-yet-ready projection (returns Offset.zero).
+      }
+    }
+
+    // Render any working polygon supplied before the map booted.
+    if (widget.reshapeWorkingPolygonGeojson != null &&
+        widget.reshapeWorkingPolygonGeojson!.isNotEmpty) {
+      unawaited(_rerenderReshapeWorkingPolygon());
+    }
   }
 
   @override
@@ -281,10 +409,34 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
     if (boundaryChanged && _boundaryManager != null) {
       unawaited(_rerenderBoundary());
     }
+    if (oldWidget.reshapeWorkingPolygonGeojson !=
+        widget.reshapeWorkingPolygonGeojson) {
+      unawaited(_rerenderReshapeWorkingPolygon());
+    }
     final target = widget.cameraTarget;
     if (target != null && target != oldWidget.cameraTarget) {
       unawaited(_flyToCameraTarget(target));
     }
+  }
+
+  Future<void> _rerenderReshapeWorkingPolygon() async {
+    final manager = _featureManager;
+    if (manager == null) return;
+    if (_reshapeWorkingAnnotation != null) {
+      await manager.delete(_reshapeWorkingAnnotation!);
+      _reshapeWorkingAnnotation = null;
+    }
+    final geojson = widget.reshapeWorkingPolygonGeojson;
+    if (geojson == null || geojson.isEmpty) return;
+    final polygon = _decodePolygon(geojson);
+    if (polygon == null) return;
+    _reshapeWorkingAnnotation = await manager.create(
+      PolygonAnnotationOptions(
+        geometry: polygon,
+        fillColor: 0xFF3182CE,
+        fillOpacity: 0.3,
+      ),
+    );
   }
 
   Future<void> _flyToCameraTarget(CameraTarget t) async {
@@ -459,5 +611,68 @@ class _FeatureClickHandler extends OnPolygonAnnotationClickListener {
   void onPolygonAnnotationClick(PolygonAnnotation annotation) {
     final feature = annotationToFeature[annotation.id];
     if (feature != null) onTap(feature);
+  }
+}
+
+/// Caches lat/lng <-> screen-px projections via async `coordinateForPixel`
+/// and exposes a synchronous linear interpolation. Refreshed on each camera
+/// change so ReshapeOverlay (which rebuilds on every Riverpod tick during
+/// drags) can read sync without an async hop.
+///
+/// The linear-corner calibration is approximate near map edges and at very
+/// low zoom. At reshape working zoom (>=17) it is sub-pixel inside the
+/// visible viewport — acceptable for finger-drag UX.
+class _MapboxProjection implements MapProjection {
+  _MapboxProjection(this._map);
+  final MapboxMap _map;
+
+  Offset? _topLeftPx;
+  Position? _topLeftLngLat;
+  Offset? _bottomRightPx;
+  Position? _bottomRightLngLat;
+
+  Future<void> refresh(double viewportWidth, double viewportHeight) async {
+    final tl = await _map.coordinateForPixel(ScreenCoordinate(x: 0, y: 0));
+    final br = await _map.coordinateForPixel(
+      ScreenCoordinate(x: viewportWidth, y: viewportHeight),
+    );
+    _topLeftPx = Offset.zero;
+    _topLeftLngLat = tl.coordinates;
+    _bottomRightPx = Offset(viewportWidth, viewportHeight);
+    _bottomRightLngLat = br.coordinates;
+  }
+
+  @override
+  Offset screenPointFromLngLat(double lng, double lat) {
+    final tlP = _topLeftPx;
+    final brP = _bottomRightPx;
+    final tlC = _topLeftLngLat;
+    final brC = _bottomRightLngLat;
+    if (tlP == null || brP == null || tlC == null || brC == null) {
+      return Offset.zero;
+    }
+    final tx = (lng - tlC.lng) / (brC.lng - tlC.lng);
+    final ty = (lat - tlC.lat) / (brC.lat - tlC.lat);
+    return Offset(
+      tlP.dx + tx * (brP.dx - tlP.dx),
+      tlP.dy + ty * (brP.dy - tlP.dy),
+    );
+  }
+
+  @override
+  ({double lng, double lat}) lngLatFromScreenPoint(Offset p) {
+    final tlP = _topLeftPx;
+    final brP = _bottomRightPx;
+    final tlC = _topLeftLngLat;
+    final brC = _bottomRightLngLat;
+    if (tlP == null || brP == null || tlC == null || brC == null) {
+      return (lng: 0.0, lat: 0.0);
+    }
+    final tx = (p.dx - tlP.dx) / (brP.dx - tlP.dx);
+    final ty = (p.dy - tlP.dy) / (brP.dy - tlP.dy);
+    return (
+      lng: tlC.lng + tx * (brC.lng - tlC.lng),
+      lat: tlC.lat + ty * (brC.lat - tlC.lat),
+    );
   }
 }
