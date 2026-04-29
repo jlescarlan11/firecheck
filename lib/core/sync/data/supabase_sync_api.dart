@@ -101,6 +101,13 @@ class SupabaseSyncApi implements SyncApi {
     }
   }
 
+  @override
+  Future<SyncOutcome> uploadFeatureGeometryUpdate(
+    FeatureGeometryRevision revision,
+  ) async {
+    throw UnimplementedError('Implemented in T16');
+  }
+
   SyncOutcome _mapPostgrestException(
     PostgrestException e,
     Map<String, dynamic>? submissionPayload,
