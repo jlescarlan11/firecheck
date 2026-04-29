@@ -14,12 +14,15 @@ import 'package:firecheck/features/assignment/presentation/assignment_lock_provi
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
 import 'package:firecheck/features/map/presentation/camera_target.dart';
 import 'package:firecheck/features/map/presentation/map_providers.dart';
+import 'package:firecheck/features/map/presentation/map_renderer.dart';
 import 'package:firecheck/features/map/presentation/recenter_button.dart';
 import 'package:firecheck/features/map/presentation/recenter_button_state.dart';
 import 'package:firecheck/features/map/presentation/zoom_button.dart';
 import 'package:firecheck/features/map/presentation/zoom_button_state.dart';
 import 'package:firecheck/features/map/presentation/zoom_direction.dart';
 import 'package:firecheck/features/map/reshape/presentation/reshape_action_sheet.dart';
+import 'package:firecheck/features/map/reshape/presentation/reshape_banner.dart';
+import 'package:firecheck/features/map/reshape/presentation/reshape_overlay.dart';
 import 'package:firecheck/features/map/reshape/presentation/reshape_providers.dart';
 import 'package:firecheck/features/new_feature/presentation/feature_type_picker.dart';
 import 'package:firecheck/features/survey/building_form/presentation/building_form_providers.dart';
@@ -52,12 +55,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   double? _commandedZoom;
   Timer? _animationSettleTimer;
 
+  MapProjection? _reshapeProjection;
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     final renderer = ref.watch(mapRendererProvider);
     final featuresAsync = ref.watch(currentFeaturesProvider);
     final assignmentAsync = ref.watch(currentAssignmentProvider);
+    final reshape = ref.watch(reshapeModeControllerProvider);
+    final reshapeActive = reshape.isActive;
     // Subscribe so the GPS stream is hot from mount, not first tap.
     ref.watch(currentPositionProvider);
 
@@ -103,9 +110,23 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     initialCameraTarget: initialCameraTarget,
                     cameraTarget: _cameraTarget,
                     onPolygonLongPress: _handlePolygonLongPress,
+                    reshapeWorkingPolygonGeojson: reshapeActive
+                        ? ref
+                            .read(reshapeModeControllerProvider.notifier)
+                            .serializeWorkingPolygon()
+                        : null,
+                    onProjectionReady: (p) {
+                      if (_reshapeProjection != p) {
+                        setState(() => _reshapeProjection = p);
+                      }
+                    },
                   ),
           ),
-          if (_addModeActive)
+          if (reshapeActive && _reshapeProjection != null)
+            Positioned.fill(
+              child: ReshapeOverlay(projection: _reshapeProjection!),
+            ),
+          if (!reshapeActive && _addModeActive)
             Positioned(
               top: 0,
               left: 0,
@@ -150,41 +171,76 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               onTap: _onZoomIn,
             ),
           ),
-          Positioned(
-            left: 12,
-            right: 12,
-            bottom: 18,
-            child: Row(
-              children: [
-                // Scoped Consumer so lock-state stream emissions don't
-                // rebuild the whole map (which would re-mount the Mapbox
-                // renderer and lose its tap handlers — Bug 11, surfaced
-                // during the first manual happy path).
-                Expanded(
-                  child: Consumer(
-                    builder: (context, ref2, _) {
-                      final isLocked =
-                          ref2.watch(isAssignmentLockedProvider);
-                      return _pill(
-                        _addModeActive
-                            ? l.addModePillActiveLabel
-                            : l.newFeaturePlaceholder,
-                        on: _addModeActive,
-                        disabled: isLocked,
-                        key: const Key('map.add-feature-pill'),
-                        onTap: () => setState(
-                          () => _addModeActive = !_addModeActive,
-                        ),
-                      );
-                    },
+          if (!reshapeActive)
+            Positioned(
+              left: 12,
+              right: 12,
+              bottom: 18,
+              child: Row(
+                children: [
+                  // Scoped Consumer so lock-state stream emissions don't
+                  // rebuild the whole map (which would re-mount the Mapbox
+                  // renderer and lose its tap handlers — Bug 11, surfaced
+                  // during the first manual happy path).
+                  Expanded(
+                    child: Consumer(
+                      builder: (context, ref2, _) {
+                        final isLocked =
+                            ref2.watch(isAssignmentLockedProvider);
+                        return _pill(
+                          _addModeActive
+                              ? l.addModePillActiveLabel
+                              : l.newFeaturePlaceholder,
+                          on: _addModeActive,
+                          disabled: isLocked,
+                          key: const Key('map.add-feature-pill'),
+                          onTap: () => setState(
+                            () => _addModeActive = !_addModeActive,
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
+          if (reshapeActive)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: ReshapeBanner(
+                editCount: reshape.undoStack.length,
+                undoEnabled: reshape.isDirty && !reshape.saving,
+                saveEnabled: reshape.isDirty && !reshape.saving,
+                onCancel: _onReshapeCancel,
+                onUndo: () => ref
+                    .read(reshapeModeControllerProvider.notifier)
+                    .undo(),
+                onSave: _onReshapeSave,
+              ),
+            ),
         ],
       ),
     );
+  }
+
+  void _onReshapeCancel() {
+    final state = ref.read(reshapeModeControllerProvider);
+    final featureId = state.originalFeature?.id ?? '';
+    final ops = state.undoStack.length;
+    ref.read(reshapeModeControllerProvider.notifier).cancel();
+    ref.read(analyticsServiceProvider).track(
+      'map.reshape.cancelled',
+      properties: {
+        'feature_id': featureId,
+        'ops_made': ops,
+      },
+    );
+  }
+
+  Future<void> _onReshapeSave() async {
+    // Implemented in T21.
   }
 
   Future<void> _handleLongPress(double lat, double lng) async {

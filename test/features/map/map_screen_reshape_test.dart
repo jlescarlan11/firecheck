@@ -229,4 +229,50 @@ void main() {
       );
     });
   });
+
+  group('US-9 T20 mount banner + overlay; hide add-pill', () {
+    testWidgets('add-mode pill hidden while reshape active', (tester) async {
+      final renderer = FakeMapRenderer();
+      final feature = fakeFeature();
+      // GPS at the feature centroid → distance ≈ 0m, no override dialog.
+      await pumpMap(
+        tester,
+        renderer: renderer,
+        features: [feature],
+        positionStream: Stream.value(fakePos(lat: 10.3180, lng: 123.8830)),
+      );
+
+      // Pill visible at start.
+      expect(find.byKey(const Key('map.add-feature-pill')), findsOneWidget);
+
+      await renderer.simulatePolygonLongPress(feature);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('reshape.actionsheet.reshape')));
+      await tester.pumpAndSettle();
+
+      // Pill hidden once reshape is active.
+      expect(find.byKey(const Key('map.add-feature-pill')), findsNothing);
+    });
+
+    testWidgets('Cancel exits reshape and re-shows add pill', (tester) async {
+      final renderer = FakeMapRenderer();
+      final feature = fakeFeature();
+      await pumpMap(
+        tester,
+        renderer: renderer,
+        features: [feature],
+        positionStream: Stream.value(fakePos(lat: 10.3180, lng: 123.8830)),
+      );
+
+      await renderer.simulatePolygonLongPress(feature);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('reshape.actionsheet.reshape')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('reshape.banner.cancel')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('map.add-feature-pill')), findsOneWidget);
+    });
+  });
 }
