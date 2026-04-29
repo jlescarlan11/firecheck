@@ -96,4 +96,84 @@ void main() {
     expect(found, isNotNull);
     expect(found!.featureId, 'f1');
   });
+
+  test('saveReshape rolls back all writes when revision insert fails', () async {
+    // Pre-insert a row with revisionId='r4' so the second write throws a UNIQUE constraint.
+    await db.into(db.featureGeometryRevisions).insert(
+          FeatureGeometryRevisionsCompanion.insert(
+            id: 'r4',
+            featureId: 'f1',
+            prevGeojson: '{}',
+            newGeojson: '{}',
+            editedBy: 'e1',
+            editedAt: DateTime.utc(2026, 4, 29),
+            createdAt: DateTime.utc(2026, 4, 29),
+          ),
+        );
+
+    final originalGeo = (await (db.select(db.features)
+              ..where((t) => t.id.equals('f1')))
+            .getSingle())
+        .geometryGeojson;
+
+    await expectLater(
+      repo.saveReshape(
+        revisionId: 'r4', // collides on PK
+        featureId: 'f1',
+        prevGeojson: '{"type":"Polygon","coordinates":[[[0,0],[1,0],[0,1],[0,0]]]}',
+        newGeojson:  '{"type":"Polygon","coordinates":[[[0,0],[3,0],[0,3],[0,0]]]}',
+        editedBy: 'e1',
+        editedAt: DateTime.utc(2026, 4, 29, 13),
+        overrideReason: null,
+      ),
+      throwsA(anything),
+    );
+
+    // features.geometry_geojson must NOT have been updated.
+    final feature = await (db.select(db.features)
+          ..where((t) => t.id.equals('f1')))
+        .getSingle();
+    expect(feature.geometryGeojson, originalGeo);
+
+    // No sync_job inserted from the failed call.
+    final jobs = await db.select(db.syncJobs).get();
+    expect(jobs, isEmpty);
+
+    // Only the pre-seeded revision row remains.
+    final revs = await db.select(db.featureGeometryRevisions).get();
+    expect(revs, hasLength(1));
+    expect(revs.first.id, 'r4');
+  });
+
+  test('markSynced flips syncStatus to uploaded', () async {
+    await repo.saveReshape(
+      revisionId: 'r5',
+      featureId: 'f1',
+      prevGeojson: '{"type":"Polygon","coordinates":[[[0,0],[1,0],[0,1],[0,0]]]}',
+      newGeojson:  '{"type":"Polygon","coordinates":[[[0,0],[2,0],[0,2],[0,0]]]}',
+      editedBy: 'e1',
+      editedAt: DateTime.utc(2026, 4, 29),
+      overrideReason: null,
+    );
+
+    await repo.markSynced('r5');
+    final r = await repo.getById('r5');
+    expect(r!.syncStatus, 'uploaded');
+  });
+
+  test('markFailed flips syncStatus to failed', () async {
+    await repo.saveReshape(
+      revisionId: 'r6',
+      featureId: 'f1',
+      prevGeojson: '{"type":"Polygon","coordinates":[[[0,0],[1,0],[0,1],[0,0]]]}',
+      newGeojson:  '{"type":"Polygon","coordinates":[[[0,0],[2,0],[0,2],[0,0]]]}',
+      editedBy: 'e1',
+      editedAt: DateTime.utc(2026, 4, 29),
+      overrideReason: null,
+    );
+
+    await repo.markFailed('r6');
+    final r = await repo.getById('r6');
+    expect(r!.syncStatus, 'failed');
+  });
 }

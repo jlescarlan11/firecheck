@@ -4,7 +4,7 @@ import 'package:drift/drift.dart';
 class SyncJobs extends Table {
   TextColumn get id => text()();
   TextColumn get entityType =>
-      text()(); // submission|photo|new_feature|status_update
+      text()(); // submission|photo|new_feature|status_update|feature_geometry_update
   TextColumn get entityId => text()();
   TextColumn get status =>
       text().withDefault(const Constant('pending'))(); // pending|in_progress|success|failed|dead
