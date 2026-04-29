@@ -5,6 +5,7 @@ import 'package:drift/native.dart';
 import 'package:firecheck/core/db/tables/assignments.dart';
 import 'package:firecheck/core/db/tables/building_attributes.dart';
 import 'package:firecheck/core/db/tables/enumerators.dart';
+import 'package:firecheck/core/db/tables/feature_geometry_revisions.dart';
 import 'package:firecheck/core/db/tables/features.dart';
 import 'package:firecheck/core/db/tables/household_surveys.dart';
 import 'package:firecheck/core/db/tables/offline_tile_packs.dart';
@@ -23,6 +24,7 @@ part 'database.g.dart';
     Enumerators,
     Assignments,
     Features,
+    FeatureGeometryRevisions,
     Submissions,
     BuildingAttributes,
     RoadAttributes,
@@ -40,7 +42,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -72,6 +74,12 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 5) {
             await m.addColumn(assignments, assignments.closedRemotely);
+          }
+          if (from < 6) {
+            // v5 → v6: feature_geometry_revisions table for US-9 reshape.
+            await m.createTable(featureGeometryRevisions);
+            await m.createIndex(fgrFeatureIdIdx);
+            await m.createIndex(fgrSyncStatusIdx);
           }
         },
         beforeOpen: (details) async {
