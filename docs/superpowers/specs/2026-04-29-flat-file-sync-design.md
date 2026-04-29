@@ -31,7 +31,7 @@ architecture (Drift + Supabase) remains for the team's own use.
 | Photos | **Uploaded to a sibling `photos/` folder in Drive** (not inside the zip). The `.dbf` carries the resolved Drive URL in `photo_1` … `photo_5` columns. | Shapefile stays a real shapefile; photos still reach the supervisor; clicking the URL in QGIS opens the photo in a browser. |
 | Photo upload path | `/firecheck/outbox/<assignment_id>/<enumerator_id>/photos/<feature_id>_<n>.jpg`. | Sibling to the output zip — supervisor sees both in one folder; Drive ACL on the parent folder grants photo access automatically. |
 | Photo cap per feature | First **5** photos referenced by URL (`photo_1` … `photo_5`); additional photos kept locally for the team's records but not delivered. | Bounded `.dbf` schema; matches typical fire-survey expectations of front + 4 detail shots. |
-| Storage backend | **Google Drive**. | UP accounts already exist, supervisor familiarity, stable API. FileZilla considered and rejected: the client is free but needs an FTP *server* somewhere (dorm machine kept always-on, or paid VPS), which is operational overhead the team doesn't have. GitHub is awkward for >100 MB photo+shapefile bundles. |
+| Storage backend | **Google Drive**. | Free for any Google account (15 GB), zero server maintenance, supervisor familiarity, stable API. UP accounts work but are not required — personal Gmail is fine. FileZilla considered and rejected: the client is free but needs an FTP *server* somewhere (dorm machine kept always-on, or paid VPS), which is operational overhead the team doesn't have. GitHub is awkward for >100 MB photo+shapefile bundles. |
 | Assignment discovery | App lists subfolders of `/firecheck/inbox/` that the signed-in user has been **shared on** in Drive. Each folder name *is* the `assignment_id`. | Uses Drive's native sharing model — supervisor shares the folder with the student's Google account (or a class Google Group); the app sees what Drive lets it see. No manifest file needed. |
 | Enumerator identity | `enumerator_id` = local-part of the signed-in Google email (`jlescarlan11@gmail.com` → `jlescarlan11`). | Deterministic across devices and reinstalls; stable Drive output paths; doesn't require a separate enrollment system. |
 | Multi-tab buildings | One row per structure with repeated geometry; `struct_idx` column distinguishes them. | Cleaner for GIS analysis than numbered columns; expected by QGIS. |
@@ -88,7 +88,7 @@ These are the things the supervisor must do for the app to have anything to read
 **Acceptance criteria**
 
 - **Discovery:** the app calls Drive's `files.list` API for subfolders of `/firecheck/inbox/` that the signed-in user can read. Each returned folder's name is treated as an `assignment_id`. Result is shown as a pick-list (folder name + last-modified date).
-- **Empty state:** if no assignment folders are visible, the app shows *"No assignments shared with you yet — ask your supervisor to share the assignment folder with your UP Google account."* — not a generic error.
+- **Empty state:** if no assignment folders are visible, the app shows *"No assignments shared with you yet — ask your supervisor to share the assignment folder with the Google account you signed in with."* — not a generic error.
 - **Selection:** if multiple assignments are visible, the user picks one before download begins.
 - Downloads `input.zip` from the selected folder, extracts, imports features into Drift, preserving original `feature_id` from the `.dbf`.
 - Existing Mapbox tile-pack download flow continues alongside this step.
@@ -184,7 +184,7 @@ These are the things the supervisor must do for the app to have anything to read
 
 #### FF-8 — Authenticate to shared storage
 
-> **As an** Enumerator, **I want to** sign in once with my UP Google account, **so that** all subsequent downloads and uploads are attributed to me.
+> **As an** Enumerator, **I want to** sign in once with a Google account, **so that** all subsequent downloads and uploads are attributed to me.
 
 **Acceptance criteria**
 
