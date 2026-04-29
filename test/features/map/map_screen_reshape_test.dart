@@ -9,11 +9,31 @@ import 'package:firecheck/features/assignment/presentation/assignment_providers.
 import 'package:firecheck/features/map/presentation/map_providers.dart';
 import 'package:firecheck/features/map/presentation/map_renderer.dart';
 import 'package:firecheck/features/map/presentation/map_screen.dart';
+import 'package:firecheck/features/map/reshape/presentation/reshape_providers.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geolocator/geolocator.dart';
+
+Position fakePos({
+  required double lat,
+  required double lng,
+  double accuracy = 10,
+}) {
+  return Position(
+    latitude: lat,
+    longitude: lng,
+    timestamp: DateTime.utc(2026),
+    accuracy: accuracy,
+    altitude: 0,
+    altitudeAccuracy: 0,
+    heading: 0,
+    headingAccuracy: 0,
+    speed: 0,
+    speedAccuracy: 0,
+  );
+}
 
 Assignment fakeAssignment() => Assignment(
       id: 'a1',
@@ -41,13 +61,14 @@ Feature fakeFeature() => Feature(
       createdAt: DateTime.utc(2026),
     );
 
-Future<void> pumpMap(
+Future<ProviderContainer> pumpMap(
   WidgetTester tester, {
   required FakeMapRenderer renderer,
   List<Feature> features = const [],
   AnalyticsService? analytics,
+  Stream<Position>? positionStream,
 }) async {
-  await tester.pumpWidget(ProviderScope(
+  final container = ProviderContainer(
     overrides: [
       mapRendererProvider.overrideWithValue(renderer),
       locationServiceProvider.overrideWithValue(FakeLocationService()),
@@ -56,8 +77,14 @@ Future<void> pumpMap(
       currentFeaturesProvider.overrideWith((_) => Stream.value(features)),
       currentAssignmentProvider.overrideWith((_) => Stream.value(fakeAssignment())),
       assignmentLockStateProvider.overrideWith((_) => Stream.value(const Unlocked())),
-      currentPositionProvider.overrideWith((_) => const Stream<Position>.empty()),
+      currentPositionProvider.overrideWith(
+        (_) => positionStream ?? const Stream<Position>.empty(),
+      ),
     ],
+  );
+  addTearDown(container.dispose);
+  await tester.pumpWidget(UncontrolledProviderScope(
+    container: container,
     child: const MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
@@ -66,6 +93,7 @@ Future<void> pumpMap(
   ),);
   await tester.pump();
   await tester.pump();
+  return container;
 }
 
 void main() {
@@ -109,6 +137,95 @@ void main() {
       expect(
         find.byKey(const Key('reshape.actionsheet.reshape')),
         findsNothing,
+      );
+    });
+  });
+
+  group('US-9 T19 distance gate + override-reason → enterReshape', () {
+    testWidgets('Reshape with GPS within 50m enters edit mode (no dialog)',
+        (tester) async {
+      final renderer = FakeMapRenderer();
+      final analytics = RecordingAnalyticsService();
+      final feature = fakeFeature();
+      // GPS fix at (essentially) the feature centroid → distance ≈ 0m.
+      final container = await pumpMap(
+        tester,
+        renderer: renderer,
+        features: [feature],
+        analytics: analytics,
+        positionStream: Stream.value(fakePos(lat: 10.3180, lng: 123.8830)),
+      );
+
+      await renderer.simulatePolygonLongPress(feature);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('reshape.actionsheet.reshape')));
+      await tester.pumpAndSettle();
+
+      // No override dialog appeared.
+      expect(find.byKey(const Key('override.reason')), findsNothing);
+
+      // Reshape mode is active and the working feature was seeded.
+      final state = container.read(reshapeModeControllerProvider);
+      expect(state.isActive, isTrue);
+      expect(state.originalFeature?.id, feature.id);
+      expect(state.overrideReason, isNull);
+
+      // Analytics recorded entry without override.
+      expect(
+        analytics.events.any((e) =>
+            e.event == 'map.reshape.entered' &&
+            e.properties?['override_used'] == false &&
+            e.properties?['feature_id'] == feature.id,),
+        isTrue,
+      );
+    });
+
+    testWidgets(
+        'Reshape with GPS >50m shows override dialog; confirm enters mode',
+        (tester) async {
+      final renderer = FakeMapRenderer();
+      final analytics = RecordingAnalyticsService();
+      final feature = fakeFeature();
+      // ~155m south of the feature centroid (1° lat ≈ 111km → 0.0014° ≈ 155m).
+      final container = await pumpMap(
+        tester,
+        renderer: renderer,
+        features: [feature],
+        analytics: analytics,
+        positionStream: Stream.value(fakePos(lat: 10.3166, lng: 123.8830)),
+      );
+
+      await renderer.simulatePolygonLongPress(feature);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('reshape.actionsheet.reshape')));
+      await tester.pumpAndSettle();
+
+      // Override dialog visible.
+      expect(find.byKey(const Key('override.reason')), findsOneWidget);
+      await tester.enterText(
+        find.byKey(const Key('override.reason')),
+        'visible from sidewalk',
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      // Override dialog dismissed.
+      expect(find.byKey(const Key('override.reason')), findsNothing);
+
+      // Reshape mode active with override reason captured.
+      final state = container.read(reshapeModeControllerProvider);
+      expect(state.isActive, isTrue);
+      expect(state.originalFeature?.id, feature.id);
+      expect(state.overrideReason, 'visible from sidewalk');
+
+      // Analytics recorded entry with override.
+      expect(
+        analytics.events.any((e) =>
+            e.event == 'map.reshape.entered' &&
+            e.properties?['override_used'] == true &&
+            e.properties?['feature_id'] == feature.id,),
+        isTrue,
       );
     });
   });

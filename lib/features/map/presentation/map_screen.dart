@@ -20,6 +20,7 @@ import 'package:firecheck/features/map/presentation/zoom_button.dart';
 import 'package:firecheck/features/map/presentation/zoom_button_state.dart';
 import 'package:firecheck/features/map/presentation/zoom_direction.dart';
 import 'package:firecheck/features/map/reshape/presentation/reshape_action_sheet.dart';
+import 'package:firecheck/features/map/reshape/presentation/reshape_providers.dart';
 import 'package:firecheck/features/new_feature/presentation/feature_type_picker.dart';
 import 'package:firecheck/features/survey/building_form/presentation/building_form_providers.dart';
 import 'package:firecheck/features/survey/building_form/presentation/override_reason_dialog.dart';
@@ -236,9 +237,62 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       case ReshapeAction.openForm:
         await _handleFeatureTap(feature);
       case ReshapeAction.reshape:
-        // Distance gate + enterReshape handled in T19.
-        break;
+        await _enterReshape(feature);
     }
+  }
+
+  Future<void> _enterReshape(Feature feature) async {
+    // Distance gate — mirrors _handleFeatureTap; await the resolved position.
+    final pos = await _resolvePosition();
+    if (!mounted) return;
+
+    String? overrideReason;
+    if (pos != null) {
+      final ring = decodePolygonGeojson(feature.geometryGeojson);
+      if (ring == null || ring.isEmpty) return;
+      final centroid = polygonCentroid(ring);
+      final meters = haversineMeters(
+        pos.latitude,
+        pos.longitude,
+        centroid.lat,
+        centroid.lng,
+      );
+      if (meters > 50.0) {
+        if (!mounted) return;
+        overrideReason = await showOverrideReasonDialog(
+          context,
+          distanceMeters: meters,
+        );
+        if (overrideReason == null || overrideReason.trim().isEmpty) {
+          return; // user cancelled or empty
+        }
+      }
+    }
+
+    if (!mounted) return;
+    ref.read(reshapeModeControllerProvider.notifier).enterReshape(
+          feature: feature,
+          overrideReason: overrideReason,
+        );
+
+    ref.read(analyticsServiceProvider).track(
+      'map.reshape.entered',
+      properties: {
+        'feature_id': feature.id,
+        'vertex_count': _vertexCount(feature.geometryGeojson),
+        'override_used': overrideReason != null,
+      },
+    );
+  }
+
+  int _vertexCount(String geojson) {
+    final ring = decodePolygonGeojson(geojson);
+    if (ring == null || ring.isEmpty) return 0;
+    // Strip the duplicated closing vertex if present.
+    if (ring.first[0] == ring.last[0] && ring.first[1] == ring.last[1]) {
+      return ring.length - 1;
+    }
+    return ring.length;
   }
 
   Future<void> _handleFeatureTap(Feature f) async {
