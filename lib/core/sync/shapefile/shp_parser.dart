@@ -1,11 +1,13 @@
 // lib/core/sync/shapefile/shp_parser.dart
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 
 sealed class ShpGeometry {
   const ShpGeometry();
   Map<String, dynamic> toGeoJson();
 }
 
+@immutable
 class ShpPolygon extends ShpGeometry {
   const ShpPolygon(this.rings);
   final List<List<List<double>>> rings;
@@ -17,6 +19,7 @@ class ShpPolygon extends ShpGeometry {
       };
 }
 
+@immutable
 class ShpPolyline extends ShpGeometry {
   const ShpPolyline(this.parts);
   final List<List<List<double>>> parts;
@@ -86,15 +89,15 @@ class ShpParser {
     for (var i = 0; i < numPoints; i++) {
       final x = data.getFloat64(pointsBase + i * 16, Endian.little);
       final y = data.getFloat64(pointsBase + i * 16 + 8, Endian.little);
-      allPoints.add([x, y]);
+      allPoints.add(List<double>.unmodifiable([x, y]));
     }
 
     final result = <List<List<double>>>[];
     for (var i = 0; i < numParts; i++) {
       final start = partIndices[i];
       final end = i < numParts - 1 ? partIndices[i + 1] : numPoints;
-      result.add(allPoints.sublist(start, end));
+      result.add(List.unmodifiable(allPoints.sublist(start, end)));
     }
-    return result;
+    return List.unmodifiable(result);
   }
 }
