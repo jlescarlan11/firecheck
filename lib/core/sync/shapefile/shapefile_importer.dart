@@ -9,7 +9,9 @@ import 'package:firecheck/core/sync/shapefile/dbf_parser.dart';
 import 'package:firecheck/core/sync/shapefile/reprojector.dart';
 import 'package:firecheck/core/sync/shapefile/shapefile_validator.dart';
 import 'package:firecheck/core/sync/shapefile/shp_parser.dart';
+import 'package:flutter/foundation.dart';
 
+@immutable
 class ImportResult {
   const ImportResult({
     required this.buildingCount,
@@ -52,34 +54,37 @@ class ShapefileImporter {
       }
     }
 
-    // Parse DBF fields if present; otherwise use empty lists so that the
-    // validator's file-presence check fires before any null-dereference.
-    final boundaryFields = files.containsKey('boundary.dbf')
-        ? dbfParser.parse(files['boundary.dbf']!).fields
-        : <DbfField>[];
-    final buildingFields = files.containsKey('buildings.dbf')
-        ? dbfParser.parse(files['buildings.dbf']!).fields
-        : <DbfField>[];
-    final roadFields = files.containsKey('roads.dbf')
-        ? dbfParser.parse(files['roads.dbf']!).fields
-        : <DbfField>[];
+    // Parse each DBF file once; cache the full result so fields (for
+    // validation) and records (for insertion) come from the same parse.
+    final boundaryDbf = files.containsKey('boundary.dbf')
+        ? dbfParser.parse(files['boundary.dbf']!)
+        : null;
+    final buildingDbf = files.containsKey('buildings.dbf')
+        ? dbfParser.parse(files['buildings.dbf']!)
+        : null;
+    final roadDbf = files.containsKey('roads.dbf')
+        ? dbfParser.parse(files['roads.dbf']!)
+        : null;
 
     validator.validate(files, {
-      'boundary': boundaryFields,
-      'buildings': buildingFields,
-      'roads': roadFields,
+      'boundary': boundaryDbf?.fields ?? [],
+      'buildings': buildingDbf?.fields ?? [],
+      'roads': roadDbf?.fields ?? [],
     });
 
-    // Parse all geometries and records
+    // Parse all geometries
     final boundaryGeoms = _shpParser.parse(files['boundary.shp']!);
     final buildingGeoms = _shpParser.parse(files['buildings.shp']!);
     final roadGeoms = _shpParser.parse(files['roads.shp']!);
 
-    final buildingRecords = dbfParser.parse(files['buildings.dbf']!).records;
-    final roadRecords = dbfParser.parse(files['roads.dbf']!).records;
+    final buildingRecords = buildingDbf?.records ?? [];
+    final roadRecords = roadDbf?.records ?? [];
 
     // Reproject boundary (first polygon, all rings)
     final boundaryGeojson = _reprojectGeom(boundaryGeoms.first);
+
+    // Capture a single timestamp for all rows written in this import
+    final now = DateTime.now();
 
     // Write everything in a single Drift transaction
     await db.transaction(() async {
@@ -89,10 +94,10 @@ class ShapefileImporter {
               enumeratorId: Value(enumeratorId),
               campaignId: Value(assignmentId),
               boundaryPolygonGeojson: Value(jsonEncode(boundaryGeojson)),
-              downloadedAt: Value(DateTime.now()),
+              downloadedAt: Value(now),
               driveModifiedTime: Value(driveModifiedTime),
               driveFolderId: Value(driveFolderId),
-              createdAt: Value(DateTime.now()),
+              createdAt: Value(now),
             ),
           );
 

@@ -209,8 +209,8 @@ void main() {
     arc.addFile(ArchiveFile('boundary.shp', -1, Uint8List(0)));
     final zipBytes = Uint8List.fromList(ZipEncoder().encode(arc)!);
 
-    expect(
-      () => importer.importInputZip(zipBytes, 'x', 't', 'f', 'e'),
+    await expectLater(
+      importer.importInputZip(zipBytes, 'x', 't', 'f', 'e'),
       throwsA(isA<ShapefileValidationFailure>()),
     );
 
@@ -219,8 +219,8 @@ void main() {
   });
 
   test('corrupt zip → throws, no Drift writes', () async {
-    expect(
-      () => importer.importInputZip(Uint8List(10), 'x', 't', 'f', 'e'),
+    await expectLater(
+      importer.importInputZip(Uint8List(10), 'x', 't', 'f', 'e'),
       throwsA(anything),
     );
     expect(await db.select(db.assignments).get(), isEmpty);
