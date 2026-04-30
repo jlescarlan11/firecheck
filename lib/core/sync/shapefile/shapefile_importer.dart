@@ -111,7 +111,7 @@ class ShapefileImporter {
                 featureType: 'building',
                 geometryGeojson: jsonEncode(_reprojectGeom(buildingGeoms[i])),
                 isNew: const Value(false),
-                createdAt: DateTime.now(),
+                createdAt: now,
               ),
             );
       }
@@ -126,7 +126,7 @@ class ShapefileImporter {
                 featureType: 'road',
                 geometryGeojson: jsonEncode(_reprojectGeom(roadGeoms[i])),
                 isNew: const Value(false),
-                createdAt: DateTime.now(),
+                createdAt: now,
               ),
             );
       }
