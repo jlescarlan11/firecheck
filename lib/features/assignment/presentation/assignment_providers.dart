@@ -53,7 +53,10 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
   Future<void> start() async {
     state = const FetchingFeatures();
     try {
-      await assignmentRepo.fetchAndUpsertCurrent();
+      // TODO(US-17 T17): Rewrite GetMapsNotifier to use Drive + shapefile fetch
+      // instead of fetchAndUpsertCurrent. For now, this will be implemented
+      // when T17 refactors the entire Get Maps flow.
+      // await assignmentRepo.fetchAndUpsertCurrent();
     } on Failure catch (f) {
       state = GetMapsError(f);
       return;
