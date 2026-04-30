@@ -2,7 +2,7 @@
 import 'package:firecheck/core/drive/drive_assignment.dart';
 import 'package:firecheck/core/drive/drive_download_event.dart';
 
-abstract class DriveApi {
+abstract interface class DriveApi {
   /// Lists /firecheck/inbox/ subfolders readable by the signed-in user.
   Future<List<DriveAssignment>> listAssignments();
 

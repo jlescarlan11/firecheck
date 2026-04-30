@@ -49,11 +49,14 @@ void main() {
     expect(events.last, isA<DriveDownloadComplete>());
   });
 
-  test('downloadInputZip throws when downloadError configured', () async {
+  test('downloadInputZip emits error when downloadError configured', () async {
     final api = FakeDriveApi(
       assignments: [_brgy001],
       downloadError: Exception('timeout'),
     );
-    expect(api.downloadInputZip('brgy-001').first, throwsException);
+    expect(
+      api.downloadInputZip('brgy-001'),
+      emitsError(isA<Exception>()),
+    );
   });
 }

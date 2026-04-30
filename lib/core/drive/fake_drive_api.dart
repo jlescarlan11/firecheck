@@ -33,10 +33,20 @@ class FakeDriveApi implements DriveApi {
   }
 
   @override
-  Future<int> getInputZipSize(String assignmentId) async => _zipSize;
+  Future<int> getInputZipSize(String assignmentId) async {
+    assert(
+      _assignments.any((a) => a.assignmentId == assignmentId),
+      'FakeDriveApi: unknown assignmentId "$assignmentId"',
+    );
+    return _zipSize;
+  }
 
   @override
   Stream<DriveDownloadEvent> downloadInputZip(String assignmentId) async* {
+    assert(
+      _assignments.any((a) => a.assignmentId == assignmentId),
+      'FakeDriveApi: unknown assignmentId "$assignmentId"',
+    );
     if (_downloadError != null) throw _downloadError;
     if (_downloadEvents != null) {
       for (final e in _downloadEvents) {
