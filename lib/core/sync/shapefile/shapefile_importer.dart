@@ -84,15 +84,15 @@ class ShapefileImporter {
     // Write everything in a single Drift transaction
     await db.transaction(() async {
       await db.into(db.assignments).insertOnConflictUpdate(
-            AssignmentsCompanion.insert(
-              id: assignmentId,
-              enumeratorId: enumeratorId,
-              campaignId: assignmentId,
-              boundaryPolygonGeojson: jsonEncode(boundaryGeojson),
+            AssignmentsCompanion(
+              id: Value(assignmentId),
+              enumeratorId: Value(enumeratorId),
+              campaignId: Value(assignmentId),
+              boundaryPolygonGeojson: Value(jsonEncode(boundaryGeojson)),
               downloadedAt: Value(DateTime.now()),
               driveModifiedTime: Value(driveModifiedTime),
               driveFolderId: Value(driveFolderId),
-              createdAt: DateTime.now(),
+              createdAt: Value(DateTime.now()),
             ),
           );
 
