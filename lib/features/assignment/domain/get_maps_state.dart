@@ -20,7 +20,8 @@ class DiscoveringAssignments extends GetMapsState {
 }
 
 class PickingAssignment extends GetMapsState {
-  const PickingAssignment({required this.assignments, required this.selectedId});
+  PickingAssignment({required List<DriveAssignment> assignments, required this.selectedId})
+      : assignments = List.unmodifiable(assignments);
   final List<DriveAssignment> assignments;
   final String selectedId;
   @override
