@@ -11,6 +11,8 @@ class Assignments extends Table {
       text().withDefault(const Constant('assigned'))(); // assigned|in_progress|submitted
   BoolColumn get closedRemotely => boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime()();
+  TextColumn get driveModifiedTime => text().nullable()();
+  TextColumn get driveFolderId => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

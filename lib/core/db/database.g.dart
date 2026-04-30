@@ -341,6 +341,18 @@ class $AssignmentsTable extends Assignments
   late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
       'created_at', aliasedName, false,
       type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _driveModifiedTimeMeta =
+      const VerificationMeta('driveModifiedTime');
+  @override
+  late final GeneratedColumn<String> driveModifiedTime =
+      GeneratedColumn<String>('drive_modified_time', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _driveFolderIdMeta =
+      const VerificationMeta('driveFolderId');
+  @override
+  late final GeneratedColumn<String> driveFolderId = GeneratedColumn<String>(
+      'drive_folder_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -351,7 +363,9 @@ class $AssignmentsTable extends Assignments
         submittedAt,
         status,
         closedRemotely,
-        createdAt
+        createdAt,
+        driveModifiedTime,
+        driveFolderId
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -420,6 +434,18 @@ class $AssignmentsTable extends Assignments
     } else if (isInserting) {
       context.missing(_createdAtMeta);
     }
+    if (data.containsKey('drive_modified_time')) {
+      context.handle(
+          _driveModifiedTimeMeta,
+          driveModifiedTime.isAcceptableOrUnknown(
+              data['drive_modified_time']!, _driveModifiedTimeMeta));
+    }
+    if (data.containsKey('drive_folder_id')) {
+      context.handle(
+          _driveFolderIdMeta,
+          driveFolderId.isAcceptableOrUnknown(
+              data['drive_folder_id']!, _driveFolderIdMeta));
+    }
     return context;
   }
 
@@ -448,6 +474,10 @@ class $AssignmentsTable extends Assignments
           .read(DriftSqlType.bool, data['${effectivePrefix}closed_remotely'])!,
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      driveModifiedTime: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}drive_modified_time']),
+      driveFolderId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}drive_folder_id']),
     );
   }
 
@@ -467,6 +497,8 @@ class Assignment extends DataClass implements Insertable<Assignment> {
   final String status;
   final bool closedRemotely;
   final DateTime createdAt;
+  final String? driveModifiedTime;
+  final String? driveFolderId;
   const Assignment(
       {required this.id,
       required this.enumeratorId,
@@ -476,7 +508,9 @@ class Assignment extends DataClass implements Insertable<Assignment> {
       this.submittedAt,
       required this.status,
       required this.closedRemotely,
-      required this.createdAt});
+      required this.createdAt,
+      this.driveModifiedTime,
+      this.driveFolderId});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -493,6 +527,12 @@ class Assignment extends DataClass implements Insertable<Assignment> {
     map['status'] = Variable<String>(status);
     map['closed_remotely'] = Variable<bool>(closedRemotely);
     map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || driveModifiedTime != null) {
+      map['drive_modified_time'] = Variable<String>(driveModifiedTime);
+    }
+    if (!nullToAbsent || driveFolderId != null) {
+      map['drive_folder_id'] = Variable<String>(driveFolderId);
+    }
     return map;
   }
 
@@ -511,6 +551,12 @@ class Assignment extends DataClass implements Insertable<Assignment> {
       status: Value(status),
       closedRemotely: Value(closedRemotely),
       createdAt: Value(createdAt),
+      driveModifiedTime: driveModifiedTime == null && nullToAbsent
+          ? const Value.absent()
+          : Value(driveModifiedTime),
+      driveFolderId: driveFolderId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(driveFolderId),
     );
   }
 
@@ -528,6 +574,9 @@ class Assignment extends DataClass implements Insertable<Assignment> {
       status: serializer.fromJson<String>(json['status']),
       closedRemotely: serializer.fromJson<bool>(json['closedRemotely']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      driveModifiedTime:
+          serializer.fromJson<String?>(json['driveModifiedTime']),
+      driveFolderId: serializer.fromJson<String?>(json['driveFolderId']),
     );
   }
   @override
@@ -544,6 +593,8 @@ class Assignment extends DataClass implements Insertable<Assignment> {
       'status': serializer.toJson<String>(status),
       'closedRemotely': serializer.toJson<bool>(closedRemotely),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'driveModifiedTime': serializer.toJson<String?>(driveModifiedTime),
+      'driveFolderId': serializer.toJson<String?>(driveFolderId),
     };
   }
 
@@ -556,7 +607,9 @@ class Assignment extends DataClass implements Insertable<Assignment> {
           Value<DateTime?> submittedAt = const Value.absent(),
           String? status,
           bool? closedRemotely,
-          DateTime? createdAt}) =>
+          DateTime? createdAt,
+          Value<String?> driveModifiedTime = const Value.absent(),
+          Value<String?> driveFolderId = const Value.absent()}) =>
       Assignment(
         id: id ?? this.id,
         enumeratorId: enumeratorId ?? this.enumeratorId,
@@ -569,6 +622,11 @@ class Assignment extends DataClass implements Insertable<Assignment> {
         status: status ?? this.status,
         closedRemotely: closedRemotely ?? this.closedRemotely,
         createdAt: createdAt ?? this.createdAt,
+        driveModifiedTime: driveModifiedTime.present
+            ? driveModifiedTime.value
+            : this.driveModifiedTime,
+        driveFolderId:
+            driveFolderId.present ? driveFolderId.value : this.driveFolderId,
       );
   Assignment copyWithCompanion(AssignmentsCompanion data) {
     return Assignment(
@@ -591,6 +649,12 @@ class Assignment extends DataClass implements Insertable<Assignment> {
           ? data.closedRemotely.value
           : this.closedRemotely,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      driveModifiedTime: data.driveModifiedTime.present
+          ? data.driveModifiedTime.value
+          : this.driveModifiedTime,
+      driveFolderId: data.driveFolderId.present
+          ? data.driveFolderId.value
+          : this.driveFolderId,
     );
   }
 
@@ -605,7 +669,9 @@ class Assignment extends DataClass implements Insertable<Assignment> {
           ..write('submittedAt: $submittedAt, ')
           ..write('status: $status, ')
           ..write('closedRemotely: $closedRemotely, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('driveModifiedTime: $driveModifiedTime, ')
+          ..write('driveFolderId: $driveFolderId')
           ..write(')'))
         .toString();
   }
@@ -620,7 +686,9 @@ class Assignment extends DataClass implements Insertable<Assignment> {
       submittedAt,
       status,
       closedRemotely,
-      createdAt);
+      createdAt,
+      driveModifiedTime,
+      driveFolderId);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -633,7 +701,9 @@ class Assignment extends DataClass implements Insertable<Assignment> {
           other.submittedAt == this.submittedAt &&
           other.status == this.status &&
           other.closedRemotely == this.closedRemotely &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.driveModifiedTime == this.driveModifiedTime &&
+          other.driveFolderId == this.driveFolderId);
 }
 
 class AssignmentsCompanion extends UpdateCompanion<Assignment> {
@@ -646,6 +716,8 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
   final Value<String> status;
   final Value<bool> closedRemotely;
   final Value<DateTime> createdAt;
+  final Value<String?> driveModifiedTime;
+  final Value<String?> driveFolderId;
   final Value<int> rowid;
   const AssignmentsCompanion({
     this.id = const Value.absent(),
@@ -657,6 +729,8 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
     this.status = const Value.absent(),
     this.closedRemotely = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.driveModifiedTime = const Value.absent(),
+    this.driveFolderId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   AssignmentsCompanion.insert({
@@ -669,6 +743,8 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
     this.status = const Value.absent(),
     this.closedRemotely = const Value.absent(),
     required DateTime createdAt,
+    this.driveModifiedTime = const Value.absent(),
+    this.driveFolderId = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
         enumeratorId = Value(enumeratorId),
@@ -685,6 +761,8 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
     Expression<String>? status,
     Expression<bool>? closedRemotely,
     Expression<DateTime>? createdAt,
+    Expression<String>? driveModifiedTime,
+    Expression<String>? driveFolderId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -698,6 +776,8 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
       if (status != null) 'status': status,
       if (closedRemotely != null) 'closed_remotely': closedRemotely,
       if (createdAt != null) 'created_at': createdAt,
+      if (driveModifiedTime != null) 'drive_modified_time': driveModifiedTime,
+      if (driveFolderId != null) 'drive_folder_id': driveFolderId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -712,6 +792,8 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
       Value<String>? status,
       Value<bool>? closedRemotely,
       Value<DateTime>? createdAt,
+      Value<String?>? driveModifiedTime,
+      Value<String?>? driveFolderId,
       Value<int>? rowid}) {
     return AssignmentsCompanion(
       id: id ?? this.id,
@@ -724,6 +806,8 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
       status: status ?? this.status,
       closedRemotely: closedRemotely ?? this.closedRemotely,
       createdAt: createdAt ?? this.createdAt,
+      driveModifiedTime: driveModifiedTime ?? this.driveModifiedTime,
+      driveFolderId: driveFolderId ?? this.driveFolderId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -759,6 +843,12 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (driveModifiedTime.present) {
+      map['drive_modified_time'] = Variable<String>(driveModifiedTime.value);
+    }
+    if (driveFolderId.present) {
+      map['drive_folder_id'] = Variable<String>(driveFolderId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -777,6 +867,8 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
           ..write('status: $status, ')
           ..write('closedRemotely: $closedRemotely, ')
           ..write('createdAt: $createdAt, ')
+          ..write('driveModifiedTime: $driveModifiedTime, ')
+          ..write('driveFolderId: $driveFolderId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -5579,6 +5671,8 @@ typedef $$AssignmentsTableCreateCompanionBuilder = AssignmentsCompanion
   Value<String> status,
   Value<bool> closedRemotely,
   required DateTime createdAt,
+  Value<String?> driveModifiedTime,
+  Value<String?> driveFolderId,
   Value<int> rowid,
 });
 typedef $$AssignmentsTableUpdateCompanionBuilder = AssignmentsCompanion
@@ -5592,6 +5686,8 @@ typedef $$AssignmentsTableUpdateCompanionBuilder = AssignmentsCompanion
   Value<String> status,
   Value<bool> closedRemotely,
   Value<DateTime> createdAt,
+  Value<String?> driveModifiedTime,
+  Value<String?> driveFolderId,
   Value<int> rowid,
 });
 
@@ -5632,6 +5728,13 @@ class $$AssignmentsTableFilterComposer
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get driveModifiedTime => $composableBuilder(
+      column: $table.driveModifiedTime,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get driveFolderId => $composableBuilder(
+      column: $table.driveFolderId, builder: (column) => ColumnFilters(column));
 }
 
 class $$AssignmentsTableOrderingComposer
@@ -5673,6 +5776,14 @@ class $$AssignmentsTableOrderingComposer
 
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get driveModifiedTime => $composableBuilder(
+      column: $table.driveModifiedTime,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get driveFolderId => $composableBuilder(
+      column: $table.driveFolderId,
+      builder: (column) => ColumnOrderings(column));
 }
 
 class $$AssignmentsTableAnnotationComposer
@@ -5710,6 +5821,12 @@ class $$AssignmentsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get driveModifiedTime => $composableBuilder(
+      column: $table.driveModifiedTime, builder: (column) => column);
+
+  GeneratedColumn<String> get driveFolderId => $composableBuilder(
+      column: $table.driveFolderId, builder: (column) => column);
 }
 
 class $$AssignmentsTableTableManager extends RootTableManager<
@@ -5744,6 +5861,8 @@ class $$AssignmentsTableTableManager extends RootTableManager<
             Value<String> status = const Value.absent(),
             Value<bool> closedRemotely = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
+            Value<String?> driveModifiedTime = const Value.absent(),
+            Value<String?> driveFolderId = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               AssignmentsCompanion(
@@ -5756,6 +5875,8 @@ class $$AssignmentsTableTableManager extends RootTableManager<
             status: status,
             closedRemotely: closedRemotely,
             createdAt: createdAt,
+            driveModifiedTime: driveModifiedTime,
+            driveFolderId: driveFolderId,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -5768,6 +5889,8 @@ class $$AssignmentsTableTableManager extends RootTableManager<
             Value<String> status = const Value.absent(),
             Value<bool> closedRemotely = const Value.absent(),
             required DateTime createdAt,
+            Value<String?> driveModifiedTime = const Value.absent(),
+            Value<String?> driveFolderId = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               AssignmentsCompanion.insert(
@@ -5780,6 +5903,8 @@ class $$AssignmentsTableTableManager extends RootTableManager<
             status: status,
             closedRemotely: closedRemotely,
             createdAt: createdAt,
+            driveModifiedTime: driveModifiedTime,
+            driveFolderId: driveFolderId,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
