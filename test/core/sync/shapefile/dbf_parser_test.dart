@@ -7,19 +7,20 @@ import 'package:flutter_test/flutter_test.dart';
 Uint8List buildDbf({
   required List<({String name, int length})> fields,
   required List<Map<String, String>> records,
+  List<bool>? deleted,
 }) {
   final numFields = fields.length;
   final headerSize = 32 + numFields * 32 + 1;
   final recordSize = 1 + fields.fold<int>(0, (s, f) => s + f.length);
   final totalSize = headerSize + records.length * recordSize + 1;
 
-  final bytes = Uint8List(totalSize);
+  final bytes = Uint8List(totalSize as int);
   final data = ByteData.sublistView(bytes);
 
   bytes[0] = 3; // dBASE III
   data.setInt32(4, records.length, Endian.little);
-  data.setInt16(8, headerSize, Endian.little);
-  data.setInt16(10, recordSize, Endian.little);
+  data.setUint16(8, headerSize as int, Endian.little);
+  data.setUint16(10, recordSize as int, Endian.little);
 
   for (var i = 0; i < fields.length; i++) {
     final off = 32 + i * 32;
@@ -34,17 +35,18 @@ Uint8List buildDbf({
 
   for (var i = 0; i < records.length; i++) {
     var off = headerSize + i * recordSize;
-    bytes[off] = 0x20; // active record
+    final isDeleted = deleted != null && i < deleted.length && deleted[i];
+    bytes[off as int] = isDeleted ? 0x2A : 0x20; // deleted vs active
     off++;
     for (final field in fields) {
       final val = (records[i][field.name] ?? '').padRight(field.length);
       for (var j = 0; j < field.length; j++) {
-        bytes[off + j] = (j < val.length ? val.codeUnitAt(j) : 0x20) as int;
+        bytes[(off + j) as int] = j < val.length ? val.codeUnitAt(j) : 0x20;
       }
       off += field.length;
     }
   }
-  bytes[totalSize - 1] = 0x1A; // EOF
+  bytes[(totalSize - 1) as int] = 0x1A; // EOF
   return bytes;
 }
 
@@ -83,5 +85,19 @@ void main() {
   test('returns zero records for empty record section', () {
     final dbf = buildDbf(fields: [(name: 'feat_id', length: 10)], records: []);
     expect(parser.parse(dbf).records, isEmpty);
+  });
+
+  test('skips deleted records (0x2A flag)', () {
+    final dbf = buildDbf(
+      fields: [(name: 'feat_id', length: 10)],
+      records: [
+        {'feat_id': 'DELETED'},
+        {'feat_id': 'ACTIVE'},
+      ],
+      deleted: [true, false],
+    );
+    final result = parser.parse(dbf);
+    expect(result.records, hasLength(1));
+    expect(result.records.first['feat_id'], 'ACTIVE');
   });
 }

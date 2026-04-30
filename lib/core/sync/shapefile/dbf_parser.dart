@@ -1,6 +1,8 @@
 // lib/core/sync/shapefile/dbf_parser.dart
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 
+@immutable
 class DbfField {
   const DbfField({required this.name, required this.type, required this.length});
   final String name;
@@ -8,6 +10,7 @@ class DbfField {
   final int length;
 }
 
+@immutable
 class DbfResult {
   const DbfResult({required this.fields, required this.records});
   final List<DbfField> fields;
@@ -20,8 +23,8 @@ class DbfParser {
   DbfResult parse(Uint8List bytes) {
     final data = ByteData.sublistView(bytes);
     final recordCount = data.getInt32(4, Endian.little);
-    final headerSize = data.getInt16(8, Endian.little);
-    final recordSize = data.getInt16(10, Endian.little);
+    final headerSize = data.getUint16(8, Endian.little);
+    final recordSize = data.getUint16(10, Endian.little);
 
     final fields = <DbfField>[];
     var offset = 32;
@@ -56,6 +59,11 @@ class DbfParser {
       recordOffset += recordSize;
     }
 
-    return DbfResult(fields: fields, records: records);
+    return DbfResult(
+      fields: List.unmodifiable(fields),
+      records: List.unmodifiable(
+        records.map((r) => Map<String, String>.unmodifiable(r)).toList(),
+      ),
+    );
   }
 }
