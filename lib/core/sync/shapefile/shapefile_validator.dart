@@ -2,7 +2,9 @@
 import 'dart:typed_data';
 import 'package:firecheck/core/errors/failure.dart';
 import 'package:firecheck/core/sync/shapefile/dbf_parser.dart';
+import 'package:flutter/foundation.dart';
 
+@immutable
 class ShapefileValidator {
   const ShapefileValidator();
 
