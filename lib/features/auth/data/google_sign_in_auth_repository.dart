@@ -14,7 +14,10 @@ class GoogleSignInAuthRepository implements GoogleAuthRepository {
   final GoogleSignIn _googleSignIn;
   final FlutterSecureStorage _secureStorage;
 
-  static const _tokenKey = 'google_refresh_token';
+  // Stores an idToken or accessToken as a presence/persistence signal.
+  // This is not a refresh token; callers must handle token expiry (401s)
+  // by calling signIn() again.
+  static const _tokenKey = 'google_id_token';
 
   @override
   Future<bool> isSignedIn() async {

@@ -12,15 +12,26 @@ class GoogleAuthNotifier extends StateNotifier<GoogleAuthState> {
   final GoogleAuthRepository _repo;
 
   Future<void> _init() async {
-    final signed = await _repo.isSignedIn();
-    if (!mounted) return;
-    state = signed ? GoogleAuthState.signedIn : GoogleAuthState.signedOut;
+    try {
+      final signed = await _repo.isSignedIn();
+      if (!mounted) return;
+      state = signed ? GoogleAuthState.signedIn : GoogleAuthState.signedOut;
+    } catch (_) {
+      if (!mounted) return;
+      state = GoogleAuthState.signedOut;
+    }
   }
 
   Future<void> signIn() async {
-    await _repo.signIn();
-    if (!mounted) return;
-    state = GoogleAuthState.signedIn;
+    try {
+      await _repo.signIn();
+      if (!mounted) return;
+      state = GoogleAuthState.signedIn;
+    } catch (e) {
+      if (!mounted) return;
+      state = GoogleAuthState.signedOut;
+      rethrow;
+    }
   }
 
   Future<void> signOut() async {
