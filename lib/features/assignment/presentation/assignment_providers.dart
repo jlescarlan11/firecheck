@@ -51,7 +51,7 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
   static const _maxZoom = 17;
 
   Future<void> start() async {
-    state = const FetchingFeatures();
+    state = const DiscoveringAssignments();
     try {
       // TODO(US-17 T17): Rewrite GetMapsNotifier to use Drive + shapefile fetch
       // instead of fetchAndUpsertCurrent. For now, this will be implemented

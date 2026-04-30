@@ -23,7 +23,11 @@ class GetMapsScreen extends ConsumerWidget {
               onStart: () =>
                   ref.read(getMapsNotifierProvider.notifier).start(),
             ),
-          FetchingFeatures() => const _ProgressView(state: FetchingFeatures()),
+          DiscoveringAssignments() => const _ProgressView(state: DiscoveringAssignments()),
+          PickingAssignment() => const _ProgressView(state: DiscoveringAssignments()),
+          InsufficientStorage() => const _ProgressView(state: DiscoveringAssignments()),
+          DownloadingShapefiles() => _ProgressView(state: state),
+          ImportingShapefiles() => const _ProgressView(state: ImportingShapefiles()),
           DownloadingTiles() => _ProgressView(state: state),
           Ready() => _ReadyView(state: state),
           Cancelled() => _IdleView(
@@ -75,7 +79,11 @@ class _ProgressView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context)!;
-    final label = state is FetchingFeatures
+    final label = state is DiscoveringAssignments ||
+            state is PickingAssignment ||
+            state is InsufficientStorage ||
+            state is ImportingShapefiles ||
+            state is DownloadingShapefiles
         ? l.fetchingFeatures
         : l.downloadingTiles;
     final progress = state.overallProgress;
