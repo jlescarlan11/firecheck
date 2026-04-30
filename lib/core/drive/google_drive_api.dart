@@ -20,7 +20,6 @@ class GoogleDriveApi implements DriveApi {
 
   Future<gdrive.DriveApi> _api() async {
     final client = await _googleSignIn.authenticatedClient();
-    // ignore: only_throw_errors
     if (client == null) throw const AuthFailure('Not signed in to Google');
     return gdrive.DriveApi(client);
   }
@@ -88,7 +87,7 @@ class GoogleDriveApi implements DriveApi {
   @override
   Future<int> getInputZipSize(String assignmentId) async {
     final fileId = _fileIdCache[assignmentId];
-    if (fileId == null) return 0;
+    if (fileId == null) throw const NetworkFailure('Assignment file not cached');
     final api = await _api();
     final meta = await api.files.get(fileId, $fields: 'size') as gdrive.File;
     return int.tryParse(meta.size ?? '0') ?? 0;
@@ -97,7 +96,6 @@ class GoogleDriveApi implements DriveApi {
   @override
   Stream<DriveDownloadEvent> downloadInputZip(String assignmentId) async* {
     final fileId = _fileIdCache[assignmentId];
-    // ignore: only_throw_errors
     if (fileId == null) throw const NetworkFailure('Assignment file not cached');
     final api = await _api();
 

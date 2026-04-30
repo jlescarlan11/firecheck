@@ -1,7 +1,7 @@
 /// Base sealed class for expected, recoverable failure modes surfaced from
 /// repositories to the UI. Unknown/unexpected exceptions should propagate
 /// as regular `Object` errors and be caught by the app-level error zone.
-sealed class Failure {
+sealed class Failure implements Exception {
   const Failure(this.message);
   final String message;
 
