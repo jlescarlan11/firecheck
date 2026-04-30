@@ -45,3 +45,17 @@ class AssignmentClosedFailure extends Failure {
   const AssignmentClosedFailure()
       : super('This assignment was closed by your supervisor.');
 }
+
+/// Shapefile import rejected: wrong CRS, missing layer, or missing column.
+class ShapefileValidationFailure extends Failure {
+  const ShapefileValidationFailure(super.message);
+}
+
+/// Drive inbox has no folders accessible to the signed-in user.
+class NoAssignmentsFailure extends Failure {
+  const NoAssignmentsFailure()
+      : super(
+          'No assignments shared with you yet — ask your supervisor to share '
+          'the assignment folder with the Google account you signed in with.',
+        );
+}
