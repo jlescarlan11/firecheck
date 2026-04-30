@@ -1,3 +1,6 @@
+import 'package:flutter/foundation.dart';
+
+@immutable
 class DriveAssignment {
   const DriveAssignment({
     required this.assignmentId,
@@ -20,4 +23,18 @@ class DriveAssignment {
         driveFolderId: driveFolderId,
         alreadyDownloaded: alreadyDownloaded ?? this.alreadyDownloaded,
       );
+
+  @override
+  bool operator ==(Object other) =>
+      other is DriveAssignment &&
+      other.assignmentId == assignmentId &&
+      other.inputZipFileId == inputZipFileId &&
+      other.inputZipModifiedTime == inputZipModifiedTime &&
+      other.driveFolderId == driveFolderId &&
+      other.alreadyDownloaded == alreadyDownloaded;
+
+  @override
+  int get hashCode => Object.hash(
+      assignmentId, inputZipFileId, inputZipModifiedTime,
+      driveFolderId, alreadyDownloaded);
 }

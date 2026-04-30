@@ -22,6 +22,21 @@ void main() {
       expect(updated.assignmentId, 'brgy-001');
       expect(updated.inputZipFileId, 'file-xyz');
     });
+
+    test('equality: same fields are equal', () {
+      const other = DriveAssignment(
+        assignmentId: 'brgy-001',
+        inputZipFileId: 'file-xyz',
+        inputZipModifiedTime: '2026-04-28T10:00:00Z',
+        driveFolderId: 'folder-abc',
+      );
+      expect(base, equals(other));
+    });
+
+    test('equality: different alreadyDownloaded are not equal', () {
+      final downloaded = base.copyWith(alreadyDownloaded: true);
+      expect(base, isNot(equals(downloaded)));
+    });
   });
 
   group('DriveDownloadEvent', () {
