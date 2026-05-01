@@ -1,3 +1,4 @@
+// lib/features/assignment/presentation/get_maps_screen.dart
 import 'package:firecheck/core/errors/failure.dart';
 import 'package:firecheck/features/assignment/domain/get_maps_state.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
@@ -20,19 +21,17 @@ class GetMapsScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(16),
         child: switch (state) {
           Idle() => _IdleView(
-              onStart: () =>
-                  ref.read(getMapsNotifierProvider.notifier).start(),
+              onStart: () => ref.read(getMapsNotifierProvider.notifier).start(),
             ),
-          DiscoveringAssignments() => const _ProgressView(state: DiscoveringAssignments()),
-          PickingAssignment() => const _ProgressView(state: DiscoveringAssignments()),
-          InsufficientStorage() => const _ProgressView(state: DiscoveringAssignments()),
-          DownloadingShapefiles() => _ProgressView(state: state),
-          ImportingShapefiles() => const _ProgressView(state: ImportingShapefiles()),
+          DiscoveringAssignments() => const _DiscoveringView(),
+          PickingAssignment() => _PickingAssignmentView(state: state),
+          InsufficientStorage() => _InsufficientStorageView(state: state),
+          DownloadingShapefiles() => _DownloadingShapefilesView(state: state),
+          ImportingShapefiles() => const _ImportingShapefilesView(),
           DownloadingTiles() => _ProgressView(state: state),
           Ready() => _ReadyView(state: state),
           Cancelled() => _IdleView(
-              onStart: () =>
-                  ref.read(getMapsNotifierProvider.notifier).start(),
+              onStart: () => ref.read(getMapsNotifierProvider.notifier).start(),
             ),
           GetMapsError(:final failure) => _ErrorView(
               failure: failure,
@@ -72,6 +71,181 @@ class _IdleView extends StatelessWidget {
   }
 }
 
+class _DiscoveringView extends StatelessWidget {
+  const _DiscoveringView();
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const CircularProgressIndicator(),
+        const SizedBox(height: 16),
+        Text(l.discoveringAssignments, textAlign: TextAlign.center),
+      ],
+    );
+  }
+}
+
+class _PickingAssignmentView extends ConsumerWidget {
+  const _PickingAssignmentView({required this.state});
+  final PickingAssignment state;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(l.pickAssignmentTitle,
+            style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 12),
+        Expanded(
+          child: ListView.separated(
+            itemCount: state.assignments.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (context, i) {
+              final a = state.assignments[i];
+              final selected = a.assignmentId == state.selectedId;
+              return InkWell(
+                onTap: () => ref
+                    .read(getMapsNotifierProvider.notifier)
+                    .selectAssignment(a.assignmentId),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: selected
+                          ? Theme.of(context).colorScheme.primary
+                          : Colors.grey.shade300,
+                      width: selected ? 2 : 1,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(a.assignmentId,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 2),
+                            Text(
+                              a.alreadyDownloaded
+                                  ? l.alreadyDownloadedBadge
+                                  : l.notDownloadedBadge,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (selected)
+                        Icon(Icons.check,
+                            color: Theme.of(context).colorScheme.primary),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 12),
+        FilledButton(
+          onPressed: () =>
+              ref.read(getMapsNotifierProvider.notifier).confirmDownload(),
+          child: Text(l.downloadSelected),
+        ),
+      ],
+    );
+  }
+}
+
+class _InsufficientStorageView extends StatelessWidget {
+  const _InsufficientStorageView({required this.state});
+  final InsufficientStorage state;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    final needed = (state.requiredBytes / 1048576).ceil();
+    final available = (state.availableBytes / 1048576).floor();
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.warning_amber_rounded,
+            size: 48, color: Theme.of(context).colorScheme.error),
+        const SizedBox(height: 12),
+        Text(l.insufficientStorageTitle,
+            style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 8),
+        Text(l.insufficientStorageBody(needed, available),
+            textAlign: TextAlign.center),
+        const SizedBox(height: 24),
+        FilledButton(
+          onPressed: null,
+          child: Text(l.downloadSelected),
+        ),
+        const SizedBox(height: 8),
+        Text(l.freeSpaceHint, style: Theme.of(context).textTheme.bodySmall),
+      ],
+    );
+  }
+}
+
+class _DownloadingShapefilesView extends ConsumerWidget {
+  const _DownloadingShapefilesView({required this.state});
+  final DownloadingShapefiles state;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context)!;
+    final progress = state.total == 0 ? null : state.downloaded / state.total;
+    final dl = (state.downloaded / 1048576).toStringAsFixed(1);
+    final tot = (state.total / 1048576).toStringAsFixed(1);
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(l.downloadingShapefiles, textAlign: TextAlign.center),
+        const SizedBox(height: 12),
+        LinearProgressIndicator(value: progress),
+        const SizedBox(height: 8),
+        Text(
+          '$dl / $tot MB',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        const SizedBox(height: 24),
+        OutlinedButton(
+          onPressed: () =>
+              ref.read(getMapsNotifierProvider.notifier).cancel(),
+          child: Text(l.cancelLabel),
+        ),
+      ],
+    );
+  }
+}
+
+class _ImportingShapefilesView extends StatelessWidget {
+  const _ImportingShapefilesView();
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const LinearProgressIndicator(),
+        const SizedBox(height: 16),
+        Text(l.importingShapefiles, textAlign: TextAlign.center),
+      ],
+    );
+  }
+}
+
 class _ProgressView extends ConsumerWidget {
   const _ProgressView({required this.state});
   final GetMapsState state;
@@ -79,13 +253,6 @@ class _ProgressView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context)!;
-    final label = state is DiscoveringAssignments ||
-            state is PickingAssignment ||
-            state is InsufficientStorage ||
-            state is ImportingShapefiles ||
-            state is DownloadingShapefiles
-        ? l.fetchingFeatures
-        : l.downloadingTiles;
     final progress = state.overallProgress;
     final (downloaded, total) = switch (state) {
       DownloadingTiles(:final downloadedBytes, :final totalBytes) =>
@@ -96,7 +263,7 @@ class _ProgressView extends ConsumerWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(label, textAlign: TextAlign.center),
+        Text(l.downloadingTiles, textAlign: TextAlign.center),
         const SizedBox(height: 12),
         LinearProgressIndicator(value: progress),
         const SizedBox(height: 8),
