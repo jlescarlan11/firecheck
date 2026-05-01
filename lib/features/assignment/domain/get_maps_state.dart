@@ -1,6 +1,7 @@
 // lib/features/assignment/domain/get_maps_state.dart
 import 'package:firecheck/core/drive/drive_assignment.dart';
 import 'package:firecheck/core/errors/failure.dart';
+import 'package:flutter/foundation.dart';
 
 sealed class GetMapsState {
   const GetMapsState();
@@ -48,6 +49,32 @@ class DownloadingShapefiles extends GetMapsState {
       0.02 + 0.28 * (total == 0 ? 0 : downloaded / total);
 }
 
+/// Validation is running after the download completed.
+class ValidatingShapefiles extends GetMapsState {
+  const ValidatingShapefiles();
+  @override
+  double get overallProgress => 0.30;
+}
+
+/// Validation passed with warnings. Holds the downloaded bytes so import can
+/// proceed without re-downloading after the user acknowledges.
+@immutable
+class ShapefileWarning extends GetMapsState {
+  ShapefileWarning({
+    required List<String> warnings,
+    required Map<String, Uint8List> pendingFiles,
+    required Map<String, String> expectedMd5s,
+  })  : warnings = List.unmodifiable(warnings),
+        pendingFiles = Map.unmodifiable(pendingFiles),
+        expectedMd5s = Map.unmodifiable(expectedMd5s);
+
+  final List<String> warnings;
+  final Map<String, Uint8List> pendingFiles;
+  final Map<String, String> expectedMd5s;
+  @override
+  double get overallProgress => 0.30;
+}
+
 class ImportingShapefiles extends GetMapsState {
   const ImportingShapefiles();
   @override
@@ -82,8 +109,11 @@ class Cancelled extends GetMapsState {
 }
 
 class GetMapsError extends GetMapsState {
-  const GetMapsError(this.failure);
+  const GetMapsError(this.failure, {this.isRetryable = false});
   final Failure failure;
+  // true for transient network errors (show Retry button);
+  // false for validation failures (show Contact Supervisor message).
+  final bool isRetryable;
   @override
   double get overallProgress => 0;
 }
