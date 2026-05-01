@@ -6,8 +6,8 @@ import 'package:firecheck/core/sync/presentation/sync_providers.dart';
 import 'package:firecheck/core/sync/shapefile/dbf_parser.dart';
 import 'package:firecheck/core/sync/shapefile/reprojector.dart';
 import 'package:firecheck/core/sync/shapefile/shapefile_importer.dart';
-import 'package:firecheck/core/sync/shapefile/shapefile_validator.dart';
 import 'package:firecheck/core/sync/worker/workmanager_dispatcher.dart';
+import 'package:firecheck/core/validation/supabase_validation_failure_reporter.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
 import 'package:firecheck/features/auth/data/google_sign_in_auth_repository.dart';
 import 'package:firecheck/features/auth/presentation/google_auth_providers.dart';
@@ -88,12 +88,16 @@ Future<void> main() async {
         shapefileImporterProvider.overrideWith(
           (ref) => ShapefileImporter(
             db: ref.watch(appDatabaseProvider),
-            validator: const ShapefileValidator(),
             dbfParser: const DbfParser(),
             reprojector: Reprojector(),
           ),
         ),
         storageCheckerProvider.overrideWithValue(const DeviceStorageChecker()),
+        validationFailureReporterProvider.overrideWithValue(
+          SupabaseValidationFailureReporter(
+            supabase: Supabase.instance.client,
+          ),
+        ),
       ],
       child: const _SyncBootstrap(child: FireCheckApp()),
     ),
