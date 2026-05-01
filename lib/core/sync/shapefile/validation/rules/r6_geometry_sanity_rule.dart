@@ -13,7 +13,6 @@ class GeometrySanityRule extends ShapefileValidationRule {
     Map<String, Uint8List> files,
     Map<String, String> expectedMd5s,
   ) {
-    var totalFeatures = 0;
     var boundaryFeatures = 0;
 
     for (final layer in _layers) {
@@ -30,7 +29,6 @@ class GeometrySanityRule extends ShapefileValidationRule {
         offset += 8 + contentWords * 2;
         layerFeatures++;
       }
-      totalFeatures += layerFeatures;
       if (layer == 'boundary') {
         boundaryFeatures = layerFeatures;
       }
