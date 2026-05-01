@@ -89,6 +89,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notDownloadedBadge => 'Not downloaded';
 
   @override
+  String get fetchingFeatures => 'Fetching features…';
+
+  @override
   String get downloadingShapefiles => 'Downloading shapefiles…';
 
   @override

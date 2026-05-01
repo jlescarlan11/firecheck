@@ -46,6 +46,7 @@
   "downloadSelected": "Download Selected",
   "alreadyDownloadedBadge": "Downloaded",
   "notDownloadedBadge": "Not downloaded",
+  "fetchingFeatures": "Fetching features…",
   "downloadingShapefiles": "Downloading shapefiles…",
   "importingShapefiles": "Importing…",
   "insufficientStorageTitle": "Not enough storage",

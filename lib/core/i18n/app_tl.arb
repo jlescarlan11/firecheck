@@ -24,6 +24,7 @@
   "downloadSelected": "I-download ang Napili",
   "alreadyDownloadedBadge": "Na-download na",
   "notDownloadedBadge": "Hindi pa na-download",
+  "fetchingFeatures": "Kine-kuha ang mga feature…",
   "downloadingShapefiles": "Dina-download ang mga shapefile…",
   "importingShapefiles": "Ini-import…",
   "insufficientStorageTitle": "Hindi sapat ang storage",

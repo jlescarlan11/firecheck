@@ -242,6 +242,12 @@ abstract class AppLocalizations {
   /// **'Not downloaded'**
   String get notDownloadedBadge;
 
+  /// No description provided for @fetchingFeatures.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetching features…'**
+  String get fetchingFeatures;
+
   /// No description provided for @downloadingShapefiles.
   ///
   /// In en, this message translates to:

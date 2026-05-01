@@ -90,6 +90,9 @@ class AppLocalizationsTl extends AppLocalizations {
   String get notDownloadedBadge => 'Hindi pa na-download';
 
   @override
+  String get fetchingFeatures => 'Kine-kuha ang mga feature…';
+
+  @override
   String get downloadingShapefiles => 'Dina-download ang mga shapefile…';
 
   @override
