@@ -1,5 +1,5 @@
-import 'package:disk_space/disk_space.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 
 abstract interface class StorageChecker {
   Future<int> getAvailableBytes();
@@ -17,10 +17,15 @@ class FakeStorageChecker implements StorageChecker {
 class DeviceStorageChecker implements StorageChecker {
   const DeviceStorageChecker();
 
+  static const _channel = MethodChannel('ph.gov.bfp.firecheck/device');
+
   @override
   Future<int> getAvailableBytes() async {
-    final freeMb = await DiskSpace.getFreeDiskSpace;
-    if (freeMb == null) return 0;
-    return (freeMb * 1024 * 1024).truncate().clamp(0, double.maxFinite.toInt());
+    try {
+      final bytes = await _channel.invokeMethod<int>('getAvailableBytes');
+      return bytes ?? 0;
+    } on PlatformException {
+      return 0;
+    }
   }
 }
