@@ -1047,4 +1047,49 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reshapeLockExit => 'Exit';
+
+  @override
+  String get getMapsChecksumError =>
+      'The map file was damaged during download.';
+
+  @override
+  String get getMapsIncompleteFilesError =>
+      'Map files are missing or incomplete.';
+
+  @override
+  String get getMapsHeaderError => 'Map geometry file is corrupted.';
+
+  @override
+  String get getMapsIndexError => 'Map index is inconsistent with geometry.';
+
+  @override
+  String get getMapsAttributeError =>
+      'Map attribute table is corrupted or mismatched.';
+
+  @override
+  String get getMapsGeometryError => 'Map contains no usable features.';
+
+  @override
+  String get getMapsCrsError => 'Map uses an unsupported coordinate system.';
+
+  @override
+  String get getMapsContactSupervisor =>
+      'Contact your supervisor to request a corrected file.';
+
+  @override
+  String get getMapsValidating => 'Checking map files…';
+
+  @override
+  String get getMapsWarningTitle => 'This assignment has minor issues';
+
+  @override
+  String getMapsWarningBody(String warnings) {
+    return '$warnings';
+  }
+
+  @override
+  String get getMapsWarningContinue => 'Continue anyway';
+
+  @override
+  String get getMapsClose => 'Close';
 }

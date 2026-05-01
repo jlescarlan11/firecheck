@@ -2005,6 +2005,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Exit'**
   String get reshapeLockExit;
+
+  /// No description provided for @getMapsChecksumError.
+  ///
+  /// In en, this message translates to:
+  /// **'The map file was damaged during download.'**
+  String get getMapsChecksumError;
+
+  /// No description provided for @getMapsIncompleteFilesError.
+  ///
+  /// In en, this message translates to:
+  /// **'Map files are missing or incomplete.'**
+  String get getMapsIncompleteFilesError;
+
+  /// No description provided for @getMapsHeaderError.
+  ///
+  /// In en, this message translates to:
+  /// **'Map geometry file is corrupted.'**
+  String get getMapsHeaderError;
+
+  /// No description provided for @getMapsIndexError.
+  ///
+  /// In en, this message translates to:
+  /// **'Map index is inconsistent with geometry.'**
+  String get getMapsIndexError;
+
+  /// No description provided for @getMapsAttributeError.
+  ///
+  /// In en, this message translates to:
+  /// **'Map attribute table is corrupted or mismatched.'**
+  String get getMapsAttributeError;
+
+  /// No description provided for @getMapsGeometryError.
+  ///
+  /// In en, this message translates to:
+  /// **'Map contains no usable features.'**
+  String get getMapsGeometryError;
+
+  /// No description provided for @getMapsCrsError.
+  ///
+  /// In en, this message translates to:
+  /// **'Map uses an unsupported coordinate system.'**
+  String get getMapsCrsError;
+
+  /// No description provided for @getMapsContactSupervisor.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact your supervisor to request a corrected file.'**
+  String get getMapsContactSupervisor;
+
+  /// No description provided for @getMapsValidating.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking map files…'**
+  String get getMapsValidating;
+
+  /// No description provided for @getMapsWarningTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This assignment has minor issues'**
+  String get getMapsWarningTitle;
+
+  /// No description provided for @getMapsWarningBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{warnings}'**
+  String getMapsWarningBody(String warnings);
+
+  /// No description provided for @getMapsWarningContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue anyway'**
+  String get getMapsWarningContinue;
+
+  /// No description provided for @getMapsClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get getMapsClose;
 }
 
 class _AppLocalizationsDelegate
