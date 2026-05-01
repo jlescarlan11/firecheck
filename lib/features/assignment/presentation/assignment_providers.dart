@@ -224,11 +224,11 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
         enumeratorId: _enumeratorId ?? '',
         failedRule: fatal.ruleName,
         message: fatal.userMessage,
+        fileChecksum: fatal.computedChecksum,
       ));
       if (!mounted) return;
       state = GetMapsError(
         ShapefileValidationFailure(fatal.userMessage, ruleName: fatal.ruleName),
-        isRetryable: false,
       );
       return;
     }

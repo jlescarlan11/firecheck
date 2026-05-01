@@ -11,11 +11,17 @@ class RulePassed extends RuleOutcome {
 
 @immutable
 class RuleFatal extends RuleOutcome {
-  const RuleFatal({required this.ruleName, required this.userMessage});
+  const RuleFatal({
+    required this.ruleName,
+    required this.userMessage,
+    this.computedChecksum,
+  });
   // ruleName goes to Supabase log — never displayed to the enumerator
   final String ruleName;
   // userMessage is the plain-English string shown in the error view
   final String userMessage;
+  // populated by R1 so the Supabase row carries the computed MD5 for triage
+  final String? computedChecksum;
 }
 
 @immutable

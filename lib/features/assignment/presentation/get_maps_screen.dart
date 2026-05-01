@@ -34,7 +34,7 @@ class GetMapsScreen extends ConsumerWidget {
               onStart: () => ref.read(getMapsNotifierProvider.notifier).start(),
             ),
           ValidatingShapefiles() => const _ValidatingView(),
-          ShapefileWarning() => _ShapefileWarningView(state: state as ShapefileWarning),
+          ShapefileWarning() => _ShapefileWarningView(state: state),
           GetMapsError(:final failure, :final isRetryable) => _ErrorView(
               failure: failure,
               isRetryable: isRetryable,

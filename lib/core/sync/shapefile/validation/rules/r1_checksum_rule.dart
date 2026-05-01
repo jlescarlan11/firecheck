@@ -17,9 +17,10 @@ class ChecksumRule extends ShapefileValidationRule {
       if (bytes == null) continue; // missing files are caught by R2
       final computed = md5.convert(bytes).toString();
       if (computed != entry.value) {
-        return const RuleFatal(
+        return RuleFatal(
           ruleName: 'checksum',
           userMessage: 'The map file was damaged during download.',
+          computedChecksum: computed,
         );
       }
     }
