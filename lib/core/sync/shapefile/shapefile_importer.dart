@@ -2,7 +2,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:archive/archive.dart';
 import 'package:drift/drift.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/sync/shapefile/dbf_parser.dart';
@@ -38,22 +37,13 @@ class ShapefileImporter {
 
   final _shpParser = const ShpParser();
 
-  Future<ImportResult> importInputZip(
-    Uint8List zipBytes,
+  Future<ImportResult> importShapefiles(
+    Map<String, Uint8List> files,
     String assignmentId,
     String driveModifiedTime,
     String driveFolderId,
     String enumeratorId,
   ) async {
-    // Unzip
-    final archive = ZipDecoder().decodeBytes(zipBytes);
-    final files = <String, Uint8List>{};
-    for (final f in archive) {
-      if (f.isFile) {
-        files[f.name] = Uint8List.fromList(f.content as List<int>);
-      }
-    }
-
     // Parse each DBF file once; cache the full result so fields (for
     // validation) and records (for insertion) come from the same parse.
     final boundaryDbf = files.containsKey('boundary.dbf')

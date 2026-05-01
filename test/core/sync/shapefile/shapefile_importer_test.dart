@@ -1,7 +1,6 @@
 // test/core/sync/shapefile/shapefile_importer_test.dart
 import 'dart:convert';
 import 'dart:typed_data';
-import 'package:archive/archive.dart';
 import 'package:drift/native.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/errors/failure.dart';
@@ -112,51 +111,45 @@ Uint8List _buildPolylineShp(List<List<List<double>>> parts) {
 
 const _prj = 'PROJCS["WGS_1984_UTM_Zone_51N",AUTHORITY["EPSG","32651"]]';
 
-Uint8List _makeValidZip() {
-  final arc = Archive();
-
+Map<String, Uint8List> _makeValidFiles() {
   final boundaryRing = [
     [500000.0, 1000000.0], [501000.0, 1000000.0],
     [501000.0, 1001000.0], [500000.0, 1001000.0], [500000.0, 1000000.0],
   ];
-  arc
-    ..addFile(ArchiveFile('boundary.shp', -1, _buildPolygonShp([boundaryRing])))
-    ..addFile(ArchiveFile('boundary.dbf', -1,
-        _buildDbf(fields: [(name: 'feat_id', length: 10)],
-            records: [{'feat_id': 'BOUND-1'}])))
-    ..addFile(ArchiveFile('boundary.shx', -1, Uint8List(100)))
-    ..addFile(ArchiveFile('boundary.prj', -1, utf8.encode(_prj)));
-
   final bldgRing = [
     [500100.0, 1000100.0], [500200.0, 1000100.0],
     [500200.0, 1000200.0], [500100.0, 1000200.0], [500100.0, 1000100.0],
   ];
-  arc
-    ..addFile(ArchiveFile('buildings.shp', -1, _buildPolygonShp([bldgRing])))
-    ..addFile(ArchiveFile('buildings.dbf', -1,
-        _buildDbf(
-          fields: [
-            (name: 'feat_id', length: 10),
-            (name: 'bldg_use', length: 20),
-            (name: 'bldg_type', length: 20),
-          ],
-          records: [{'feat_id': 'BLD-001', 'bldg_use': 'residential', 'bldg_type': 'house'}],
-        )))
-    ..addFile(ArchiveFile('buildings.shx', -1, Uint8List(100)))
-    ..addFile(ArchiveFile('buildings.prj', -1, utf8.encode(_prj)));
-
   final roadLine = [[500050.0, 1000050.0], [500150.0, 1000150.0]];
-  arc
-    ..addFile(ArchiveFile('roads.shp', -1, _buildPolylineShp([roadLine])))
-    ..addFile(ArchiveFile('roads.dbf', -1,
-        _buildDbf(
-          fields: [(name: 'feat_id', length: 10), (name: 'road_type', length: 20)],
-          records: [{'feat_id': 'RD-001', 'road_type': 'local'}],
-        )))
-    ..addFile(ArchiveFile('roads.shx', -1, Uint8List(100)))
-    ..addFile(ArchiveFile('roads.prj', -1, utf8.encode(_prj)));
+  final prjBytes = Uint8List.fromList(utf8.encode(_prj));
 
-  return Uint8List.fromList(ZipEncoder().encode(arc)!);
+  return {
+    'boundary.shp': _buildPolygonShp([boundaryRing]),
+    'boundary.dbf': _buildDbf(
+      fields: [(name: 'feat_id', length: 10)],
+      records: [{'feat_id': 'BOUND-1'}],
+    ),
+    'boundary.shx': Uint8List(100),
+    'boundary.prj': prjBytes,
+    'buildings.shp': _buildPolygonShp([bldgRing]),
+    'buildings.dbf': _buildDbf(
+      fields: [
+        (name: 'feat_id', length: 10),
+        (name: 'bldg_use', length: 20),
+        (name: 'bldg_type', length: 20),
+      ],
+      records: [{'feat_id': 'BLD-001', 'bldg_use': 'residential', 'bldg_type': 'house'}],
+    ),
+    'buildings.shx': Uint8List(100),
+    'buildings.prj': prjBytes,
+    'roads.shp': _buildPolylineShp([roadLine]),
+    'roads.dbf': _buildDbf(
+      fields: [(name: 'feat_id', length: 10), (name: 'road_type', length: 20)],
+      records: [{'feat_id': 'RD-001', 'road_type': 'local'}],
+    ),
+    'roads.shx': Uint8List(100),
+    'roads.prj': prjBytes,
+  };
 }
 
 // ── tests ──────────────────────────────────────────────────────────────────
@@ -177,9 +170,9 @@ void main() {
 
   tearDown(() => db.close());
 
-  test('valid zip → assignment row + 1 building + 1 road in Drift', () async {
-    final result = await importer.importInputZip(
-      _makeValidZip(),
+  test('valid files → assignment row + 1 building + 1 road in Drift', () async {
+    final result = await importer.importShapefiles(
+      _makeValidFiles(),
       'brgy-001',
       '2026-04-28T10:00:00Z',
       'folder-abc',
@@ -205,24 +198,12 @@ void main() {
   });
 
   test('missing layer → ShapefileValidationFailure, no Drift writes', () async {
-    final arc = Archive();
-    arc.addFile(ArchiveFile('boundary.shp', -1, Uint8List(0)));
-    final zipBytes = Uint8List.fromList(ZipEncoder().encode(arc)!);
-
     await expectLater(
-      importer.importInputZip(zipBytes, 'x', 't', 'f', 'e'),
+      importer.importShapefiles({'boundary.shp': Uint8List(0)}, 'x', 't', 'f', 'e'),
       throwsA(isA<ShapefileValidationFailure>()),
     );
 
     final rows = await db.select(db.assignments).get();
     expect(rows, isEmpty);
-  });
-
-  test('corrupt zip → throws, no Drift writes', () async {
-    await expectLater(
-      importer.importInputZip(Uint8List(10), 'x', 't', 'f', 'e'),
-      throwsA(anything),
-    );
-    expect(await db.select(db.assignments).get(), isEmpty);
   });
 }

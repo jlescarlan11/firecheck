@@ -14,6 +14,6 @@ class DriveDownloadProgress extends DriveDownloadEvent {
 
 @immutable
 class DriveDownloadComplete extends DriveDownloadEvent {
-  const DriveDownloadComplete(this.bytes);
-  final Uint8List bytes;
+  const DriveDownloadComplete(this.files);
+  final Map<String, Uint8List> files;
 }

@@ -15,8 +15,10 @@ class GoogleDriveApi implements DriveApi {
 
   final GoogleSignIn _googleSignIn;
 
-  // Populated during listAssignments() for use in download methods.
-  final _fileIdCache = <String, String>{}; // assignmentId → inputZip fileId
+  // assignmentId → { filename → fileId }
+  final _fileCache = <String, Map<String, String>>{};
+
+  static const _shapefileExts = {'.shp', '.dbf', '.shx', '.prj'};
 
   Future<gdrive.DriveApi> _api() async {
     final client = await _googleSignIn.authenticatedClient();
@@ -48,72 +50,88 @@ class GoogleDriveApi implements DriveApi {
     final inboxId = inboxResult.files?.firstOrNull?.id;
     if (inboxId == null) return [];
 
-    // List assignment subfolders
+    // List assignment subfolders — fetch modifiedTime to use as delta key
     final foldersResult = await api.files.list(
       q: "mimeType = 'application/vnd.google-apps.folder'"
           " and '$inboxId' in parents and trashed = false",
       spaces: 'drive',
-      $fields: 'files(id,name)',
+      $fields: 'files(id,name,modifiedTime)',
     );
 
     final assignments = <DriveAssignment>[];
     for (final folder in foldersResult.files ?? <gdrive.File>[]) {
       final folderId = folder.id!;
       final folderName = folder.name!;
+      final folderModTime = folder.modifiedTime?.toIso8601String();
+      if (folderModTime == null) continue;
 
-      final zipResult = await api.files.list(
-        q: "name = 'input.zip' and '$folderId' in parents and trashed = false",
+      // Enumerate shapefile components (.shp, .dbf, .shx, .prj)
+      final filesResult = await api.files.list(
+        q: "'$folderId' in parents and trashed = false",
         spaces: 'drive',
-        $fields: 'files(id,modifiedTime)',
+        $fields: 'files(id,name)',
       );
-      final zip = zipResult.files?.firstOrNull;
-      if (zip == null) continue;
+      final shapefiles = <String, String>{};
+      for (final f in filesResult.files ?? <gdrive.File>[]) {
+        final name = f.name!;
+        final dot = name.lastIndexOf('.');
+        final ext = dot >= 0 ? name.substring(dot) : '';
+        if (_shapefileExts.contains(ext)) {
+          shapefiles[name] = f.id!;
+        }
+      }
+      if (shapefiles.isEmpty) continue;
 
-      final fileId = zip.id!;
-      final assignmentId = folderName;
-      _fileIdCache[assignmentId] = fileId;
+      _fileCache[folderName] = shapefiles;
 
       assignments.add(DriveAssignment(
-        assignmentId: assignmentId,
-        inputZipFileId: fileId,
-        inputZipModifiedTime: zip.modifiedTime!.toIso8601String(),
+        assignmentId: folderName,
+        inputZipModifiedTime: folderModTime,
         driveFolderId: folderId,
-      ),);
+      ));
     }
 
     return assignments;
   }
 
   @override
-  Future<int> getInputZipSize(String assignmentId) async {
-    final fileId = _fileIdCache[assignmentId];
-    if (fileId == null) throw const NetworkFailure('Assignment file not cached');
+  Future<int> getTotalSize(String assignmentId) async {
+    final files = _fileCache[assignmentId];
+    if (files == null) throw const NetworkFailure('Assignment files not cached');
     final api = await _api();
-    final meta = await api.files.get(fileId, $fields: 'size') as gdrive.File;
-    return int.tryParse(meta.size ?? '0') ?? 0;
+    var total = 0;
+    for (final fileId in files.values) {
+      final meta = await api.files.get(fileId, $fields: 'size') as gdrive.File;
+      total += int.tryParse(meta.size ?? '0') ?? 0;
+    }
+    return total;
   }
 
   @override
-  Stream<DriveDownloadEvent> downloadInputZip(String assignmentId) async* {
-    final fileId = _fileIdCache[assignmentId];
-    if (fileId == null) throw const NetworkFailure('Assignment file not cached');
+  Stream<DriveDownloadEvent> downloadShapefiles(String assignmentId) async* {
+    final files = _fileCache[assignmentId];
+    if (files == null) throw const NetworkFailure('Assignment files not cached');
     final api = await _api();
 
-    final media = await api.files.get(
-      fileId,
-      downloadOptions: gdrive.DownloadOptions.fullMedia,
-    ) as gdrive.Media;
-
-    final chunks = <int>[];
+    final total = await getTotalSize(assignmentId);
     var downloaded = 0;
-    final total = media.length ?? 0;
+    final result = <String, Uint8List>{};
 
-    await for (final chunk in media.stream) {
-      chunks.addAll(chunk);
-      downloaded += chunk.length;
-      yield DriveDownloadProgress(downloaded: downloaded, total: total);
+    for (final entry in files.entries) {
+      final media = await api.files.get(
+        entry.value,
+        downloadOptions: gdrive.DownloadOptions.fullMedia,
+      ) as gdrive.Media;
+
+      final chunks = <int>[];
+      await for (final chunk in media.stream) {
+        chunks.addAll(chunk);
+        downloaded += chunk.length;
+        yield DriveDownloadProgress(downloaded: downloaded, total: total);
+      }
+      result[entry.key] = Uint8List.fromList(chunks);
     }
 
-    yield DriveDownloadComplete(Uint8List.fromList(chunks));
+    yield DriveDownloadComplete(result);
   }
 }

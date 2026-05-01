@@ -6,7 +6,6 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   const base = DriveAssignment(
     assignmentId: 'brgy-001',
-    inputZipFileId: 'file-xyz',
     inputZipModifiedTime: '2026-04-28T10:00:00Z',
     driveFolderId: 'folder-abc',
   );
@@ -20,13 +19,12 @@ void main() {
       final updated = base.copyWith(alreadyDownloaded: true);
       expect(updated.alreadyDownloaded, isTrue);
       expect(updated.assignmentId, 'brgy-001');
-      expect(updated.inputZipFileId, 'file-xyz');
+      expect(updated.inputZipModifiedTime, '2026-04-28T10:00:00Z');
     });
 
     test('equality: same fields are equal', () {
       const other = DriveAssignment(
         assignmentId: 'brgy-001',
-        inputZipFileId: 'file-xyz',
         inputZipModifiedTime: '2026-04-28T10:00:00Z',
         driveFolderId: 'folder-abc',
       );
@@ -46,9 +44,9 @@ void main() {
       expect(e.total, 1024);
     });
 
-    test('DriveDownloadComplete exposes bytes', () {
-      final e = DriveDownloadComplete(Uint8List(8));
-      expect(e.bytes.length, 8);
+    test('DriveDownloadComplete exposes files map', () {
+      final e = DriveDownloadComplete({'boundary.shp': Uint8List(8)});
+      expect(e.files['boundary.shp']!.length, 8);
     });
   });
 }

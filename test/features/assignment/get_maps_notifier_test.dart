@@ -35,8 +35,8 @@ class _NoopImporter extends ShapefileImporter {
   int callCount = 0;
 
   @override
-  Future<ImportResult> importInputZip(
-    Uint8List zipBytes,
+  Future<ImportResult> importShapefiles(
+    Map<String, Uint8List> files,
     String assignmentId,
     String driveModifiedTime,
     String driveFolderId,
@@ -61,7 +61,6 @@ class _NoopImporter extends ShapefileImporter {
 
 const _brgy001 = DriveAssignment(
   assignmentId: 'brgy-001',
-  inputZipFileId: 'f1',
   inputZipModifiedTime: '2026-04-28T10:00:00Z',
   driveFolderId: 'folder-1',
 );
@@ -119,7 +118,6 @@ void main() {
   test('selectAssignment updates selectedId', () async {
     const a2 = DriveAssignment(
       assignmentId: 'brgy-002',
-      inputZipFileId: 'f2',
       inputZipModifiedTime: '2026-04-28T11:00:00Z',
       driveFolderId: 'folder-2',
     );

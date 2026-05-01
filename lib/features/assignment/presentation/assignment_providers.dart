@@ -138,7 +138,7 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
     }
 
     // Storage pre-check
-    final needed = await driveApi.getInputZipSize(selected.assignmentId);
+    final needed = await driveApi.getTotalSize(selected.assignmentId);
     final available = await storageChecker.getAvailableBytes();
     if (!mounted) return;
     if (available < needed) {
@@ -148,18 +148,18 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
 
     // Download shapefiles
     state = DownloadingShapefiles(downloaded: 0, total: needed);
-    List<int>? zipBytes;
+    Map<String, Uint8List>? shapefiles;
 
     try {
       await for (final event
-          in driveApi.downloadInputZip(selected.assignmentId)) {
+          in driveApi.downloadShapefiles(selected.assignmentId)) {
         if (_cancelled || !mounted) return;
         switch (event) {
           case DriveDownloadProgress(:final downloaded, :final total):
             state =
                 DownloadingShapefiles(downloaded: downloaded, total: total);
-          case DriveDownloadComplete(:final bytes):
-            zipBytes = bytes;
+          case DriveDownloadComplete(:final files):
+            shapefiles = files;
         }
       }
     } catch (e) {
@@ -169,7 +169,7 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
     }
 
     if (_cancelled || !mounted) return;
-    if (zipBytes == null) {
+    if (shapefiles == null) {
       state = const GetMapsError(
           NetworkFailure('Download completed with no data'));
       return;
@@ -179,8 +179,8 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
     state = const ImportingShapefiles();
     try {
       final enumeratorId = await googleAuthRepo.getEnumeratorId();
-      await shapefileImporter.importInputZip(
-        Uint8List.fromList(zipBytes),
+      await shapefileImporter.importShapefiles(
+        shapefiles,
         selected.assignmentId,
         selected.inputZipModifiedTime,
         selected.driveFolderId,

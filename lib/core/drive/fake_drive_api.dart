@@ -7,21 +7,21 @@ import 'package:firecheck/core/drive/drive_download_event.dart';
 class FakeDriveApi implements DriveApi {
   FakeDriveApi({
     List<DriveAssignment>? assignments,
-    int zipSize = 1024,
-    Uint8List? downloadComplete,
+    int totalSize = 1024,
+    Map<String, Uint8List>? downloadComplete,
     List<DriveDownloadEvent>? downloadEvents,
     Exception? listError,
     Exception? downloadError,
   })  : _assignments = assignments ?? [],
-        _zipSize = zipSize,
+        _totalSize = totalSize,
         _downloadComplete = downloadComplete,
         _downloadEvents = downloadEvents,
         _listError = listError,
         _downloadError = downloadError;
 
   final List<DriveAssignment> _assignments;
-  final int _zipSize;
-  final Uint8List? _downloadComplete;
+  final int _totalSize;
+  final Map<String, Uint8List>? _downloadComplete;
   final List<DriveDownloadEvent>? _downloadEvents;
   final Exception? _listError;
   final Exception? _downloadError;
@@ -33,16 +33,16 @@ class FakeDriveApi implements DriveApi {
   }
 
   @override
-  Future<int> getInputZipSize(String assignmentId) async {
+  Future<int> getTotalSize(String assignmentId) async {
     assert(
       _assignments.any((a) => a.assignmentId == assignmentId),
       'FakeDriveApi: unknown assignmentId "$assignmentId"',
     );
-    return _zipSize;
+    return _totalSize;
   }
 
   @override
-  Stream<DriveDownloadEvent> downloadInputZip(String assignmentId) async* {
+  Stream<DriveDownloadEvent> downloadShapefiles(String assignmentId) async* {
     assert(
       _assignments.any((a) => a.assignmentId == assignmentId),
       'FakeDriveApi: unknown assignmentId "$assignmentId"',
@@ -54,6 +54,6 @@ class FakeDriveApi implements DriveApi {
       }
       return;
     }
-    yield DriveDownloadComplete(_downloadComplete ?? Uint8List(0));
+    yield DriveDownloadComplete(_downloadComplete ?? {});
   }
 }

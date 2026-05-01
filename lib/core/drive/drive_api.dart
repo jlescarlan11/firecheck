@@ -6,9 +6,9 @@ abstract interface class DriveApi {
   /// Lists /firecheck/inbox/ subfolders readable by the signed-in user.
   Future<List<DriveAssignment>> listAssignments();
 
-  /// Size of input.zip in bytes from Drive file metadata.
-  Future<int> getInputZipSize(String assignmentId);
+  /// Sum of all shapefile component sizes in bytes from Drive file metadata.
+  Future<int> getTotalSize(String assignmentId);
 
-  /// Streams download events for input.zip.
-  Stream<DriveDownloadEvent> downloadInputZip(String assignmentId);
+  /// Streams download events for all shapefile components in the folder.
+  Stream<DriveDownloadEvent> downloadShapefiles(String assignmentId);
 }
