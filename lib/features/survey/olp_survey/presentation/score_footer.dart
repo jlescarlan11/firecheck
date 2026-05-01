@@ -61,7 +61,7 @@ class ScoreFooter extends ConsumerWidget {
           const Spacer(),
           TextButton(
             onPressed: () => context.push(
-              '/feature/$featureId/olp/result?submissionId=$submissionId',
+              '/feature/${Uri.encodeComponent(featureId)}/olp/result?submissionId=$submissionId',
             ),
             child: Text(l.olpViewBreakdown),
           ),

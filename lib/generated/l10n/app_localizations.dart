@@ -212,11 +212,89 @@ abstract class AppLocalizations {
   /// **'Try again'**
   String get tryAgain;
 
+  /// No description provided for @discoveringAssignments.
+  ///
+  /// In en, this message translates to:
+  /// **'Looking for your assignments…'**
+  String get discoveringAssignments;
+
+  /// No description provided for @pickAssignmentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select your assignment'**
+  String get pickAssignmentTitle;
+
+  /// No description provided for @downloadSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Download Selected'**
+  String get downloadSelected;
+
+  /// No description provided for @alreadyDownloadedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloaded'**
+  String get alreadyDownloadedBadge;
+
+  /// No description provided for @notDownloadedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Not downloaded'**
+  String get notDownloadedBadge;
+
   /// No description provided for @fetchingFeatures.
   ///
   /// In en, this message translates to:
-  /// **'Fetching buildings…'**
+  /// **'Fetching features…'**
   String get fetchingFeatures;
+
+  /// No description provided for @downloadingShapefiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading shapefiles…'**
+  String get downloadingShapefiles;
+
+  /// No description provided for @importingShapefiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Importing…'**
+  String get importingShapefiles;
+
+  /// No description provided for @insufficientStorageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough storage'**
+  String get insufficientStorageTitle;
+
+  /// No description provided for @insufficientStorageBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Need {needed} MB free. You have {available} MB available.'**
+  String insufficientStorageBody(int needed, int available);
+
+  /// No description provided for @freeSpaceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Free up space and come back'**
+  String get freeSpaceHint;
+
+  /// No description provided for @noAssignmentsMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No assignments shared with you yet — ask your supervisor to share the assignment folder with the Google account you signed in with.'**
+  String get noAssignmentsMessage;
+
+  /// No description provided for @signInWithGoogle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with Google'**
+  String get signInWithGoogle;
+
+  /// No description provided for @signInError.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in failed. Please try again.'**
+  String get signInError;
 
   /// No description provided for @downloadingTiles.
   ///

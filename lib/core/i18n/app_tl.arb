@@ -19,7 +19,26 @@
   "startDownload": "Simulan ang pag-download",
   "cancelLabel": "Kanselahin",
   "tryAgain": "Subukan muli",
-  "fetchingFeatures": "Kinukuha ang mga gusali…",
+  "discoveringAssignments": "Hinahanap ang iyong mga takdang-aralin…",
+  "pickAssignmentTitle": "Piliin ang iyong takdang-aralin",
+  "downloadSelected": "I-download ang Napili",
+  "alreadyDownloadedBadge": "Na-download na",
+  "notDownloadedBadge": "Hindi pa na-download",
+  "fetchingFeatures": "Kine-kuha ang mga feature…",
+  "downloadingShapefiles": "Dina-download ang mga shapefile…",
+  "importingShapefiles": "Ini-import…",
+  "insufficientStorageTitle": "Hindi sapat ang storage",
+  "insufficientStorageBody": "Kailangan ng {needed} MB. Mayroon kang {available} MB.",
+  "@insufficientStorageBody": {
+    "placeholders": {
+      "needed": {"type": "int"},
+      "available": {"type": "int"}
+    }
+  },
+  "freeSpaceHint": "Mag-free ng espasyo at bumalik",
+  "noAssignmentsMessage": "Wala pang assignment na ibinabahagi sa iyo — hilingin sa iyong superbisor na ibahagi ang folder ng assignment sa Google account na iyong ginamit sa pag-sign in.",
+  "signInWithGoogle": "Mag-sign in gamit ang Google",
+  "signInError": "Nabigo ang pag-sign in. Pakisubukan muli.",
   "downloadingTiles": "Dinadownload ang mapa…",
   "readyLabel": "Handa nang mangalap",
   "openMap": "Buksan ang mapa",

@@ -42,7 +42,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -80,6 +80,11 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(featureGeometryRevisions);
             await m.createIndex(fgrFeatureIdIdx);
             await m.createIndex(fgrSyncStatusIdx);
+          }
+          if (from < 7) {
+            // v6 → v7: drive_modified_time and drive_folder_id for US-17 Get Maps.
+            await m.addColumn(assignments, assignments.driveModifiedTime);
+            await m.addColumn(assignments, assignments.driveFolderId);
           }
         },
         beforeOpen: (details) async {

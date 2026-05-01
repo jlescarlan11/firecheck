@@ -1,81 +1,11 @@
 import 'package:drift/drift.dart';
 import 'package:firecheck/core/db/database.dart';
-import 'package:firecheck/core/errors/failure.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 
 class AssignmentRepository {
-  AssignmentRepository({required this.client, required this.db});
-  final SupabaseClient client;
+  AssignmentRepository({this.client, required this.db});
+  final SupabaseClient? client;
   final AppDatabase db;
-
-  /// One-shot fetch of the current enumerator's active assignment (and all
-  /// its features + any ra_9514_types rows). Writes everything to Drift in
-  /// a single transaction.
-  Future<void> fetchAndUpsertCurrent() async {
-    try {
-      // Geometry columns are PostGIS `geography` and PostgREST serializes
-      // them as EWKB hex by default. We add computed-column functions
-      // (boundary_polygon_geojson, geometry_geojson) in migration 002 that
-      // wrap ST_AsGeoJSON, and select those instead so the client gets
-      // GeoJSON text directly.
-      final assignmentRows = await client
-          .from('assignments')
-          .select(
-            'id, enumerator_id, campaign_id, '
-            'boundary_polygon_geojson, '
-            'downloaded_at, submitted_at, status, created_at',
-          )
-          .order('created_at', ascending: false)
-          .limit(1);
-
-      if (assignmentRows.isEmpty) {
-        // Failure is a sealed domain error class surfaced to callers the
-        // same way exceptions flow. See Phase 0 auth_repository for the
-        // established pattern.
-        // ignore: only_throw_errors
-        throw const ServerRejectedFailure(
-          'No assignments assigned to you yet.',
-          404,
-        );
-      }
-
-      final assignment = assignmentRows.first;
-      final assignmentId = assignment['id'] as String;
-
-      final features = await client
-          .from('features')
-          .select(
-            'id, assignment_id, feature_type, '
-            'geometry_geojson, '
-            'is_new, created_at',
-          )
-          .eq('assignment_id', assignmentId);
-
-      final ra9514Rows = await client.from('ra_9514_types').select();
-
-      await upsertBundle(
-        assignment: assignment,
-        features: List<Map<String, dynamic>>.from(features),
-        ra9514Types: List<Map<String, dynamic>>.from(ra9514Rows),
-      );
-    } on PostgrestException catch (e) {
-      if (e.code == '401') {
-        // Failure is a sealed domain error class surfaced to callers the
-        // same way exceptions flow. See Phase 0 auth_repository for the
-        // established pattern.
-        // ignore: only_throw_errors
-        throw AuthFailure(e.message);
-      }
-      // Failure is a sealed domain error class surfaced to callers the
-      // same way exceptions flow. See Phase 0 auth_repository for the
-      // established pattern.
-      // ignore: only_throw_errors
-      throw ServerRejectedFailure(
-        e.message,
-        int.tryParse(e.code ?? '0') ?? 500,
-      );
-    }
-  }
 
   /// Writes an assignment + its features + any ra_9514_types rows in a single
   /// Drift transaction. Exposed separately so tests don't need to wire the
@@ -129,6 +59,13 @@ class AssignmentRepository {
             );
       }
     });
+  }
+
+  Future<String?> getDriveModifiedTime(String assignmentId) async {
+    final row = await (db.select(db.assignments)
+          ..where((t) => t.id.equals(assignmentId)))
+        .getSingleOrNull();
+    return row?.driveModifiedTime;
   }
 
   Future<Assignment?> getCurrentAssignment() async {

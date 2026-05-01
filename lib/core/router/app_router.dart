@@ -4,7 +4,9 @@ import 'package:firecheck/features/assignment/presentation/assignment_lock_state
 import 'package:firecheck/features/assignment/presentation/get_maps_screen.dart';
 import 'package:firecheck/features/auth/domain/auth_state.dart';
 import 'package:firecheck/features/auth/presentation/auth_providers.dart';
+import 'package:firecheck/features/auth/presentation/google_auth_providers.dart';
 import 'package:firecheck/features/auth/presentation/login_screen.dart';
+import 'package:firecheck/features/auth/presentation/sign_in_screen.dart';
 import 'package:firecheck/features/home/presentation/home_screen.dart';
 import 'package:firecheck/features/map/presentation/map_screen.dart';
 import 'package:firecheck/features/review/presentation/review_screen.dart';
@@ -15,16 +17,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final notifier = ref.watch(authStateProvider.notifier);
+  final authNotifier = ref.watch(authStateProvider.notifier);
+  final googleNotifier = ref.watch(googleAuthNotifierProvider.notifier);
 
   return GoRouter(
     initialLocation: '/',
-    refreshListenable: _AuthListenable(notifier),
+    refreshListenable: Listenable.merge([
+      _AuthListenable(authNotifier),
+      _GoogleAuthListenable(googleNotifier),
+    ]),
     redirect: (context, state) {
       final auth = ref.read(authStateProvider);
       final lock = ref.read(assignmentLockStateProvider).value;
-      final onLogin = state.matchedLocation == '/login';
-      final onBlocker = state.matchedLocation == '/blocker';
+      final googleAuth = ref.read(googleAuthNotifierProvider);
+      final loc = state.matchedLocation;
+      final onLogin = loc == '/login';
+      final onBlocker = loc == '/blocker';
 
       // Auth gate
       final authRedirect = switch (auth) {
@@ -38,6 +46,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (lock is ClosedRemotely && !onLogin && !onBlocker) {
         return '/blocker';
       }
+
+      // Google auth guard for /get-maps
+      if (loc == '/get-maps' && googleAuth == GoogleAuthState.signedOut) {
+        return '/sign-in';
+      }
+      if (loc == '/sign-in' && googleAuth == GoogleAuthState.signedIn) {
+        return '/get-maps';
+      }
+
       return null;
     },
     routes: [
@@ -58,6 +75,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
+        path: '/sign-in',
+        builder: (context, state) => const SignInScreen(),
+      ),
+      GoRoute(
         path: '/get-maps',
         builder: (context, state) => const GetMapsScreen(),
       ),
@@ -68,13 +89,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/feature/:featureId',
         builder: (context, state) => SubmissionDetailScreen(
-          featureId: state.pathParameters['featureId']!,
+          featureId: Uri.decodeComponent(state.pathParameters['featureId']!),
         ),
       ),
       GoRoute(
         path: '/feature/:featureId/olp/result',
         builder: (context, state) {
-          final featureId = state.pathParameters['featureId']!;
+          final featureId = Uri.decodeComponent(state.pathParameters['featureId']!);
           final submissionId = state.uri.queryParameters['submissionId'] ?? '';
           return OlpResultScreen(
             submissionId: submissionId,
@@ -94,11 +115,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   );
 });
 
-/// Adapts a StateNotifier into a Listenable go_router can subscribe to.
+/// Adapts a [StateNotifier] into a [Listenable] go_router can subscribe to.
 class _AuthListenable extends ChangeNotifier {
   _AuthListenable(StateNotifier<AuthState> notifier) {
-    // StateNotifier.addListener returns a disposer; stash it to tear down
-    // the subscription in dispose().
+    _removeListener = notifier.addListener((_) => notifyListeners());
+  }
+
+  late final void Function() _removeListener;
+
+  @override
+  void dispose() {
+    _removeListener();
+    super.dispose();
+  }
+}
+
+/// Adapts [GoogleAuthNotifier] into a [Listenable] go_router can subscribe to.
+class _GoogleAuthListenable extends ChangeNotifier {
+  _GoogleAuthListenable(StateNotifier<GoogleAuthState> notifier) {
     _removeListener = notifier.addListener((_) => notifyListeners());
   }
 

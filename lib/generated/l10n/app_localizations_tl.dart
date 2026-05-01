@@ -74,7 +74,50 @@ class AppLocalizationsTl extends AppLocalizations {
   String get tryAgain => 'Subukan muli';
 
   @override
-  String get fetchingFeatures => 'Kinukuha ang mga gusali…';
+  String get discoveringAssignments =>
+      'Hinahanap ang iyong mga takdang-aralin…';
+
+  @override
+  String get pickAssignmentTitle => 'Piliin ang iyong takdang-aralin';
+
+  @override
+  String get downloadSelected => 'I-download ang Napili';
+
+  @override
+  String get alreadyDownloadedBadge => 'Na-download na';
+
+  @override
+  String get notDownloadedBadge => 'Hindi pa na-download';
+
+  @override
+  String get fetchingFeatures => 'Kine-kuha ang mga feature…';
+
+  @override
+  String get downloadingShapefiles => 'Dina-download ang mga shapefile…';
+
+  @override
+  String get importingShapefiles => 'Ini-import…';
+
+  @override
+  String get insufficientStorageTitle => 'Hindi sapat ang storage';
+
+  @override
+  String insufficientStorageBody(int needed, int available) {
+    return 'Kailangan ng $needed MB. Mayroon kang $available MB.';
+  }
+
+  @override
+  String get freeSpaceHint => 'Mag-free ng espasyo at bumalik';
+
+  @override
+  String get noAssignmentsMessage =>
+      'Wala pang assignment na ibinabahagi sa iyo — hilingin sa iyong superbisor na ibahagi ang folder ng assignment sa Google account na iyong ginamit sa pag-sign in.';
+
+  @override
+  String get signInWithGoogle => 'Mag-sign in gamit ang Google';
+
+  @override
+  String get signInError => 'Nabigo ang pag-sign in. Pakisubukan muli.';
 
   @override
   String get downloadingTiles => 'Dinadownload ang mapa…';

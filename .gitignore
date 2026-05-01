@@ -59,3 +59,7 @@ supabase/.temp/
 # Local environment
 .env
 !.env.example
+
+# Google services config (contains API keys — add manually per environment)
+google-services.json
+GoogleService-Info.plist
