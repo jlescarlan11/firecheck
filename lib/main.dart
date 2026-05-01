@@ -1,15 +1,30 @@
 import 'package:firecheck/app.dart';
+import 'package:firecheck/core/device/storage_checker.dart';
+import 'package:firecheck/core/drive/google_drive_api.dart';
 import 'package:firecheck/core/mapbox/offline_pack_adapter.dart';
 import 'package:firecheck/core/sync/presentation/sync_providers.dart';
+import 'package:firecheck/core/sync/shapefile/dbf_parser.dart';
+import 'package:firecheck/core/sync/shapefile/reprojector.dart';
+import 'package:firecheck/core/sync/shapefile/shapefile_importer.dart';
+import 'package:firecheck/core/sync/shapefile/shapefile_validator.dart';
 import 'package:firecheck/core/sync/worker/workmanager_dispatcher.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
+import 'package:firecheck/features/auth/data/google_sign_in_auth_repository.dart';
+import 'package:firecheck/features/auth/presentation/google_auth_providers.dart';
+import 'package:firecheck/features/home/presentation/home_providers.dart';
 import 'package:firecheck/features/map/presentation/map_providers.dart';
 import 'package:firecheck/features/map/presentation/map_renderer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+final _googleSignIn = GoogleSignIn(
+  scopes: ['https://www.googleapis.com/auth/drive.readonly'],
+);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -59,6 +74,26 @@ Future<void> main() async {
           offlinePackAdapterProvider.overrideWithValue(
             MapboxOfflinePackAdapter(tileStore),
           ),
+        googleAuthRepositoryProvider.overrideWith(
+          (ref) => GoogleSignInAuthRepository(
+            googleSignIn: _googleSignIn,
+            secureStorage: const FlutterSecureStorage(),
+          ),
+        ),
+        driveApiProvider.overrideWith(
+          (ref) => GoogleDriveApi(
+            googleSignIn: _googleSignIn,
+          ),
+        ),
+        shapefileImporterProvider.overrideWith(
+          (ref) => ShapefileImporter(
+            db: ref.watch(appDatabaseProvider),
+            validator: const ShapefileValidator(),
+            dbfParser: const DbfParser(),
+            reprojector: Reprojector(),
+          ),
+        ),
+        storageCheckerProvider.overrideWithValue(const DeviceStorageChecker()),
       ],
       child: const _SyncBootstrap(child: FireCheckApp()),
     ),
