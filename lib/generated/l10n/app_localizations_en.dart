@@ -74,7 +74,46 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tryAgain => 'Try again';
 
   @override
-  String get fetchingFeatures => 'Fetching buildings…';
+  String get discoveringAssignments => 'Looking for your assignments…';
+
+  @override
+  String get pickAssignmentTitle => 'Select your assignment';
+
+  @override
+  String get downloadSelected => 'Download Selected';
+
+  @override
+  String get alreadyDownloadedBadge => 'Downloaded';
+
+  @override
+  String get notDownloadedBadge => 'Not downloaded';
+
+  @override
+  String get downloadingShapefiles => 'Downloading shapefiles…';
+
+  @override
+  String get importingShapefiles => 'Importing…';
+
+  @override
+  String get insufficientStorageTitle => 'Not enough storage';
+
+  @override
+  String insufficientStorageBody(int needed, int available) {
+    return 'Need $needed MB free. You have $available MB available.';
+  }
+
+  @override
+  String get freeSpaceHint => 'Free up space and come back';
+
+  @override
+  String get noAssignmentsMessage =>
+      'No assignments shared with you yet — ask your supervisor to share the assignment folder with the Google account you signed in with.';
+
+  @override
+  String get signInWithGoogle => 'Sign in with Google';
+
+  @override
+  String get signInError => 'Sign-in failed. Please try again.';
 
   @override
   String get downloadingTiles => 'Downloading map tiles…';

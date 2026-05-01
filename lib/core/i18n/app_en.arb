@@ -41,7 +41,25 @@
   "startDownload": "Start download",
   "cancelLabel": "Cancel",
   "tryAgain": "Try again",
-  "fetchingFeatures": "Fetching buildings…",
+  "discoveringAssignments": "Looking for your assignments…",
+  "pickAssignmentTitle": "Select your assignment",
+  "downloadSelected": "Download Selected",
+  "alreadyDownloadedBadge": "Downloaded",
+  "notDownloadedBadge": "Not downloaded",
+  "downloadingShapefiles": "Downloading shapefiles…",
+  "importingShapefiles": "Importing…",
+  "insufficientStorageTitle": "Not enough storage",
+  "insufficientStorageBody": "Need {needed} MB free. You have {available} MB available.",
+  "@insufficientStorageBody": {
+    "placeholders": {
+      "needed": {"type": "int"},
+      "available": {"type": "int"}
+    }
+  },
+  "freeSpaceHint": "Free up space and come back",
+  "noAssignmentsMessage": "No assignments shared with you yet — ask your supervisor to share the assignment folder with the Google account you signed in with.",
+  "signInWithGoogle": "Sign in with Google",
+  "signInError": "Sign-in failed. Please try again.",
   "downloadingTiles": "Downloading map tiles…",
   "readyLabel": "Ready to gather data",
   "openMap": "Open map",
