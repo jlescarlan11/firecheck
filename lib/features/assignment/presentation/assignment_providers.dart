@@ -149,6 +149,8 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
     // Download shapefiles
     state = DownloadingShapefiles(downloaded: 0, total: needed);
     Map<String, Uint8List>? shapefiles;
+    // ignore: unused_local_variable
+    Map<String, String> shapeMd5s = {};
 
     try {
       await for (final event
@@ -158,8 +160,9 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
           case DriveDownloadProgress(:final downloaded, :final total):
             state =
                 DownloadingShapefiles(downloaded: downloaded, total: total);
-          case DriveDownloadComplete(:final files):
+          case DriveDownloadComplete(:final files, :final expectedMd5s):
             shapefiles = files;
+            shapeMd5s = expectedMd5s;
         }
       }
     } catch (e) {

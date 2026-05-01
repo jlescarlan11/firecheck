@@ -1,4 +1,3 @@
-// lib/core/drive/fake_drive_api.dart
 import 'dart:typed_data';
 import 'package:firecheck/core/drive/drive_api.dart';
 import 'package:firecheck/core/drive/drive_assignment.dart';
@@ -9,12 +8,14 @@ class FakeDriveApi implements DriveApi {
     List<DriveAssignment>? assignments,
     int totalSize = 1024,
     Map<String, Uint8List>? downloadComplete,
+    Map<String, String>? expectedMd5s,
     List<DriveDownloadEvent>? downloadEvents,
     Exception? listError,
     Exception? downloadError,
   })  : _assignments = assignments ?? [],
         _totalSize = totalSize,
         _downloadComplete = downloadComplete,
+        _expectedMd5s = expectedMd5s ?? {},
         _downloadEvents = downloadEvents,
         _listError = listError,
         _downloadError = downloadError;
@@ -22,6 +23,7 @@ class FakeDriveApi implements DriveApi {
   final List<DriveAssignment> _assignments;
   final int _totalSize;
   final Map<String, Uint8List>? _downloadComplete;
+  final Map<String, String> _expectedMd5s;
   final List<DriveDownloadEvent>? _downloadEvents;
   final Exception? _listError;
   final Exception? _downloadError;
@@ -54,6 +56,6 @@ class FakeDriveApi implements DriveApi {
       }
       return;
     }
-    yield DriveDownloadComplete(_downloadComplete ?? {});
+    yield DriveDownloadComplete(_downloadComplete ?? {}, _expectedMd5s);
   }
 }

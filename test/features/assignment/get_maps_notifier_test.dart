@@ -27,7 +27,7 @@ class _NoopImporter extends ShapefileImporter {
   _NoopImporter(AppDatabase db)
       : super(
           db: db,
-          validator: const ShapefileValidator(),
+          validator: ShapefileValidator(),
           dbfParser: const DbfParser(),
           reprojector: Reprojector(),
         );
