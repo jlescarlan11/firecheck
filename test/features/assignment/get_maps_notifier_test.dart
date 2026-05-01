@@ -14,7 +14,6 @@ import 'package:firecheck/core/mapbox/offline_pack_adapter.dart';
 import 'package:firecheck/core/sync/shapefile/dbf_parser.dart';
 import 'package:firecheck/core/sync/shapefile/reprojector.dart';
 import 'package:firecheck/core/sync/shapefile/shapefile_importer.dart';
-import 'package:firecheck/core/sync/shapefile/shapefile_validator.dart';
 import 'package:firecheck/features/assignment/data/assignment_repository.dart';
 import 'package:firecheck/features/assignment/data/offline_tile_pack_repository.dart';
 import 'package:firecheck/features/assignment/domain/get_maps_state.dart';
@@ -27,7 +26,6 @@ class _NoopImporter extends ShapefileImporter {
   _NoopImporter(AppDatabase db)
       : super(
           db: db,
-          validator: ShapefileValidator(),
           dbfParser: const DbfParser(),
           reprojector: Reprojector(),
         );

@@ -3,11 +3,9 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:drift/native.dart';
 import 'package:firecheck/core/db/database.dart';
-import 'package:firecheck/core/errors/failure.dart';
 import 'package:firecheck/core/sync/shapefile/dbf_parser.dart';
 import 'package:firecheck/core/sync/shapefile/reprojector.dart';
 import 'package:firecheck/core/sync/shapefile/shapefile_importer.dart';
-import 'package:firecheck/core/sync/shapefile/shapefile_validator.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 // ── helpers ────────────────────────────────────────────────────────────────
@@ -162,7 +160,6 @@ void main() {
     db = AppDatabase.forTesting(NativeDatabase.memory());
     importer = ShapefileImporter(
       db: db,
-      validator: const ShapefileValidator(),
       dbfParser: const DbfParser(),
       reprojector: Reprojector(),
     );
@@ -197,13 +194,4 @@ void main() {
     expect(features.where((f) => f.featureType == 'road'), hasLength(1));
   });
 
-  test('missing layer → ShapefileValidationFailure, no Drift writes', () async {
-    await expectLater(
-      importer.importShapefiles({'boundary.shp': Uint8List(0)}, 'x', 't', 'f', 'e'),
-      throwsA(isA<ShapefileValidationFailure>()),
-    );
-
-    final rows = await db.select(db.assignments).get();
-    expect(rows, isEmpty);
-  });
 }

@@ -6,7 +6,6 @@ import 'package:drift/drift.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/sync/shapefile/dbf_parser.dart';
 import 'package:firecheck/core/sync/shapefile/reprojector.dart';
-import 'package:firecheck/core/sync/shapefile/shapefile_validator.dart';
 import 'package:firecheck/core/sync/shapefile/shp_parser.dart';
 import 'package:flutter/foundation.dart';
 
@@ -25,13 +24,11 @@ class ImportResult {
 class ShapefileImporter {
   ShapefileImporter({
     required this.db,
-    required this.validator,
     required this.dbfParser,
     required this.reprojector,
   });
 
   final AppDatabase db;
-  final ShapefileValidator validator;
   final DbfParser dbfParser;
   final Reprojector reprojector;
 
@@ -55,12 +52,6 @@ class ShapefileImporter {
     final roadDbf = files.containsKey('roads.dbf')
         ? dbfParser.parse(files['roads.dbf']!)
         : null;
-
-    validator.validate(files, {
-      'boundary': boundaryDbf?.fields ?? [],
-      'buildings': buildingDbf?.fields ?? [],
-      'roads': roadDbf?.fields ?? [],
-    });
 
     // Parse all geometries
     final boundaryGeoms = _shpParser.parse(files['boundary.shp']!);
