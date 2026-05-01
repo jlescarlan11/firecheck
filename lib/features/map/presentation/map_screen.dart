@@ -397,7 +397,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
     if (!mounted) return;
     setState(() => _addModeActive = false);
-    context.go('/feature/${feature.id}');
+    context.go('/feature/${Uri.encodeComponent(feature.id)}');
   }
 
   Future<void> _handlePolygonLongPress(Feature feature) async {
@@ -528,7 +528,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     }
 
     if (!mounted) return;
-    context.go('/feature/${f.id}');
+    context.go('/feature/${Uri.encodeComponent(f.id)}');
   }
 
   void _onCameraChanged(double zoom, double lat, double lng) {

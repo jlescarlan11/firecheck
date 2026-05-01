@@ -47,13 +47,13 @@ class ReviewScreen extends ConsumerWidget {
                 ValidationSection(
                   issues: state.blockers,
                   severity: ReviewSeverity.blocker,
-                  onGoToFeature: (id) => context.go('/feature/$id'),
+                  onGoToFeature: (id) => context.go('/feature/${Uri.encodeComponent(id)}'),
                 ),
                 const SizedBox(height: 8),
                 ValidationSection(
                   issues: state.warnings,
                   severity: ReviewSeverity.warning,
-                  onGoToFeature: (id) => context.go('/feature/$id'),
+                  onGoToFeature: (id) => context.go('/feature/${Uri.encodeComponent(id)}'),
                 ),
                 const SizedBox(height: 16),
                 StartUploadButton(

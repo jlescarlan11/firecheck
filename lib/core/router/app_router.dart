@@ -89,13 +89,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/feature/:featureId',
         builder: (context, state) => SubmissionDetailScreen(
-          featureId: state.pathParameters['featureId']!,
+          featureId: Uri.decodeComponent(state.pathParameters['featureId']!),
         ),
       ),
       GoRoute(
         path: '/feature/:featureId/olp/result',
         builder: (context, state) {
-          final featureId = state.pathParameters['featureId']!;
+          final featureId = Uri.decodeComponent(state.pathParameters['featureId']!);
           final submissionId = state.uri.queryParameters['submissionId'] ?? '';
           return OlpResultScreen(
             submissionId: submissionId,
