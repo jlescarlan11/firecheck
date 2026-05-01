@@ -56,7 +56,7 @@ void main() {
 
   testWidgets('GetMapsError shows retry affordance', (tester) async {
     await tester.pumpWidget(
-      buildSubject(const GetMapsError(NetworkFailure('no net'))),
+      buildSubject(const GetMapsError(NetworkFailure('no net'), isRetryable: true)),
     );
     await tester.pump();
     expect(find.textContaining('failed'), findsWidgets);
