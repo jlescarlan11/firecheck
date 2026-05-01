@@ -298,12 +298,13 @@ void main() {
       expect(states.last, isA<GetMapsError>());
       expect((states.last as GetMapsError).isRetryable, isTrue);
 
-      final successNotifier = _makeNotifier(assignments: [_brgy001]);
-      final successStates = <GetMapsState>[];
-      successNotifier.addListener(successStates.add);
-      await successNotifier.start();
-      await successNotifier.confirmDownload();
-      expect(successStates.any((s) => s is DownloadingShapefiles), isTrue);
+      final statesBeforeRetry = states.length;
+      await notifier.retryDownload();
+      // retryDownload re-enters _downloadAndValidate → DownloadingShapefiles is emitted
+      expect(
+        states.skip(statesBeforeRetry).any((s) => s is DownloadingShapefiles),
+        isTrue,
+      );
     });
   });
 }

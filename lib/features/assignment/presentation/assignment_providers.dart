@@ -144,6 +144,7 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
     // Delta skip — already imported, go straight to tile download
     if (selected.alreadyDownloaded) {
       _enumeratorId = await googleAuthRepo.getEnumeratorId();
+      if (!mounted) return;
       await _startTileDownload();
       return;
     }
@@ -164,7 +165,9 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
   Future<void> acknowledgeWarning() async {
     final s = state;
     if (s is! ShapefileWarning) return;
-    await _doImport(_selectedAssignment!, s.pendingFiles);
+    final selected = _selectedAssignment;
+    if (selected == null) return;
+    await _doImport(selected, s.pendingFiles);
   }
 
   Future<void> retryDownload() async {
@@ -262,6 +265,7 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
       state = GetMapsError(StorageFailure(e.toString()));
       return;
     }
+    if (!mounted) return;
     await _startTileDownload();
   }
 
@@ -332,6 +336,8 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
 
   void reset() {
     _cancelled = false;
+    _selectedAssignment = null;
+    _enumeratorId = null;
     state = const Idle();
   }
 }
