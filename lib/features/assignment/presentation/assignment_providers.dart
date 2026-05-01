@@ -95,6 +95,7 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
       return;
     }
 
+    if (!mounted) return;
     if (rawAssignments.isEmpty) {
       state = const GetMapsError(NoAssignmentsFailure());
       return;
@@ -130,27 +131,22 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
     final selected =
         s.assignments.firstWhere((a) => a.assignmentId == s.selectedId);
 
-    // Storage pre-check (skip for already-downloaded)
-    if (!selected.alreadyDownloaded) {
-      final needed = await driveApi.getInputZipSize(selected.assignmentId);
-      final available = await storageChecker.getAvailableBytes();
-      if (available < needed) {
-        if (!mounted) return;
-        state = InsufficientStorage(
-            requiredBytes: needed, availableBytes: available);
-        return;
-      }
-    }
-
     // Delta skip — already imported, go straight to tile download
     if (selected.alreadyDownloaded) {
       await _startTileDownload();
       return;
     }
 
-    // Download shapefiles
-    if (!mounted) return;
+    // Storage pre-check
     final needed = await driveApi.getInputZipSize(selected.assignmentId);
+    final available = await storageChecker.getAvailableBytes();
+    if (!mounted) return;
+    if (available < needed) {
+      state = InsufficientStorage(requiredBytes: needed, availableBytes: available);
+      return;
+    }
+
+    // Download shapefiles
     state = DownloadingShapefiles(downloaded: 0, total: needed);
     List<int>? zipBytes;
 
