@@ -122,6 +122,11 @@ _LayerOutput _writeLayer(_LayerInput input) {
   const writer = ShpWriter();
   const dbfWriter = DbfWriter();
 
+  // Geometry and record lists are built in lock-step: index i in geometries
+  // corresponds to index i in records. Do not reorder either list independently.
+  // Both lists are populated from the same ordered source in export() — features
+  // is mapped from buildingRows/roadRows in iteration order, preserving alignment.
+
   // Parse geometries
   final geometries = <List<List<List<double>>>>[];
   for (final f in input.features) {
@@ -415,7 +420,8 @@ class ShapefileExporter {
     }
 
     // Write ZIP to temp directory
-    final zipBytes = ZipEncoder().encode(archive)!;
+    final zipBytes = ZipEncoder().encode(archive);
+    if (zipBytes == null) return const WriteError('ZIP encoding produced no output');
     final tempDir = tempDirOverride ?? await getTemporaryDirectory();
     final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
     final zipName = 'firecheck_${assignmentId}_$timestamp.zip';

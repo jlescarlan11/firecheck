@@ -34,7 +34,7 @@ Future<void> _seedBuilding(
     isNew: const Value(false),
     status: const Value('complete'),
     createdAt: DateTime.now(),
-  ));
+  ),);
 
   await db.into(db.submissions).insert(SubmissionsCompanion.insert(
     id: submissionId,
@@ -43,7 +43,7 @@ Future<void> _seedBuilding(
     syncStatus: const Value('ready_to_upload'),
     createdAt: DateTime.now(),
     updatedAt: DateTime.now(),
-  ));
+  ),);
 
   await db.into(db.buildingAttributes).insert(BuildingAttributesCompanion.insert(
     submissionId: submissionId,
@@ -52,10 +52,10 @@ Future<void> _seedBuilding(
     ra9514Type: const Value('Group E'),
     storeys: const Value(3),
     material: const Value('Concrete'),
-    costAmount: const Value(500000.0),
+    costAmount: const Value(500000),
     fireFightingFacilitiesJson: const Value('["sprinkler","extinguisher"]'),
     fireLoadJson: const Value('["paper","chemicals"]'),
-  ));
+  ),);
 }
 
 Future<void> _seedRoad(
@@ -77,7 +77,7 @@ Future<void> _seedRoad(
     isNew: const Value(false),
     status: const Value('complete'),
     createdAt: DateTime.now(),
-  ));
+  ),);
 
   await db.into(db.submissions).insert(SubmissionsCompanion.insert(
     id: submissionId,
@@ -85,14 +85,14 @@ Future<void> _seedRoad(
     syncStatus: const Value('ready_to_upload'),
     createdAt: DateTime.now(),
     updatedAt: DateTime.now(),
-  ));
+  ),);
 
   await db.into(db.roadAttributes).insert(RoadAttributesCompanion.insert(
     submissionId: submissionId,
     roadName: const Value('Main St'),
-    widthMeters: const Value(8.0),
+    widthMeters: const Value(8),
     roadFeaturesJson: const Value('["Pedestrian"]'),
-  ));
+  ),);
 }
 
 void main() {
