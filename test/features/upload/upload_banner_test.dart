@@ -1,5 +1,6 @@
 // test/features/upload/upload_banner_test.dart
 import 'package:firecheck/core/db/database.dart';
+import 'package:firecheck/core/drive/drive_upload_job_status.dart';
 import 'package:firecheck/core/drive/drive_upload_providers.dart';
 import 'package:firecheck/features/upload/presentation/upload_banner.dart';
 import 'package:firecheck/features/upload/presentation/upload_queue_notifier.dart';
@@ -52,7 +53,7 @@ void main() {
 
   testWidgets('banner shows singular label for one pending job', (tester) async {
     final state = DriveUploadState(jobs: [
-      _makeJob(id: 'j1', status: 'pending', sizeBytes: 1024 * 1024),
+      _makeJob(id: 'j1', status: DriveUploadJobStatus.pending, sizeBytes: 1024 * 1024),
     ]);
 
     await tester.pumpWidget(_wrap(const UploadBanner(), state));
@@ -64,8 +65,8 @@ void main() {
   testWidgets('banner shows plural label for multiple pending jobs',
       (tester) async {
     final state = DriveUploadState(jobs: [
-      _makeJob(id: 'j1', status: 'pending', sizeBytes: 1024 * 1024),
-      _makeJob(id: 'j2', status: 'failed', sizeBytes: 2 * 1024 * 1024),
+      _makeJob(id: 'j1', status: DriveUploadJobStatus.pending, sizeBytes: 1024 * 1024),
+      _makeJob(id: 'j2', status: DriveUploadJobStatus.failed, sizeBytes: 2 * 1024 * 1024),
     ]);
 
     await tester.pumpWidget(_wrap(const UploadBanner(), state));
@@ -77,8 +78,8 @@ void main() {
   testWidgets('banner excludes uploading jobs from pending count',
       (tester) async {
     final state = DriveUploadState(jobs: [
-      _makeJob(id: 'j1', status: 'pending', sizeBytes: 1024 * 1024),
-      _makeJob(id: 'j2', status: 'uploading', sizeBytes: 5 * 1024 * 1024),
+      _makeJob(id: 'j1', status: DriveUploadJobStatus.pending, sizeBytes: 1024 * 1024),
+      _makeJob(id: 'j2', status: DriveUploadJobStatus.uploading, sizeBytes: 5 * 1024 * 1024),
     ]);
 
     await tester.pumpWidget(_wrap(const UploadBanner(), state));

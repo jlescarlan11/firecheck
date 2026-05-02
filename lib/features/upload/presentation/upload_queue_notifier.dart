@@ -52,18 +52,18 @@ class DriveUploadNotifier extends StateNotifier<DriveUploadState> {
   DriveUploadNotifier.seeded(DriveUploadState initialState)
       : super(initialState);
 
-  late final DriveUploadRepository _repo;
-  late final DriveUploadWorker _worker;
+  DriveUploadRepository? _repo;
+  DriveUploadWorker? _worker;
   StreamSubscription<List<DriveUploadJob>>? _sub;
 
   Future<void> uploadAll() async {
-    await _repo.resetFailedToPending();
-    await _worker.drain();
+    await _repo!.resetFailedToPending();
+    await _worker!.drain();
   }
 
   Future<void> retryJob(String jobId) async {
-    await _repo.resetForRetry(jobId);
-    await _worker.drain();
+    await _repo!.resetForRetry(jobId);
+    await _worker!.drain();
   }
 
   @override
