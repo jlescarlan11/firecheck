@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:firecheck/core/auth/current_user_provider.dart';
 import 'package:firecheck/core/db/database.dart';
@@ -18,12 +19,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:geolocator/geolocator.dart' show Position;
 import 'package:go_router/go_router.dart';
 
+const _kRoadGeojson =
+    '{"type":"LineString","coordinates":[[120.0,14.0],[121.0,14.5]]}';
+
 Feature _roadFeature({String status = 'not_started'}) => Feature(
       id: 'r1',
       assignmentId: 'a1',
       featureType: 'road',
-      geometryGeojson:
-          '{"type":"LineString","coordinates":[[120.0,14.0],[121.0,14.5]]}',
+      geometryGeojson: _kRoadGeojson,
       isNew: false,
       status: status,
       createdAt: DateTime.now(),
@@ -101,7 +104,8 @@ void main() {
     ));
     await tester.pump();
 
-    expect(find.byKey(const Key('fake-map-poly-r1')), findsOneWidget);
+    expect(find.byKey(const Key('fake-map-feature-r1')), findsOneWidget,);
+    expect(find.byKey(const Key('fake-map-poly-r1')), findsOneWidget,);
   });
 
   testWidgets('tapping road tile navigates to /feature/r1', (tester) async {
@@ -111,8 +115,8 @@ void main() {
             id: 'r1',
             assignmentId: 'a1',
             featureType: 'road',
-            geometryGeojson:
-                '{"type":"LineString","coordinates":[[120.0,14.0],[121.0,14.5]]}',
+            geometryGeojson: _kRoadGeojson,
+            status: const Value('not_started'), // required for ensureDraftForFeature upsert
             createdAt: now,
           ));
     });
