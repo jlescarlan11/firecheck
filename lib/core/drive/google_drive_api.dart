@@ -182,7 +182,7 @@ class GoogleDriveApi implements DriveApi {
   ) async {
     final escapedName = name.replaceAll("'", "\\'");
     final parentClause =
-        parentId != null ? " and '$parentId' in parents" : '';
+        parentId != null ? " and '$parentId' in parents" : " and 'root' in parents";
     final result = await api.files.list(
       q: "name = '$escapedName'"
           " and mimeType = 'application/vnd.google-apps.folder'"
