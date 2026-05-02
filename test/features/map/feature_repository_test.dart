@@ -148,5 +148,88 @@ void main() {
       final f = (await db.select(db.features).get()).single;
       expect(f.status, 'in_progress');
     });
+
+    test('road feature with a draft + road_attributes is in_progress',
+        () async {
+      final now = DateTime.now();
+      await db.into(db.features).insert(
+            FeaturesCompanion.insert(
+              id: 'f1',
+              assignmentId: 'a1',
+              featureType: 'road',
+              geometryGeojson:
+                  '{"type":"LineString","coordinates":[[120.0,14.0],[121.0,14.5]]}',
+              createdAt: now,
+            ),
+          );
+      await db.into(db.submissions).insert(
+            SubmissionsCompanion.insert(
+              id: 's1',
+              featureId: 'f1',
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+      await db.into(db.roadAttributes).insert(
+            RoadAttributesCompanion.insert(
+              submissionId: 's1',
+              roadName: const Value('Main St'),
+            ),
+          );
+      await repo.markFeatureStatus('f1');
+      final f = (await db.select(db.features).get()).single;
+      expect(f.status, 'in_progress');
+    });
+
+    test('road feature with a ready_to_upload submission is complete',
+        () async {
+      final now = DateTime.now();
+      await db.into(db.features).insert(
+            FeaturesCompanion.insert(
+              id: 'f1',
+              assignmentId: 'a1',
+              featureType: 'road',
+              geometryGeojson: '{}',
+              createdAt: now,
+            ),
+          );
+      await db.into(db.submissions).insert(
+            SubmissionsCompanion.insert(
+              id: 's1',
+              featureId: 'f1',
+              syncStatus: const Value('ready_to_upload'),
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+      await repo.markFeatureStatus('f1');
+      final f = (await db.select(db.features).get()).single;
+      expect(f.status, 'complete');
+    });
+
+    test('road feature with doesNotExist submission is in_progress', () async {
+      final now = DateTime.now();
+      await db.into(db.features).insert(
+            FeaturesCompanion.insert(
+              id: 'f1',
+              assignmentId: 'a1',
+              featureType: 'road',
+              geometryGeojson: '{}',
+              createdAt: now,
+            ),
+          );
+      await db.into(db.submissions).insert(
+            SubmissionsCompanion.insert(
+              id: 's1',
+              featureId: 'f1',
+              doesNotExist: const Value(true),
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+      await repo.markFeatureStatus('f1');
+      final f = (await db.select(db.features).get()).single;
+      expect(f.status, 'in_progress');
+    });
   });
 }

@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/geo/point_in_polygon.dart';
+import 'package:firecheck/core/geo/polyline_midpoint.dart';
 import 'package:firecheck/features/map/presentation/camera_target.dart';
 import 'package:flutter/material.dart';
 // Hide Feature because the Drift-generated row class (imported above) shares
@@ -235,6 +236,7 @@ class _MapboxMapView extends StatefulWidget {
 class _MapboxMapViewState extends State<_MapboxMapView> {
   PolygonAnnotationManager? _featureManager;
   PolygonAnnotationManager? _boundaryManager;
+  PolylineAnnotationManager? _roadManager;
   PointAnnotationManager? _pointManager;
   MapboxMap? _mapboxMap;
 
@@ -254,6 +256,15 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
   // LayoutBuilder pass so we can defer projection init until the viewport
   // size is known.
   bool _projectionReadyPending = false;
+
+  @override
+  void dispose() {
+    _boundaryManager = null;
+    _featureManager = null;
+    _roadManager = null;
+    _pointManager = null;
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -369,16 +380,25 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
     // boundary polygon and never reach the feature manager.
     _boundaryManager = await map.annotations.createPolygonAnnotationManager();
     _featureManager = await map.annotations.createPolygonAnnotationManager();
-    // Point manager for is_new=true features (blue pins) — topmost.
+    // Road manager above building fills; point manager topmost above roads.
+    _roadManager = await map.annotations.createPolylineAnnotationManager();
     _pointManager = await map.annotations.createPointAnnotationManager();
 
     await _renderBoundary();
     await _renderFeatures();
+    await _renderRoads();
     await _renderNewFeatures();
 
     // ignore: deprecated_member_use
     _featureManager!.addOnPolygonAnnotationClickListener(
       _FeatureClickHandler(
+        annotationToFeature: _annotationToFeature,
+        onTap: widget.onFeatureTap,
+      ),
+    );
+    // ignore: deprecated_member_use
+    _roadManager!.addOnPolylineAnnotationClickListener(
+      _RoadClickHandler(
         annotationToFeature: _annotationToFeature,
         onTap: widget.onFeatureTap,
       ),
@@ -494,9 +514,11 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
     final manager = _featureManager;
     if (manager == null) return;
     await manager.deleteAll();
+    await _roadManager?.deleteAll();
     _reshapeWorkingAnnotation = null; // deleteAll() destroyed it too
     _annotationToFeature.clear();
     await _renderFeatures();
+    await _renderRoads();
     final pointManager = _pointManager;
     if (pointManager != null) {
       await pointManager.deleteAll();
@@ -509,6 +531,13 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
     // ignore: deprecated_member_use
     manager.addOnPolygonAnnotationClickListener(
       _FeatureClickHandler(
+        annotationToFeature: _annotationToFeature,
+        onTap: widget.onFeatureTap,
+      ),
+    );
+    // ignore: deprecated_member_use
+    _roadManager?.addOnPolylineAnnotationClickListener(
+      _RoadClickHandler(
         annotationToFeature: _annotationToFeature,
         onTap: widget.onFeatureTap,
       ),
@@ -537,6 +566,7 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
       // is_new features are rendered as point pins — skip them here so they
       // don't appear as polygons as well.
       if (f.isNew) continue;
+      if (f.featureType == 'road') continue;
       final polygon = _decodePolygon(f.geometryGeojson);
       if (polygon == null) continue;
       final created = await manager.create(
@@ -567,6 +597,36 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
         fillOpacity: 0,
       ),
     );
+  }
+
+  Future<void> _renderRoads() async {
+    final manager = _roadManager;
+    if (manager == null) return;
+    for (final f in widget.features) {
+      if (f.isNew) continue;
+      if (f.featureType != 'road') continue;
+      final coords = _decodeLineString(f.geometryGeojson);
+      if (coords == null) {
+        debugPrint(
+          '[MapRenderer] skipped road feature ${f.id}: invalid LineString geometry',
+        );
+        continue;
+      }
+      final created = await manager.create(
+        PolylineAnnotationOptions(
+          geometry: LineString(coordinates: coords),
+          lineColor: _colorForStatus(f.status),
+          lineWidth: 4,
+        ),
+      );
+      _annotationToFeature[created.id] = f;
+    }
+  }
+
+  List<Position>? _decodeLineString(String geojson) {
+    final coords = decodePolylineGeojson(geojson);
+    if (coords == null) return null;
+    return coords.map((p) => Position(p[0], p[1])).toList();
   }
 
   Future<void> _renderNewFeatures() async {
@@ -655,6 +715,23 @@ class _FeatureClickHandler extends OnPolygonAnnotationClickListener {
 
   @override
   void onPolygonAnnotationClick(PolygonAnnotation annotation) {
+    final feature = annotationToFeature[annotation.id];
+    if (feature != null) onTap(feature);
+  }
+}
+
+// ignore: deprecated_member_use
+class _RoadClickHandler extends OnPolylineAnnotationClickListener {
+  _RoadClickHandler({
+    required this.annotationToFeature,
+    required this.onTap,
+  });
+
+  final Map<String, Feature> annotationToFeature;
+  final void Function(Feature) onTap;
+
+  @override
+  void onPolylineAnnotationClick(PolylineAnnotation annotation) {
     final feature = annotationToFeature[annotation.id];
     if (feature != null) onTap(feature);
   }

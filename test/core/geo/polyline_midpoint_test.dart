@@ -37,4 +37,18 @@ void main() {
     );
     expect(coords, isNull);
   });
+
+  test('returns null for LineString with fewer than 2 coordinates', () {
+    final coords = decodePolylineGeojson(
+      '{"type":"LineString","coordinates":[[123.882,10.317]]}',
+    );
+    expect(coords, isNull);
+  });
+
+  test('returns null for LineString with empty coordinates', () {
+    final coords = decodePolylineGeojson(
+      '{"type":"LineString","coordinates":[]}',
+    );
+    expect(coords, isNull);
+  });
 }

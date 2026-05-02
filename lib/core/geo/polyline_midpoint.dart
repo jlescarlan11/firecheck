@@ -42,12 +42,13 @@ LatLng polylineMidpoint(List<List<double>> coords) {
 }
 
 /// Decodes a GeoJSON LineString into its coordinate ring. Returns null for
-/// non-LineString geometries or malformed JSON.
+/// non-LineString geometries, malformed JSON, or fewer than 2 coordinates.
 List<List<double>>? decodePolylineGeojson(String geojson) {
   try {
     final parsed = jsonDecode(geojson) as Map<String, dynamic>;
     if (parsed['type'] != 'LineString') return null;
     final coords = parsed['coordinates'] as List<dynamic>;
+    if (coords.length < 2) return null;
     return coords
         .map(
           (p) =>
