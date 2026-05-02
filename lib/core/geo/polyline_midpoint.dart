@@ -48,6 +48,7 @@ List<List<double>>? decodePolylineGeojson(String geojson) {
     final parsed = jsonDecode(geojson) as Map<String, dynamic>;
     if (parsed['type'] != 'LineString') return null;
     final coords = parsed['coordinates'] as List<dynamic>;
+    if (coords.length < 2) return null;
     return coords
         .map(
           (p) =>
