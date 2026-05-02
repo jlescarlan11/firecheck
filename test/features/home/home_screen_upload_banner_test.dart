@@ -19,7 +19,7 @@ void main() {
         driveFileId: null, retryCount: 0, failureReason: null,
         nextRetryAt: null, createdAt: DateTime(2026),
       ),
-    ]);
+    ],);
 
     await tester.pumpWidget(ProviderScope(
       overrides: [
@@ -27,9 +27,9 @@ void main() {
             .overrideWith((_) => DriveUploadNotifier.seeded(state)),
       ],
       child: const MaterialApp(home: Scaffold(body: UploadBanner())),
-    ));
+    ),);
 
-    expect(find.textContaining('file'), findsAtLeastNWidgets(1));
+    expect(find.text('1 file ready to upload'), findsOneWidget);
   });
 
   testWidgets('UploadBanner hidden when no pending jobs', (tester) async {
@@ -40,7 +40,7 @@ void main() {
         ),
       ],
       child: const MaterialApp(home: Scaffold(body: UploadBanner())),
-    ));
+    ),);
 
     expect(find.byType(Card), findsNothing);
   });

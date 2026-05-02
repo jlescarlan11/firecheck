@@ -1,5 +1,4 @@
 import 'package:firecheck/core/security/biometric_gate_provider.dart';
-import 'package:firecheck/features/upload/presentation/upload_banner.dart';
 import 'package:firecheck/core/sync/shapefile/export/export_failure.dart';
 import 'package:firecheck/core/sync/shapefile/export/export_validation_result.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_lock_providers.dart';
@@ -8,6 +7,7 @@ import 'package:firecheck/features/assignment/presentation/submitted_banner.dart
 import 'package:firecheck/features/home/data/shapefile_export_notifier.dart';
 import 'package:firecheck/features/home/domain/export_state.dart';
 import 'package:firecheck/features/home/presentation/home_providers.dart';
+import 'package:firecheck/features/upload/presentation/upload_banner.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
