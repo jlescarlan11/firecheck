@@ -2119,6 +2119,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Export ready but could not open share sheet. Please try again.'**
   String get exportErrorShareFailed;
+
+  /// No description provided for @exportValidating.
+  ///
+  /// In en, this message translates to:
+  /// **'Validating…'**
+  String get exportValidating;
+
+  /// No description provided for @exportValidationBuildingsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No buildings recorded. Survey at least one building before exporting.'**
+  String get exportValidationBuildingsEmpty;
+
+  /// No description provided for @exportValidationRoadsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No roads recorded. Survey at least one road before exporting.'**
+  String get exportValidationRoadsEmpty;
+
+  /// No description provided for @exportValidationBuildingsMissingFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Some building entries are missing required fields. Complete all building forms before exporting.'**
+  String get exportValidationBuildingsMissingFields;
+
+  /// No description provided for @exportValidationRoadsMissingFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Some road entries are missing required fields. Complete all road forms before exporting.'**
+  String get exportValidationRoadsMissingFields;
 }
 
 class _AppLocalizationsDelegate

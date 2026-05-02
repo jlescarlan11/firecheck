@@ -1138,4 +1138,23 @@ class AppLocalizationsTl extends AppLocalizations {
   @override
   String get exportErrorShareFailed =>
       'Export ready but could not open share sheet. Please try again.';
+
+  @override
+  String get exportValidating => 'Bine-validate…';
+
+  @override
+  String get exportValidationBuildingsEmpty =>
+      'Walang naitalagang gusali. Mag-survey ng kahit isang gusali bago mag-export.';
+
+  @override
+  String get exportValidationRoadsEmpty =>
+      'Walang naitalagang kalsada. Mag-survey ng kahit isang kalsada bago mag-export.';
+
+  @override
+  String get exportValidationBuildingsMissingFields =>
+      'May ilang gusali na may kulang na impormasyon. Kumpletuhin ang lahat ng form ng gusali bago mag-export.';
+
+  @override
+  String get exportValidationRoadsMissingFields =>
+      'May ilang kalsada na may kulang na impormasyon. Kumpletuhin ang lahat ng form ng kalsada bago mag-export.';
 }
