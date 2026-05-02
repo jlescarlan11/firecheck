@@ -133,7 +133,7 @@ class DriveUploadRepository {
     final row = await (_db.select(_db.driveUploadJobs)
           ..where((t) =>
               t.assignmentId.equals(assignmentId) &
-              t.fileType.equals(DriveUploadJobStatus.typeShapefile) &
+              t.fileType.equals(DriveFileType.shapefile) &
               t.status.isNotIn([DriveUploadJobStatus.completed]))
           ..limit(1))
         .getSingleOrNull();

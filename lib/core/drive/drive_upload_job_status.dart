@@ -6,7 +6,11 @@ class DriveUploadJobStatus {
   static const completed = 'completed';
   static const failed = 'failed';
   static const dead = 'dead';
+}
 
-  static const typePhoto = 'photo';
-  static const typeShapefile = 'shapefile';
+class DriveFileType {
+  DriveFileType._();
+
+  static const photo = 'photo';
+  static const shapefile = 'shapefile';
 }

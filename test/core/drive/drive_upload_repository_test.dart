@@ -17,7 +17,7 @@ void main() {
         id: 'j1',
         assignmentId: 'a1',
         filePath: '/photos/p1.jpg',
-        fileType: DriveUploadJobStatus.typePhoto,
+        fileType: DriveFileType.photo,
         fileName: 'p1.jpg',
         fileSizeBytes: 1024,
         capturedAt: DateTime(2026, 5, 2),
@@ -34,10 +34,10 @@ void main() {
       final repo = DriveUploadRepository(db);
 
       await repo.insertJob(id: 'j1', assignmentId: 'a1', filePath: '/p1.jpg',
-          fileType: DriveUploadJobStatus.typePhoto, fileName: 'p1.jpg',
+          fileType: DriveFileType.photo, fileName: 'p1.jpg',
           fileSizeBytes: 100, capturedAt: DateTime(2026));
       await repo.insertJob(id: 'j2', assignmentId: 'a1', filePath: '/p2.jpg',
-          fileType: DriveUploadJobStatus.typePhoto, fileName: 'p2.jpg',
+          fileType: DriveFileType.photo, fileName: 'p2.jpg',
           fileSizeBytes: 100, capturedAt: DateTime(2026));
 
       await repo.markCompleted('j1', driveFileId: 'drive-1');
@@ -55,7 +55,7 @@ void main() {
       final repo = DriveUploadRepository(db);
 
       await repo.insertJob(id: 'j1', assignmentId: 'a1', filePath: '/p1.jpg',
-          fileType: DriveUploadJobStatus.typePhoto, fileName: 'p1.jpg',
+          fileType: DriveFileType.photo, fileName: 'p1.jpg',
           fileSizeBytes: 100, capturedAt: DateTime(2026));
       await repo.markFailed('j1',
           reason: 'err', retryCount: 1,
@@ -71,7 +71,7 @@ void main() {
       final repo = DriveUploadRepository(db);
 
       await repo.insertJob(id: 'j1', assignmentId: 'a1', filePath: '/p1.jpg',
-          fileType: DriveUploadJobStatus.typePhoto, fileName: 'p1.jpg',
+          fileType: DriveFileType.photo, fileName: 'p1.jpg',
           fileSizeBytes: 100, capturedAt: DateTime(2026));
       await repo.markDead('j1', reason: 'file missing');
 
@@ -86,7 +86,7 @@ void main() {
       final repo = DriveUploadRepository(db);
 
       await repo.insertJob(id: 'j1', assignmentId: 'a1', filePath: '/p1.jpg',
-          fileType: DriveUploadJobStatus.typePhoto, fileName: 'p1.jpg',
+          fileType: DriveFileType.photo, fileName: 'p1.jpg',
           fileSizeBytes: 100, capturedAt: DateTime(2026));
       await repo.markDead('j1', reason: 'err');
       await repo.resetForRetry('j1');
@@ -95,6 +95,7 @@ void main() {
       expect(all.first.status, DriveUploadJobStatus.pending);
       expect(all.first.retryCount, 0);
       expect(all.first.failureReason, isNull);
+      expect(all.first.nextRetryAt, isNull);
     });
 
     test('resetFailedToPending resets failed jobs only, not dead', () async {
@@ -103,10 +104,10 @@ void main() {
       final repo = DriveUploadRepository(db);
 
       await repo.insertJob(id: 'j1', assignmentId: 'a1', filePath: '/p1.jpg',
-          fileType: DriveUploadJobStatus.typePhoto, fileName: 'p1.jpg',
+          fileType: DriveFileType.photo, fileName: 'p1.jpg',
           fileSizeBytes: 100, capturedAt: DateTime(2026));
       await repo.insertJob(id: 'j2', assignmentId: 'a1', filePath: '/p2.jpg',
-          fileType: DriveUploadJobStatus.typePhoto, fileName: 'p2.jpg',
+          fileType: DriveFileType.photo, fileName: 'p2.jpg',
           fileSizeBytes: 100, capturedAt: DateTime(2026));
 
       await repo.markFailed('j1', reason: 'net', retryCount: 1,
@@ -128,7 +129,7 @@ void main() {
       final repo = DriveUploadRepository(db);
 
       await repo.insertJob(id: 'j1', assignmentId: 'a1', filePath: '/p1.jpg',
-          fileType: DriveUploadJobStatus.typePhoto, fileName: 'p1.jpg',
+          fileType: DriveFileType.photo, fileName: 'p1.jpg',
           fileSizeBytes: 100, capturedAt: DateTime(2026));
 
       expect(await repo.jobExistsForFilePath('/p1.jpg'), isTrue);
@@ -141,11 +142,26 @@ void main() {
       final repo = DriveUploadRepository(db);
 
       await repo.insertJob(id: 'j1', assignmentId: 'a1', filePath: '/a1.zip',
-          fileType: DriveUploadJobStatus.typeShapefile, fileName: 'a1.zip',
+          fileType: DriveFileType.shapefile, fileName: 'a1.zip',
           fileSizeBytes: 1000, capturedAt: DateTime(2026));
       await repo.markCompleted('j1', driveFileId: 'drive-1');
 
       expect(await repo.shapefileJobExistsForAssignment('a1'), isFalse);
+    });
+
+    test('markCompleted clears resumableUri', () async {
+      final db = _db();
+      addTearDown(db.close);
+      final repo = DriveUploadRepository(db);
+
+      await repo.insertJob(id: 'j1', assignmentId: 'a1', filePath: '/p1.jpg',
+          fileType: DriveFileType.photo, fileName: 'p1.jpg',
+          fileSizeBytes: 100, capturedAt: DateTime(2026));
+      await repo.setResumableUri('j1', 'https://resumable-uri');
+      await repo.markCompleted('j1', driveFileId: 'drive-1');
+
+      final all = await db.select(db.driveUploadJobs).get();
+      expect(all.first.resumableUri, isNull);
     });
   });
 }
