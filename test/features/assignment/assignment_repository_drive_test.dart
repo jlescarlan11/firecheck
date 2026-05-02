@@ -73,5 +73,17 @@ void main() {
       final result = await repo.getDriveUploadResult(assignmentId);
       expect(result!.folderUrl, 'https://drive.google.com/drive/folders/new-id');
     });
+
+    test('throws StateError when assignment does not exist', () async {
+      expect(
+        () => repo.setDriveUploadResult(
+          assignmentId: 'nonexistent',
+          driveFolderPath: 'FieldData/x/2026-05-02/',
+          driveFolderUrl: 'https://drive.google.com/drive/folders/x',
+          driveUploadConfirmedAt: DateTime(2026, 5, 2),
+        ),
+        throwsA(isA<StateError>()),
+      );
+    });
   });
 }

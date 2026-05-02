@@ -89,13 +89,18 @@ class AssignmentRepository {
     required String driveFolderUrl,
     required DateTime driveUploadConfirmedAt,
   }) async {
-    await (db.update(db.assignments)
+    final affected = await (db.update(db.assignments)
           ..where((t) => t.id.equals(assignmentId)))
         .write(AssignmentsCompanion(
           driveFolderPath: Value(driveFolderPath),
           driveFolderUrl: Value(driveFolderUrl),
           driveUploadConfirmedAt: Value(driveUploadConfirmedAt),
         ));
+    if (affected == 0) {
+      throw StateError(
+        'setDriveUploadResult: no assignment row found for id $assignmentId',
+      );
+    }
   }
 
   Future<({String folderPath, String folderUrl, DateTime confirmedAt})?>
