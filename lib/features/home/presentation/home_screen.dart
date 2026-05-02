@@ -7,6 +7,7 @@ import 'package:firecheck/features/assignment/presentation/submitted_banner.dart
 import 'package:firecheck/features/home/data/shapefile_export_notifier.dart';
 import 'package:firecheck/features/home/domain/export_state.dart';
 import 'package:firecheck/features/home/presentation/home_providers.dart';
+import 'package:firecheck/features/upload/presentation/upload_banner.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -47,6 +48,8 @@ class HomeScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
+              const UploadBanner(),
+              const SizedBox(height: 8),
               if (lock is Submitted)
                 SubmittedBanner(submittedAt: lock.submittedAt)
               else

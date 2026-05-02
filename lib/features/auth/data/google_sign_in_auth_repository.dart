@@ -49,4 +49,14 @@ class GoogleSignInAuthRepository implements GoogleAuthRepository {
     if (account == null) throw const AuthFailure('Not signed in to Google');
     return account.email.split('@').first;
   }
+
+  @override
+  Future<bool> requestDriveUploadScope() async {
+    try {
+      return await _googleSignIn
+          .requestScopes([GoogleAuthRepository.driveFileScope]);
+    } on Object {
+      return false;
+    }
+  }
 }

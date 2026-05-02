@@ -13,6 +13,8 @@ class _ThrowingAuthRepository implements GoogleAuthRepository {
   Future<void> signOut() async {}
   @override
   Future<String> getEnumeratorId() async => 'test-enumerator';
+  @override
+  Future<bool> requestDriveUploadScope() async => false;
 }
 
 void main() {

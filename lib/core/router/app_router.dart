@@ -12,6 +12,7 @@ import 'package:firecheck/features/map/presentation/map_screen.dart';
 import 'package:firecheck/features/review/presentation/review_screen.dart';
 import 'package:firecheck/features/survey/building_form/presentation/submission_detail_screen.dart';
 import 'package:firecheck/features/survey/olp_survey/presentation/result/olp_result_screen.dart';
+import 'package:firecheck/features/upload/presentation/upload_queue_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -110,6 +111,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/blocker',
         builder: (context, state) => const AssignmentClosedBlocker(),
+      ),
+      GoRoute(
+        path: '/uploads',
+        builder: (context, state) => const UploadQueueScreen(),
       ),
     ],
   );

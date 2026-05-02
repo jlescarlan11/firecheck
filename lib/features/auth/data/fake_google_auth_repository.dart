@@ -18,4 +18,7 @@ class FakeGoogleAuthRepository implements GoogleAuthRepository {
 
   @override
   Future<String> getEnumeratorId() async => 'test-enumerator';
+
+  @override
+  Future<bool> requestDriveUploadScope() async => true;
 }

@@ -1,5 +1,7 @@
 import 'package:firecheck/app.dart';
 import 'package:firecheck/core/device/storage_checker.dart';
+import 'package:firecheck/core/drive/drive_upload_providers.dart';
+import 'package:firecheck/core/drive/drive_upload_workmanager.dart';
 import 'package:firecheck/core/drive/google_drive_api.dart';
 import 'package:firecheck/core/mapbox/offline_pack_adapter.dart';
 import 'package:firecheck/core/sync/presentation/sync_providers.dart';
@@ -8,6 +10,8 @@ import 'package:firecheck/core/sync/shapefile/reprojector.dart';
 import 'package:firecheck/core/sync/shapefile/shapefile_importer.dart';
 import 'package:firecheck/core/sync/worker/workmanager_dispatcher.dart';
 import 'package:firecheck/core/validation/supabase_validation_failure_reporter.dart';
+import 'package:firecheck/features/assignment/presentation/assignment_lock_providers.dart';
+import 'package:firecheck/features/assignment/presentation/assignment_lock_state.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
 import 'package:firecheck/features/auth/data/google_sign_in_auth_repository.dart';
 import 'package:firecheck/features/auth/presentation/google_auth_providers.dart';
@@ -23,7 +27,10 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 final _googleSignIn = GoogleSignIn(
-  scopes: ['https://www.googleapis.com/auth/drive.readonly'],
+  scopes: [
+    'https://www.googleapis.com/auth/drive.readonly',
+    'https://www.googleapis.com/auth/drive.file',
+  ],
 );
 
 Future<void> main() async {
@@ -49,6 +56,7 @@ Future<void> main() async {
 
   await Supabase.initialize(url: supaUrl, anonKey: supaKey);
   await registerPeriodicSync();
+  await registerPeriodicDriveUpload();
   MapboxOptions.setAccessToken(mapboxToken);
 
   // Phase 1 T19: wire the real Mapbox renderer + offline-pack adapter so
@@ -69,6 +77,7 @@ Future<void> main() async {
   runApp(
     ProviderScope(
       overrides: [
+        googleSignInProvider.overrideWithValue(_googleSignIn),
         mapRendererProvider.overrideWithValue(MapboxMapRenderer()),
         if (tileStore != null)
           offlinePackAdapterProvider.overrideWithValue(
@@ -99,9 +108,49 @@ Future<void> main() async {
           ),
         ),
       ],
-      child: const _SyncBootstrap(child: FireCheckApp()),
+      child: const _DriveUploadBootstrap(
+        child: _SyncBootstrap(child: FireCheckApp()),
+      ),
     ),
   );
+}
+
+class _DriveUploadBootstrap extends ConsumerStatefulWidget {
+  const _DriveUploadBootstrap({required this.child});
+  final Widget child;
+
+  @override
+  ConsumerState<_DriveUploadBootstrap> createState() =>
+      _DriveUploadBootstrapState();
+}
+
+class _DriveUploadBootstrapState extends ConsumerState<_DriveUploadBootstrap> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(_boot);
+  }
+
+  Future<void> _boot() async {
+    final controller = ref.read(driveUploadControllerProvider);
+    await controller.start();
+    _watchForCompletion();
+  }
+
+  void _watchForCompletion() {
+    ref.read(assignmentLockStateProvider.stream).listen((state) async {
+      if (state is! Submitted) return;
+      final repo = ref.read(assignmentRepositoryProvider);
+      final assignment = await repo.getCurrentAssignment();
+      if (assignment == null) return;
+      await ref.read(enqueueAssignmentUseCaseProvider).execute(
+            assignmentId: assignment.id,
+          );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 class _SyncBootstrap extends ConsumerStatefulWidget {
