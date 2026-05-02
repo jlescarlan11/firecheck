@@ -159,6 +159,35 @@ void main() {
     expect(failure, isA<NoCompletedFeatures>());
   });
 
+  test('exported archive entries are non-empty for all required layer files',
+      () async {
+    const assignmentId = 'sanity-check-001';
+    await _seedBuilding(db,
+        assignmentId: assignmentId, featureId: 'b1', submissionId: 'sb1');
+    await _seedRoad(db,
+        assignmentId: assignmentId, featureId: 'r1', submissionId: 'sr1');
+
+    final capturedPaths = <String>[];
+    await makeExporter(capturedPaths: capturedPaths)
+        .export(assignmentId: assignmentId);
+
+    final zipBytes = await File(capturedPaths.first).readAsBytes();
+    final archive = ZipDecoder().decodeBytes(zipBytes);
+
+    for (final ext in ['.shp', '.shx', '.dbf']) {
+      expect(
+        archive.files.firstWhere((f) => f.name == 'buildings$ext').size,
+        greaterThan(0),
+        reason: 'buildings$ext must not be empty',
+      );
+      expect(
+        archive.files.firstWhere((f) => f.name == 'roads$ext').size,
+        greaterThan(0),
+        reason: 'roads$ext must not be empty',
+      );
+    }
+  });
+
   test('doesNotExist building is included in ZIP output', () async {
     const assignmentId = 'assignment-004';
     await _seedBuilding(

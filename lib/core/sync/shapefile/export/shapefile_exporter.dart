@@ -395,6 +395,13 @@ class ShapefileExporter {
       return WriteError(e.toString());
     }
 
+    // Guard against exporter bugs producing empty file components.
+    for (final out in outputs) {
+      if (out.shp.isEmpty || out.shx.isEmpty || out.dbf.isEmpty) {
+        return WriteError('Layer ${out.layerName} produced empty components');
+      }
+    }
+
     // Build ZIP archive
     final archive = Archive();
     for (final out in outputs) {
