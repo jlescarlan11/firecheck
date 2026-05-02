@@ -206,5 +206,30 @@ void main() {
       final f = (await db.select(db.features).get()).single;
       expect(f.status, 'complete');
     });
+
+    test('road feature with doesNotExist submission is in_progress', () async {
+      final now = DateTime.now();
+      await db.into(db.features).insert(
+            FeaturesCompanion.insert(
+              id: 'f1',
+              assignmentId: 'a1',
+              featureType: 'road',
+              geometryGeojson: '{}',
+              createdAt: now,
+            ),
+          );
+      await db.into(db.submissions).insert(
+            SubmissionsCompanion.insert(
+              id: 's1',
+              featureId: 'f1',
+              doesNotExist: const Value(true),
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+      await repo.markFeatureStatus('f1');
+      final f = (await db.select(db.features).get()).single;
+      expect(f.status, 'in_progress');
+    });
   });
 }
