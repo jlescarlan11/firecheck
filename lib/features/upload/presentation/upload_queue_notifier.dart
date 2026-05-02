@@ -13,15 +13,22 @@ class DriveUploadState {
 
   final List<DriveUploadJob> jobs;
 
-  int get pendingCount =>
-      jobs.where((j) => j.status != DriveUploadJobStatus.completed).length;
+  int get pendingCount => jobs
+      .where((j) =>
+          j.status == DriveUploadJobStatus.pending ||
+          j.status == DriveUploadJobStatus.failed ||
+          j.status == DriveUploadJobStatus.dead)
+      .length;
 
   int get totalPendingBytes => jobs
-      .where((j) => j.status != DriveUploadJobStatus.completed)
+      .where((j) =>
+          j.status == DriveUploadJobStatus.pending ||
+          j.status == DriveUploadJobStatus.failed ||
+          j.status == DriveUploadJobStatus.dead)
       .fold(0, (sum, j) => sum + j.fileSizeBytes);
 
-  int get completedCount =>
-      jobs.where((j) => j.status == DriveUploadJobStatus.completed).length;
+  int get uploadingCount =>
+      jobs.where((j) => j.status == DriveUploadJobStatus.uploading).length;
 
   bool get isUploading =>
       jobs.any((j) => j.status == DriveUploadJobStatus.uploading);

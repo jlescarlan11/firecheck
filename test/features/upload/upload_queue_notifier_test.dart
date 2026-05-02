@@ -37,13 +37,12 @@ void main() {
     // Trigger notifier creation (subscribes to the stream).
     container.read(driveUploadNotifierProvider);
 
-    // Wait for the Drift watch stream to emit at least one event.
-    await container
-        .read(driveUploadRepoProvider)
-        .watchQueue()
-        .first;
+    // Wait for the notifier's own state stream to emit a non-empty job list.
+    final state = await container
+        .read(driveUploadNotifierProvider.notifier)
+        .stream
+        .firstWhere((s) => s.jobs.isNotEmpty);
 
-    final state = container.read(driveUploadNotifierProvider);
     expect(state.pendingCount, 1);
   });
 }
