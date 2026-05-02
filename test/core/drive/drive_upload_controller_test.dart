@@ -82,4 +82,25 @@ void main() {
     await ctrl.stop();
     await streamCtrl.close();
   });
+
+  test('no drain occurs after stop()', () async {
+    final streamCtrl = StreamController<List<ConnectivityResult>>();
+    var drainCalled = 0;
+    final prefs = DriveUploadPreferences(InMemorySecureStorage());
+    await prefs.setAutoUploadEnabled(enabled: true);
+
+    final ctrl = DriveUploadController(
+      onDrain: () async => drainCalled++,
+      preferences: prefs,
+      connectivityStream: streamCtrl.stream,
+    );
+    await ctrl.start();
+    await ctrl.stop();
+
+    streamCtrl.add([ConnectivityResult.wifi]);
+    await Future.delayed(Duration.zero);
+
+    expect(drainCalled, 0);
+    await streamCtrl.close();
+  });
 }

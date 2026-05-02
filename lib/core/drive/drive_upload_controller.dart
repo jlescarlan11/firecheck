@@ -10,6 +10,9 @@ class DriveUploadController {
   })  : _onDrain = onDrain,
         _preferences = preferences,
         _connectivityStream = connectivityStream ??
+            // connectivity_plus 5.x emits a single ConnectivityResult per event.
+            // Wrap in a list to match the Stream<List<ConnectivityResult>> type.
+            // Remove this .map() when upgrading to 6.x (which emits natively).
             Connectivity()
                 .onConnectivityChanged
                 .map((r) => <ConnectivityResult>[r]);
@@ -20,11 +23,18 @@ class DriveUploadController {
   StreamSubscription<List<ConnectivityResult>>? _sub;
 
   Future<void> start() async {
+    await stop(); // cancel any existing subscription before creating a new one
     _sub = _connectivityStream.listen((results) async {
       final isWifi = results.any((r) => r == ConnectivityResult.wifi);
       if (!isWifi) return;
       final autoEnabled = await _preferences.isAutoUploadEnabled();
-      if (autoEnabled) await _onDrain();
+      if (autoEnabled) {
+        try {
+          await _onDrain();
+        } on Object catch (_) {
+          // drain errors are handled by the worker itself; don't kill this subscription
+        }
+      }
     });
   }
 
