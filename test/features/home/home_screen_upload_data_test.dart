@@ -1,3 +1,4 @@
+import 'package:firecheck/core/drive/drive_upload_providers.dart';
 import 'package:firecheck/core/security/biometric_gate.dart';
 import 'package:firecheck/core/security/biometric_gate_provider.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_lock_providers.dart';
@@ -5,6 +6,7 @@ import 'package:firecheck/features/assignment/presentation/assignment_lock_state
 import 'package:firecheck/features/home/domain/progress_snapshot.dart';
 import 'package:firecheck/features/home/presentation/home_providers.dart';
 import 'package:firecheck/features/home/presentation/home_screen.dart';
+import 'package:firecheck/features/upload/presentation/upload_queue_notifier.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -31,6 +33,9 @@ void main() {
             (ref) =>
                 Stream.value(Submitted(submittedAt: DateTime(2026, 4, 27))),
           ),
+          driveUploadNotifierProvider.overrideWith(
+            (_) => DriveUploadNotifier.seeded(const DriveUploadState(jobs: [])),
+          ),
         ],
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -55,6 +60,9 @@ void main() {
             (ref) => Stream.value(const Unlocked()),
           ),
           biometricGateProvider.overrideWithValue(_FakeBiometric()),
+          driveUploadNotifierProvider.overrideWith(
+            (_) => DriveUploadNotifier.seeded(const DriveUploadState(jobs: [])),
+          ),
         ],
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,

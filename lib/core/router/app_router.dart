@@ -1,4 +1,5 @@
 import 'package:firecheck/features/assignment/presentation/assignment_closed_blocker.dart';
+import 'package:firecheck/features/upload/presentation/upload_queue_screen.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_lock_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_lock_state.dart';
 import 'package:firecheck/features/assignment/presentation/get_maps_screen.dart';
@@ -110,6 +111,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/blocker',
         builder: (context, state) => const AssignmentClosedBlocker(),
+      ),
+      GoRoute(
+        path: '/uploads',
+        builder: (context, state) => const UploadQueueScreen(),
       ),
     ],
   );

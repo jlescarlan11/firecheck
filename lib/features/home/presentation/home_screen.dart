@@ -1,4 +1,5 @@
 import 'package:firecheck/core/security/biometric_gate_provider.dart';
+import 'package:firecheck/features/upload/presentation/upload_banner.dart';
 import 'package:firecheck/core/sync/shapefile/export/export_failure.dart';
 import 'package:firecheck/core/sync/shapefile/export/export_validation_result.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_lock_providers.dart';
@@ -47,6 +48,8 @@ class HomeScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
+              const UploadBanner(),
+              const SizedBox(height: 8),
               if (lock is Submitted)
                 SubmittedBanner(submittedAt: lock.submittedAt)
               else
