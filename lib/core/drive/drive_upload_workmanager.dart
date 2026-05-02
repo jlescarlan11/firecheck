@@ -31,6 +31,12 @@ void driveUploadCallbackDispatcher() {
         // Background isolate constructs a fresh GoogleSignIn — clientId is read
         // automatically from GoogleService-Info.plist / google-services.json.
       );
+
+      // Bail out if there is no active session — the foreground app will handle
+      // the upload once the user signs in again.
+      final account = await signIn.signInSilently();
+      if (account == null) return true;
+
       final uploadApi = GoogleDriveUploadApi(googleSignIn: signIn);
       final repo = DriveUploadRepository(db);
       final worker = DriveUploadWorker(

@@ -22,10 +22,13 @@ class GoogleDriveUploadApi implements DriveUploadApi {
   @override
   Future<String> createOrGetFolder(String name, String parentId) async {
     final api = await _api();
+    final escapedName = name.replaceAll(r'\', r'\\').replaceAll("'", r"\'");
+    final escapedParent =
+        parentId.replaceAll(r'\', r'\\').replaceAll("'", r"\'");
     final existing = await api.files.list(
-      q: "name = '$name' "
+      q: "name = '$escapedName' "
           "and mimeType = 'application/vnd.google-apps.folder' "
-          "and '$parentId' in parents "
+          "and '$escapedParent' in parents "
           "and trashed = false",
       spaces: 'drive',
       $fields: 'files(id)',
@@ -52,6 +55,9 @@ class GoogleDriveUploadApi implements DriveUploadApi {
     required String localPath,
     required String driveParentId,
     required String fileName,
+    // resumableUri is accepted for interface compatibility but is currently
+    // ignored — the googleapis client does not expose a resumable-URI handle
+    // in its response, so uploads always restart from the beginning on failure.
     String? resumableUri,
     void Function(int sent, int total)? onProgress,
   }) async {

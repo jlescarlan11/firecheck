@@ -3,6 +3,7 @@ import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sqlite3/sqlite3.dart' as sqlite3;
 
 void main() {
   test('schemaVersion is at least 8', () {
@@ -112,5 +113,87 @@ void main() {
     expect(row.retryCount, 2);
     expect(row.failureReason, 'network timeout');
     expect(row.nextRetryAt, isNotNull);
+  });
+
+  // ── Real v7 → v8 migration test ────────────────────────────────────────────
+  //
+  // Opens an in-memory database pre-seeded with the v7 schema (no
+  // drive_upload_jobs table), then lets AppDatabase run its onUpgrade
+  // migration. Verifies that the table and its indexes are created correctly.
+  test('migrates from v7 to v8: creates drive_upload_jobs table and indexes',
+      () async {
+    // Build a v7 schema in raw SQLite before Drift touches the database.
+    // NativeDatabase.memory(setup:) fires on the raw sqlite3.Database before
+    // any Drift migration runs, so we can set user_version = 7 and create the
+    // v7 tables here.
+    final db = AppDatabase.forTesting(
+      NativeDatabase.memory(
+        setup: (rawDb) {
+          // Mark this as a v7 database so Drift's onUpgrade fires with from=7.
+          rawDb.execute('PRAGMA user_version = 7');
+
+          // Create a representative subset of v7 tables. We only need enough
+          // so that the migration's CREATE TABLE for drive_upload_jobs
+          // succeeds; we don't need every column of every table.
+          rawDb.execute('''
+            CREATE TABLE IF NOT EXISTS enumerators (
+              id TEXT NOT NULL PRIMARY KEY,
+              name TEXT NOT NULL
+            )
+          ''');
+          rawDb.execute('''
+            CREATE TABLE IF NOT EXISTS assignments (
+              id TEXT NOT NULL PRIMARY KEY,
+              enumerator_id TEXT NOT NULL,
+              campaign_id TEXT NOT NULL,
+              boundary_polygon_geojson TEXT NOT NULL,
+              created_at INTEGER NOT NULL,
+              submitted_at INTEGER,
+              closed_remotely INTEGER NOT NULL DEFAULT 0,
+              drive_modified_time TEXT,
+              drive_folder_id TEXT
+            )
+          ''');
+        },
+      ),
+    );
+    addTearDown(db.close);
+
+    // Touch the DB to trigger Drift's migration.
+    final tables = await db
+        .customSelect(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name='drive_upload_jobs'",
+        )
+        .get();
+    expect(tables, hasLength(1),
+        reason: 'drive_upload_jobs table must exist after v7→v8 migration');
+
+    final indexes = await db
+        .customSelect(
+          "SELECT name FROM sqlite_master WHERE type='index' "
+          "AND (name='drive_upload_jobs_status_idx' "
+          "OR name='drive_upload_jobs_assignment_idx')",
+        )
+        .get();
+    final indexNames =
+        indexes.map((r) => r.data['name'] as String).toSet();
+    expect(indexNames, contains('drive_upload_jobs_status_idx'));
+    expect(indexNames, contains('drive_upload_jobs_assignment_idx'));
+
+    // Verify the migrated table accepts a row insertion (smoke test).
+    await db.customStatement('''
+      INSERT INTO drive_upload_jobs
+        (id, assignment_id, file_path, file_type, file_name,
+         file_size_bytes, captured_at, created_at)
+      VALUES
+        ('test-id', 'a-001', '/photos/test.jpg', 'photo', 'test.jpg',
+         1024, 0, 0)
+    ''');
+    final row = await db
+        .customSelect(
+          "SELECT id FROM drive_upload_jobs WHERE id='test-id'",
+        )
+        .getSingle();
+    expect(row.data['id'], 'test-id');
   });
 }

@@ -5,7 +5,9 @@ abstract interface class DriveUploadApi {
   Future<String> createOrGetFolder(String name, String parentId);
 
   /// Uploads [localPath] into [driveParentId] and returns the Drive file ID.
-  /// Pass [resumableUri] to resume an interrupted large-file upload.
+  ///
+  /// [resumableUri] is reserved for future resumable upload support.
+  /// It is currently unused by [GoogleDriveUploadApi]; uploads restart on failure.
   Future<String> uploadFile({
     required String localPath,
     required String driveParentId,

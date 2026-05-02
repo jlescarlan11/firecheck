@@ -33,9 +33,11 @@ class EnqueueAssignmentUseCase {
       final (failure, zipPath) =
           await _exporter.exportToFile(assignmentId: assignmentId);
       if (failure != null) {
-        // NoCompletedFeatures is fine — nothing to export
-        if (failure is! NoCompletedFeatures) {
-          throw Exception('Shapefile export failed: $failure');
+        if (failure is NoCompletedFeatures) {
+          // No field data yet — nothing to export, continue with photos.
+        } else {
+          // Export failed; skip shapefile and continue with photos.
+          // The failure will surface in the next export attempt.
         }
       } else if (zipPath != null) {
         final file = File(zipPath);

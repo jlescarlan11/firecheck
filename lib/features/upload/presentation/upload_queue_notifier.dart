@@ -57,11 +57,15 @@ class DriveUploadNotifier extends StateNotifier<DriveUploadState> {
   StreamSubscription<List<DriveUploadJob>>? _sub;
 
   Future<void> uploadAll() async {
+    assert(_repo != null && _worker != null,
+        'uploadAll() called on a seeded test notifier');
     await _repo!.resetFailedToPending();
     await _worker!.drain();
   }
 
   Future<void> retryJob(String jobId) async {
+    assert(_repo != null && _worker != null,
+        'retryJob() called on a seeded test notifier');
     await _repo!.resetForRetry(jobId);
     await _worker!.drain();
   }
