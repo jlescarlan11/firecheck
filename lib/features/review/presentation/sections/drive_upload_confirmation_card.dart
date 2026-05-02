@@ -284,7 +284,7 @@ class _FailureCard extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: onRetry,
+                  onPressed: canRetry ? onRetry : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFDC2626),
                     foregroundColor: Colors.white,

@@ -104,5 +104,8 @@ void main() {
 
     expect(find.text('Re-authenticate'), findsOneWidget);
     expect(find.text('Retry Upload'), findsNothing);
+    // Button is disabled (onPressed null) when canRetry is false.
+    final button = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
+    expect(button.onPressed, isNull);
   });
 }
