@@ -44,7 +44,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -93,6 +93,12 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(driveUploadJobs);
             await m.createIndex(driveUploadJobsStatusIdx);
             await m.createIndex(driveUploadJobsAssignmentIdx);
+          }
+          if (from < 9) {
+            // v8 → v9: Drive upload confirmation columns for US-30.
+            await m.addColumn(assignments, assignments.driveFolderPath);
+            await m.addColumn(assignments, assignments.driveFolderUrl);
+            await m.addColumn(assignments, assignments.driveUploadConfirmedAt);
           }
         },
         beforeOpen: (details) async {

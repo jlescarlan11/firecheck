@@ -138,4 +138,68 @@ class GoogleDriveApi implements DriveApi {
 
     yield DriveDownloadComplete(result, _md5Cache[assignmentId] ?? {});
   }
+
+  @override
+  Future<({String folderPath, String folderUrl})> uploadAssignmentFiles({
+    required String enumeratorId,
+    required String assignmentId,
+    required List<({String filename, Uint8List bytes})> files,
+  }) async {
+    final api = await _api();
+    final now = DateTime.now();
+    final date =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+
+    final fieldDataId = await _findOrCreateFolder(api, null, 'FieldData');
+    final enumeratorFolderId =
+        await _findOrCreateFolder(api, fieldDataId, enumeratorId);
+    final dateFolderId =
+        await _findOrCreateFolder(api, enumeratorFolderId, date);
+
+    for (final file in files) {
+      final media = gdrive.Media(
+        Stream.value(file.bytes),
+        file.bytes.length,
+      );
+      await api.files.create(
+        gdrive.File()
+          ..name = file.filename
+          ..parents = [dateFolderId],
+        uploadMedia: media,
+      );
+    }
+
+    return (
+      folderPath: 'FieldData/$enumeratorId/$date/',
+      folderUrl: 'https://drive.google.com/drive/folders/$dateFolderId',
+    );
+  }
+
+  Future<String> _findOrCreateFolder(
+    gdrive.DriveApi api,
+    String? parentId,
+    String name,
+  ) async {
+    final escapedName = name.replaceAll("'", "\\'");
+    final parentClause =
+        parentId != null ? " and '$parentId' in parents" : " and 'root' in parents";
+    final result = await api.files.list(
+      q: "name = '$escapedName'"
+          " and mimeType = 'application/vnd.google-apps.folder'"
+          " and trashed = false"
+          '$parentClause',
+      spaces: 'drive',
+      $fields: 'files(id)',
+    );
+    if (result.files?.isNotEmpty == true) {
+      return result.files!.first.id!;
+    }
+    final folder = await api.files.create(
+      gdrive.File()
+        ..name = name
+        ..mimeType = 'application/vnd.google-apps.folder'
+        ..parents = parentId != null ? [parentId] : null,
+    );
+    return folder.id!;
+  }
 }

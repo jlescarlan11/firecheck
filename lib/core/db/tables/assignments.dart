@@ -13,6 +13,10 @@ class Assignments extends Table {
   DateTimeColumn get createdAt => dateTime()();
   TextColumn get driveModifiedTime => text().nullable()();
   TextColumn get driveFolderId => text().nullable()();
+  // US-30: Drive upload confirmation
+  TextColumn get driveFolderPath => text().nullable()();
+  TextColumn get driveFolderUrl => text().nullable()();
+  DateTimeColumn get driveUploadConfirmedAt => dateTime().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
