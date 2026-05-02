@@ -4,10 +4,9 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/drive/drive_upload_repository.dart';
 import 'package:firecheck/core/drive/drive_upload_worker.dart';
-import 'package:firecheck/core/drive/fake_drive_upload_api.dart';
-// TODO(task-10): replace FakeDriveUploadApi with GoogleDriveUploadApi once
-// lib/core/drive/google_drive_upload_api.dart is implemented.
+import 'package:firecheck/core/drive/google_drive_upload_api.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:workmanager/workmanager.dart';
 
 const _periodicTaskName = 'firecheck.drive_upload.periodic';
@@ -26,9 +25,10 @@ void driveUploadCallbackDispatcher() {
 
       // Opens the real on-disk Drift database in this background isolate.
       final db = AppDatabase();
-      // TODO(task-10): replace with GoogleDriveUploadApi(googleSignIn: signIn)
-      // once the real upload API is implemented.
-      final uploadApi = FakeDriveUploadApi();
+      final signIn = GoogleSignIn(
+        scopes: ['https://www.googleapis.com/auth/drive.file'],
+      );
+      final uploadApi = GoogleDriveUploadApi(googleSignIn: signIn);
       final repo = DriveUploadRepository(db);
       final worker = DriveUploadWorker(
         api: uploadApi,
