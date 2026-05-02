@@ -616,7 +616,7 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
         PolylineAnnotationOptions(
           geometry: LineString(coordinates: coords),
           lineColor: _colorForStatus(f.status),
-          lineWidth: 8,
+          lineWidth: 4,
         ),
       );
       _annotationToFeature[created.id] = f;
