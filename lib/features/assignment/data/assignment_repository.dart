@@ -82,4 +82,35 @@ class AssignmentRepository {
           ..limit(1))
         .watchSingleOrNull();
   }
+
+  Future<void> setDriveUploadResult({
+    required String assignmentId,
+    required String driveFolderPath,
+    required String driveFolderUrl,
+    required DateTime driveUploadConfirmedAt,
+  }) async {
+    await (db.update(db.assignments)
+          ..where((t) => t.id.equals(assignmentId)))
+        .write(AssignmentsCompanion(
+          driveFolderPath: Value(driveFolderPath),
+          driveFolderUrl: Value(driveFolderUrl),
+          driveUploadConfirmedAt: Value(driveUploadConfirmedAt),
+        ));
+  }
+
+  Future<({String folderPath, String folderUrl, DateTime confirmedAt})?>
+      getDriveUploadResult(String assignmentId) async {
+    final row = await (db.select(db.assignments)
+          ..where((t) => t.id.equals(assignmentId)))
+        .getSingleOrNull();
+    if (row == null ||
+        row.driveFolderPath == null ||
+        row.driveFolderUrl == null ||
+        row.driveUploadConfirmedAt == null) return null;
+    return (
+      folderPath: row.driveFolderPath!,
+      folderUrl: row.driveFolderUrl!,
+      confirmedAt: row.driveUploadConfirmedAt!,
+    );
+  }
 }
