@@ -406,5 +406,10 @@
   "exportShapefileExporting": "Packaging…",
   "exportErrorNoFeatures": "No completed features to export.",
   "exportErrorWriteFailed": "Export failed: could not write files. Please try again.",
-  "exportErrorShareFailed": "Export ready but could not open share sheet. Please try again."
+  "exportErrorShareFailed": "Export ready but could not open share sheet. Please try again.",
+  "exportValidating": "Validating…",
+  "exportValidationBuildingsEmpty": "No buildings recorded. Survey at least one building before exporting.",
+  "exportValidationRoadsEmpty": "No roads recorded. Survey at least one road before exporting.",
+  "exportValidationBuildingsMissingFields": "Some building entries are missing required fields. Complete all building forms before exporting.",
+  "exportValidationRoadsMissingFields": "Some road entries are missing required fields. Complete all road forms before exporting."
 }

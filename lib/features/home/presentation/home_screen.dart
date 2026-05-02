@@ -1,5 +1,6 @@
 import 'package:firecheck/core/security/biometric_gate_provider.dart';
 import 'package:firecheck/core/sync/shapefile/export/export_failure.dart';
+import 'package:firecheck/core/sync/shapefile/export/export_validation_result.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_lock_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_lock_state.dart';
 import 'package:firecheck/features/assignment/presentation/submitted_banner.dart';
@@ -21,7 +22,8 @@ class HomeScreen extends ConsumerWidget {
     final lock = ref.watch(assignmentLockStateProvider).value;
     final isLocked = lock is Submitted || lock is ClosedRemotely;
     final exportState = ref.watch(shapefileExportNotifierProvider);
-    final isExporting = exportState is ExportExporting;
+    final isBusy =
+        exportState is ExportValidating || exportState is ExportExporting;
 
     ref.listen<ExportState>(shapefileExportNotifierProvider, (prev, next) {
       if (next is ExportFailed) {
@@ -108,29 +110,71 @@ class HomeScreen extends ConsumerWidget {
                   onTap: () => _onUploadDataTap(context, ref, l),
                 ),
               _ActionTile(
-                title: isExporting
-                    ? l.exportShapefileExporting
-                    : l.exportShapefile,
+                title: switch (exportState) {
+                  ExportValidating() => l.exportValidating,
+                  ExportExporting() => l.exportShapefileExporting,
+                  _ => l.exportShapefile,
+                },
                 subtitle: l.exportShapefileSubtitle,
-                trailing: isExporting
+                trailing: isBusy
                     ? const SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.chevron_right),
-                onTap: (snap.completedFeatures == 0 || isExporting)
+                onTap: (snap.completedFeatures == 0 || isBusy)
                     ? null
                     : () => ref
                         .read(shapefileExportNotifierProvider.notifier)
                         .export(),
               ),
+              if (exportState is ExportValidationFailed)
+                ...exportState.errors.map(
+                  (e) => Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 2,
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          size: 14,
+                          color: Colors.red,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            _validationErrorMessage(l, e),
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
       ),
     );
   }
+
+  String _validationErrorMessage(AppLocalizations l, ExportLayerError e) =>
+      switch ((e.layer, e.issue)) {
+        (ExportLayer.buildings, ExportLayerIssue.emptyLayer) =>
+          l.exportValidationBuildingsEmpty,
+        (ExportLayer.roads, ExportLayerIssue.emptyLayer) =>
+          l.exportValidationRoadsEmpty,
+        (ExportLayer.buildings, ExportLayerIssue.missingRequiredFields) =>
+          l.exportValidationBuildingsMissingFields,
+        (ExportLayer.roads, ExportLayerIssue.missingRequiredFields) =>
+          l.exportValidationRoadsMissingFields,
+      };
 
   Future<void> _onUploadDataTap(
     BuildContext context,

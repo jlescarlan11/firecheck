@@ -324,5 +324,10 @@
   "reshapeErrorZeroLengthEdge": "Adjacent corners cannot be on the same spot",
   "reshapeLockedSnackbar": "Assignment is closed; reshape unavailable",
   "reshapeLockWhileDirtyBanner": "Assignment was closed by supervisor — your edits cannot be saved",
-  "reshapeLockExit": "Exit"
+  "reshapeLockExit": "Exit",
+  "exportValidating": "Bine-validate…",
+  "exportValidationBuildingsEmpty": "Walang naitalagang gusali. Mag-survey ng kahit isang gusali bago mag-export.",
+  "exportValidationRoadsEmpty": "Walang naitalagang kalsada. Mag-survey ng kahit isang kalsada bago mag-export.",
+  "exportValidationBuildingsMissingFields": "May ilang gusali na may kulang na impormasyon. Kumpletuhin ang lahat ng form ng gusali bago mag-export.",
+  "exportValidationRoadsMissingFields": "May ilang kalsada na may kulang na impormasyon. Kumpletuhin ang lahat ng form ng kalsada bago mag-export."
 }

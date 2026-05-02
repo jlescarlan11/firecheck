@@ -1112,4 +1112,23 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get exportErrorShareFailed =>
       'Export ready but could not open share sheet. Please try again.';
+
+  @override
+  String get exportValidating => 'Validating…';
+
+  @override
+  String get exportValidationBuildingsEmpty =>
+      'No buildings recorded. Survey at least one building before exporting.';
+
+  @override
+  String get exportValidationRoadsEmpty =>
+      'No roads recorded. Survey at least one road before exporting.';
+
+  @override
+  String get exportValidationBuildingsMissingFields =>
+      'Some building entries are missing required fields. Complete all building forms before exporting.';
+
+  @override
+  String get exportValidationRoadsMissingFields =>
+      'Some road entries are missing required fields. Complete all road forms before exporting.';
 }
