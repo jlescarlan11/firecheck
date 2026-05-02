@@ -1,4 +1,5 @@
 // lib/core/sync/shapefile/export/dbf_writer.dart
+import 'dart:convert';
 import 'dart:typed_data';
 
 class DbfFieldDef {
@@ -78,12 +79,12 @@ class DbfWriter {
 
     switch (field.type) {
       case 'C':
-        final bytes = value.codeUnits;
+        final bytes = utf8.encode(value);
         for (var i = 0; i < bytes.length && i < field.width; i++) {
           out[i] = bytes[i];
         }
       case 'N':
-        final bytes = value.codeUnits;
+        final bytes = utf8.encode(value);
         final start = field.width - bytes.length;
         for (var i = 0; i < bytes.length; i++) {
           final idx = start + i;

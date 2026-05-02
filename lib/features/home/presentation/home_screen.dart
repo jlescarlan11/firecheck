@@ -176,6 +176,7 @@ class _ActionTile extends StatelessWidget {
         subtitle: Text(subtitle),
         trailing: trailing ?? const Icon(Icons.chevron_right),
         onTap: onTap,
+        enabled: onTap != null,
       ),
     );
   }

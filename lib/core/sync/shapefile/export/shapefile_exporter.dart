@@ -142,8 +142,8 @@ _LayerOutput _writeLayer(_LayerInput input) {
             (r) => (r as List<dynamic>)
                 .map(
                   (pt) => [
-                    (pt as List<dynamic>)[0] as double,
-                    pt[1] as double,
+                    ((pt as List<dynamic>)[0] as num).toDouble(),
+                    (pt[1] as num).toDouble(),
                   ],
                 )
                 .toList(),
@@ -157,8 +157,8 @@ _LayerOutput _writeLayer(_LayerInput input) {
             (ring as List<dynamic>)
                 .map(
                   (pt) => [
-                    (pt as List<dynamic>)[0] as double,
-                    pt[1] as double,
+                    ((pt as List<dynamic>)[0] as num).toDouble(),
+                    (pt[1] as num).toDouble(),
                   ],
                 )
                 .toList(),
