@@ -136,7 +136,7 @@ void main() {
       expect(await repo.jobExistsForFilePath('/other.jpg'), isFalse);
     });
 
-    test('shapefileJobExistsForAssignment returns false when only completed', () async {
+    test('shapefileJobExistsForAssignment returns true when job is completed', () async {
       final db = _db();
       addTearDown(db.close);
       final repo = DriveUploadRepository(db);
@@ -146,7 +146,7 @@ void main() {
           fileSizeBytes: 1000, capturedAt: DateTime(2026));
       await repo.markCompleted('j1', driveFileId: 'drive-1');
 
-      expect(await repo.shapefileJobExistsForAssignment('a1'), isFalse);
+      expect(await repo.shapefileJobExistsForAssignment('a1'), isTrue);
     });
 
     test('markCompleted clears resumableUri', () async {

@@ -47,7 +47,13 @@ class DriveUploadRepository {
 
   Stream<List<DriveUploadJob>> watchQueue() {
     return (_db.select(_db.driveUploadJobs)
-          ..where((t) => t.status.isNotIn([DriveUploadJobStatus.completed]))
+          ..where((t) => t.status.isIn([
+                DriveUploadJobStatus.pending,
+                DriveUploadJobStatus.uploading,
+                DriveUploadJobStatus.failed,
+                DriveUploadJobStatus.dead,
+                DriveUploadJobStatus.completed,
+              ]))
           ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
         .watch();
   }
@@ -130,9 +136,7 @@ class DriveUploadRepository {
 
   Future<bool> jobExistsForFilePath(String filePath) async {
     final row = await (_db.select(_db.driveUploadJobs)
-          ..where((t) =>
-              t.filePath.equals(filePath) &
-              t.status.isNotIn([DriveUploadJobStatus.completed]))
+          ..where((t) => t.filePath.equals(filePath))
           ..limit(1))
         .getSingleOrNull();
     return row != null;
@@ -142,8 +146,7 @@ class DriveUploadRepository {
     final row = await (_db.select(_db.driveUploadJobs)
           ..where((t) =>
               t.assignmentId.equals(assignmentId) &
-              t.fileType.equals(DriveFileType.shapefile) &
-              t.status.isNotIn([DriveUploadJobStatus.completed]))
+              t.fileType.equals(DriveFileType.shapefile))
           ..limit(1))
         .getSingleOrNull();
     return row != null;

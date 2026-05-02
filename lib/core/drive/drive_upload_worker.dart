@@ -85,8 +85,20 @@ class DriveUploadWorker {
     final subfolderName =
         job.fileType == DriveFileType.photo ? 'photos' : 'shapefiles';
     final cacheKey = '$enumeratorId/$dateKey/$subfolderName';
-    return _folderCache[cacheKey] ??=
-        _createFolderHierarchy(enumeratorId, dateKey, subfolderName);
+    if (_folderCache.containsKey(cacheKey)) return _folderCache[cacheKey]!;
+    // Store only successful results; remove on failure so retries hit Drive again.
+    _folderCache[cacheKey] = _createFolderHierarchy(
+      enumeratorId,
+      dateKey,
+      subfolderName,
+    ).then(
+      (id) => id,
+      onError: (Object e, StackTrace s) {
+        _folderCache.remove(cacheKey);
+        return Future<String>.error(e, s);
+      },
+    );
+    return _folderCache[cacheKey]!;
   }
 
   Future<String> _createFolderHierarchy(
