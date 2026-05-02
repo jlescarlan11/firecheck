@@ -61,7 +61,7 @@ void main() {
         status: DriveUploadJobStatus.pending,
         fileName: 'photo1.jpg',
       ),
-    ]);
+    ],);
 
     await tester.pumpWidget(_wrap(state));
 
@@ -77,7 +77,7 @@ void main() {
         status: DriveUploadJobStatus.pending,
         fileName: 'photo1.jpg',
       ),
-    ]);
+    ],);
 
     await tester.pumpWidget(_wrap(state));
 
@@ -94,7 +94,7 @@ void main() {
         status: DriveUploadJobStatus.uploading,
         fileName: 'photo1.jpg',
       ),
-    ]);
+    ],);
 
     await tester.pumpWidget(_wrap(state));
 

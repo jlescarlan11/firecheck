@@ -1,9 +1,7 @@
 // lib/features/upload/presentation/upload_queue_screen.dart
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/drive/drive_upload_job_status.dart';
-import 'package:firecheck/core/drive/drive_upload_preferences.dart';
 import 'package:firecheck/core/drive/drive_upload_providers.dart';
-import 'package:firecheck/features/upload/presentation/upload_queue_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -81,7 +79,7 @@ class _UploadQueueScreenState extends ConsumerState<UploadQueueScreen> {
                 children: [
                   Text('Uploading… ${state.uploadingCount} files'),
                   const SizedBox(height: 4),
-                  const LinearProgressIndicator(value: null),
+                  const LinearProgressIndicator(),
                 ],
               ),
             ),
@@ -110,7 +108,7 @@ class _UploadQueueScreenState extends ConsumerState<UploadQueueScreen> {
               onPressed:
                   (state.isUploading || state.pendingCount == 0)
                       ? null
-                      : () => notifier.uploadAll(),
+                      : notifier.uploadAll,
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size.fromHeight(48),
               ),
@@ -136,26 +134,14 @@ class _JobTile extends StatelessWidget {
 
     final kb = (job.fileSizeBytes / 1024).toStringAsFixed(0);
 
-    String chipText;
-    switch (job.status) {
-      case DriveUploadJobStatus.pending:
-        chipText = 'PENDING';
-        break;
-      case DriveUploadJobStatus.uploading:
-        chipText = 'UPLOADING';
-        break;
-      case DriveUploadJobStatus.completed:
-        chipText = '✓ DONE';
-        break;
-      case DriveUploadJobStatus.failed:
-        chipText = 'FAILED';
-        break;
-      case DriveUploadJobStatus.dead:
-        chipText = 'FAILED';
-        break;
-      default:
-        chipText = job.status.toUpperCase();
-    }
+    final chipText = switch (job.status) {
+      DriveUploadJobStatus.pending   => 'PENDING',
+      DriveUploadJobStatus.uploading => 'UPLOADING',
+      DriveUploadJobStatus.completed => '✓ DONE',
+      DriveUploadJobStatus.failed    => 'FAILED',
+      DriveUploadJobStatus.dead      => 'FAILED',
+      _                              => job.status.toUpperCase(),
+    };
 
     return ListTile(
       leading: Icon(
