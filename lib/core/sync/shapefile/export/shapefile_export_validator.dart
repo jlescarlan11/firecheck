@@ -37,16 +37,18 @@ class ShapefileExportValidator {
   }
 
   Future<int> _countComplete(
-      String assignmentId, String featureType) async {
-    final rows = await (db.select(db.features)
-          ..where(
-            (f) =>
-                f.assignmentId.equals(assignmentId) &
-                f.featureType.equals(featureType) &
-                f.status.equals('complete'),
-          ))
-        .get();
-    return rows.length;
+    String assignmentId,
+    String featureType,
+  ) async {
+    final countExpr = db.features.id.count();
+    final query = db.selectOnly(db.features)
+      ..addColumns([countExpr])
+      ..where(
+        db.features.assignmentId.equals(assignmentId) &
+            db.features.featureType.equals(featureType) &
+            db.features.status.equals('complete'),
+      );
+    return query.map((row) => row.read(countExpr)!).getSingle();
   }
 
   Future<int> _countExportable(
@@ -54,8 +56,10 @@ class ShapefileExportValidator {
     String featureType,
     ExportLayer layer,
   ) async {
+    final countExpr = db.features.id.count();
+
     if (layer == ExportLayer.buildings) {
-      return (await (db.select(db.features).join([
+      final query = db.selectOnly(db.features).join([
         innerJoin(
           db.submissions,
           db.submissions.featureId.equalsExp(db.features.id),
@@ -65,15 +69,15 @@ class ShapefileExportValidator {
           db.buildingAttributes.submissionId.equalsExp(db.submissions.id),
         ),
       ])
-                ..where(
-                  db.features.assignmentId.equals(assignmentId) &
-                      db.features.featureType.equals(featureType) &
-                      db.features.status.equals('complete'),
-                ))
-              .get())
-          .length;
+        ..addColumns([countExpr])
+        ..where(
+          db.features.assignmentId.equals(assignmentId) &
+              db.features.featureType.equals(featureType) &
+              db.features.status.equals('complete'),
+        );
+      return query.map((row) => row.read(countExpr)!).getSingle();
     } else {
-      return (await (db.select(db.features).join([
+      final query = db.selectOnly(db.features).join([
         innerJoin(
           db.submissions,
           db.submissions.featureId.equalsExp(db.features.id),
@@ -83,13 +87,13 @@ class ShapefileExportValidator {
           db.roadAttributes.submissionId.equalsExp(db.submissions.id),
         ),
       ])
-                ..where(
-                  db.features.assignmentId.equals(assignmentId) &
-                      db.features.featureType.equals(featureType) &
-                      db.features.status.equals('complete'),
-                ))
-              .get())
-          .length;
+        ..addColumns([countExpr])
+        ..where(
+          db.features.assignmentId.equals(assignmentId) &
+              db.features.featureType.equals(featureType) &
+              db.features.status.equals('complete'),
+        );
+      return query.map((row) => row.read(countExpr)!).getSingle();
     }
   }
 }
