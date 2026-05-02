@@ -334,12 +334,39 @@ class ShapefileExporter {
   final Directory? tempDirOverride;
 
   Future<ExportFailure?> export({required String assignmentId}) async {
+    final destDir = tempDirOverride ?? await getTemporaryDirectory();
+    final (failure, _) = await _buildAndWriteZip(
+      assignmentId: assignmentId,
+      destDir: destDir,
+      callShareFile: true,
+    );
+    return failure;
+  }
+
+  /// Exports to a stable path for upload. Returns the zip path on success.
+  /// Callers must not delete the file until upload confirms.
+  Future<(ExportFailure?, String?)> exportToFile({
+    required String assignmentId,
+  }) async {
+    final destDir = tempDirOverride ?? await getApplicationDocumentsDirectory();
+    return _buildAndWriteZip(
+      assignmentId: assignmentId,
+      destDir: destDir,
+      callShareFile: false,
+    );
+  }
+
+  Future<(ExportFailure?, String?)> _buildAndWriteZip({
+    required String assignmentId,
+    required Directory destDir,
+    required bool callShareFile,
+  }) async {
     // Query all completed features with their submissions and attributes.
     final buildingRows = await _queryBuildings(assignmentId);
     final roadRows = await _queryRoads(assignmentId);
 
     if (buildingRows.isEmpty && roadRows.isEmpty) {
-      return const NoCompletedFeatures();
+      return (const NoCompletedFeatures(), null);
     }
 
     // Build layer inputs
@@ -392,13 +419,13 @@ class ShapefileExporter {
         inputs.map((input) => compute(_writeLayer, input)),
       );
     } catch (e) {
-      return WriteError(e.toString());
+      return (WriteError(e.toString()), null);
     }
 
     // Guard against exporter bugs producing empty file components.
     for (final out in outputs) {
       if (out.shp.isEmpty || out.shx.isEmpty || out.dbf.isEmpty) {
-        return WriteError('Layer ${out.layerName} produced empty components');
+        return (WriteError('Layer ${out.layerName} produced empty components'), null);
       }
     }
 
@@ -426,30 +453,29 @@ class ShapefileExporter {
         );
     }
 
-    // Write ZIP to temp directory
+    // Write ZIP to destination directory
     final zipBytes = ZipEncoder().encode(archive);
-    if (zipBytes == null) return const WriteError('ZIP encoding produced no output');
-    final tempDir = tempDirOverride ?? await getTemporaryDirectory();
+    if (zipBytes == null) return (const WriteError('ZIP encoding produced no output'), null);
     final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
     final zipName = 'firecheck_${assignmentId}_$timestamp.zip';
-    final zipPath = p.join(tempDir.path, zipName);
+    final zipPath = p.join(destDir.path, zipName);
 
     try {
       await File(zipPath).writeAsBytes(zipBytes);
     } catch (e) {
-      return WriteError(e.toString());
+      return (WriteError(e.toString()), null);
     }
 
     // Share / hand off
-    if (shareFile != null) {
+    if (callShareFile && shareFile != null) {
       try {
         await shareFile!(zipPath);
       } catch (e) {
-        return ShareError(e.toString());
+        return (ShareError(e.toString()), null);
       }
     }
 
-    return null;
+    return (null, zipPath);
   }
 
   // -------------------------------------------------------------------------
