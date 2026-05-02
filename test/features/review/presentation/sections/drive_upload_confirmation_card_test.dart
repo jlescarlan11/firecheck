@@ -39,6 +39,7 @@ void main() {
     expect(find.text('FieldData/enum-1/2026-05-02/'), findsOneWidget);
     expect(find.text('ASN-AABBCCDD'), findsOneWidget);
     expect(find.text('Open in Google Drive →'), findsOneWidget);
+    expect(find.text('May 2 · 8:42 PM'), findsOneWidget);
   });
 
   testWidgets('Copy button copies full Drive URL to clipboard', (tester) async {

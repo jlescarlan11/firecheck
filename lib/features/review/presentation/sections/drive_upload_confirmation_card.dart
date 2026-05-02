@@ -168,7 +168,10 @@ class _SuccessCard extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               GestureDetector(
-                onTap: () => launchUrl(Uri.parse(folderUrl)),
+                onTap: () async {
+                  final uri = Uri.parse(folderUrl);
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                },
                 child: const Center(
                   child: Text(
                     'Open in Google Drive →',
@@ -281,7 +284,7 @@ class _FailureCard extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: canRetry ? onRetry : onRetry,
+                  onPressed: onRetry,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFDC2626),
                     foregroundColor: Colors.white,
