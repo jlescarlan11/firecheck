@@ -12,13 +12,17 @@ class FakeDriveApi implements DriveApi {
     List<DriveDownloadEvent>? downloadEvents,
     Exception? listError,
     Exception? downloadError,
+    Exception? uploadError,
+    ({String folderPath, String folderUrl})? uploadResult,
   })  : _assignments = assignments ?? [],
         _totalSize = totalSize,
         _downloadComplete = downloadComplete,
         _expectedMd5s = expectedMd5s ?? {},
         _downloadEvents = downloadEvents,
         _listError = listError,
-        _downloadError = downloadError;
+        _downloadError = downloadError,
+        _uploadError = uploadError,
+        _uploadResult = uploadResult;
 
   final List<DriveAssignment> _assignments;
   final int _totalSize;
@@ -27,6 +31,8 @@ class FakeDriveApi implements DriveApi {
   final List<DriveDownloadEvent>? _downloadEvents;
   final Exception? _listError;
   final Exception? _downloadError;
+  final Exception? _uploadError;
+  final ({String folderPath, String folderUrl})? _uploadResult;
 
   @override
   Future<List<DriveAssignment>> listAssignments() async {
@@ -57,5 +63,19 @@ class FakeDriveApi implements DriveApi {
       return;
     }
     yield DriveDownloadComplete(_downloadComplete ?? {}, _expectedMd5s);
+  }
+
+  @override
+  Future<({String folderPath, String folderUrl})> uploadAssignmentFiles({
+    required String enumeratorId,
+    required String assignmentId,
+    required List<({String filename, Uint8List bytes})> files,
+  }) async {
+    if (_uploadError != null) throw _uploadError;
+    return _uploadResult ??
+        (
+          folderPath: 'FieldData/$enumeratorId/2026-05-02/',
+          folderUrl: 'https://drive.google.com/drive/folders/fake-folder-id',
+        );
   }
 }
