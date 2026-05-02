@@ -49,6 +49,9 @@ app.*.map.json
 # Superpowers brainstorm cache (local mockups + server state)
 .superpowers/
 
+# Git worktrees
+.worktrees/
+
 # Claude Code local settings + scheduler state
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
