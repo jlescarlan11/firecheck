@@ -5,6 +5,8 @@ import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/sync/domain/finalize_submission.dart';
 import 'package:firecheck/core/sync/presentation/sync_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
+import 'package:firecheck/features/review/domain/drive_upload_state.dart';
+import 'package:firecheck/features/review/presentation/drive_upload_notifier.dart';
 import 'package:firecheck/features/home/presentation/home_providers.dart';
 import 'package:firecheck/features/review/data/review_repository.dart';
 import 'package:firecheck/features/review/domain/review_state.dart';
@@ -123,4 +125,21 @@ final startUploadUseCaseProvider = Provider<StartUploadUseCase>((ref) {
     finalize: FinalizeSubmissionUseCase(db),
     triggerNow: controller.triggerNow,
   );
+});
+
+final driveUploadNotifierProvider =
+    StateNotifierProvider<DriveUploadNotifier, DriveUploadState>((ref) {
+  final notifier = DriveUploadNotifier(
+    driveApi: ref.watch(driveApiProvider),
+    assignmentRepository: ref.watch(assignmentRepositoryProvider),
+  );
+  ref
+      .watch(assignmentRepositoryProvider)
+      .getCurrentAssignment()
+      .then((assignment) {
+    if (assignment != null) {
+      notifier.initFromDb(assignment.id, assignment.enumeratorId);
+    }
+  });
+  return notifier;
 });
