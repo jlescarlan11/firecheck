@@ -4,7 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('ShapefileValidationFailure', () {
     test('carries message', () {
-      const f = ShapefileValidationFailure("buildings.dbf is missing 'feat_id'");
+      const f = ShapefileValidationFailure(
+        "buildings.dbf is missing 'feat_id'",
+        ruleName: 'legacy',
+      );
       expect(f.message, contains('feat_id'));
       expect(f, isA<Failure>());
     });

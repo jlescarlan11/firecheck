@@ -44,9 +44,13 @@ void main() {
       expect(e.total, 1024);
     });
 
-    test('DriveDownloadComplete exposes files map', () {
-      final e = DriveDownloadComplete({'boundary.shp': Uint8List(8)});
+    test('DriveDownloadComplete exposes files map and expectedMd5s', () {
+      final e = DriveDownloadComplete(
+        {'boundary.shp': Uint8List(8)},
+        {'boundary.shp': 'abc123'},
+      );
       expect(e.files['boundary.shp']!.length, 8);
+      expect(e.expectedMd5s['boundary.shp'], 'abc123');
     });
   });
 }

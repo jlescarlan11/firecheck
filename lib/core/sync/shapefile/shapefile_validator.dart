@@ -1,56 +1,45 @@
-// lib/core/sync/shapefile/shapefile_validator.dart
 import 'dart:typed_data';
-import 'package:firecheck/core/errors/failure.dart';
-import 'package:firecheck/core/sync/shapefile/dbf_parser.dart';
-import 'package:flutter/foundation.dart';
+import 'package:firecheck/core/sync/shapefile/validation/rules/r1_checksum_rule.dart';
+import 'package:firecheck/core/sync/shapefile/validation/rules/r2_file_set_rule.dart';
+import 'package:firecheck/core/sync/shapefile/validation/rules/r3_header_integrity_rule.dart';
+import 'package:firecheck/core/sync/shapefile/validation/rules/r4_index_consistency_rule.dart';
+import 'package:firecheck/core/sync/shapefile/validation/rules/r5_attribute_integrity_rule.dart';
+import 'package:firecheck/core/sync/shapefile/validation/rules/r6_geometry_sanity_rule.dart';
+import 'package:firecheck/core/sync/shapefile/validation/rules/r7_projection_rule.dart';
+import 'package:firecheck/core/sync/shapefile/validation/shapefile_validation_rule.dart';
+import 'package:firecheck/core/sync/shapefile/validation/validation_report.dart';
 
-@immutable
 class ShapefileValidator {
-  const ShapefileValidator();
+  ShapefileValidator({List<ShapefileValidationRule>? rules})
+      : _rules = rules ??
+            const [
+              ChecksumRule(),
+              FileSetRule(),
+              HeaderIntegrityRule(),
+              IndexConsistencyRule(),
+              AttributeIntegrityRule(),
+              GeometrySanityRule(),
+              ProjectionRule(),
+            ];
 
-  static const _layers = ['boundary', 'buildings', 'roads'];
-  static const _extensions = ['.shp', '.dbf', '.shx', '.prj'];
-  static const _buildingCols = ['feat_id', 'bldg_use', 'bldg_type'];
-  static const _roadCols = ['feat_id', 'road_type'];
+  final List<ShapefileValidationRule> _rules;
 
-  void validate(
+  ValidationReport validate(
     Map<String, Uint8List> files,
-    Map<String, List<DbfField>> dbfFields,
+    Map<String, String> expectedMd5s,
   ) {
-    for (final layer in _layers) {
-      for (final ext in _extensions) {
-        if (!files.containsKey('$layer$ext')) {
-          throw ShapefileValidationFailure('Missing required file: $layer$ext');
-        }
+    final warnings = <RuleWarning>[];
+    for (final rule in _rules) {
+      final outcome = rule.check(files, expectedMd5s);
+      switch (outcome) {
+        case RulePassed():
+          continue;
+        case RuleFatal():
+          return ValidationReport(fatal: outcome, warnings: warnings);
+        case RuleWarning():
+          warnings.add(outcome);
       }
     }
-
-    for (final layer in _layers) {
-      final prj = String.fromCharCodes(files['$layer.prj']!);
-      if (!prj.contains('32651')) {
-        throw ShapefileValidationFailure(
-          '$layer.prj does not use EPSG:32651. '
-          'Found: ${prj.length > 60 ? prj.substring(0, 60) : prj}',
-        );
-      }
-    }
-
-    _checkColumns('buildings', dbfFields['buildings'] ?? [], _buildingCols);
-    _checkColumns('roads', dbfFields['roads'] ?? [], _roadCols);
-  }
-
-  void _checkColumns(
-    String layer,
-    List<DbfField> fields,
-    List<String> required,
-  ) {
-    final names = fields.map((f) => f.name).toSet();
-    for (final col in required) {
-      if (!names.contains(col)) {
-        throw ShapefileValidationFailure(
-          "$layer.dbf is missing required column '$col'",
-        );
-      }
-    }
+    return ValidationReport(warnings: warnings);
   }
 }

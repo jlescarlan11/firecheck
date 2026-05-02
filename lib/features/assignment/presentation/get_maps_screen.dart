@@ -33,12 +33,14 @@ class GetMapsScreen extends ConsumerWidget {
           Cancelled() => _IdleView(
               onStart: () => ref.read(getMapsNotifierProvider.notifier).start(),
             ),
-          GetMapsError(:final failure) => _ErrorView(
+          ValidatingShapefiles() => const _ValidatingView(),
+          ShapefileWarning() => _ShapefileWarningView(state: state),
+          GetMapsError(:final failure, :final isRetryable) => _ErrorView(
               failure: failure,
-              onRetry: () {
-                ref.read(getMapsNotifierProvider.notifier).reset();
-                ref.read(getMapsNotifierProvider.notifier).start();
-              },
+              isRetryable: isRetryable,
+              onAction: isRetryable
+                  ? () => ref.read(getMapsNotifierProvider.notifier).retryDownload()
+                  : () => ref.read(getMapsNotifierProvider.notifier).reset(),
             ),
         },
       ),
@@ -317,14 +319,79 @@ class _ReadyView extends StatelessWidget {
   }
 }
 
-class _ErrorView extends StatelessWidget {
-  const _ErrorView({required this.failure, required this.onRetry});
-  final Failure failure;
-  final VoidCallback onRetry;
+class _ValidatingView extends StatelessWidget {
+  const _ValidatingView();
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const CircularProgressIndicator(),
+        const SizedBox(height: 16),
+        Text(l.getMapsValidating, textAlign: TextAlign.center),
+      ],
+    );
+  }
+}
+
+class _ShapefileWarningView extends ConsumerWidget {
+  const _ShapefileWarningView({required this.state});
+  final ShapefileWarning state;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context)!;
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Icon(Icons.warning_amber_rounded,
+            size: 48, color: Theme.of(context).colorScheme.tertiary),
+        const SizedBox(height: 12),
+        Text(
+          l.getMapsWarningTitle,
+          style: Theme.of(context).textTheme.titleMedium,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        ...state.warnings.map(
+          (w) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Text(w, textAlign: TextAlign.center),
+          ),
+        ),
+        const SizedBox(height: 24),
+        FilledButton(
+          onPressed: () =>
+              ref.read(getMapsNotifierProvider.notifier).acknowledgeWarning(),
+          child: Text(l.getMapsWarningContinue),
+        ),
+        const SizedBox(height: 8),
+        TextButton(
+          onPressed: () => ref.read(getMapsNotifierProvider.notifier).reset(),
+          child: Text(l.getMapsClose),
+        ),
+      ],
+    );
+  }
+}
+
+class _ErrorView extends StatelessWidget {
+  const _ErrorView({
+    required this.failure,
+    required this.isRetryable,
+    required this.onAction,
+  });
+  final Failure failure;
+  final bool isRetryable;
+  final VoidCallback onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    final isValidation = failure is ShapefileValidationFailure;
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -335,8 +402,19 @@ class _ErrorView extends StatelessWidget {
           '${l.downloadFailed} ${failure.message}',
           textAlign: TextAlign.center,
         ),
+        if (isValidation) ...[
+          const SizedBox(height: 8),
+          Text(
+            l.getMapsContactSupervisor,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
         const SizedBox(height: 24),
-        FilledButton(onPressed: onRetry, child: Text(l.tryAgain)),
+        FilledButton(
+          onPressed: onAction,
+          child: Text(isRetryable ? l.tryAgain : l.getMapsClose),
+        ),
         const SizedBox(height: 8),
         TextButton(
           onPressed: () => Navigator.of(context).pop(),

@@ -382,5 +382,23 @@
   "reshapeErrorZeroLengthEdge": "Adjacent corners cannot be on the same spot",
   "reshapeLockedSnackbar": "Assignment is closed; reshape unavailable",
   "reshapeLockWhileDirtyBanner": "Assignment was closed by supervisor — your edits cannot be saved",
-  "reshapeLockExit": "Exit"
+  "reshapeLockExit": "Exit",
+  "getMapsChecksumError": "The map file was damaged during download.",
+  "getMapsIncompleteFilesError": "Map files are missing or incomplete.",
+  "getMapsHeaderError": "Map geometry file is corrupted.",
+  "getMapsIndexError": "Map index is inconsistent with geometry.",
+  "getMapsAttributeError": "Map attribute table is corrupted or mismatched.",
+  "getMapsGeometryError": "Map contains no usable features.",
+  "getMapsCrsError": "Map uses an unsupported coordinate system.",
+  "getMapsContactSupervisor": "Contact your supervisor to request a corrected file.",
+  "getMapsValidating": "Checking map files…",
+  "getMapsWarningTitle": "This assignment has minor issues",
+  "getMapsWarningBody": "{warnings}",
+  "@getMapsWarningBody": {
+    "placeholders": {
+      "warnings": { "type": "String" }
+    }
+  },
+  "getMapsWarningContinue": "Continue anyway",
+  "getMapsClose": "Close"
 }

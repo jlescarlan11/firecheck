@@ -1,4 +1,5 @@
 // lib/features/assignment/presentation/assignment_providers.dart
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:firecheck/core/db/database.dart';
@@ -9,6 +10,8 @@ import 'package:firecheck/core/drive/drive_download_event.dart';
 import 'package:firecheck/core/errors/failure.dart';
 import 'package:firecheck/core/mapbox/offline_pack_adapter.dart';
 import 'package:firecheck/core/sync/shapefile/shapefile_importer.dart';
+import 'package:firecheck/core/sync/shapefile/shapefile_validator.dart';
+import 'package:firecheck/core/validation/validation_failure_reporter.dart';
 import 'package:firecheck/features/assignment/data/assignment_repository.dart';
 import 'package:firecheck/features/assignment/data/offline_tile_pack_repository.dart';
 import 'package:firecheck/features/assignment/domain/get_maps_state.dart';
@@ -65,6 +68,8 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
     required this.googleAuthRepo,
     required this.shapefileImporter,
     required this.storageChecker,
+    required this.validator,
+    required this.reporter,
   }) : super(const Idle());
 
   final AssignmentRepository assignmentRepo;
@@ -75,12 +80,16 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
   final GoogleAuthRepository googleAuthRepo;
   final ShapefileImporter shapefileImporter;
   final StorageChecker storageChecker;
+  final ShapefileValidator validator;
+  final ValidationFailureReporter reporter;
 
   static const _styleUri = 'mapbox://styles/mapbox/streets-v12';
   static const _minZoom = 12;
   static const _maxZoom = 17;
 
   bool _cancelled = false;
+  DriveAssignment? _selectedAssignment;
+  String? _enumeratorId;
 
   Future<void> start() async {
     _cancelled = false;
@@ -91,7 +100,7 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
       rawAssignments = await driveApi.listAssignments();
     } catch (e) {
       if (!mounted) return;
-      state = GetMapsError(NetworkFailure(e.toString()));
+      state = GetMapsError(NetworkFailure(e.toString()), isRetryable: true);
       return;
     }
 
@@ -130,9 +139,12 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
 
     final selected =
         s.assignments.firstWhere((a) => a.assignmentId == s.selectedId);
+    _selectedAssignment = selected;
 
     // Delta skip — already imported, go straight to tile download
     if (selected.alreadyDownloaded) {
+      _enumeratorId = await googleAuthRepo.getEnumeratorId();
+      if (!mounted) return;
       await _startTileDownload();
       return;
     }
@@ -146,9 +158,34 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
       return;
     }
 
-    // Download shapefiles
-    state = DownloadingShapefiles(downloaded: 0, total: needed);
+    _enumeratorId = await googleAuthRepo.getEnumeratorId();
+    await _downloadAndValidate(selected, needed);
+  }
+
+  Future<void> acknowledgeWarning() async {
+    final s = state;
+    if (s is! ShapefileWarning) return;
+    final selected = _selectedAssignment;
+    if (selected == null) return;
+    await _doImport(selected, s.pendingFiles);
+  }
+
+  Future<void> retryDownload() async {
+    final s = state;
+    if (s is! GetMapsError || !s.isRetryable) return;
+    final selected = _selectedAssignment;
+    if (selected == null) return;
+    final needed = await driveApi.getTotalSize(selected.assignmentId);
+    await _downloadAndValidate(selected, needed);
+  }
+
+  Future<void> _downloadAndValidate(
+    DriveAssignment selected,
+    int totalBytes,
+  ) async {
+    state = DownloadingShapefiles(downloaded: 0, total: totalBytes);
     Map<String, Uint8List>? shapefiles;
+    Map<String, String> shapeMd5s = {};
 
     try {
       await for (final event
@@ -156,46 +193,79 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
         if (_cancelled || !mounted) return;
         switch (event) {
           case DriveDownloadProgress(:final downloaded, :final total):
-            state =
-                DownloadingShapefiles(downloaded: downloaded, total: total);
-          case DriveDownloadComplete(:final files):
+            state = DownloadingShapefiles(downloaded: downloaded, total: total);
+          case DriveDownloadComplete(:final files, :final expectedMd5s):
             shapefiles = files;
+            shapeMd5s = expectedMd5s;
         }
       }
     } catch (e) {
       if (!mounted) return;
-      state = GetMapsError(NetworkFailure(e.toString()));
+      state = GetMapsError(NetworkFailure(e.toString()), isRetryable: true);
       return;
     }
 
     if (_cancelled || !mounted) return;
     if (shapefiles == null) {
-      state = const GetMapsError(
-          NetworkFailure('Download completed with no data'));
+      state = GetMapsError(
+        const NetworkFailure('Download completed with no data'),
+        isRetryable: true,
+      );
       return;
     }
 
-    // Import shapefiles
+    state = const ValidatingShapefiles();
+    final report = validator.validate(shapefiles, shapeMd5s);
+
+    if (report.hasFatals) {
+      final fatal = report.fatal!;
+      unawaited(reporter.report(
+        assignmentId: selected.assignmentId,
+        enumeratorId: _enumeratorId ?? '',
+        failedRule: fatal.ruleName,
+        message: fatal.userMessage,
+        fileChecksum: fatal.computedChecksum,
+      ));
+      if (!mounted) return;
+      state = GetMapsError(
+        ShapefileValidationFailure(fatal.userMessage, ruleName: fatal.ruleName),
+      );
+      return;
+    }
+
+    if (report.hasWarnings) {
+      if (!mounted) return;
+      state = ShapefileWarning(
+        warnings: report.warnings.map((w) => w.userMessage).toList(),
+        pendingFiles: shapefiles,
+        expectedMd5s: shapeMd5s,
+      );
+      return;
+    }
+
+    await _doImport(selected, shapefiles);
+  }
+
+  Future<void> _doImport(
+    DriveAssignment selected,
+    Map<String, Uint8List> files,
+  ) async {
+    if (!mounted) return;
     state = const ImportingShapefiles();
     try {
-      final enumeratorId = await googleAuthRepo.getEnumeratorId();
       await shapefileImporter.importShapefiles(
-        shapefiles,
+        files,
         selected.assignmentId,
         selected.inputZipModifiedTime,
         selected.driveFolderId,
-        enumeratorId,
+        _enumeratorId ?? '',
       );
-    } on ShapefileValidationFailure catch (f) {
-      if (!mounted) return;
-      state = GetMapsError(f);
-      return;
     } catch (e) {
       if (!mounted) return;
       state = GetMapsError(StorageFailure(e.toString()));
       return;
     }
-
+    if (!mounted) return;
     await _startTileDownload();
   }
 
@@ -266,9 +336,24 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
 
   void reset() {
     _cancelled = false;
+    _selectedAssignment = null;
+    _enumeratorId = null;
     state = const Idle();
   }
 }
+
+// ── providers ────────────────────────────────────────────────────────────────
+
+final shapefileValidatorProvider = Provider<ShapefileValidator>((ref) {
+  return ShapefileValidator();
+});
+
+/// Overridden in main.dart with SupabaseValidationFailureReporter.
+final validationFailureReporterProvider =
+    Provider<ValidationFailureReporter>((ref) {
+  throw UnimplementedError(
+      'Override validationFailureReporterProvider in main.dart');
+});
 
 final getMapsNotifierProvider =
     StateNotifierProvider<GetMapsNotifier, GetMapsState>((ref) {
@@ -281,6 +366,8 @@ final getMapsNotifierProvider =
     googleAuthRepo: ref.watch(googleAuthRepositoryProvider),
     shapefileImporter: ref.watch(shapefileImporterProvider),
     storageChecker: ref.watch(storageCheckerProvider),
+    validator: ref.watch(shapefileValidatorProvider),
+    reporter: ref.watch(validationFailureReporterProvider),
   );
 });
 

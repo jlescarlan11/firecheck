@@ -46,9 +46,11 @@ class AssignmentClosedFailure extends Failure {
       : super('This assignment was closed by your supervisor.');
 }
 
-/// Shapefile import rejected: wrong CRS, missing layer, or missing column.
+/// Shapefile import rejected by the validation pipeline.
 class ShapefileValidationFailure extends Failure {
-  const ShapefileValidationFailure(super.message);
+  const ShapefileValidationFailure(super.message, {required this.ruleName});
+  // Short identifier for the failing rule — sent to Supabase, never shown to the enumerator.
+  final String ruleName;
 }
 
 /// Drive inbox has no folders accessible to the signed-in user.

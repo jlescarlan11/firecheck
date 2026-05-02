@@ -7,7 +7,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 const _brgy001 = DriveAssignment(
   assignmentId: 'brgy-001',
-  inputZipFileId: 'file-1',
   inputZipModifiedTime: '2026-04-28T10:00:00Z',
   driveFolderId: 'folder-1',
 );
@@ -23,39 +22,47 @@ void main() {
     expect(api.listAssignments(), throwsException);
   });
 
-  test('getInputZipSize returns configured size', () async {
-    final api = FakeDriveApi(assignments: [_brgy001], zipSize: 2048);
-    expect(await api.getInputZipSize('brgy-001'), 2048);
+  test('getTotalSize returns configured size', () async {
+    final api = FakeDriveApi(assignments: [_brgy001], totalSize: 2048);
+    expect(await api.getTotalSize('brgy-001'), 2048);
   });
 
-  test('downloadInputZip yields single complete event', () async {
+  test('downloadShapefiles yields single complete event with files and md5s',
+      () async {
     final bytes = Uint8List.fromList([1, 2, 3]);
-    final api = FakeDriveApi(assignments: [_brgy001], downloadComplete: bytes);
-    final events = await api.downloadInputZip('brgy-001').toList();
+    final api = FakeDriveApi(
+      assignments: [_brgy001],
+      downloadComplete: {'boundary.shp': bytes},
+      expectedMd5s: {'boundary.shp': 'deadbeef'},
+    );
+    final events = await api.downloadShapefiles('brgy-001').toList();
     expect(events, hasLength(1));
-    expect((events.first as DriveDownloadComplete).bytes, bytes);
+    final complete = events.first as DriveDownloadComplete;
+    expect(complete.files['boundary.shp'], bytes);
+    expect(complete.expectedMd5s['boundary.shp'], 'deadbeef');
   });
 
-  test('downloadInputZip yields custom event list', () async {
+  test('downloadShapefiles yields custom event list', () async {
     final api = FakeDriveApi(
       assignments: [_brgy001],
       downloadEvents: [
         const DriveDownloadProgress(downloaded: 512, total: 1024),
-        DriveDownloadComplete(Uint8List(0)),
+        DriveDownloadComplete({'boundary.shp': Uint8List(0)}, {}),
       ],
     );
-    final events = await api.downloadInputZip('brgy-001').toList();
+    final events = await api.downloadShapefiles('brgy-001').toList();
     expect(events.first, isA<DriveDownloadProgress>());
     expect(events.last, isA<DriveDownloadComplete>());
   });
 
-  test('downloadInputZip emits error when downloadError configured', () async {
+  test('downloadShapefiles emits error when downloadError configured',
+      () async {
     final api = FakeDriveApi(
       assignments: [_brgy001],
       downloadError: Exception('timeout'),
     );
     expect(
-      api.downloadInputZip('brgy-001'),
+      api.downloadShapefiles('brgy-001'),
       emitsError(isA<Exception>()),
     );
   });

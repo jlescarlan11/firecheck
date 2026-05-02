@@ -17,6 +17,7 @@ class GoogleDriveApi implements DriveApi {
 
   // assignmentId → { filename → fileId }
   final _fileCache = <String, Map<String, String>>{};
+  final _md5Cache = <String, Map<String, String>>{};
 
   static const _shapefileExts = {'.shp', '.dbf', '.shx', '.prj'};
 
@@ -69,20 +70,23 @@ class GoogleDriveApi implements DriveApi {
       final filesResult = await api.files.list(
         q: "'$folderId' in parents and trashed = false",
         spaces: 'drive',
-        $fields: 'files(id,name)',
+        $fields: 'files(id,name,md5Checksum)',
       );
       final shapefiles = <String, String>{};
+      final md5s = <String, String>{};
       for (final f in filesResult.files ?? <gdrive.File>[]) {
         final name = f.name!;
         final dot = name.lastIndexOf('.');
         final ext = dot >= 0 ? name.substring(dot) : '';
         if (_shapefileExts.contains(ext)) {
           shapefiles[name] = f.id!;
+          if (f.md5Checksum != null) md5s[name] = f.md5Checksum!;
         }
       }
       if (shapefiles.isEmpty) continue;
 
       _fileCache[folderName] = shapefiles;
+      _md5Cache[folderName] = md5s;
 
       assignments.add(DriveAssignment(
         assignmentId: folderName,
@@ -132,6 +136,6 @@ class GoogleDriveApi implements DriveApi {
       result[entry.key] = Uint8List.fromList(chunks);
     }
 
-    yield DriveDownloadComplete(result);
+    yield DriveDownloadComplete(result, _md5Cache[assignmentId] ?? {});
   }
 }

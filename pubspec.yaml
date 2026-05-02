@@ -45,6 +45,7 @@ dependencies:
 
   # utilities
   uuid: ^4.4.0
+  crypto: ^3.0.0
   flutter_dotenv: ^5.1.0
 
   # media

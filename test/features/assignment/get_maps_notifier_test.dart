@@ -14,12 +14,15 @@ import 'package:firecheck/core/mapbox/offline_pack_adapter.dart';
 import 'package:firecheck/core/sync/shapefile/dbf_parser.dart';
 import 'package:firecheck/core/sync/shapefile/reprojector.dart';
 import 'package:firecheck/core/sync/shapefile/shapefile_importer.dart';
-import 'package:firecheck/core/sync/shapefile/shapefile_validator.dart';
 import 'package:firecheck/features/assignment/data/assignment_repository.dart';
 import 'package:firecheck/features/assignment/data/offline_tile_pack_repository.dart';
 import 'package:firecheck/features/assignment/domain/get_maps_state.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
 import 'package:firecheck/features/auth/data/fake_google_auth_repository.dart';
+import 'package:firecheck/core/sync/shapefile/shapefile_validator.dart';
+import 'package:firecheck/core/sync/shapefile/validation/shapefile_validation_rule.dart';
+import 'package:firecheck/core/sync/shapefile/validation/validation_report.dart';
+import 'package:firecheck/core/validation/validation_failure_reporter.dart';
 import 'package:firecheck/features/map/data/feature_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -27,7 +30,6 @@ class _NoopImporter extends ShapefileImporter {
   _NoopImporter(AppDatabase db)
       : super(
           db: db,
-          validator: const ShapefileValidator(),
           dbfParser: const DbfParser(),
           reprojector: Reprojector(),
         );
@@ -59,6 +61,14 @@ class _NoopImporter extends ShapefileImporter {
   }
 }
 
+class _SpyRule extends ShapefileValidationRule {
+  const _SpyRule(this._outcome);
+  final RuleOutcome _outcome;
+  @override
+  RuleOutcome check(Map<String, Uint8List> files, Map<String, String> expectedMd5s) =>
+      _outcome;
+}
+
 const _brgy001 = DriveAssignment(
   assignmentId: 'brgy-001',
   inputZipModifiedTime: '2026-04-28T10:00:00Z',
@@ -73,6 +83,8 @@ GetMapsNotifier _makeNotifier({
   List<DriveDownloadEvent>? downloadEvents,
   AppDatabase? db,
   _NoopImporter? importer,
+  ShapefileValidator? validator,
+  ValidationFailureReporter? reporter,
 }) {
   final database = db ?? AppDatabase.forTesting(NativeDatabase.memory());
   return GetMapsNotifier(
@@ -89,6 +101,8 @@ GetMapsNotifier _makeNotifier({
     googleAuthRepo: FakeGoogleAuthRepository(),
     shapefileImporter: importer ?? _NoopImporter(database),
     storageChecker: FakeStorageChecker(availableBytes: availableBytes),
+    validator: validator ?? ShapefileValidator(rules: [const _SpyRule(RulePassed())]),
+    reporter: reporter ?? FakeValidationFailureReporter(),
   );
 }
 
@@ -187,5 +201,110 @@ void main() {
     await n.cancel();
     n.reset();
     expect(n.state, isA<Idle>());
+  });
+
+  group('US-19 shapefile validation', () {
+    test('state sequence includes ValidatingShapefiles then GetMapsError(isRetryable: false) on fatal validation', () async {
+      final fakeReporter = FakeValidationFailureReporter();
+      final fatalValidator = ShapefileValidator(
+        rules: [_SpyRule(const RuleFatal(ruleName: 'checksum', userMessage: 'Damaged.'))],
+      );
+      final notifier = _makeNotifier(
+        assignments: [_brgy001],
+        validator: fatalValidator,
+        reporter: fakeReporter,
+      );
+      final states = <GetMapsState>[];
+      notifier.addListener(states.add);
+
+      await notifier.start();
+      await notifier.confirmDownload();
+
+      expect(states.any((s) => s is ValidatingShapefiles), isTrue);
+      final errorState = states.whereType<GetMapsError>().last;
+      expect(errorState.isRetryable, isFalse);
+      expect(errorState.failure, isA<ShapefileValidationFailure>());
+      expect((errorState.failure as ShapefileValidationFailure).ruleName, 'checksum');
+      expect(fakeReporter.calls, hasLength(1));
+      expect(fakeReporter.calls.first['failedRule'], 'checksum');
+    });
+
+    test('state reaches ShapefileWarning when validation has warnings only', () async {
+      final warningValidator = ShapefileValidator(
+        rules: [_SpyRule(const RuleWarning(userMessage: 'Large file.'))],
+      );
+      final notifier = _makeNotifier(
+        assignments: [_brgy001],
+        validator: warningValidator,
+      );
+      final states = <GetMapsState>[];
+      notifier.addListener(states.add);
+
+      await notifier.start();
+      await notifier.confirmDownload();
+
+      expect(states.last, isA<ShapefileWarning>());
+      expect((states.last as ShapefileWarning).warnings, hasLength(1));
+    });
+
+    test('acknowledgeWarning proceeds to ImportingShapefiles after ShapefileWarning', () async {
+      final db = AppDatabase.forTesting(NativeDatabase.memory());
+      final importer = _NoopImporter(db);
+      final warningValidator = ShapefileValidator(
+        rules: [_SpyRule(const RuleWarning(userMessage: 'w'))],
+      );
+      final notifier = _makeNotifier(
+        assignments: [_brgy001],
+        validator: warningValidator,
+        db: db,
+        importer: importer,
+      );
+      final states = <GetMapsState>[];
+      notifier.addListener(states.add);
+
+      await notifier.start();
+      await notifier.confirmDownload();
+      expect(states.last, isA<ShapefileWarning>());
+
+      await notifier.acknowledgeWarning();
+      expect(states.any((s) => s is ImportingShapefiles), isTrue);
+    });
+
+    test('network error during download is retryable', () async {
+      final notifier = _makeNotifier(
+        assignments: [_brgy001],
+        downloadError: Exception('timeout'),
+      );
+      final states = <GetMapsState>[];
+      notifier.addListener(states.add);
+
+      await notifier.start();
+      await notifier.confirmDownload();
+
+      final errorState = states.whereType<GetMapsError>().last;
+      expect(errorState.isRetryable, isTrue);
+    });
+
+    test('retryDownload re-attempts download after retryable error', () async {
+      final notifier = _makeNotifier(
+        assignments: [_brgy001],
+        downloadError: Exception('timeout'),
+      );
+      final states = <GetMapsState>[];
+      notifier.addListener(states.add);
+
+      await notifier.start();
+      await notifier.confirmDownload();
+      expect(states.last, isA<GetMapsError>());
+      expect((states.last as GetMapsError).isRetryable, isTrue);
+
+      final statesBeforeRetry = states.length;
+      await notifier.retryDownload();
+      // retryDownload re-enters _downloadAndValidate → DownloadingShapefiles is emitted
+      expect(
+        states.skip(statesBeforeRetry).any((s) => s is DownloadingShapefiles),
+        isTrue,
+      );
+    });
   });
 }
