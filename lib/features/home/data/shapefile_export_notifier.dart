@@ -30,7 +30,6 @@ class ShapefileExportNotifier extends StateNotifier<ExportState> {
     if (!mounted) return;
     if (!result.isValid) {
       state = ExportValidationFailed(result.errors);
-      state = const ExportIdle();
       return;
     }
 

@@ -121,7 +121,7 @@ void main() {
     expect(notifier.state, isA<ExportIdle>());
   });
 
-  test('empty DB → Validating then ValidationFailed then Idle', () async {
+  test('empty DB → Validating then ValidationFailed (persistent)', () async {
     final notifier = makeNotifier(assignmentId: 'a1', db: db);
     final states = <ExportState>[];
     notifier.addListener(states.add, fireImmediately: false);
@@ -131,7 +131,6 @@ void main() {
     expect(states, [
       isA<ExportValidating>(),
       isA<ExportValidationFailed>(),
-      isA<ExportIdle>(),
     ]);
     expect((states[1] as ExportValidationFailed).errors, isNotEmpty);
   });
@@ -148,10 +147,11 @@ void main() {
     expect(states.whereType<ExportValidating>(), hasLength(1));
   });
 
-  test('after ValidationFailed, notifier resets to Idle', () async {
+  test('after ValidationFailed, state stays ValidationFailed until re-export',
+      () async {
     final notifier = makeNotifier(assignmentId: 'a1', db: db);
     await notifier.export();
-    expect(notifier.state, isA<ExportIdle>());
+    expect(notifier.state, isA<ExportValidationFailed>());
   });
 
   test('validation pass → Validating then Exporting then Done then Idle',
