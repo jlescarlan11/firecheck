@@ -1,5 +1,10 @@
+import 'dart:typed_data';
+
 import 'package:drift/native.dart';
 import 'package:firecheck/core/db/database.dart';
+import 'package:firecheck/core/drive/drive_api.dart';
+import 'package:firecheck/core/drive/drive_assignment.dart';
+import 'package:firecheck/core/drive/drive_download_event.dart';
 import 'package:firecheck/features/assignment/data/assignment_repository.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
 import 'package:firecheck/features/home/presentation/home_providers.dart';
@@ -30,6 +35,27 @@ class _StubClient implements SupabaseClient {
       throw UnsupportedError('Network calls are not allowed in this test');
 }
 
+/// A no-op [DriveApi] for testing that avoids network calls.
+class _NoOpDriveApi implements DriveApi {
+  @override
+  Future<List<DriveAssignment>> listAssignments() async => [];
+
+  @override
+  Future<int> getTotalSize(String assignmentId) async => 0;
+
+  @override
+  Stream<DriveDownloadEvent> downloadShapefiles(String assignmentId) =>
+      Stream.empty();
+
+  @override
+  Future<({String folderPath, String folderUrl})> uploadAssignmentFiles({
+    required String enumeratorId,
+    required String assignmentId,
+    required List<({String filename, Uint8List bytes})> files,
+  }) async =>
+      (folderPath: 'FieldData/$enumeratorId/2026-05-02', folderUrl: '');
+}
+
 void main() {
   testWidgets('renders title even when there is no assignment', (tester) async {
     final db = AppDatabase.forTesting(NativeDatabase.memory());
@@ -42,6 +68,7 @@ void main() {
           assignmentRepositoryProvider.overrideWith(
             (ref) => _NoOpAssignmentRepository(_StubClient(), db),
           ),
+          driveApiProvider.overrideWithValue(_NoOpDriveApi()),
         ],
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
