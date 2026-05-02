@@ -4,6 +4,7 @@ import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/drive/drive_upload_job_status.dart';
 import 'package:firecheck/core/drive/drive_upload_repository.dart';
 import 'package:firecheck/core/drive/drive_upload_worker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class DriveUploadState {
@@ -38,16 +39,21 @@ class DriveUploadNotifier extends StateNotifier<DriveUploadState> {
   DriveUploadNotifier({
     required DriveUploadRepository repo,
     required DriveUploadWorker worker,
-  })  : _repo = repo,
-        _worker = worker,
-        super(const DriveUploadState(jobs: [])) {
+  })  : super(const DriveUploadState(jobs: [])) {
+    _repo = repo;
+    _worker = worker;
     _sub = repo.watchQueue().listen((jobs) {
       state = DriveUploadState(jobs: jobs);
     });
   }
 
-  final DriveUploadRepository _repo;
-  final DriveUploadWorker _worker;
+  /// Use in widget tests to seed a static state without subscribing to Drift.
+  @visibleForTesting
+  DriveUploadNotifier.seeded(DriveUploadState initialState)
+      : super(initialState);
+
+  late final DriveUploadRepository _repo;
+  late final DriveUploadWorker _worker;
   StreamSubscription<List<DriveUploadJob>>? _sub;
 
   Future<void> uploadAll() async {
