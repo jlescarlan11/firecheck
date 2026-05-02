@@ -75,7 +75,7 @@ void main() {
     });
 
     test('throws StateError when assignment does not exist', () async {
-      expect(
+      await expectLater(
         () => repo.setDriveUploadResult(
           assignmentId: 'nonexistent',
           driveFolderPath: 'FieldData/x/2026-05-02/',
