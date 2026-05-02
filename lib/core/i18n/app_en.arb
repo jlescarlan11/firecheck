@@ -400,5 +400,11 @@
     }
   },
   "getMapsWarningContinue": "Continue anyway",
-  "getMapsClose": "Close"
+  "getMapsClose": "Close",
+  "exportShapefile": "Export Shapefile",
+  "exportShapefileSubtitle": "Package completed features as .shp",
+  "exportShapefileExporting": "Packaging…",
+  "exportErrorNoFeatures": "No completed features to export.",
+  "exportErrorWriteFailed": "Export failed: could not write files. Please try again.",
+  "exportErrorShareFailed": "Export ready but could not open share sheet. Please try again."
 }

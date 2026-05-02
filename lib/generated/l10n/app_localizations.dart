@@ -2083,6 +2083,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Close'**
   String get getMapsClose;
+
+  /// No description provided for @exportShapefile.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Shapefile'**
+  String get exportShapefile;
+
+  /// No description provided for @exportShapefileSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Package completed features as .shp'**
+  String get exportShapefileSubtitle;
+
+  /// No description provided for @exportShapefileExporting.
+  ///
+  /// In en, this message translates to:
+  /// **'Packaging…'**
+  String get exportShapefileExporting;
+
+  /// No description provided for @exportErrorNoFeatures.
+  ///
+  /// In en, this message translates to:
+  /// **'No completed features to export.'**
+  String get exportErrorNoFeatures;
+
+  /// No description provided for @exportErrorWriteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Export failed: could not write files. Please try again.'**
+  String get exportErrorWriteFailed;
+
+  /// No description provided for @exportErrorShareFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Export ready but could not open share sheet. Please try again.'**
+  String get exportErrorShareFailed;
 }
 
 class _AppLocalizationsDelegate

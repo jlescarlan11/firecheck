@@ -1,7 +1,10 @@
 import 'package:firecheck/core/security/biometric_gate_provider.dart';
+import 'package:firecheck/core/sync/shapefile/export/export_failure.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_lock_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_lock_state.dart';
 import 'package:firecheck/features/assignment/presentation/submitted_banner.dart';
+import 'package:firecheck/features/home/data/shapefile_export_notifier.dart';
+import 'package:firecheck/features/home/domain/export_state.dart';
 import 'package:firecheck/features/home/presentation/home_providers.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -17,6 +20,21 @@ class HomeScreen extends ConsumerWidget {
     final asyncSnap = ref.watch(progressProvider);
     final lock = ref.watch(assignmentLockStateProvider).value;
     final isLocked = lock is Submitted || lock is ClosedRemotely;
+    final exportState = ref.watch(shapefileExportNotifierProvider);
+    final isExporting = exportState is ExportExporting;
+
+    ref.listen<ExportState>(shapefileExportNotifierProvider, (prev, next) {
+      if (next is ExportFailed) {
+        final msg = switch (next.failure) {
+          NoCompletedFeatures() => l.exportErrorNoFeatures,
+          WriteError()          => l.exportErrorWriteFailed,
+          ShareError()          => l.exportErrorShareFailed,
+        };
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(msg)),
+        );
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(title: const Text('FireCheck')),
@@ -89,6 +107,24 @@ class HomeScreen extends ConsumerWidget {
                   subtitle: l.uploadDataSubtitle,
                   onTap: () => _onUploadDataTap(context, ref, l),
                 ),
+              _ActionTile(
+                title: isExporting
+                    ? l.exportShapefileExporting
+                    : l.exportShapefile,
+                subtitle: l.exportShapefileSubtitle,
+                trailing: isExporting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.chevron_right),
+                onTap: (snap.completedFeatures == 0 || isExporting)
+                    ? null
+                    : () => ref
+                        .read(shapefileExportNotifierProvider.notifier)
+                        .export(),
+              ),
             ],
           ),
         ),
@@ -125,10 +161,12 @@ class _ActionTile extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.trailing,
   });
   final String title;
   final String subtitle;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -136,8 +174,9 @@ class _ActionTile extends StatelessWidget {
       child: ListTile(
         title: Text(title),
         subtitle: Text(subtitle),
-        trailing: const Icon(Icons.chevron_right),
+        trailing: trailing ?? const Icon(Icons.chevron_right),
         onTap: onTap,
+        enabled: onTap != null,
       ),
     );
   }

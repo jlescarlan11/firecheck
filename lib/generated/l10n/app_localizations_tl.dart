@@ -1118,4 +1118,24 @@ class AppLocalizationsTl extends AppLocalizations {
 
   @override
   String get getMapsClose => 'Close';
+
+  @override
+  String get exportShapefile => 'Export Shapefile';
+
+  @override
+  String get exportShapefileSubtitle => 'Package completed features as .shp';
+
+  @override
+  String get exportShapefileExporting => 'Packaging…';
+
+  @override
+  String get exportErrorNoFeatures => 'No completed features to export.';
+
+  @override
+  String get exportErrorWriteFailed =>
+      'Export failed: could not write files. Please try again.';
+
+  @override
+  String get exportErrorShareFailed =>
+      'Export ready but could not open share sheet. Please try again.';
 }
