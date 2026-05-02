@@ -30,9 +30,9 @@ class GoogleDriveUploadApi implements DriveUploadApi {
       spaces: 'drive',
       $fields: 'files(id)',
     );
-    if (existing.files?.isNotEmpty == true) {
-      return existing.files!.first.id!;
-    }
+    final existingId = existing.files?.firstOrNull?.id;
+    if (existingId != null) return existingId;
+
     final folder = await api.files.create(
       gdrive.File()
         ..name = name
@@ -40,7 +40,11 @@ class GoogleDriveUploadApi implements DriveUploadApi {
         ..parents = [parentId],
       $fields: 'id',
     );
-    return folder.id!;
+    final folderId = folder.id;
+    if (folderId == null) {
+      throw AuthFailure('Drive did not return id for created folder: $name');
+    }
+    return folderId;
   }
 
   @override
@@ -54,9 +58,12 @@ class GoogleDriveUploadApi implements DriveUploadApi {
     final api = await _api();
     final file = File(localPath);
     final fileSize = await file.length();
-    final mimeType = fileName.toLowerCase().endsWith('.jpg')
+    final lower = fileName.toLowerCase();
+    final mimeType = (lower.endsWith('.jpg') || lower.endsWith('.jpeg'))
         ? 'image/jpeg'
-        : 'application/zip';
+        : lower.endsWith('.png')
+            ? 'image/png'
+            : 'application/zip';
 
     final media = gdrive.Media(
       file.openRead(),
@@ -72,7 +79,13 @@ class GoogleDriveUploadApi implements DriveUploadApi {
       uploadMedia: media,
       $fields: 'id',
     );
+    final fileId = created.id;
+    if (fileId == null) {
+      throw AuthFailure('Drive did not return id for uploaded file: $fileName');
+    }
+    // googleapis does not expose a progress stream for media uploads;
+    // onProgress fires once on completion.
     onProgress?.call(fileSize, fileSize);
-    return created.id!;
+    return fileId;
   }
 }

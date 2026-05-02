@@ -5,6 +5,7 @@ import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/drive/drive_upload_repository.dart';
 import 'package:firecheck/core/drive/drive_upload_worker.dart';
 import 'package:firecheck/core/drive/google_drive_upload_api.dart';
+import 'package:firecheck/features/auth/data/google_auth_repository.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:workmanager/workmanager.dart';
@@ -26,7 +27,9 @@ void driveUploadCallbackDispatcher() {
       // Opens the real on-disk Drift database in this background isolate.
       final db = AppDatabase();
       final signIn = GoogleSignIn(
-        scopes: ['https://www.googleapis.com/auth/drive.file'],
+        scopes: [GoogleAuthRepository.driveFileScope],
+        // Background isolate constructs a fresh GoogleSignIn — clientId is read
+        // automatically from GoogleService-Info.plist / google-services.json.
       );
       final uploadApi = GoogleDriveUploadApi(googleSignIn: signIn);
       final repo = DriveUploadRepository(db);

@@ -29,4 +29,9 @@ void main() {
     final repo = FakeGoogleAuthRepository();
     expect(await repo.getEnumeratorId(), 'test-enumerator');
   });
+
+  test('requestDriveUploadScope returns true', () async {
+    final repo = FakeGoogleAuthRepository();
+    expect(await repo.requestDriveUploadScope(), isTrue);
+  });
 }
