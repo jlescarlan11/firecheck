@@ -236,8 +236,8 @@ class _MapboxMapView extends StatefulWidget {
 class _MapboxMapViewState extends State<_MapboxMapView> {
   PolygonAnnotationManager? _featureManager;
   PolygonAnnotationManager? _boundaryManager;
-  PointAnnotationManager? _pointManager;
   PolylineAnnotationManager? _roadManager;
+  PointAnnotationManager? _pointManager;
   MapboxMap? _mapboxMap;
 
   // Map annotation-id to feature. Populated as each polygon is created so
@@ -371,9 +371,9 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
     // boundary polygon and never reach the feature manager.
     _boundaryManager = await map.annotations.createPolygonAnnotationManager();
     _featureManager = await map.annotations.createPolygonAnnotationManager();
-    // Point manager for is_new=true features (blue pins) — topmost.
-    _pointManager = await map.annotations.createPointAnnotationManager();
+    // Road manager above building fills; point manager topmost above roads.
     _roadManager = await map.annotations.createPolylineAnnotationManager();
+    _pointManager = await map.annotations.createPointAnnotationManager();
 
     await _renderBoundary();
     await _renderFeatures();
