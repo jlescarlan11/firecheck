@@ -21,6 +21,9 @@ class FeatureRepository {
   ///   any draft with an attribute row OR doesNotExist=true → 'in_progress'
   ///   else → 'unfilled'
   Future<void> markFeatureStatus(String featureId) async {
+    final feature = await getFeature(featureId);
+    if (feature == null) return;
+
     final submissions = await (_db.select(_db.submissions)
           ..where((t) => t.featureId.equals(featureId)))
         .get();
@@ -37,11 +40,19 @@ class FeatureRepository {
       status = 'complete';
     } else if (submissions.isNotEmpty) {
       final attrIds = submissions.map((s) => s.id).toList();
-      final attrs = await (_db.select(_db.buildingAttributes)
-            ..where((t) => t.submissionId.isIn(attrIds)))
-          .get();
-      final anyInProgress =
-          attrs.isNotEmpty || submissions.any((s) => s.doesNotExist);
+      final bool anyAttrs;
+      if (feature.featureType == 'road') {
+        final attrs = await (_db.select(_db.roadAttributes)
+              ..where((t) => t.submissionId.isIn(attrIds)))
+            .get();
+        anyAttrs = attrs.isNotEmpty;
+      } else {
+        final attrs = await (_db.select(_db.buildingAttributes)
+              ..where((t) => t.submissionId.isIn(attrIds)))
+            .get();
+        anyAttrs = attrs.isNotEmpty;
+      }
+      final anyInProgress = anyAttrs || submissions.any((s) => s.doesNotExist);
       if (anyInProgress) status = 'in_progress';
     }
 
