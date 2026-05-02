@@ -84,9 +84,10 @@ class ExportValidationResult {
 class ExportLayerError {
   final ExportLayer layer;       // enum: buildings, roads
   final ExportLayerIssue issue;  // enum: emptyLayer, missingRequiredFields
-  final String message;          // plain-language, from l10n
 }
 ```
+
+`ExportLayerError` carries only enums — no strings. The HomeScreen maps `(layer, issue)` pairs to localized strings, keeping `AppLocalizations` out of the core domain layer.
 
 ### `ShapefileExportValidator`
 
