@@ -19,7 +19,7 @@
 | File | Action |
 |---|---|
 | `lib/core/db/tables/assignments.dart` | Modify — add 3 columns |
-| `lib/core/db/database.dart` | Modify — bump to v8, add migration |
+| `lib/core/db/database.dart` | Modify — bump to v9, add migration |
 | `lib/features/assignment/data/assignment_repository.dart` | Modify — add `setDriveUploadResult` + `getDriveUploadResult` |
 | `test/features/assignment/data/assignment_repository_drive_test.dart` | Create — repository tests |
 | `lib/core/drive/drive_api.dart` | Modify — add `uploadAssignmentFiles` to interface |
@@ -36,7 +36,7 @@
 
 ---
 
-## Task 1: Drift schema v8 migration
+## Task 1: Drift schema v9 migration
 
 **Files:**
 - Modify: `lib/core/db/tables/assignments.dart`
@@ -73,13 +73,13 @@ class Assignments extends Table {
 }
 ```
 
-- [ ] **Step 1.2: Bump schema version and add v8 migration in database.dart**
+- [ ] **Step 1.2: Bump schema version and add v9 migration in database.dart**
 
-Open `lib/core/db/database.dart`. Change `schemaVersion` from `7` to `8` and add the `if (from < 8)` block inside `onUpgrade`:
+Open `lib/core/db/database.dart`. Change `schemaVersion` from `8` to `9` and add the `if (from < 9)` block inside `onUpgrade`:
 
 ```dart
 @override
-int get schemaVersion => 8;
+int get schemaVersion => 9;
 
 @override
 MigrationStrategy get migration => MigrationStrategy(
@@ -88,8 +88,8 @@ MigrationStrategy get migration => MigrationStrategy(
   },
   onUpgrade: (m, from, to) async {
     // ... existing if (from < 2) through if (from < 7) blocks unchanged ...
-    if (from < 8) {
-      // v7 → v8: Drive upload confirmation columns for US-30.
+    if (from < 9) {
+      // v8 → v9: Drive upload confirmation columns for US-30.
       await m.addColumn(assignments, assignments.driveFolderPath);
       await m.addColumn(assignments, assignments.driveFolderUrl);
       await m.addColumn(assignments, assignments.driveUploadConfirmedAt);
@@ -120,7 +120,7 @@ Expected: same number of tests passing as before (538 or current count), 0 failu
 
 ```bash
 git add lib/core/db/tables/assignments.dart lib/core/db/database.dart lib/core/db/database.g.dart
-git commit -m "feat(db): add drive upload confirmation columns — schema v8 (US-30)"
+git commit -m "feat(db): add drive upload confirmation columns — schema v9 (US-30)"
 ```
 
 ---
