@@ -299,25 +299,29 @@ void main() {
       final db = AppDatabase.forTesting(NativeDatabase.memory());
       addTearDown(db.close);
       // Persist the feature so saveReshape's UPDATE finds a row.
+      // runAsync lets the NativeDatabase background isolate complete its writes
+      // outside the fakeAsync zone (avoids pumpAndSettle livelock in full suite).
       final feature = fakeFeature();
-      await db.into(db.assignments).insert(
-            AssignmentsCompanion.insert(
-              id: 'a1',
-              enumeratorId: 'admin',
-              campaignId: 'c1',
-              boundaryPolygonGeojson: fakeAssignment().boundaryPolygonGeojson,
-              createdAt: DateTime.now(),
-            ),
-          );
-      await db.into(db.features).insert(
-            FeaturesCompanion.insert(
-              id: feature.id,
-              assignmentId: feature.assignmentId,
-              featureType: feature.featureType,
-              geometryGeojson: feature.geometryGeojson,
-              createdAt: feature.createdAt,
-            ),
-          );
+      await tester.runAsync(() async {
+        await db.into(db.assignments).insert(
+              AssignmentsCompanion.insert(
+                id: 'a1',
+                enumeratorId: 'admin',
+                campaignId: 'c1',
+                boundaryPolygonGeojson: fakeAssignment().boundaryPolygonGeojson,
+                createdAt: DateTime.now(),
+              ),
+            );
+        await db.into(db.features).insert(
+              FeaturesCompanion.insert(
+                id: feature.id,
+                assignmentId: feature.assignmentId,
+                featureType: feature.featureType,
+                geometryGeojson: feature.geometryGeojson,
+                createdAt: feature.createdAt,
+              ),
+            );
+      });
 
       final fake = FakeMapRenderer();
       final container = await pumpMap(
@@ -329,9 +333,13 @@ void main() {
       );
 
       await fake.simulatePolygonLongPress(feature);
-      await tester.pumpAndSettle();
+      // NativeDatabase background isolate makes pumpAndSettle hang when other
+      // tests have left isolates active. Use explicit frame pumps instead.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.byKey(const Key('reshape.actionsheet.reshape')));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Drive the controller into a dirty state by performing a small valid
       // move directly (avoids dependency on overlay layout):
@@ -343,11 +351,12 @@ void main() {
       await tester.pump();
 
       await tester.tap(find.byKey(const Key('reshape.banner.save')));
-      // Drift's NativeDatabase does real async I/O; pumpAndSettle in FakeAsync
-      // hangs on the post-save rebuild. Pump a handful of frames instead.
-      for (var i = 0; i < 20; i++) {
-        await tester.pump(const Duration(milliseconds: 20));
-      }
+      // Let the NativeDatabase transaction complete in real time, then pump UI.
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 300)),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Mode is inactive in the controller.
       expect(container.read(reshapeModeControllerProvider).isActive, isFalse);
@@ -355,13 +364,17 @@ void main() {
       expect(find.byKey(const Key('reshape.banner.save')), findsNothing);
 
       // Revision + sync_job persisted.
-      final revisions = await db.select(db.featureGeometryRevisions).get();
+      final revisions = await tester.runAsync(
+        () => db.select(db.featureGeometryRevisions).get(),
+      );
       expect(revisions, hasLength(1));
-      expect(revisions.first.featureId, feature.id);
+      expect(revisions!.first.featureId, feature.id);
       expect(revisions.first.syncStatus, 'ready_to_upload');
-      final jobs = await db.select(db.syncJobs).get();
+      final jobs = await tester.runAsync(
+        () => db.select(db.syncJobs).get(),
+      );
       expect(jobs, hasLength(1));
-      expect(jobs.first.entityType, 'feature_geometry_update');
+      expect(jobs!.first.entityType, 'feature_geometry_update');
       expect(jobs.first.entityId, revisions.first.id);
     });
 
@@ -383,15 +396,18 @@ void main() {
       await tester.tap(find.byKey(const Key('reshape.actionsheet.reshape')));
       await tester.pumpAndSettle();
 
-      // Drive into a transverse bowtie. Starting from a 4-vertex CCW square,
-      // swap two diagonally-opposite corners.
+      // Drive into a bowtie by swapping the middle two vertices (indices 1 and 2).
+      // Original ring: [SW, SE, NE, NW]. After swap: [SW, NE, SE, NW].
+      // Edges SW→NE and SE→NW are the two diagonals of the rectangle and cross
+      // at its centre — that is the self-intersection.
+      // (Swapping indices 0 and 2 only reverses the winding — no crossing.)
       final n = container.read(reshapeModeControllerProvider.notifier);
       final ring = container.read(reshapeModeControllerProvider).workingRings[0];
-      final c0 = ring[0];
+      final c1 = ring[1];
       final c2 = ring[2];
       n
-        ..moveVertex(0, 0, c2) // 0 -> 2
-        ..moveVertex(0, 2, c0); // 2 -> 0 — produces a bowtie
+        ..moveVertex(0, 1, c2) // vertex 1 (SE) → NE position
+        ..moveVertex(0, 2, c1); // vertex 2 (NE) → SE position — diagonals cross
       await tester.pump();
 
       await tester.tap(find.byKey(const Key('reshape.banner.save')));
