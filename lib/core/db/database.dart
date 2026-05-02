@@ -13,6 +13,7 @@ import 'package:firecheck/core/db/tables/photos.dart';
 import 'package:firecheck/core/db/tables/ra_9514_types.dart';
 import 'package:firecheck/core/db/tables/road_attributes.dart';
 import 'package:firecheck/core/db/tables/submissions.dart';
+import 'package:firecheck/core/db/tables/drive_upload_jobs.dart';
 import 'package:firecheck/core/db/tables/sync_jobs.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -33,6 +34,7 @@ part 'database.g.dart';
     Ra9514Types,
     SyncJobs,
     OfflineTilePacks,
+    DriveUploadJobs,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -42,7 +44,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -85,6 +87,12 @@ class AppDatabase extends _$AppDatabase {
             // v6 → v7: drive_modified_time and drive_folder_id for US-17 Get Maps.
             await m.addColumn(assignments, assignments.driveModifiedTime);
             await m.addColumn(assignments, assignments.driveFolderId);
+          }
+          if (from < 8) {
+            // v7 → v8: drive_upload_jobs table for US-29 upload to Drive.
+            await m.createTable(driveUploadJobs);
+            await m.createIndex(driveUploadJobsStatusIdx);
+            await m.createIndex(driveUploadJobsAssignmentIdx);
           }
         },
         beforeOpen: (details) async {

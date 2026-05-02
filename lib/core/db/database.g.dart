@@ -5447,6 +5447,707 @@ class OfflineTilePacksCompanion extends UpdateCompanion<OfflineTilePack> {
   }
 }
 
+class $DriveUploadJobsTable extends DriveUploadJobs
+    with TableInfo<$DriveUploadJobsTable, DriveUploadJob> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DriveUploadJobsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _assignmentIdMeta =
+      const VerificationMeta('assignmentId');
+  @override
+  late final GeneratedColumn<String> assignmentId = GeneratedColumn<String>(
+      'assignment_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _filePathMeta =
+      const VerificationMeta('filePath');
+  @override
+  late final GeneratedColumn<String> filePath = GeneratedColumn<String>(
+      'file_path', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _fileTypeMeta =
+      const VerificationMeta('fileType');
+  @override
+  late final GeneratedColumn<String> fileType = GeneratedColumn<String>(
+      'file_type', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _fileNameMeta =
+      const VerificationMeta('fileName');
+  @override
+  late final GeneratedColumn<String> fileName = GeneratedColumn<String>(
+      'file_name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _fileSizeBytesMeta =
+      const VerificationMeta('fileSizeBytes');
+  @override
+  late final GeneratedColumn<int> fileSizeBytes = GeneratedColumn<int>(
+      'file_size_bytes', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _capturedAtMeta =
+      const VerificationMeta('capturedAt');
+  @override
+  late final GeneratedColumn<DateTime> capturedAt = GeneratedColumn<DateTime>(
+      'captured_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+      'status', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('pending'));
+  static const VerificationMeta _resumableUriMeta =
+      const VerificationMeta('resumableUri');
+  @override
+  late final GeneratedColumn<String> resumableUri = GeneratedColumn<String>(
+      'resumable_uri', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _driveFileIdMeta =
+      const VerificationMeta('driveFileId');
+  @override
+  late final GeneratedColumn<String> driveFileId = GeneratedColumn<String>(
+      'drive_file_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _retryCountMeta =
+      const VerificationMeta('retryCount');
+  @override
+  late final GeneratedColumn<int> retryCount = GeneratedColumn<int>(
+      'retry_count', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _failureReasonMeta =
+      const VerificationMeta('failureReason');
+  @override
+  late final GeneratedColumn<String> failureReason = GeneratedColumn<String>(
+      'failure_reason', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _nextRetryAtMeta =
+      const VerificationMeta('nextRetryAt');
+  @override
+  late final GeneratedColumn<DateTime> nextRetryAt = GeneratedColumn<DateTime>(
+      'next_retry_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        assignmentId,
+        filePath,
+        fileType,
+        fileName,
+        fileSizeBytes,
+        capturedAt,
+        status,
+        resumableUri,
+        driveFileId,
+        retryCount,
+        failureReason,
+        nextRetryAt,
+        createdAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'drive_upload_jobs';
+  @override
+  VerificationContext validateIntegrity(Insertable<DriveUploadJob> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('assignment_id')) {
+      context.handle(
+          _assignmentIdMeta,
+          assignmentId.isAcceptableOrUnknown(
+              data['assignment_id']!, _assignmentIdMeta));
+    } else if (isInserting) {
+      context.missing(_assignmentIdMeta);
+    }
+    if (data.containsKey('file_path')) {
+      context.handle(_filePathMeta,
+          filePath.isAcceptableOrUnknown(data['file_path']!, _filePathMeta));
+    } else if (isInserting) {
+      context.missing(_filePathMeta);
+    }
+    if (data.containsKey('file_type')) {
+      context.handle(_fileTypeMeta,
+          fileType.isAcceptableOrUnknown(data['file_type']!, _fileTypeMeta));
+    } else if (isInserting) {
+      context.missing(_fileTypeMeta);
+    }
+    if (data.containsKey('file_name')) {
+      context.handle(_fileNameMeta,
+          fileName.isAcceptableOrUnknown(data['file_name']!, _fileNameMeta));
+    } else if (isInserting) {
+      context.missing(_fileNameMeta);
+    }
+    if (data.containsKey('file_size_bytes')) {
+      context.handle(
+          _fileSizeBytesMeta,
+          fileSizeBytes.isAcceptableOrUnknown(
+              data['file_size_bytes']!, _fileSizeBytesMeta));
+    } else if (isInserting) {
+      context.missing(_fileSizeBytesMeta);
+    }
+    if (data.containsKey('captured_at')) {
+      context.handle(
+          _capturedAtMeta,
+          capturedAt.isAcceptableOrUnknown(
+              data['captured_at']!, _capturedAtMeta));
+    } else if (isInserting) {
+      context.missing(_capturedAtMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(_statusMeta,
+          status.isAcceptableOrUnknown(data['status']!, _statusMeta));
+    }
+    if (data.containsKey('resumable_uri')) {
+      context.handle(
+          _resumableUriMeta,
+          resumableUri.isAcceptableOrUnknown(
+              data['resumable_uri']!, _resumableUriMeta));
+    }
+    if (data.containsKey('drive_file_id')) {
+      context.handle(
+          _driveFileIdMeta,
+          driveFileId.isAcceptableOrUnknown(
+              data['drive_file_id']!, _driveFileIdMeta));
+    }
+    if (data.containsKey('retry_count')) {
+      context.handle(
+          _retryCountMeta,
+          retryCount.isAcceptableOrUnknown(
+              data['retry_count']!, _retryCountMeta));
+    }
+    if (data.containsKey('failure_reason')) {
+      context.handle(
+          _failureReasonMeta,
+          failureReason.isAcceptableOrUnknown(
+              data['failure_reason']!, _failureReasonMeta));
+    }
+    if (data.containsKey('next_retry_at')) {
+      context.handle(
+          _nextRetryAtMeta,
+          nextRetryAt.isAcceptableOrUnknown(
+              data['next_retry_at']!, _nextRetryAtMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DriveUploadJob map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DriveUploadJob(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      assignmentId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}assignment_id'])!,
+      filePath: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}file_path'])!,
+      fileType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}file_type'])!,
+      fileName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}file_name'])!,
+      fileSizeBytes: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}file_size_bytes'])!,
+      capturedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}captured_at'])!,
+      status: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
+      resumableUri: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}resumable_uri']),
+      driveFileId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}drive_file_id']),
+      retryCount: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}retry_count'])!,
+      failureReason: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}failure_reason']),
+      nextRetryAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}next_retry_at']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $DriveUploadJobsTable createAlias(String alias) {
+    return $DriveUploadJobsTable(attachedDatabase, alias);
+  }
+}
+
+class DriveUploadJob extends DataClass implements Insertable<DriveUploadJob> {
+  final String id;
+  final String assignmentId;
+  final String filePath;
+  final String fileType;
+  final String fileName;
+  final int fileSizeBytes;
+  final DateTime capturedAt;
+  final String status;
+  final String? resumableUri;
+  final String? driveFileId;
+  final int retryCount;
+  final String? failureReason;
+  final DateTime? nextRetryAt;
+  final DateTime createdAt;
+  const DriveUploadJob(
+      {required this.id,
+      required this.assignmentId,
+      required this.filePath,
+      required this.fileType,
+      required this.fileName,
+      required this.fileSizeBytes,
+      required this.capturedAt,
+      required this.status,
+      this.resumableUri,
+      this.driveFileId,
+      required this.retryCount,
+      this.failureReason,
+      this.nextRetryAt,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['assignment_id'] = Variable<String>(assignmentId);
+    map['file_path'] = Variable<String>(filePath);
+    map['file_type'] = Variable<String>(fileType);
+    map['file_name'] = Variable<String>(fileName);
+    map['file_size_bytes'] = Variable<int>(fileSizeBytes);
+    map['captured_at'] = Variable<DateTime>(capturedAt);
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || resumableUri != null) {
+      map['resumable_uri'] = Variable<String>(resumableUri);
+    }
+    if (!nullToAbsent || driveFileId != null) {
+      map['drive_file_id'] = Variable<String>(driveFileId);
+    }
+    map['retry_count'] = Variable<int>(retryCount);
+    if (!nullToAbsent || failureReason != null) {
+      map['failure_reason'] = Variable<String>(failureReason);
+    }
+    if (!nullToAbsent || nextRetryAt != null) {
+      map['next_retry_at'] = Variable<DateTime>(nextRetryAt);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  DriveUploadJobsCompanion toCompanion(bool nullToAbsent) {
+    return DriveUploadJobsCompanion(
+      id: Value(id),
+      assignmentId: Value(assignmentId),
+      filePath: Value(filePath),
+      fileType: Value(fileType),
+      fileName: Value(fileName),
+      fileSizeBytes: Value(fileSizeBytes),
+      capturedAt: Value(capturedAt),
+      status: Value(status),
+      resumableUri: resumableUri == null && nullToAbsent
+          ? const Value.absent()
+          : Value(resumableUri),
+      driveFileId: driveFileId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(driveFileId),
+      retryCount: Value(retryCount),
+      failureReason: failureReason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(failureReason),
+      nextRetryAt: nextRetryAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nextRetryAt),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory DriveUploadJob.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DriveUploadJob(
+      id: serializer.fromJson<String>(json['id']),
+      assignmentId: serializer.fromJson<String>(json['assignmentId']),
+      filePath: serializer.fromJson<String>(json['filePath']),
+      fileType: serializer.fromJson<String>(json['fileType']),
+      fileName: serializer.fromJson<String>(json['fileName']),
+      fileSizeBytes: serializer.fromJson<int>(json['fileSizeBytes']),
+      capturedAt: serializer.fromJson<DateTime>(json['capturedAt']),
+      status: serializer.fromJson<String>(json['status']),
+      resumableUri: serializer.fromJson<String?>(json['resumableUri']),
+      driveFileId: serializer.fromJson<String?>(json['driveFileId']),
+      retryCount: serializer.fromJson<int>(json['retryCount']),
+      failureReason: serializer.fromJson<String?>(json['failureReason']),
+      nextRetryAt: serializer.fromJson<DateTime?>(json['nextRetryAt']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'assignmentId': serializer.toJson<String>(assignmentId),
+      'filePath': serializer.toJson<String>(filePath),
+      'fileType': serializer.toJson<String>(fileType),
+      'fileName': serializer.toJson<String>(fileName),
+      'fileSizeBytes': serializer.toJson<int>(fileSizeBytes),
+      'capturedAt': serializer.toJson<DateTime>(capturedAt),
+      'status': serializer.toJson<String>(status),
+      'resumableUri': serializer.toJson<String?>(resumableUri),
+      'driveFileId': serializer.toJson<String?>(driveFileId),
+      'retryCount': serializer.toJson<int>(retryCount),
+      'failureReason': serializer.toJson<String?>(failureReason),
+      'nextRetryAt': serializer.toJson<DateTime?>(nextRetryAt),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  DriveUploadJob copyWith(
+          {String? id,
+          String? assignmentId,
+          String? filePath,
+          String? fileType,
+          String? fileName,
+          int? fileSizeBytes,
+          DateTime? capturedAt,
+          String? status,
+          Value<String?> resumableUri = const Value.absent(),
+          Value<String?> driveFileId = const Value.absent(),
+          int? retryCount,
+          Value<String?> failureReason = const Value.absent(),
+          Value<DateTime?> nextRetryAt = const Value.absent(),
+          DateTime? createdAt}) =>
+      DriveUploadJob(
+        id: id ?? this.id,
+        assignmentId: assignmentId ?? this.assignmentId,
+        filePath: filePath ?? this.filePath,
+        fileType: fileType ?? this.fileType,
+        fileName: fileName ?? this.fileName,
+        fileSizeBytes: fileSizeBytes ?? this.fileSizeBytes,
+        capturedAt: capturedAt ?? this.capturedAt,
+        status: status ?? this.status,
+        resumableUri:
+            resumableUri.present ? resumableUri.value : this.resumableUri,
+        driveFileId: driveFileId.present ? driveFileId.value : this.driveFileId,
+        retryCount: retryCount ?? this.retryCount,
+        failureReason:
+            failureReason.present ? failureReason.value : this.failureReason,
+        nextRetryAt: nextRetryAt.present ? nextRetryAt.value : this.nextRetryAt,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  DriveUploadJob copyWithCompanion(DriveUploadJobsCompanion data) {
+    return DriveUploadJob(
+      id: data.id.present ? data.id.value : this.id,
+      assignmentId: data.assignmentId.present
+          ? data.assignmentId.value
+          : this.assignmentId,
+      filePath: data.filePath.present ? data.filePath.value : this.filePath,
+      fileType: data.fileType.present ? data.fileType.value : this.fileType,
+      fileName: data.fileName.present ? data.fileName.value : this.fileName,
+      fileSizeBytes: data.fileSizeBytes.present
+          ? data.fileSizeBytes.value
+          : this.fileSizeBytes,
+      capturedAt:
+          data.capturedAt.present ? data.capturedAt.value : this.capturedAt,
+      status: data.status.present ? data.status.value : this.status,
+      resumableUri: data.resumableUri.present
+          ? data.resumableUri.value
+          : this.resumableUri,
+      driveFileId:
+          data.driveFileId.present ? data.driveFileId.value : this.driveFileId,
+      retryCount:
+          data.retryCount.present ? data.retryCount.value : this.retryCount,
+      failureReason: data.failureReason.present
+          ? data.failureReason.value
+          : this.failureReason,
+      nextRetryAt:
+          data.nextRetryAt.present ? data.nextRetryAt.value : this.nextRetryAt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DriveUploadJob(')
+          ..write('id: $id, ')
+          ..write('assignmentId: $assignmentId, ')
+          ..write('filePath: $filePath, ')
+          ..write('fileType: $fileType, ')
+          ..write('fileName: $fileName, ')
+          ..write('fileSizeBytes: $fileSizeBytes, ')
+          ..write('capturedAt: $capturedAt, ')
+          ..write('status: $status, ')
+          ..write('resumableUri: $resumableUri, ')
+          ..write('driveFileId: $driveFileId, ')
+          ..write('retryCount: $retryCount, ')
+          ..write('failureReason: $failureReason, ')
+          ..write('nextRetryAt: $nextRetryAt, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      assignmentId,
+      filePath,
+      fileType,
+      fileName,
+      fileSizeBytes,
+      capturedAt,
+      status,
+      resumableUri,
+      driveFileId,
+      retryCount,
+      failureReason,
+      nextRetryAt,
+      createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DriveUploadJob &&
+          other.id == this.id &&
+          other.assignmentId == this.assignmentId &&
+          other.filePath == this.filePath &&
+          other.fileType == this.fileType &&
+          other.fileName == this.fileName &&
+          other.fileSizeBytes == this.fileSizeBytes &&
+          other.capturedAt == this.capturedAt &&
+          other.status == this.status &&
+          other.resumableUri == this.resumableUri &&
+          other.driveFileId == this.driveFileId &&
+          other.retryCount == this.retryCount &&
+          other.failureReason == this.failureReason &&
+          other.nextRetryAt == this.nextRetryAt &&
+          other.createdAt == this.createdAt);
+}
+
+class DriveUploadJobsCompanion extends UpdateCompanion<DriveUploadJob> {
+  final Value<String> id;
+  final Value<String> assignmentId;
+  final Value<String> filePath;
+  final Value<String> fileType;
+  final Value<String> fileName;
+  final Value<int> fileSizeBytes;
+  final Value<DateTime> capturedAt;
+  final Value<String> status;
+  final Value<String?> resumableUri;
+  final Value<String?> driveFileId;
+  final Value<int> retryCount;
+  final Value<String?> failureReason;
+  final Value<DateTime?> nextRetryAt;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const DriveUploadJobsCompanion({
+    this.id = const Value.absent(),
+    this.assignmentId = const Value.absent(),
+    this.filePath = const Value.absent(),
+    this.fileType = const Value.absent(),
+    this.fileName = const Value.absent(),
+    this.fileSizeBytes = const Value.absent(),
+    this.capturedAt = const Value.absent(),
+    this.status = const Value.absent(),
+    this.resumableUri = const Value.absent(),
+    this.driveFileId = const Value.absent(),
+    this.retryCount = const Value.absent(),
+    this.failureReason = const Value.absent(),
+    this.nextRetryAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DriveUploadJobsCompanion.insert({
+    required String id,
+    required String assignmentId,
+    required String filePath,
+    required String fileType,
+    required String fileName,
+    required int fileSizeBytes,
+    required DateTime capturedAt,
+    this.status = const Value.absent(),
+    this.resumableUri = const Value.absent(),
+    this.driveFileId = const Value.absent(),
+    this.retryCount = const Value.absent(),
+    this.failureReason = const Value.absent(),
+    this.nextRetryAt = const Value.absent(),
+    required DateTime createdAt,
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        assignmentId = Value(assignmentId),
+        filePath = Value(filePath),
+        fileType = Value(fileType),
+        fileName = Value(fileName),
+        fileSizeBytes = Value(fileSizeBytes),
+        capturedAt = Value(capturedAt),
+        createdAt = Value(createdAt);
+  static Insertable<DriveUploadJob> custom({
+    Expression<String>? id,
+    Expression<String>? assignmentId,
+    Expression<String>? filePath,
+    Expression<String>? fileType,
+    Expression<String>? fileName,
+    Expression<int>? fileSizeBytes,
+    Expression<DateTime>? capturedAt,
+    Expression<String>? status,
+    Expression<String>? resumableUri,
+    Expression<String>? driveFileId,
+    Expression<int>? retryCount,
+    Expression<String>? failureReason,
+    Expression<DateTime>? nextRetryAt,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (assignmentId != null) 'assignment_id': assignmentId,
+      if (filePath != null) 'file_path': filePath,
+      if (fileType != null) 'file_type': fileType,
+      if (fileName != null) 'file_name': fileName,
+      if (fileSizeBytes != null) 'file_size_bytes': fileSizeBytes,
+      if (capturedAt != null) 'captured_at': capturedAt,
+      if (status != null) 'status': status,
+      if (resumableUri != null) 'resumable_uri': resumableUri,
+      if (driveFileId != null) 'drive_file_id': driveFileId,
+      if (retryCount != null) 'retry_count': retryCount,
+      if (failureReason != null) 'failure_reason': failureReason,
+      if (nextRetryAt != null) 'next_retry_at': nextRetryAt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DriveUploadJobsCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? assignmentId,
+      Value<String>? filePath,
+      Value<String>? fileType,
+      Value<String>? fileName,
+      Value<int>? fileSizeBytes,
+      Value<DateTime>? capturedAt,
+      Value<String>? status,
+      Value<String?>? resumableUri,
+      Value<String?>? driveFileId,
+      Value<int>? retryCount,
+      Value<String?>? failureReason,
+      Value<DateTime?>? nextRetryAt,
+      Value<DateTime>? createdAt,
+      Value<int>? rowid}) {
+    return DriveUploadJobsCompanion(
+      id: id ?? this.id,
+      assignmentId: assignmentId ?? this.assignmentId,
+      filePath: filePath ?? this.filePath,
+      fileType: fileType ?? this.fileType,
+      fileName: fileName ?? this.fileName,
+      fileSizeBytes: fileSizeBytes ?? this.fileSizeBytes,
+      capturedAt: capturedAt ?? this.capturedAt,
+      status: status ?? this.status,
+      resumableUri: resumableUri ?? this.resumableUri,
+      driveFileId: driveFileId ?? this.driveFileId,
+      retryCount: retryCount ?? this.retryCount,
+      failureReason: failureReason ?? this.failureReason,
+      nextRetryAt: nextRetryAt ?? this.nextRetryAt,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (assignmentId.present) {
+      map['assignment_id'] = Variable<String>(assignmentId.value);
+    }
+    if (filePath.present) {
+      map['file_path'] = Variable<String>(filePath.value);
+    }
+    if (fileType.present) {
+      map['file_type'] = Variable<String>(fileType.value);
+    }
+    if (fileName.present) {
+      map['file_name'] = Variable<String>(fileName.value);
+    }
+    if (fileSizeBytes.present) {
+      map['file_size_bytes'] = Variable<int>(fileSizeBytes.value);
+    }
+    if (capturedAt.present) {
+      map['captured_at'] = Variable<DateTime>(capturedAt.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (resumableUri.present) {
+      map['resumable_uri'] = Variable<String>(resumableUri.value);
+    }
+    if (driveFileId.present) {
+      map['drive_file_id'] = Variable<String>(driveFileId.value);
+    }
+    if (retryCount.present) {
+      map['retry_count'] = Variable<int>(retryCount.value);
+    }
+    if (failureReason.present) {
+      map['failure_reason'] = Variable<String>(failureReason.value);
+    }
+    if (nextRetryAt.present) {
+      map['next_retry_at'] = Variable<DateTime>(nextRetryAt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DriveUploadJobsCompanion(')
+          ..write('id: $id, ')
+          ..write('assignmentId: $assignmentId, ')
+          ..write('filePath: $filePath, ')
+          ..write('fileType: $fileType, ')
+          ..write('fileName: $fileName, ')
+          ..write('fileSizeBytes: $fileSizeBytes, ')
+          ..write('capturedAt: $capturedAt, ')
+          ..write('status: $status, ')
+          ..write('resumableUri: $resumableUri, ')
+          ..write('driveFileId: $driveFileId, ')
+          ..write('retryCount: $retryCount, ')
+          ..write('failureReason: $failureReason, ')
+          ..write('nextRetryAt: $nextRetryAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -5466,6 +6167,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SyncJobsTable syncJobs = $SyncJobsTable(this);
   late final $OfflineTilePacksTable offlineTilePacks =
       $OfflineTilePacksTable(this);
+  late final $DriveUploadJobsTable driveUploadJobs =
+      $DriveUploadJobsTable(this);
   late final Index featuresAssignmentIdIdx = Index('features_assignment_id_idx',
       'CREATE INDEX features_assignment_id_idx ON features (assignment_id)');
   late final Index fgrFeatureIdIdx = Index('fgr_feature_id_idx',
@@ -5481,6 +6184,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       'CREATE INDEX photos_submission_id_idx ON photos (submission_id)');
   late final Index syncJobsStatusRetryIdx = Index('sync_jobs_status_retry_idx',
       'CREATE INDEX sync_jobs_status_retry_idx ON sync_jobs (status, next_retry_at)');
+  late final Index driveUploadJobsStatusIdx = Index(
+      'drive_upload_jobs_status_idx',
+      'CREATE INDEX drive_upload_jobs_status_idx ON drive_upload_jobs (status, next_retry_at)');
+  late final Index driveUploadJobsAssignmentIdx = Index(
+      'drive_upload_jobs_assignment_idx',
+      'CREATE INDEX drive_upload_jobs_assignment_idx ON drive_upload_jobs (assignment_id)');
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -5498,13 +6207,16 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         ra9514Types,
         syncJobs,
         offlineTilePacks,
+        driveUploadJobs,
         featuresAssignmentIdIdx,
         fgrFeatureIdIdx,
         fgrSyncStatusIdx,
         submissionsFeatureIdIdx,
         buildingAttrsRa9514TypeIdx,
         photosSubmissionIdIdx,
-        syncJobsStatusRetryIdx
+        syncJobsStatusRetryIdx,
+        driveUploadJobsStatusIdx,
+        driveUploadJobsAssignmentIdx
       ];
 }
 
@@ -8141,6 +8853,319 @@ typedef $$OfflineTilePacksTableProcessedTableManager = ProcessedTableManager<
     ),
     OfflineTilePack,
     PrefetchHooks Function()>;
+typedef $$DriveUploadJobsTableCreateCompanionBuilder = DriveUploadJobsCompanion
+    Function({
+  required String id,
+  required String assignmentId,
+  required String filePath,
+  required String fileType,
+  required String fileName,
+  required int fileSizeBytes,
+  required DateTime capturedAt,
+  Value<String> status,
+  Value<String?> resumableUri,
+  Value<String?> driveFileId,
+  Value<int> retryCount,
+  Value<String?> failureReason,
+  Value<DateTime?> nextRetryAt,
+  required DateTime createdAt,
+  Value<int> rowid,
+});
+typedef $$DriveUploadJobsTableUpdateCompanionBuilder = DriveUploadJobsCompanion
+    Function({
+  Value<String> id,
+  Value<String> assignmentId,
+  Value<String> filePath,
+  Value<String> fileType,
+  Value<String> fileName,
+  Value<int> fileSizeBytes,
+  Value<DateTime> capturedAt,
+  Value<String> status,
+  Value<String?> resumableUri,
+  Value<String?> driveFileId,
+  Value<int> retryCount,
+  Value<String?> failureReason,
+  Value<DateTime?> nextRetryAt,
+  Value<DateTime> createdAt,
+  Value<int> rowid,
+});
+
+class $$DriveUploadJobsTableFilterComposer
+    extends Composer<_$AppDatabase, $DriveUploadJobsTable> {
+  $$DriveUploadJobsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get assignmentId => $composableBuilder(
+      column: $table.assignmentId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get filePath => $composableBuilder(
+      column: $table.filePath, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get fileType => $composableBuilder(
+      column: $table.fileType, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get fileName => $composableBuilder(
+      column: $table.fileName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get fileSizeBytes => $composableBuilder(
+      column: $table.fileSizeBytes, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get capturedAt => $composableBuilder(
+      column: $table.capturedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get resumableUri => $composableBuilder(
+      column: $table.resumableUri, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get driveFileId => $composableBuilder(
+      column: $table.driveFileId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get retryCount => $composableBuilder(
+      column: $table.retryCount, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get failureReason => $composableBuilder(
+      column: $table.failureReason, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get nextRetryAt => $composableBuilder(
+      column: $table.nextRetryAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$DriveUploadJobsTableOrderingComposer
+    extends Composer<_$AppDatabase, $DriveUploadJobsTable> {
+  $$DriveUploadJobsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get assignmentId => $composableBuilder(
+      column: $table.assignmentId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get filePath => $composableBuilder(
+      column: $table.filePath, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get fileType => $composableBuilder(
+      column: $table.fileType, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get fileName => $composableBuilder(
+      column: $table.fileName, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get fileSizeBytes => $composableBuilder(
+      column: $table.fileSizeBytes,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get capturedAt => $composableBuilder(
+      column: $table.capturedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get resumableUri => $composableBuilder(
+      column: $table.resumableUri,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get driveFileId => $composableBuilder(
+      column: $table.driveFileId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get retryCount => $composableBuilder(
+      column: $table.retryCount, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get failureReason => $composableBuilder(
+      column: $table.failureReason,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get nextRetryAt => $composableBuilder(
+      column: $table.nextRetryAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$DriveUploadJobsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DriveUploadJobsTable> {
+  $$DriveUploadJobsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get assignmentId => $composableBuilder(
+      column: $table.assignmentId, builder: (column) => column);
+
+  GeneratedColumn<String> get filePath =>
+      $composableBuilder(column: $table.filePath, builder: (column) => column);
+
+  GeneratedColumn<String> get fileType =>
+      $composableBuilder(column: $table.fileType, builder: (column) => column);
+
+  GeneratedColumn<String> get fileName =>
+      $composableBuilder(column: $table.fileName, builder: (column) => column);
+
+  GeneratedColumn<int> get fileSizeBytes => $composableBuilder(
+      column: $table.fileSizeBytes, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get capturedAt => $composableBuilder(
+      column: $table.capturedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get resumableUri => $composableBuilder(
+      column: $table.resumableUri, builder: (column) => column);
+
+  GeneratedColumn<String> get driveFileId => $composableBuilder(
+      column: $table.driveFileId, builder: (column) => column);
+
+  GeneratedColumn<int> get retryCount => $composableBuilder(
+      column: $table.retryCount, builder: (column) => column);
+
+  GeneratedColumn<String> get failureReason => $composableBuilder(
+      column: $table.failureReason, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get nextRetryAt => $composableBuilder(
+      column: $table.nextRetryAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$DriveUploadJobsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $DriveUploadJobsTable,
+    DriveUploadJob,
+    $$DriveUploadJobsTableFilterComposer,
+    $$DriveUploadJobsTableOrderingComposer,
+    $$DriveUploadJobsTableAnnotationComposer,
+    $$DriveUploadJobsTableCreateCompanionBuilder,
+    $$DriveUploadJobsTableUpdateCompanionBuilder,
+    (
+      DriveUploadJob,
+      BaseReferences<_$AppDatabase, $DriveUploadJobsTable, DriveUploadJob>
+    ),
+    DriveUploadJob,
+    PrefetchHooks Function()> {
+  $$DriveUploadJobsTableTableManager(
+      _$AppDatabase db, $DriveUploadJobsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DriveUploadJobsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DriveUploadJobsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DriveUploadJobsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> assignmentId = const Value.absent(),
+            Value<String> filePath = const Value.absent(),
+            Value<String> fileType = const Value.absent(),
+            Value<String> fileName = const Value.absent(),
+            Value<int> fileSizeBytes = const Value.absent(),
+            Value<DateTime> capturedAt = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            Value<String?> resumableUri = const Value.absent(),
+            Value<String?> driveFileId = const Value.absent(),
+            Value<int> retryCount = const Value.absent(),
+            Value<String?> failureReason = const Value.absent(),
+            Value<DateTime?> nextRetryAt = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              DriveUploadJobsCompanion(
+            id: id,
+            assignmentId: assignmentId,
+            filePath: filePath,
+            fileType: fileType,
+            fileName: fileName,
+            fileSizeBytes: fileSizeBytes,
+            capturedAt: capturedAt,
+            status: status,
+            resumableUri: resumableUri,
+            driveFileId: driveFileId,
+            retryCount: retryCount,
+            failureReason: failureReason,
+            nextRetryAt: nextRetryAt,
+            createdAt: createdAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String assignmentId,
+            required String filePath,
+            required String fileType,
+            required String fileName,
+            required int fileSizeBytes,
+            required DateTime capturedAt,
+            Value<String> status = const Value.absent(),
+            Value<String?> resumableUri = const Value.absent(),
+            Value<String?> driveFileId = const Value.absent(),
+            Value<int> retryCount = const Value.absent(),
+            Value<String?> failureReason = const Value.absent(),
+            Value<DateTime?> nextRetryAt = const Value.absent(),
+            required DateTime createdAt,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              DriveUploadJobsCompanion.insert(
+            id: id,
+            assignmentId: assignmentId,
+            filePath: filePath,
+            fileType: fileType,
+            fileName: fileName,
+            fileSizeBytes: fileSizeBytes,
+            capturedAt: capturedAt,
+            status: status,
+            resumableUri: resumableUri,
+            driveFileId: driveFileId,
+            retryCount: retryCount,
+            failureReason: failureReason,
+            nextRetryAt: nextRetryAt,
+            createdAt: createdAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$DriveUploadJobsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $DriveUploadJobsTable,
+    DriveUploadJob,
+    $$DriveUploadJobsTableFilterComposer,
+    $$DriveUploadJobsTableOrderingComposer,
+    $$DriveUploadJobsTableAnnotationComposer,
+    $$DriveUploadJobsTableCreateCompanionBuilder,
+    $$DriveUploadJobsTableUpdateCompanionBuilder,
+    (
+      DriveUploadJob,
+      BaseReferences<_$AppDatabase, $DriveUploadJobsTable, DriveUploadJob>
+    ),
+    DriveUploadJob,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -8170,4 +9195,6 @@ class $AppDatabaseManager {
       $$SyncJobsTableTableManager(_db, _db.syncJobs);
   $$OfflineTilePacksTableTableManager get offlineTilePacks =>
       $$OfflineTilePacksTableTableManager(_db, _db.offlineTilePacks);
+  $$DriveUploadJobsTableTableManager get driveUploadJobs =>
+      $$DriveUploadJobsTableTableManager(_db, _db.driveUploadJobs);
 }
