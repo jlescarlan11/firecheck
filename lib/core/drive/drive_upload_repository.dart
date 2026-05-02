@@ -110,6 +110,15 @@ class DriveUploadRepository {
     ));
   }
 
+  Future<void> resetStuckUploadingToPending() async {
+    await (_db.update(_db.driveUploadJobs)
+          ..where((t) => t.status.equals(DriveUploadJobStatus.uploading)))
+        .write(const DriveUploadJobsCompanion(
+      status: Value(DriveUploadJobStatus.pending),
+      nextRetryAt: Value(null),
+    ));
+  }
+
   Future<void> resetFailedToPending() async {
     await (_db.update(_db.driveUploadJobs)
           ..where((t) => t.status.equals(DriveUploadJobStatus.failed)))

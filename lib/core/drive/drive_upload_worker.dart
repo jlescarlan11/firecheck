@@ -19,15 +19,19 @@ class DriveUploadWorker {
   final String rootFolderId;
 
   static const _maxConcurrent = 3;
+  // NOTE: This guard is not isolate-safe. Background WorkManager isolates
+  // have their own instance of this worker. resetStuckUploadingToPending()
+  // in drain() provides the actual safety net against duplicate processing.
   bool _running = false;
 
   // Session-scoped folder ID cache; not persisted across app restarts.
-  final _folderCache = <String, String>{};
+  final _folderCache = <String, Future<String>>{};
 
   Future<void> drain() async {
     if (_running) return;
     _running = true;
     try {
+      await repo.resetStuckUploadingToPending();
       while (true) {
         final jobs = await repo.getPendingJobs();
         if (jobs.isEmpty) return;
@@ -56,7 +60,7 @@ class DriveUploadWorker {
         resumableUri: job.resumableUri,
       );
       await repo.markCompleted(job.id, driveFileId: driveFileId);
-    } on Exception catch (e) {
+    } on Object catch (e) {
       final attempts = job.retryCount + 1;
       final next = _nextRetryAt(attempts);
       if (next == null) {
@@ -80,21 +84,21 @@ class DriveUploadWorker {
     final dateKey = DateFormat('yyyy-MM-dd').format(job.capturedAt);
     final subfolderName =
         job.fileType == DriveFileType.photo ? 'photos' : 'shapefiles';
-
     final cacheKey = '$enumeratorId/$dateKey/$subfolderName';
-    if (_folderCache.containsKey(cacheKey)) {
-      return _folderCache[cacheKey]!;
-    }
+    return _folderCache[cacheKey] ??=
+        _createFolderHierarchy(enumeratorId, dateKey, subfolderName);
+  }
 
+  Future<String> _createFolderHierarchy(
+    String enumeratorId,
+    String dateKey,
+    String subfolderName,
+  ) async {
     final enumeratorFolderId =
         await api.createOrGetFolder(enumeratorId, rootFolderId);
     final dateFolderId =
         await api.createOrGetFolder(dateKey, enumeratorFolderId);
-    final subFolderId =
-        await api.createOrGetFolder(subfolderName, dateFolderId);
-
-    _folderCache[cacheKey] = subFolderId;
-    return subFolderId;
+    return api.createOrGetFolder(subfolderName, dateFolderId);
   }
 
   DateTime? _nextRetryAt(int attempts) {
@@ -102,6 +106,7 @@ class DriveUploadWorker {
     return switch (attempts) {
       1 => base.add(const Duration(seconds: 30)),
       2 => base.add(const Duration(minutes: 2)),
+      3 => base.add(const Duration(minutes: 10)),
       _ => null,
     };
   }

@@ -95,8 +95,8 @@ void main() {
       rootFolderId: 'root-folder',
     );
 
-    // Drain 3× with retry time set to past each time
-    for (var i = 0; i < 3; i++) {
+    // Drain 4× with retry time set to past each time
+    for (var i = 0; i < 4; i++) {
       // Reset nextRetryAt to past so it's eligible
       await db.customStatement(
         'UPDATE drive_upload_jobs SET next_retry_at = NULL WHERE id = ?',
