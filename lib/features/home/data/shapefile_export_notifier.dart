@@ -1,4 +1,5 @@
-// lib/features/home/data/shapefile_export_notifier.dart
+import 'package:firecheck/core/sync/shapefile/export/export_validation_result.dart';
+import 'package:firecheck/core/sync/shapefile/export/shapefile_export_validator.dart';
 import 'package:firecheck/core/sync/shapefile/export/shapefile_exporter.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
 import 'package:firecheck/features/home/domain/export_state.dart';
@@ -10,17 +11,30 @@ class ShapefileExportNotifier extends StateNotifier<ExportState> {
   ShapefileExportNotifier({
     required String assignmentId,
     required ShapefileExporter exporter,
+    required ShapefileExportValidator validator,
   })  : _assignmentId = assignmentId,
         _exporter = exporter,
+        _validator = validator,
         super(const ExportIdle());
 
   final String _assignmentId;
   final ShapefileExporter _exporter;
+  final ShapefileExportValidator _validator;
 
   Future<void> export() async {
-    if (state is ExportExporting) return;
-    state = const ExportExporting();
+    if (state is ExportValidating || state is ExportExporting) return;
 
+    state = const ExportValidating();
+    final result = await _validator.validate(_assignmentId);
+
+    if (!mounted) return;
+    if (!result.isValid) {
+      state = ExportValidationFailed(result.errors);
+      state = const ExportIdle();
+      return;
+    }
+
+    state = const ExportExporting();
     final failure = await _exporter.export(assignmentId: _assignmentId);
 
     if (!mounted) return;
@@ -49,5 +63,6 @@ final shapefileExportNotifierProvider =
         await SharePlus.instance.share(ShareParams(files: [XFile(path)]));
       },
     ),
+    validator: ShapefileExportValidator(db: db),
   );
 });
