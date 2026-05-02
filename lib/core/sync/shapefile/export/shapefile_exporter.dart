@@ -335,12 +335,19 @@ class ShapefileExporter {
 
   Future<ExportFailure?> export({required String assignmentId}) async {
     final destDir = tempDirOverride ?? await getTemporaryDirectory();
-    final (failure, _) = await _buildAndWriteZip(
+    final (failure, zipPath) = await _buildAndWriteZip(
       assignmentId: assignmentId,
       destDir: destDir,
-      callShareFile: true,
     );
-    return failure;
+    if (failure != null || zipPath == null) return failure;
+    if (shareFile != null) {
+      try {
+        await shareFile!(zipPath);
+      } catch (e) {
+        return ShareError(e.toString());
+      }
+    }
+    return null;
   }
 
   /// Exports to a stable path for upload. Returns the zip path on success.
@@ -352,14 +359,12 @@ class ShapefileExporter {
     return _buildAndWriteZip(
       assignmentId: assignmentId,
       destDir: destDir,
-      callShareFile: false,
     );
   }
 
   Future<(ExportFailure?, String?)> _buildAndWriteZip({
     required String assignmentId,
     required Directory destDir,
-    required bool callShareFile,
   }) async {
     // Query all completed features with their submissions and attributes.
     final buildingRows = await _queryBuildings(assignmentId);
@@ -464,15 +469,6 @@ class ShapefileExporter {
       await File(zipPath).writeAsBytes(zipBytes);
     } catch (e) {
       return (WriteError(e.toString()), null);
-    }
-
-    // Share / hand off
-    if (callShareFile && shareFile != null) {
-      try {
-        await shareFile!(zipPath);
-      } catch (e) {
-        return (ShareError(e.toString()), null);
-      }
     }
 
     return (null, zipPath);

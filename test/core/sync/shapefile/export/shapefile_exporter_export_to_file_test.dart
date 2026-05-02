@@ -72,4 +72,40 @@ void main() {
     expect(p.extension(path!), '.zip');
     expect(File(path).existsSync(), isTrue);
   });
+
+  test('exportToFile never invokes shareFile even when one is provided', () async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(db.close);
+
+    await db.into(db.assignments).insert(AssignmentsCompanion.insert(
+      id: 'a1', enumeratorId: 'e1', campaignId: 'c1',
+      boundaryPolygonGeojson: '{}', createdAt: DateTime(2026),
+    ));
+    await db.into(db.features).insert(FeaturesCompanion.insert(
+      id: 'f1', assignmentId: 'a1', featureType: 'building',
+      geometryGeojson: '{"type":"Polygon","coordinates":[[[0,0],[1,0],[1,1],[0,1],[0,0]]]}',
+      status: const Value('complete'),
+      createdAt: DateTime(2026),
+    ));
+    await db.into(db.submissions).insert(SubmissionsCompanion.insert(
+      id: 's1', featureId: 'f1', createdAt: DateTime(2026), updatedAt: DateTime(2026),
+    ));
+    await db.into(db.buildingAttributes).insert(BuildingAttributesCompanion.insert(
+      submissionId: 's1',
+      fireFightingFacilitiesJson: const Value('[]'),
+      fireLoadJson: const Value('[]'),
+      costIsExact: const Value(false),
+    ));
+
+    var shareCalled = false;
+    final exporter = ShapefileExporter(
+      db: db,
+      shareFile: (_) async { shareCalled = true; },
+      tempDirOverride: tempDir,
+    );
+    final (failure, _) = await exporter.exportToFile(assignmentId: 'a1');
+
+    expect(failure, isNull);
+    expect(shareCalled, isFalse);
+  });
 }
