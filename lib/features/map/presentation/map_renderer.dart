@@ -258,6 +258,15 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
   bool _projectionReadyPending = false;
 
   @override
+  void dispose() {
+    _boundaryManager = null;
+    _featureManager = null;
+    _roadManager = null;
+    _pointManager = null;
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final initial = widget.initialCameraTarget;
     return LayoutBuilder(
