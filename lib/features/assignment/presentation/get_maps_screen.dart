@@ -24,6 +24,7 @@ class GetMapsScreen extends ConsumerWidget {
               onStart: () => ref.read(getMapsNotifierProvider.notifier).start(),
             ),
           DiscoveringAssignments() => const _DiscoveringView(),
+          PreparingDownload() => const _DiscoveringView(),
           PickingAssignment() => _PickingAssignmentView(state: state),
           InsufficientStorage() => _InsufficientStorageView(state: state),
           DownloadingShapefiles() => _DownloadingShapefilesView(state: state),
