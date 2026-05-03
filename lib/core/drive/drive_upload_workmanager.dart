@@ -5,9 +5,9 @@ import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/drive/drive_upload_repository.dart';
 import 'package:firecheck/core/drive/drive_upload_worker.dart';
 import 'package:firecheck/core/drive/google_drive_upload_api.dart';
-import 'package:firecheck/features/auth/data/google_auth_repository.dart';
+import 'package:firecheck/features/auth/data/supabase_google_auth_repository.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:workmanager/workmanager.dart';
 
 const _periodicTaskName = 'firecheck.drive_upload.periodic';
@@ -24,20 +24,24 @@ void driveUploadCallbackDispatcher() {
       final rootFolderId = dotenv.env['DRIVE_UPLOAD_FOLDER_ID'] ?? '';
       if (rootFolderId.isEmpty) return false;
 
+      // Initialize Supabase in this background isolate.
+      await Supabase.initialize(
+        url: dotenv.env['SUPABASE_URL'] ?? '',
+        anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
+      );
+
       // Opens the real on-disk Drift database in this background isolate.
       final db = AppDatabase();
-      final signIn = GoogleSignIn(
-        scopes: [GoogleAuthRepository.driveFileScope],
-        // Background isolate constructs a fresh GoogleSignIn — clientId is read
-        // automatically from GoogleService-Info.plist / google-services.json.
-      );
 
       // Bail out if there is no active session — the foreground app will handle
       // the upload once the user signs in again.
-      final account = await signIn.signInSilently();
-      if (account == null) return true;
+      final session = Supabase.instance.client.auth.currentSession;
+      if (session == null) return true;
 
-      final uploadApi = GoogleDriveUploadApi(googleSignIn: signIn);
+      final googleAuthRepo = SupabaseGoogleAuthRepository(
+        auth: Supabase.instance.client.auth,
+      );
+      final uploadApi = GoogleDriveUploadApi(googleAuthRepo: googleAuthRepo);
       final repo = DriveUploadRepository(db);
       final worker = DriveUploadWorker(
         api: uploadApi,

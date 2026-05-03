@@ -1,6 +1,6 @@
 // test/features/auth/sign_in_screen_test.dart
 import 'package:firecheck/features/auth/data/fake_google_auth_repository.dart';
-import 'package:firecheck/features/auth/presentation/google_auth_providers.dart';
+import 'package:firecheck/features/auth/presentation/auth_providers.dart';
 import 'package:firecheck/features/auth/presentation/sign_in_screen.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';

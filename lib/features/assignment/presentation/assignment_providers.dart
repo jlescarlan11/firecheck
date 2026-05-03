@@ -16,7 +16,7 @@ import 'package:firecheck/features/assignment/data/assignment_repository.dart';
 import 'package:firecheck/features/assignment/data/offline_tile_pack_repository.dart';
 import 'package:firecheck/features/assignment/domain/get_maps_state.dart';
 import 'package:firecheck/features/auth/data/google_auth_repository.dart';
-import 'package:firecheck/features/auth/presentation/google_auth_providers.dart';
+import 'package:firecheck/features/auth/presentation/auth_providers.dart';
 import 'package:firecheck/features/home/presentation/home_providers.dart';
 import 'package:firecheck/features/map/data/feature_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

@@ -5,7 +5,7 @@ import 'package:firecheck/core/drive/drive_upload_api.dart';
 import 'package:firecheck/core/errors/failure.dart';
 import 'package:firecheck/features/auth/data/google_auth_repository.dart';
 import 'package:googleapis/drive/v3.dart' as gdrive;
-import 'package:googleapis_auth/googleapis_auth.dart';
+import 'package:googleapis_auth/googleapis_auth.dart' as gauth;
 import 'package:http/http.dart' as http;
 
 class GoogleDriveUploadApi implements DriveUploadApi {
@@ -16,8 +16,8 @@ class GoogleDriveUploadApi implements DriveUploadApi {
 
   Future<gdrive.DriveApi> _api() async {
     final token = await _googleAuthRepo.getAccessToken();
-    final credentials = AccessCredentials(
-      AccessToken(
+    final credentials = gauth.AccessCredentials(
+      gauth.AccessToken(
         'Bearer',
         token,
         DateTime.now().toUtc().add(const Duration(hours: 1)),
@@ -25,7 +25,7 @@ class GoogleDriveUploadApi implements DriveUploadApi {
       null,
       [GoogleAuthRepository.driveFileScope],
     );
-    return gdrive.DriveApi(authenticatedClient(http.Client(), credentials));
+    return gdrive.DriveApi(gauth.authenticatedClient(http.Client(), credentials));
   }
 
   @override
