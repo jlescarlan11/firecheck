@@ -54,7 +54,7 @@ class GoogleDriveUploadApi implements DriveUploadApi {
     );
     final folderId = folder.id;
     if (folderId == null) {
-      throw AuthFailure('Drive did not return id for created folder: $name');
+      throw NetworkFailure('Drive did not return id for created folder: $name');
     }
     return folderId;
   }
@@ -96,7 +96,7 @@ class GoogleDriveUploadApi implements DriveUploadApi {
     );
     final fileId = created.id;
     if (fileId == null) {
-      throw AuthFailure('Drive did not return id for uploaded file: $fileName');
+      throw NetworkFailure('Drive did not return id for uploaded file: $fileName');
     }
     // googleapis does not expose a progress stream for media uploads;
     // onProgress fires once on completion.
