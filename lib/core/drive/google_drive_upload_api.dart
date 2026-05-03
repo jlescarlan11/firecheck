@@ -1,22 +1,31 @@
 // lib/core/drive/google_drive_upload_api.dart
 import 'dart:io';
 
-import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
 import 'package:firecheck/core/drive/drive_upload_api.dart';
 import 'package:firecheck/core/errors/failure.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+import 'package:firecheck/features/auth/data/google_auth_repository.dart';
 import 'package:googleapis/drive/v3.dart' as gdrive;
+import 'package:googleapis_auth/googleapis_auth.dart';
+import 'package:http/http.dart' as http;
 
 class GoogleDriveUploadApi implements DriveUploadApi {
-  GoogleDriveUploadApi({required GoogleSignIn googleSignIn})
-      : _googleSignIn = googleSignIn;
+  GoogleDriveUploadApi({required GoogleAuthRepository googleAuthRepo})
+      : _googleAuthRepo = googleAuthRepo;
 
-  final GoogleSignIn _googleSignIn;
+  final GoogleAuthRepository _googleAuthRepo;
 
   Future<gdrive.DriveApi> _api() async {
-    final client = await _googleSignIn.authenticatedClient();
-    if (client == null) throw const AuthFailure('Not signed in to Google');
-    return gdrive.DriveApi(client);
+    final token = await _googleAuthRepo.getAccessToken();
+    final credentials = AccessCredentials(
+      AccessToken(
+        'Bearer',
+        token,
+        DateTime.now().toUtc().add(const Duration(hours: 1)),
+      ),
+      null,
+      [GoogleAuthRepository.driveFileScope],
+    );
+    return gdrive.DriveApi(authenticatedClient(http.Client(), credentials));
   }
 
   @override
