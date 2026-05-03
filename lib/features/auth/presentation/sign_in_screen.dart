@@ -1,9 +1,8 @@
 // lib/features/auth/presentation/sign_in_screen.dart
-import 'package:firecheck/features/auth/presentation/google_auth_providers.dart';
+import 'package:firecheck/features/auth/presentation/auth_providers.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {
   const SignInScreen({super.key});
@@ -22,8 +21,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       _error = null;
     });
     try {
-      await ref.read(googleAuthNotifierProvider.notifier).signIn();
-      if (mounted) context.go('/get-maps');
+      await ref.read(googleAuthRepositoryProvider).signIn();
+      // Navigation is handled by GoRouter reacting to supabaseAuthStateProvider
+      // transitioning to non-null. No explicit context.go needed here.
+      if (mounted) setState(() => _loading = false);
     } catch (_) {
       if (mounted) {
         setState(() {
@@ -46,9 +47,12 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (_error != null) ...[
-                Text(_error!,
-                    style: TextStyle(
-                        color: Theme.of(context).colorScheme.error)),
+                Text(
+                  _error!,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
                 const SizedBox(height: 16),
               ],
               FilledButton(
