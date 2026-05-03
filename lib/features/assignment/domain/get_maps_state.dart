@@ -29,6 +29,14 @@ class PickingAssignment extends GetMapsState {
   double get overallProgress => 0.02;
 }
 
+/// Emitted immediately when the user taps "Download Selected", before any
+/// network calls, so the UI shows a spinner within one frame (US-20).
+class PreparingDownload extends GetMapsState {
+  const PreparingDownload();
+  @override
+  double get overallProgress => 0.02;
+}
+
 class InsufficientStorage extends GetMapsState {
   const InsufficientStorage({
     required this.requiredBytes,

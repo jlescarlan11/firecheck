@@ -141,6 +141,20 @@ void main() {
     expect((n.state as PickingAssignment).selectedId, 'brgy-002');
   });
 
+  test('confirmDownload emits PreparingDownload immediately before any network call (US-20)', () async {
+    final n = _makeNotifier();
+    await n.start();
+    expect(n.state, isA<PickingAssignment>());
+
+    final states = <GetMapsState>[];
+    n.addListener(states.add, fireImmediately: false);
+
+    unawaited(n.confirmDownload());
+    await Future.microtask(() {});
+
+    expect(states.first, isA<PreparingDownload>());
+  });
+
   test('insufficient storage → InsufficientStorage state', () async {
     final n = _makeNotifier(availableBytes: 0);
     await n.start();
