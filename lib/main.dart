@@ -13,25 +13,16 @@ import 'package:firecheck/core/validation/supabase_validation_failure_reporter.d
 import 'package:firecheck/features/assignment/presentation/assignment_lock_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_lock_state.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
-import 'package:firecheck/features/auth/data/google_sign_in_auth_repository.dart';
-import 'package:firecheck/features/auth/presentation/google_auth_providers.dart';
+import 'package:firecheck/features/auth/data/supabase_google_auth_repository.dart';
+import 'package:firecheck/features/auth/presentation/auth_providers.dart';
 import 'package:firecheck/features/home/presentation/home_providers.dart';
 import 'package:firecheck/features/map/presentation/map_providers.dart';
 import 'package:firecheck/features/map/presentation/map_renderer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
-final _googleSignIn = GoogleSignIn(
-  scopes: [
-    'https://www.googleapis.com/auth/drive.readonly',
-    'https://www.googleapis.com/auth/drive.file',
-  ],
-);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,8 +31,10 @@ Future<void> main() async {
   final supaUrl = dotenv.env['SUPABASE_URL'];
   final supaKey = dotenv.env['SUPABASE_ANON_KEY'];
   final mapboxToken = dotenv.env['MAPBOX_ACCESS_TOKEN'];
-  if (supaUrl == null || supaUrl.isEmpty ||
-      supaKey == null || supaKey.isEmpty) {
+  if (supaUrl == null ||
+      supaUrl.isEmpty ||
+      supaKey == null ||
+      supaKey.isEmpty) {
     throw StateError(
       'SUPABASE_URL / SUPABASE_ANON_KEY missing from .env. '
       'Copy .env.example to .env and fill in real values.',
@@ -59,14 +52,6 @@ Future<void> main() async {
   await registerPeriodicDriveUpload();
   MapboxOptions.setAccessToken(mapboxToken);
 
-  // Phase 1 T19: wire the real Mapbox renderer + offline-pack adapter so
-  // production builds use the live SDK. Tests and widget-tests still get
-  // the Fake defaults via `map_providers.dart` / `assignment_providers.dart`.
-  //
-  // TileStore.createDefault() is a best-effort: on a fresh install before
-  // the native side is fully warm it can throw. If that happens we simply
-  // fall through and leave `offlinePackAdapterProvider` on its Fake default,
-  // so the app still launches.
   TileStore? tileStore;
   try {
     tileStore = await TileStore.createDefault();
@@ -77,23 +62,21 @@ Future<void> main() async {
   runApp(
     ProviderScope(
       overrides: [
-        googleSignInProvider.overrideWithValue(_googleSignIn),
+        googleAuthRepositoryProvider.overrideWith(
+          (ref) => SupabaseGoogleAuthRepository(
+            auth: Supabase.instance.client.auth,
+          ),
+        ),
+        driveApiProvider.overrideWith(
+          (ref) => GoogleDriveApi(
+            googleAuthRepo: ref.watch(googleAuthRepositoryProvider),
+          ),
+        ),
         mapRendererProvider.overrideWithValue(MapboxMapRenderer()),
         if (tileStore != null)
           offlinePackAdapterProvider.overrideWithValue(
             MapboxOfflinePackAdapter(tileStore),
           ),
-        googleAuthRepositoryProvider.overrideWith(
-          (ref) => GoogleSignInAuthRepository(
-            googleSignIn: _googleSignIn,
-            secureStorage: const FlutterSecureStorage(),
-          ),
-        ),
-        driveApiProvider.overrideWith(
-          (ref) => GoogleDriveApi(
-            googleSignIn: _googleSignIn,
-          ),
-        ),
         shapefileImporterProvider.overrideWith(
           (ref) => ShapefileImporter(
             db: ref.watch(appDatabaseProvider),
@@ -172,8 +155,6 @@ class _SyncBootstrapState extends ConsumerState<_SyncBootstrap> {
   }
 
   void _attachSubmittedLock() {
-    // Pull the current assignment lazily and kick off the watcher.
-    // Subscription lives for the rest of the app session.
     Future.microtask(() async {
       final repo = ref.read(assignmentRepositoryProvider);
       final assignment = await repo.getCurrentAssignment();
