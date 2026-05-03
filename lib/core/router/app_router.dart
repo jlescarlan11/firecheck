@@ -1,11 +1,11 @@
+// lib/core/router/app_router.dart
+import 'dart:async';
+
 import 'package:firecheck/features/assignment/presentation/assignment_closed_blocker.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_lock_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_lock_state.dart';
 import 'package:firecheck/features/assignment/presentation/get_maps_screen.dart';
-import 'package:firecheck/features/auth/domain/auth_state.dart';
 import 'package:firecheck/features/auth/presentation/auth_providers.dart';
-import 'package:firecheck/features/auth/presentation/google_auth_providers.dart';
-import 'package:firecheck/features/auth/presentation/login_screen.dart';
 import 'package:firecheck/features/auth/presentation/sign_in_screen.dart';
 import 'package:firecheck/features/home/presentation/home_screen.dart';
 import 'package:firecheck/features/map/presentation/map_screen.dart';
@@ -16,68 +16,44 @@ import 'package:firecheck/features/upload/presentation/upload_queue_screen.dart'
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final authNotifier = ref.watch(authStateProvider.notifier);
-  final googleNotifier = ref.watch(googleAuthNotifierProvider.notifier);
-
   return GoRouter(
     initialLocation: '/',
-    refreshListenable: Listenable.merge([
-      _AuthListenable(authNotifier),
-      _GoogleAuthListenable(googleNotifier),
-    ]),
+    refreshListenable: _SupabaseAuthListenable(),
     redirect: (context, state) {
-      final auth = ref.read(authStateProvider);
+      final sessionAsync = ref.read(supabaseAuthStateProvider);
+      final session = sessionAsync.valueOrNull;
       final lock = ref.read(assignmentLockStateProvider).value;
-      final googleAuth = ref.read(googleAuthNotifierProvider);
       final loc = state.matchedLocation;
-      final onLogin = loc == '/login';
+      final onSignIn = loc == '/sign-in';
       final onBlocker = loc == '/blocker';
 
-      // Auth gate
-      final authRedirect = switch (auth) {
-        AuthChecking() => null,
-        Unauthenticated() => onLogin ? null : '/login',
-        Authenticated() => onLogin ? '/' : null,
-      };
-      if (authRedirect != null) return authRedirect;
+      if (sessionAsync.isLoading) return null;
+      if (session == null && !onSignIn) return '/sign-in';
+      if (session != null && onSignIn) return '/';
 
-      // ClosedRemotely lock blocks every screen except /login and /blocker.
-      if (lock is ClosedRemotely && !onLogin && !onBlocker) {
-        return '/blocker';
-      }
-
-      // Google auth guard for /get-maps
-      if (loc == '/get-maps' && googleAuth == GoogleAuthState.signedOut) {
-        return '/sign-in';
-      }
-      if (loc == '/sign-in' && googleAuth == GoogleAuthState.signedIn) {
-        return '/get-maps';
-      }
+      if (lock is ClosedRemotely && !onSignIn && !onBlocker) return '/blocker';
 
       return null;
     },
     routes: [
       GoRoute(
-        path: '/login',
-        builder: (context, state) => const LoginScreen(),
+        path: '/sign-in',
+        builder: (context, state) => const SignInScreen(),
       ),
       GoRoute(
         path: '/',
         builder: (context, state) {
-          final auth = ref.watch(authStateProvider);
-          if (auth is AuthChecking) {
+          final sessionAsync = ref.watch(supabaseAuthStateProvider);
+          if (sessionAsync.isLoading) {
             return const Scaffold(
               body: Center(child: CircularProgressIndicator()),
             );
           }
           return const HomeScreen();
         },
-      ),
-      GoRoute(
-        path: '/sign-in',
-        builder: (context, state) => const SignInScreen(),
       ),
       GoRoute(
         path: '/get-maps',
@@ -90,14 +66,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/feature/:featureId',
         builder: (context, state) => SubmissionDetailScreen(
-          featureId: Uri.decodeComponent(state.pathParameters['featureId']!),
+          featureId:
+              Uri.decodeComponent(state.pathParameters['featureId']!),
         ),
       ),
       GoRoute(
         path: '/feature/:featureId/olp/result',
         builder: (context, state) {
-          final featureId = Uri.decodeComponent(state.pathParameters['featureId']!);
-          final submissionId = state.uri.queryParameters['submissionId'] ?? '';
+          final featureId =
+              Uri.decodeComponent(state.pathParameters['featureId']!);
+          final submissionId =
+              state.uri.queryParameters['submissionId'] ?? '';
           return OlpResultScreen(
             submissionId: submissionId,
             featureId: featureId,
@@ -120,32 +99,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   );
 });
 
-/// Adapts a [StateNotifier] into a [Listenable] go_router can subscribe to.
-class _AuthListenable extends ChangeNotifier {
-  _AuthListenable(StateNotifier<AuthState> notifier) {
-    _removeListener = notifier.addListener((_) => notifyListeners());
+class _SupabaseAuthListenable extends ChangeNotifier {
+  _SupabaseAuthListenable() {
+    try {
+      _sub = Supabase.instance.client.auth.onAuthStateChange
+          .listen((_) => notifyListeners());
+    } catch (_) {
+      // Supabase not initialised (e.g. in widget tests) — listenable is a no-op.
+    }
   }
 
-  late final void Function() _removeListener;
+  StreamSubscription<AuthState>? _sub;
 
   @override
   void dispose() {
-    _removeListener();
-    super.dispose();
-  }
-}
-
-/// Adapts [GoogleAuthNotifier] into a [Listenable] go_router can subscribe to.
-class _GoogleAuthListenable extends ChangeNotifier {
-  _GoogleAuthListenable(StateNotifier<GoogleAuthState> notifier) {
-    _removeListener = notifier.addListener((_) => notifyListeners());
-  }
-
-  late final void Function() _removeListener;
-
-  @override
-  void dispose() {
-    _removeListener();
+    _sub?.cancel();
     super.dispose();
   }
 }
