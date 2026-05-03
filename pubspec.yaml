@@ -36,9 +36,9 @@ dependencies:
   # platform
   flutter_secure_storage: ^9.2.2
   # google
-  google_sign_in: ^6.2.1
   googleapis: ^13.2.0
-  extension_google_sign_in_as_googleapis_auth: ^2.0.12
+  googleapis_auth: ^2.3.0
+  http: ^1.2.0
   proj4dart: ^2.1.0
   local_auth: ^2.2.0
   geolocator: ^13.0.0

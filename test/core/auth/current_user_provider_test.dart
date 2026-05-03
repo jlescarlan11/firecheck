@@ -1,82 +1,53 @@
+// test/core/auth/current_user_provider_test.dart
 import 'package:firecheck/core/auth/current_user_provider.dart';
-import 'package:firecheck/core/security/secure_storage.dart';
-import 'package:firecheck/features/auth/data/auth_repository.dart';
-import 'package:firecheck/features/auth/domain/auth_state.dart';
 import 'package:firecheck/features/auth/presentation/auth_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
+import 'package:mocktail/mocktail.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// A [SecureStorage] that always returns null (no stored token).
-class _NullStorage implements SecureStorage {
-  @override
-  Future<void> write(String key, String value) async {}
-  @override
-  Future<String?> read(String key) async => null;
-  @override
-  Future<void> delete(String key) async {}
-  @override
-  Future<void> clear() async {}
-}
-
-/// A fake [AuthRepository] whose [restoreSession] returns [Unauthenticated]
-/// immediately, so [AuthStateNotifier._bootstrap] does not overwrite the
-/// initial state we set in [_StubAuthNotifier].
-class _FakeAuthRepository extends AuthRepository {
-  _FakeAuthRepository()
-      : super(
-          client: SupabaseClient('http://localhost', 'fake-key'),
-          storage: _NullStorage(),
-        );
-
-  @override
-  Future<AuthState> restoreSession() async => const Unauthenticated();
-}
-
-/// Subclasses [AuthStateNotifier] to set an explicit initial [AuthState]
-/// before `_bootstrap` can overwrite it.
-class _StubAuthNotifier extends AuthStateNotifier {
-  _StubAuthNotifier(AuthState initial) : super(_FakeAuthRepository()) {
-    state = initial;
-  }
-}
+class _MockSession extends Mock implements Session {}
+class _MockUser extends Mock implements User {}
 
 void main() {
-  test('returns userId for Authenticated', () {
+  test('returns userId when session exists', () async {
+    final user = _MockUser();
+    final session = _MockSession();
+    when(() => session.user).thenReturn(user);
+    when(() => user.id).thenReturn('u-123');
+
     final container = ProviderContainer(
       overrides: [
-        authStateProvider.overrideWith(
-          (ref) => _StubAuthNotifier(
-            const Authenticated(userId: 'u-123', email: 'a@b.c'),
-          ),
+        supabaseAuthStateProvider.overrideWith(
+          (ref) => Stream.value(session),
         ),
       ],
     );
     addTearDown(container.dispose);
+
+    container.listen(supabaseAuthStateProvider, (_, __) {});
+
+    // Allow the stream to emit
+    await Future<void>.delayed(Duration.zero);
+
     expect(container.read(currentUserIdProvider), 'u-123');
   });
 
-  test('returns null for Unauthenticated', () {
+  test('returns null when no session', () async {
     final container = ProviderContainer(
       overrides: [
-        authStateProvider.overrideWith(
-          (ref) => _StubAuthNotifier(const Unauthenticated()),
+        supabaseAuthStateProvider.overrideWith(
+          (ref) => Stream.value(null),
         ),
       ],
     );
     addTearDown(container.dispose);
-    expect(container.read(currentUserIdProvider), isNull);
-  });
 
-  test('returns null for AuthChecking', () {
-    final container = ProviderContainer(
-      overrides: [
-        authStateProvider.overrideWith(
-          (ref) => _StubAuthNotifier(const AuthChecking()),
-        ),
-      ],
-    );
-    addTearDown(container.dispose);
+    container.listen(supabaseAuthStateProvider, (_, __) {});
+
+    // Allow the stream to emit
+    await Future<void>.delayed(Duration.zero);
+
     expect(container.read(currentUserIdProvider), isNull);
   });
 }

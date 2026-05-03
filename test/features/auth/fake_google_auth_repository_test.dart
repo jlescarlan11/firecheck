@@ -34,4 +34,9 @@ void main() {
     final repo = FakeGoogleAuthRepository();
     expect(await repo.requestDriveUploadScope(), isTrue);
   });
+
+  test('getAccessToken returns fake-access-token', () async {
+    final repo = FakeGoogleAuthRepository();
+    expect(await repo.getAccessToken(), 'fake-access-token');
+  });
 }

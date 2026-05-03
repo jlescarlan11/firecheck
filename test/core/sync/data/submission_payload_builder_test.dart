@@ -42,6 +42,22 @@ void main() {
 
   tearDown(() async => db.close());
 
+  test('submitted_by passes through UUID value unchanged', () async {
+    await (db.update(db.submissions)..where((t) => t.id.equals('s1')))
+        .write(SubmissionsCompanion(
+          submittedBy: const Value('550e8400-e29b-41d4-a716-446655440000'),
+        ));
+    final p = await builder.build('s1');
+    final sub = p['submission']! as Map<String, dynamic>;
+    expect(sub['submitted_by'], '550e8400-e29b-41d4-a716-446655440000');
+  });
+
+  test('submitted_by passes through null value unchanged', () async {
+    final p = await builder.build('s1');
+    final sub = p['submission']! as Map<String, dynamic>;
+    expect(sub['submitted_by'], isNull);
+  });
+
   test('building submission with no attrs or olp', () async {
     final p = await builder.build('s1');
     expect(p['submission'], isA<Map<String, dynamic>>());
