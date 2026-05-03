@@ -3,6 +3,10 @@ abstract interface class GoogleAuthRepository {
   static const driveFileScope =
       'https://www.googleapis.com/auth/drive.file';
 
+  // Needed to list supervisor-shared assignment folders.
+  static const driveReadonlyScope =
+      'https://www.googleapis.com/auth/drive.readonly';
+
   Future<bool> isSignedIn();
   Future<void> signIn();
   Future<void> signOut();

@@ -31,7 +31,7 @@ class GoogleDriveApi implements DriveApi {
         DateTime.now().toUtc().add(const Duration(hours: 1)),
       ),
       null,
-      [GoogleAuthRepository.driveFileScope],
+      [GoogleAuthRepository.driveReadonlyScope, GoogleAuthRepository.driveFileScope],
     );
     return gdrive.DriveApi(authenticatedClient(http.Client(), credentials));
   }

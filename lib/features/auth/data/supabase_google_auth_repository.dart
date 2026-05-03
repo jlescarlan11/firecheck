@@ -15,7 +15,8 @@ class SupabaseGoogleAuthRepository implements GoogleAuthRepository {
   Future<void> signIn() async {
     await _auth.signInWithOAuth(
       OAuthProvider.google,
-      scopes: 'email profile ${GoogleAuthRepository.driveFileScope}',
+      scopes:
+          'email profile ${GoogleAuthRepository.driveReadonlyScope} ${GoogleAuthRepository.driveFileScope}',
       redirectTo: 'io.supabase.firecheck://login-callback',
     );
   }
