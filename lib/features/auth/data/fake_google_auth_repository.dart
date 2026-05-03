@@ -21,4 +21,7 @@ class FakeGoogleAuthRepository implements GoogleAuthRepository {
 
   @override
   Future<bool> requestDriveUploadScope() async => true;
+
+  @override
+  Future<String> getAccessToken() async => 'fake-access-token';
 }

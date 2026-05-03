@@ -12,4 +12,8 @@ abstract interface class GoogleAuthRepository {
 
   /// Requests the drive.file OAuth scope. Returns true if granted.
   Future<bool> requestDriveUploadScope();
+
+  /// Returns a valid Google OAuth access token. Refreshes the Supabase
+  /// session first if providerToken is absent.
+  Future<String> getAccessToken();
 }

@@ -59,4 +59,8 @@ class GoogleSignInAuthRepository implements GoogleAuthRepository {
       return false;
     }
   }
+
+  @override
+  Future<String> getAccessToken() =>
+      throw UnimplementedError('Replaced by SupabaseGoogleAuthRepository');
 }
