@@ -76,4 +76,13 @@ void main() {
     await repo.deleteSubmission(s.id);
     expect(await db.select(db.submissions).get(), isEmpty);
   });
+
+  test('ensureDraftForFeature stores UUID enumeratorId in submittedBy', () async {
+    const uuid = '550e8400-e29b-41d4-a716-446655440000';
+    final submission = await repo.ensureDraftForFeature(
+      featureId: 'f1',
+      enumeratorId: uuid,
+    );
+    expect(submission.submittedBy, uuid);
+  });
 }
