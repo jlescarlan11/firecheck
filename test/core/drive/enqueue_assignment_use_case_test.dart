@@ -65,8 +65,14 @@ void main() {
     expect(count, 2); // 1 shapefile + 1 photo
     final jobs = await repo.getPendingJobs();
     expect(jobs.length, 2);
-    expect(jobs.any((j) => j.fileType == DriveFileType.shapefile), isTrue);
-    expect(jobs.any((j) => j.fileType == DriveFileType.photo), isTrue);
+    expect(
+      jobs.firstWhere((j) => j.fileType == DriveFileType.photo).fileName,
+      equals('a1_photo1.jpg'),
+    );
+    expect(
+      jobs.firstWhere((j) => j.fileType == DriveFileType.shapefile).fileName,
+      equals('a1.zip'),
+    );
   });
 
   test('enqueue is idempotent — second call adds no new jobs', () async {

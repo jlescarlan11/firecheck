@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:firecheck/core/db/database.dart';
+import 'package:firecheck/core/drive/drive_filename_formatter.dart';
 import 'package:firecheck/core/drive/drive_upload_job_status.dart';
 import 'package:firecheck/core/drive/drive_upload_repository.dart';
 import 'package:firecheck/core/sync/shapefile/export/export_failure.dart';
@@ -47,7 +48,7 @@ class EnqueueAssignmentUseCase {
           assignmentId: assignmentId,
           filePath: zipPath,
           fileType: DriveFileType.shapefile,
-          fileName: p.basename(zipPath),
+          fileName: formatShapefileFilename(assignmentId),
           fileSizeBytes: size,
           capturedAt: DateTime.now(),
         );
@@ -67,7 +68,7 @@ class EnqueueAssignmentUseCase {
         assignmentId: assignmentId,
         filePath: photo.localPath,
         fileType: DriveFileType.photo,
-        fileName: p.basename(photo.localPath),
+        fileName: formatPhotoFilename(assignmentId, p.basename(photo.localPath)),
         fileSizeBytes: size,
         capturedAt: photo.capturedAt,
       );
