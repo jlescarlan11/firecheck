@@ -28,7 +28,7 @@ class SupabaseGoogleAuthRepository implements GoogleAuthRepository {
   Future<String> getEnumeratorId() async {
     final user = _auth.currentUser;
     if (user == null) throw const AuthFailure('Not signed in');
-    return user.email!.split('@').first;
+    return user.id;
   }
 
   @override
