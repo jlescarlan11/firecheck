@@ -66,3 +66,7 @@ supabase/.temp/
 # Google services config (contains API keys — add manually per environment)
 google-services.json
 GoogleService-Info.plist
+# OAuth client secret downloads (web client credentials for Supabase config)
+client_secret_*.json
+# Timestamped google-services backup copies created by Android Studio
+google-services.json *.json
