@@ -11,7 +11,8 @@ abstract interface class GoogleAuthRepository {
   Future<void> signIn();
   Future<void> signOut();
 
-  /// Returns the local-part of the signed-in Gmail address (e.g. 'jlescarlan11').
+  /// Returns the Supabase user UUID for the currently signed-in user.
+  /// Throws [AuthFailure] if no session is active.
   Future<String> getEnumeratorId();
 
   /// Requests the drive.file OAuth scope. Returns true if granted.
