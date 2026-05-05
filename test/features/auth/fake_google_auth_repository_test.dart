@@ -25,9 +25,9 @@ void main() {
     expect(await repo.isSignedIn(), isFalse);
   });
 
-  test('getEnumeratorId returns test-enumerator', () async {
+  test('getEnumeratorId returns UUID-shaped string', () async {
     final repo = FakeGoogleAuthRepository();
-    expect(await repo.getEnumeratorId(), 'test-enumerator');
+    expect(await repo.getEnumeratorId(), '00000000-0000-0000-0000-000000000001');
   });
 
   test('requestDriveUploadScope returns true', () async {
