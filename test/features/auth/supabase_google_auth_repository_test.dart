@@ -36,12 +36,15 @@ void main() {
   });
 
   group('getEnumeratorId', () {
-    test('returns local-part of email', () async {
+    test('returns Supabase user UUID', () async {
       final user = _MockUser();
       when(() => auth.currentUser).thenReturn(user);
-      when(() => user.email).thenReturn('jlescarlan11@gmail.com');
+      when(() => user.id).thenReturn('550e8400-e29b-41d4-a716-446655440000');
       final repo = SupabaseGoogleAuthRepository(auth: auth);
-      expect(await repo.getEnumeratorId(), 'jlescarlan11');
+      expect(
+        await repo.getEnumeratorId(),
+        '550e8400-e29b-41d4-a716-446655440000',
+      );
     });
 
     test('throws AuthFailure when not signed in', () async {
