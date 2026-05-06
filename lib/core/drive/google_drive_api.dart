@@ -19,6 +19,8 @@ class GoogleDriveApi implements DriveApi {
   // assignmentId → { filename → fileId }
   final _fileCache = <String, Map<String, String>>{};
   final _md5Cache = <String, Map<String, String>>{};
+  // assignmentId → { filename → sizeBytes }
+  final _sizeCache = <String, Map<String, int>>{};
 
   static const _shapefileExts = {'.shp', '.dbf', '.shx', '.prj'};
 
@@ -79,10 +81,11 @@ class GoogleDriveApi implements DriveApi {
       final filesResult = await api.files.list(
         q: "'$folderId' in parents and trashed = false",
         spaces: 'drive',
-        $fields: 'files(id,name,md5Checksum)',
+        $fields: 'files(id,name,md5Checksum,size)',
       );
       final shapefiles = <String, String>{};
       final md5s = <String, String>{};
+      final sizes = <String, int>{};
       for (final f in filesResult.files ?? <gdrive.File>[]) {
         final name = f.name!;
         final dot = name.lastIndexOf('.');
@@ -90,18 +93,22 @@ class GoogleDriveApi implements DriveApi {
         if (_shapefileExts.contains(ext)) {
           shapefiles[name] = f.id!;
           if (f.md5Checksum != null) md5s[name] = f.md5Checksum!;
+          sizes[name] = int.tryParse(f.size ?? '0') ?? 0;
         }
       }
       if (shapefiles.isEmpty) continue;
 
       _fileCache[folderName] = shapefiles;
       _md5Cache[folderName] = md5s;
+      _sizeCache[folderName] = sizes;
 
-      assignments.add(DriveAssignment(
-        assignmentId: folderName,
-        inputZipModifiedTime: folderModTime,
-        driveFolderId: folderId,
-      ));
+      assignments.add(
+        DriveAssignment(
+          assignmentId: folderName,
+          inputZipModifiedTime: folderModTime,
+          driveFolderId: folderId,
+        ),
+      );
     }
 
     return assignments;
@@ -109,15 +116,9 @@ class GoogleDriveApi implements DriveApi {
 
   @override
   Future<int> getTotalSize(String assignmentId) async {
-    final files = _fileCache[assignmentId];
-    if (files == null) throw const NetworkFailure('Assignment files not cached');
-    final api = await _api();
-    var total = 0;
-    for (final fileId in files.values) {
-      final meta = await api.files.get(fileId, $fields: 'size') as gdrive.File;
-      total += int.tryParse(meta.size ?? '0') ?? 0;
-    }
-    return total;
+    final sizes = _sizeCache[assignmentId];
+    if (sizes == null) throw const NetworkFailure('Assignment files not cached');
+    return sizes.values.fold<int>(0, (acc, s) => acc + s);
   }
 
   @override
@@ -126,7 +127,8 @@ class GoogleDriveApi implements DriveApi {
     if (files == null) throw const NetworkFailure('Assignment files not cached');
     final api = await _api();
 
-    final total = await getTotalSize(assignmentId);
+    final sizes = _sizeCache[assignmentId] ?? {};
+    final total = sizes.values.fold<int>(0, (acc, s) => acc + s);
     var downloaded = 0;
     final result = <String, Uint8List>{};
 

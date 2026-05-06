@@ -103,7 +103,7 @@ class _SupabaseAuthListenable extends ChangeNotifier {
   _SupabaseAuthListenable() {
     try {
       _sub = Supabase.instance.client.auth.onAuthStateChange
-          .listen((_) => notifyListeners());
+          .listen((_) => Future.microtask(notifyListeners));
     } catch (_) {
       // Supabase not initialised (e.g. in widget tests) — listenable is a no-op.
     }

@@ -11,6 +11,7 @@ import 'package:firecheck/core/sync/domain/sync_outcome.dart';
 import 'package:firecheck/core/sync/failure/assignment_lock_repository.dart';
 import 'package:firecheck/core/sync/failure/pending_work_bundle.dart';
 import 'package:firecheck/features/map/reshape/data/feature_geometry_revisions_repository.dart';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 
 class SyncWorker {
@@ -41,14 +42,26 @@ class SyncWorker {
   Future<void> drain() async {
     if (_running) return;
     _running = true;
+    debugPrint('[StartUpload] drain started');
     try {
       while (true) {
+        // limit(1) guards against StateError when >1 assignment row exists.
         final assignmentRow =
-            await db.select(db.assignments).getSingleOrNull();
-        if (assignmentRow != null && assignmentRow.closedRemotely) return;
+            await (db.select(db.assignments)..limit(1)).getSingleOrNull();
+        if (assignmentRow != null && assignmentRow.closedRemotely) {
+          debugPrint('[StartUpload] assignment closed remotely — halting drain');
+          return;
+        }
 
         final claimed = await jobs.claimUpToN(_maxConcurrent);
-        if (claimed.isEmpty) return;
+        if (claimed.isEmpty) {
+          debugPrint('[StartUpload] no claimable jobs — drain complete');
+          return;
+        }
+        debugPrint(
+          '[StartUpload] claimed ${claimed.length} job(s): '
+          '${claimed.map((j) => '${j.entityType}:${j.id.substring(0, 8)}').join(', ')}',
+        );
         await Future.wait(claimed.map(_processOne));
       }
     } finally {
@@ -147,19 +160,38 @@ class SyncWorker {
   Future<void> _applyOutcome(SyncJob job, SyncOutcome outcome) async {
     switch (outcome) {
       case Success():
+        debugPrint(
+          '[StartUpload] ✓ ${job.entityType}:${job.id.substring(0, 8)} succeeded',
+        );
         await jobs.markSuccess(job.id);
       case TransientFailure(:final error):
         final attempts = job.attempts + 1;
         final next = nextRetryAt(attempts);
         if (next == null) {
+          debugPrint(
+            '[StartUpload] ✗ ${job.entityType}:${job.id.substring(0, 8)} '
+            'dead after $attempts attempts — $error',
+          );
           await jobs.markDead(job.id, error: error, attempts: attempts);
         } else {
+          debugPrint(
+            '[StartUpload] ~ ${job.entityType}:${job.id.substring(0, 8)} '
+            'transient (attempt $attempts), retry at $next — $error',
+          );
           await jobs.markPendingRetry(job.id,
               attempts: attempts, lastError: error, nextRetryAt: next,);
         }
       case PermanentFailure(:final error):
+        debugPrint(
+          '[StartUpload] ✗ ${job.entityType}:${job.id.substring(0, 8)} '
+          'permanent failure — $error',
+        );
         await jobs.markDead(job.id, error: error, attempts: job.attempts + 1);
       case AuthExpired():
+        debugPrint(
+          '[StartUpload] ! ${job.entityType}:${job.id.substring(0, 8)} '
+          'auth expired — attempting refresh',
+        );
         await _handleAuthExpired(job);
       case AssignmentClosed(:final assignmentId):
         await _handleAssignmentClosed(job, assignmentId);

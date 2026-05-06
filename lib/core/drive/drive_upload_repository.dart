@@ -151,4 +151,11 @@ class DriveUploadRepository {
         .getSingleOrNull();
     return row != null;
   }
+
+  Future<List<DriveUploadJob>> getJobsForAssignment(String assignmentId) {
+    return (_db.select(_db.driveUploadJobs)
+          ..where((t) => t.assignmentId.equals(assignmentId))
+          ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+        .get();
+  }
 }

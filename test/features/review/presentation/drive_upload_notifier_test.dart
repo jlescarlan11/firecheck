@@ -15,6 +15,9 @@ void main() {
   const assignmentId = 'aabbccdd-1234-5678-abcd-ef0123456789';
   const enumeratorId = 'enum-1';
   final emptyFiles = <({String filename, Uint8List bytes})>[];
+  final fakeFiles = [
+    (filename: 'data.shp', bytes: Uint8List.fromList([0, 1, 2])),
+  ];
 
   setUp(() {
     db = AppDatabase.forTesting(NativeDatabase.memory());
@@ -69,6 +72,16 @@ void main() {
   });
 
   group('startUpload', () {
+    test('empty files → Failure with canRetry:true (guard)', () async {
+      await _insertAssignment();
+      final n = _notifier();
+      await n.initFromDb(assignmentId, enumeratorId);
+      await n.startUpload(emptyFiles);
+
+      final state = n.state as DriveUploadFailure;
+      expect(state.canRetry, isTrue);
+    });
+
     test('happy path: transitions Idle → InProgress → Success and writes to DB',
         () async {
       await _insertAssignment();
@@ -84,7 +97,7 @@ void main() {
 
       final states = <DriveUploadState>[];
       n.addListener(states.add, fireImmediately: false);
-      await n.startUpload(emptyFiles);
+      await n.startUpload(fakeFiles);
 
       expect(states.first, isA<DriveUploadInProgress>());
       expect(states.last, isA<DriveUploadSuccess>());
@@ -100,7 +113,7 @@ void main() {
         driveApi: FakeDriveApi(uploadError: Exception('Network error')),
       );
       await n.initFromDb(assignmentId, enumeratorId);
-      await n.startUpload(emptyFiles);
+      await n.startUpload(fakeFiles);
 
       final state = n.state as DriveUploadFailure;
       expect(state.canRetry, isTrue);
@@ -110,10 +123,10 @@ void main() {
       await _insertAssignment();
       final n = _notifier(
         driveApi: FakeDriveApi(
-            uploadError: const AuthFailure('Not signed in')),
+            uploadError: const AuthFailure('Not signed in'),),
       );
       await n.initFromDb(assignmentId, enumeratorId);
-      await n.startUpload(emptyFiles);
+      await n.startUpload(fakeFiles);
 
       final state = n.state as DriveUploadFailure;
       expect(state.canRetry, isFalse);
@@ -133,8 +146,8 @@ void main() {
       );
       await n.initFromDb(assignmentId, enumeratorId);
       n.debugSetState(
-          const DriveUploadFailure(message: 'err', canRetry: true));
-      await n.retry(emptyFiles);
+          const DriveUploadFailure(message: 'err', canRetry: true),);
+      await n.retry(fakeFiles);
 
       expect(n.state, isA<DriveUploadSuccess>());
     });
