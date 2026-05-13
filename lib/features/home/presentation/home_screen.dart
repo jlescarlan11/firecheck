@@ -99,12 +99,12 @@ class HomeScreen extends ConsumerWidget {
               _ActionTile(
                 title: l.gatherData,
                 subtitle: l.gatherDataSubtitle,
-                onTap: () => context.go('/map'),
+                onTap: () => context.push('/map'),
               ),
               _ActionTile(
                 title: l.getMaps,
                 subtitle: l.getMapsSubtitle,
-                onTap: () => context.go('/get-maps'),
+                onTap: () => context.push('/get-maps'),
               ),
               if (!isLocked)
                 _ActionTile(
@@ -187,7 +187,7 @@ class HomeScreen extends ConsumerWidget {
     final biometric = ref.read(biometricGateProvider);
     final available = await biometric.isAvailable();
     if (!available) {
-      if (context.mounted) context.go('/review');
+      if (context.mounted) context.push('/review');
       return;
     }
     final ok = await biometric.authenticate(reason: l.biometricGateReason);
@@ -199,7 +199,7 @@ class HomeScreen extends ConsumerWidget {
       }
       return;
     }
-    if (context.mounted) context.go('/review');
+    if (context.mounted) context.push('/review');
   }
 }
 

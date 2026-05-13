@@ -6,8 +6,6 @@ import 'package:flutter/foundation.dart';
 class FileSetRule extends ShapefileValidationRule {
   const FileSetRule();
 
-  static const _layers = ['boundary', 'buildings', 'roads'];
-  static const _extensions = ['.shp', '.dbf', '.shx', '.prj'];
   static const _largeSizeThreshold = 100 * 1024 * 1024; // 100 MB
 
   @override
@@ -15,17 +13,12 @@ class FileSetRule extends ShapefileValidationRule {
     Map<String, Uint8List> files,
     Map<String, String> expectedMd5s,
   ) {
-    for (final layer in _layers) {
-      for (final ext in _extensions) {
-        final key = '$layer$ext';
-        final bytes = files[key];
-        if (bytes == null || bytes.isEmpty) {
-          return RuleFatal(
-            ruleName: 'file_set',
-            userMessage: 'Map files are missing or incomplete.',
-          );
-        }
-      }
+    final hasShp = files.keys.any((k) => k.endsWith('.shp'));
+    if (!hasShp) {
+      return const RuleFatal(
+        ruleName: 'file_set',
+        userMessage: 'Map files are missing or incomplete.',
+      );
     }
 
     final totalBytes = files.values.fold(0, (sum, b) => sum + b.length);

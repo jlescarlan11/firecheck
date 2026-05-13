@@ -34,6 +34,31 @@ class ShapefileImporter {
 
   final _shpParser = const ShpParser();
 
+  // Find a file by preferred exact key, falling back to any file with the extension.
+  Uint8List? _findFile(Map<String, Uint8List> files, String preferred, String ext) {
+    if (files.containsKey(preferred)) return files[preferred];
+    for (final entry in files.entries) {
+      if (entry.key.endsWith(ext)) return entry.value;
+    }
+    return null;
+  }
+
+  // Find DBF with the same stem as a given SHP key.
+  Uint8List? _dbfForShp(Map<String, Uint8List> files, String preferred, String shpKey) {
+    final dbfKey = shpKey.replaceFirst(RegExp(r'\.shp$'), '.dbf');
+    if (files.containsKey(dbfKey)) return files[dbfKey];
+    if (files.containsKey(preferred)) return files[preferred];
+    return null;
+  }
+
+  String _shpKeyFor(Map<String, Uint8List> files, String preferred) {
+    if (files.containsKey(preferred)) return preferred;
+    for (final k in files.keys) {
+      if (k.endsWith('.shp')) return k;
+    }
+    return preferred;
+  }
+
   Future<ImportResult> importShapefiles(
     Map<String, Uint8List> files,
     String assignmentId,
@@ -41,28 +66,35 @@ class ShapefileImporter {
     String driveFolderId,
     String enumeratorId,
   ) async {
-    // Parse each DBF file once; cache the full result so fields (for
-    // validation) and records (for insertion) come from the same parse.
-    final boundaryDbf = files.containsKey('boundary.dbf')
-        ? dbfParser.parse(files['boundary.dbf']!)
-        : null;
-    final buildingDbf = files.containsKey('buildings.dbf')
-        ? dbfParser.parse(files['buildings.dbf']!)
-        : null;
-    final roadDbf = files.containsKey('roads.dbf')
-        ? dbfParser.parse(files['roads.dbf']!)
-        : null;
+    // Locate .shp files by preferred name, falling back to any .shp in the zip.
+    final buildingShpKey = _shpKeyFor(files, 'buildings.shp');
+    final buildingShp = _findFile(files, 'buildings.shp', '.shp');
+    final buildingDbfData = _dbfForShp(files, 'buildings.dbf', buildingShpKey);
 
-    // Parse all geometries
-    final boundaryGeoms = _shpParser.parse(files['boundary.shp']!);
-    final buildingGeoms = _shpParser.parse(files['buildings.shp']!);
-    final roadGeoms = _shpParser.parse(files['roads.shp']!);
+    final boundaryShp = files['boundary.shp'];
+    final roadShp = files['roads.shp'];
+    final roadDbfData = files['roads.dbf'];
+
+    // Parse geometries — boundary and roads are optional.
+    final buildingGeoms = buildingShp != null ? _shpParser.parse(buildingShp) : <ShpGeometry>[];
+    final roadGeoms = roadShp != null ? _shpParser.parse(roadShp) : <ShpGeometry>[];
+
+    final buildingDbf = buildingDbfData != null ? dbfParser.parse(buildingDbfData) : null;
+    final roadDbf = roadDbfData != null ? dbfParser.parse(roadDbfData) : null;
 
     final buildingRecords = buildingDbf?.records ?? [];
     final roadRecords = roadDbf?.records ?? [];
 
-    // Reproject boundary (first polygon, all rings)
-    final boundaryGeojson = _reprojectGeom(boundaryGeoms.first);
+    // Boundary: use boundary.shp if present, otherwise derive a bbox from buildings.
+    final Map<String, dynamic> boundaryGeojson;
+    if (boundaryShp != null) {
+      final geoms = _shpParser.parse(boundaryShp);
+      boundaryGeojson = _reprojectGeom(geoms.first);
+    } else if (buildingGeoms.isNotEmpty) {
+      boundaryGeojson = _bboxFromGeoms(buildingGeoms);
+    } else {
+      boundaryGeojson = {'type': 'Polygon', 'coordinates': <dynamic>[]};
+    }
 
     // Capture a single timestamp for all rows written in this import
     final now = DateTime.now();
@@ -82,9 +114,10 @@ class ShapefileImporter {
             ),
           );
 
-      for (var i = 0; i < buildingRecords.length; i++) {
-        if (i >= buildingGeoms.length) break;
-        final featId = buildingRecords[i]['feat_id'] ?? 'bld-$i';
+      for (var i = 0; i < buildingGeoms.length; i++) {
+        final featId = i < buildingRecords.length
+            ? (buildingRecords[i]['feat_id'] ?? 'bld-$i')
+            : 'bld-$i';
         await db.into(db.features).insertOnConflictUpdate(
               FeaturesCompanion.insert(
                 id: '$assignmentId/$featId',
@@ -118,6 +151,44 @@ class ShapefileImporter {
       roadCount: roadRecords.length,
       boundaryGeojson: jsonEncode(boundaryGeojson),
     );
+  }
+
+  Map<String, dynamic> _bboxFromGeoms(List<ShpGeometry> geoms) {
+    var minLat = 90.0;
+    var maxLat = -90.0;
+    var minLng = 180.0;
+    var maxLng = -180.0;
+    for (final geom in geoms) {
+      final geojson = _reprojectGeom(geom);
+      final type = geojson['type'] as String;
+      final coordsRaw = geojson['coordinates'] as List<dynamic>;
+      final rings = type == 'Polygon' || type == 'MultiLineString'
+          ? coordsRaw.cast<List<dynamic>>()
+          : [coordsRaw];
+      for (final ring in rings) {
+        for (final pt in ring) {
+          final coord = pt as List<dynamic>;
+          final lng = coord[0] as double;
+          final lat = coord[1] as double;
+          if (lat < minLat) minLat = lat;
+          if (lat > maxLat) maxLat = lat;
+          if (lng < minLng) minLng = lng;
+          if (lng > maxLng) maxLng = lng;
+        }
+      }
+    }
+    return {
+      'type': 'Polygon',
+      'coordinates': [
+        [
+          [minLng, minLat],
+          [maxLng, minLat],
+          [maxLng, maxLat],
+          [minLng, maxLat],
+          [minLng, minLat],
+        ]
+      ],
+    };
   }
 
   Map<String, dynamic> _reprojectGeom(ShpGeometry geom) {

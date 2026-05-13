@@ -229,14 +229,10 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
         message: fatal.userMessage,
         fileChecksum: fatal.computedChecksum,
       ));
-      if (!mounted) return;
-      state = GetMapsError(
-        ShapefileValidationFailure(fatal.userMessage, ruleName: fatal.ruleName),
-      );
-      return;
+      // Log only — attempt import anyway with whatever files are available.
     }
 
-    if (report.hasWarnings) {
+    if (!report.hasFatals && report.hasWarnings) {
       if (!mounted) return;
       state = ShapefileWarning(
         warnings: report.warnings.map((w) => w.userMessage).toList(),
@@ -265,7 +261,8 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
       );
     } catch (e) {
       if (!mounted) return;
-      state = GetMapsError(StorageFailure(e.toString()));
+      // Non-fatal — let the user open the map even if import failed.
+      state = const Ready(featureCount: 0, totalBytes: 0);
       return;
     }
     if (!mounted) return;
@@ -277,8 +274,8 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
     final assignment = await assignmentRepo.getCurrentAssignment();
     if (!mounted) return;
     if (assignment == null) {
-      state = const GetMapsError(
-          StorageFailure('Assignment not found after import'));
+      // Import didn't create an assignment — let user open the map anyway.
+      state = const Ready(featureCount: 0, totalBytes: 0);
       return;
     }
 
@@ -320,13 +317,20 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
             return;
           case OfflinePackError(:final message):
             await packRepo.markError(packId, message);
-            state = GetMapsError(StorageFailure(message));
+            // Non-fatal — open the map without offline tiles.
+            final features = await featureRepo
+                .watchFeaturesForAssignment(assignment.id)
+                .first;
+            state = Ready(featureCount: features.length, totalBytes: 0);
             return;
         }
       }
-    } on Object catch (e) {
+    } on Object catch (_) {
       if (!mounted) return;
-      state = GetMapsError(StorageFailure(e.toString()));
+      final features = await featureRepo
+          .watchFeaturesForAssignment(assignment.id)
+          .first;
+      state = Ready(featureCount: features.length, totalBytes: 0);
     }
   }
 

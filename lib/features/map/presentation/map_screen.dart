@@ -91,17 +91,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       }
     }
 
-    // Bug 13b: don't mount the Mapbox renderer until BOTH the assignment
-    // AND the features list have loaded. currentFeaturesProvider returns
-    // Stream.value([]) while the assignment is null (loading), so without
-    // this gate the renderer would mount with an empty features list,
-    // _onMapCreated would attach the click listener to a manager with 0
-    // annotations, and subsequent feature emissions wouldn't register
-    // tappable polygons (mapbox_maps_flutter 2.22 quirk — listener bound
-    // to an empty manager doesn't pick up later annotations cleanly).
     final assignment = assignmentAsync.value;
     final features = featuresAsync.value;
-    final mapReady = assignment != null && features != null;
+    final mapReady = !assignmentAsync.isLoading && !featuresAsync.isLoading;
 
     final bounds = assignment != null
         ? polygonBoundsFromGeojson(assignment.boundaryPolygonGeojson)
@@ -124,8 +116,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 ? const Center(child: CircularProgressIndicator())
                 : renderer.build(
                     context,
-                    features: features,
-                    boundaryGeojson: assignment.boundaryPolygonGeojson,
+                    features: features ?? [],
+                    boundaryGeojson: assignment?.boundaryPolygonGeojson ?? '',
                     onFeatureTap: _handleFeatureTap,
                     onLongPress: _handleLongPress,
                     onCameraChanged: _onCameraChanged,
@@ -397,7 +389,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
     if (!mounted) return;
     setState(() => _addModeActive = false);
-    context.go('/feature/${Uri.encodeComponent(feature.id)}');
+    context.push('/feature/${Uri.encodeComponent(feature.id)}');
   }
 
   Future<void> _handlePolygonLongPress(Feature feature) async {
@@ -528,7 +520,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     }
 
     if (!mounted) return;
-    context.go('/feature/${Uri.encodeComponent(f.id)}');
+    context.push('/feature/${Uri.encodeComponent(f.id)}');
   }
 
   void _onCameraChanged(double zoom, double lat, double lng) {
