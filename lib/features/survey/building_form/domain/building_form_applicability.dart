@@ -21,6 +21,9 @@ enum BuildingFormField {
 /// True when the field should be visible AND collected for the current
 /// state. Fields that are not applicable have their stored value cleared
 /// by [applyApplicability] so a stale answer cannot survive a path change.
+///
+/// To gate by form variant (US-41), wrap the call:
+///   isApplicable(state, f) && !variant.hideBuildingFields.contains(f)
 bool isApplicable(BuildingFormState s, BuildingFormField f) {
   // "Does not exist" short-circuits the whole survey: nothing else applies.
   if (s.doesNotExist) return false;
