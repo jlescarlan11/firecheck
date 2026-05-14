@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:drift/drift.dart';
 import 'package:firecheck/core/db/database.dart';
+import 'package:firecheck/core/geo/ph_epsg.dart';
 import 'package:firecheck/core/sync/shapefile/export/dbf_writer.dart';
 import 'package:firecheck/core/sync/shapefile/export/export_failure.dart';
 import 'package:firecheck/core/sync/shapefile/export/shp_writer.dart';
@@ -12,6 +13,7 @@ import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:proj4dart/proj4dart.dart' as proj4;
 
 // ---------------------------------------------------------------------------
 // Serializable structs passed to compute()
@@ -110,10 +112,6 @@ class _LayerOutput {
 // PRJ / CPG constants
 // ---------------------------------------------------------------------------
 
-// EPSG:4326 WKT with full AUTHORITY codes — QGIS recognizes this as
-// "WGS 84 / EPSG:4326" without prompting the user to choose a CRS.
-const _prjContent =
-    'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]';
 const _cpgContent = 'UTF-8';
 
 // Signed area via the shoelace formula. Positive = CCW, negative = CW.
@@ -374,11 +372,21 @@ class ShapefileExporter {
     required this.db,
     this.shareFile,
     this.tempDirOverride,
-  });
+    this.targetEpsg = 4326,
+  }) : _targetCrs = requirePhCrs(targetEpsg);
 
   final AppDatabase db;
   final Future<void> Function(String path)? shareFile;
   final Directory? tempDirOverride;
+
+  /// EPSG code for the output coordinates. Defaults to 4326 (WGS 84
+  /// lng/lat), matching how geometries are stored in the database — in
+  /// that case the export pipeline writes coordinates straight through
+  /// with no reprojection. Setting this to a projected PH CRS (e.g.
+  /// 32651 for UTM 51N) reprojects every vertex before SHP write and
+  /// emits the matching .prj.
+  final int targetEpsg;
+  final PhCrs _targetCrs;
 
   Future<ExportFailure?> export({required String assignmentId}) async {
     final destDir = tempDirOverride ?? await getTemporaryDirectory();
@@ -421,6 +429,13 @@ class ShapefileExporter {
       return (const NoCompletedFeatures(), null);
     }
 
+    // Geometries are stored in EPSG:4326. When the user asks for a
+    // projected output CRS, reproject every vertex here on the main
+    // isolate — proj4dart's Projection cache lives per-isolate, so doing
+    // it before the compute() handoff keeps the worker pure.
+    String reproject(String geojson) =>
+        targetEpsg == 4326 ? geojson : _reprojectGeojson(geojson, _targetCrs);
+
     // Build layer inputs
     final inputs = <_LayerInput>[];
 
@@ -429,7 +444,7 @@ class ShapefileExporter {
           .map(
             (r) => _FeatureRow(
               featureId: r.featureId,
-              geometryGeojson: r.geometryGeojson,
+              geometryGeojson: reproject(r.geometryGeojson),
             ),
           )
           .toList();
@@ -449,7 +464,7 @@ class ShapefileExporter {
           .map(
             (r) => _FeatureRow(
               featureId: r.featureId,
-              geometryGeojson: r.geometryGeojson,
+              geometryGeojson: reproject(r.geometryGeojson),
             ),
           )
           .toList();
@@ -483,19 +498,15 @@ class ShapefileExporter {
 
     // Build ZIP archive
     final archive = Archive();
+    final prjContent = _targetCrs.wkt;
+    final prjBytes = utf8.encode(prjContent);
     for (final out in outputs) {
       final name = out.layerName;
       archive
         ..addFile(ArchiveFile('$name.shp', out.shp.length, out.shp))
         ..addFile(ArchiveFile('$name.shx', out.shx.length, out.shx))
         ..addFile(ArchiveFile('$name.dbf', out.dbf.length, out.dbf))
-        ..addFile(
-          ArchiveFile(
-            '$name.prj',
-            _prjContent.length,
-            _prjContent.codeUnits,
-          ),
-        )
+        ..addFile(ArchiveFile('$name.prj', prjBytes.length, prjBytes))
         ..addFile(
           ArchiveFile(
             '$name.cpg',
@@ -635,4 +646,37 @@ class _RoadQueryRow {
   final String featureId;
   final String geometryGeojson;
   final _RoadRow roadRow;
+}
+
+/// Reprojects every coordinate inside a GeoJSON geometry from EPSG:4326 to
+/// the target CRS. Operates on the parsed structure and re-encodes, so the
+/// downstream `_writeLayer` worker sees the same shape of input it already
+/// knows how to consume — only the numeric values change.
+String _reprojectGeojson(String geojson, PhCrs target) {
+  final wgs84 = proj4.Projection.parse(phEpsgRegistry[4326]!.proj4);
+  final dst = proj4.Projection.parse(target.proj4);
+
+  List<double> transformPair(List<dynamic> pair) {
+    final pt = wgs84.transform(
+      dst,
+      proj4.Point(x: (pair[0] as num).toDouble(), y: (pair[1] as num).toDouble()),
+    );
+    return [pt.x, pt.y];
+  }
+
+  dynamic walk(dynamic node) {
+    // Bottom-out at a [lng, lat] coordinate pair (a 2-element List of nums).
+    if (node is List &&
+        node.length >= 2 &&
+        node.length <= 3 &&
+        node.first is num) {
+      return transformPair(node);
+    }
+    if (node is List) return node.map(walk).toList();
+    return node;
+  }
+
+  final geo = jsonDecode(geojson) as Map<String, dynamic>;
+  geo['coordinates'] = walk(geo['coordinates']);
+  return jsonEncode(geo);
 }
