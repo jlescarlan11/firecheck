@@ -2149,6 +2149,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Some road entries are missing required fields. Complete all road forms before exporting.'**
   String get exportValidationRoadsMissingFields;
+
+  /// No description provided for @remainingQuestionsAllDone.
+  ///
+  /// In en, this message translates to:
+  /// **'All questions on this path are answered'**
+  String get remainingQuestionsAllDone;
+
+  /// No description provided for @remainingQuestionsRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 question left on this path} other{{count} questions left on this path}}'**
+  String remainingQuestionsRemaining(int count);
 }
 
 class _AppLocalizationsDelegate

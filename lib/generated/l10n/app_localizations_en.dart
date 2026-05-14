@@ -1131,4 +1131,23 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get exportValidationRoadsMissingFields =>
       'Some road entries are missing required fields. Complete all road forms before exporting.';
+
+  @override
+  String get remainingQuestionsAllDone =>
+      'All questions on this path are answered';
+
+  @override
+  String remainingQuestionsRemaining(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString questions left on this path',
+      one: '1 question left on this path',
+    );
+    return '$_temp0';
+  }
 }

@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/features/survey/building_form/data/submission_repository.dart';
 import 'package:firecheck/features/survey/road_form/data/road_attributes_repository.dart';
+import 'package:firecheck/features/survey/road_form/domain/road_form_applicability.dart';
 import 'package:firecheck/features/survey/road_form/domain/road_form_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -23,7 +24,9 @@ class RoadFormNotifier extends StateNotifier<RoadFormState> {
   static const _window = Duration(milliseconds: 500);
 
   void update(RoadFormState Function(RoadFormState) mutate) {
-    state = mutate(state);
+    // Apply field applicability after the mutation — US-6/US-7 share this
+    // hook with the remaining-questions count (US-8).
+    state = applyApplicability(mutate(state));
     _debounce?.cancel();
     _debounce = Timer(_window, _flush);
   }

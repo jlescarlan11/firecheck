@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:firecheck/features/map/data/feature_repository.dart';
 import 'package:firecheck/features/survey/building_form/data/building_attributes_repository.dart';
 import 'package:firecheck/features/survey/building_form/data/submission_repository.dart';
+import 'package:firecheck/features/survey/building_form/domain/building_form_applicability.dart';
 import 'package:firecheck/features/survey/building_form/domain/building_form_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -49,7 +50,11 @@ class BuildingFormNotifier extends StateNotifier<BuildingFormState> {
   }
 
   void update(BuildingFormState Function(BuildingFormState) mutate) {
-    state = mutate(state);
+    // Sweep inapplicable fields after every mutation so a field that became
+    // non-applicable (e.g. cost-range when the user just switched to exact)
+    // can't carry a stale value into the database (US-7). Visibility (US-6)
+    // and the remaining-questions count (US-8) read the same predicate.
+    state = applyApplicability(mutate(state));
     _debounce?.cancel();
     _debounce = Timer(_window, _flush);
   }

@@ -411,5 +411,12 @@
   "exportValidationBuildingsEmpty": "No buildings recorded. Survey at least one building before exporting.",
   "exportValidationRoadsEmpty": "No roads recorded. Survey at least one road before exporting.",
   "exportValidationBuildingsMissingFields": "Some building entries are missing required fields. Complete all building forms before exporting.",
-  "exportValidationRoadsMissingFields": "Some road entries are missing required fields. Complete all road forms before exporting."
+  "exportValidationRoadsMissingFields": "Some road entries are missing required fields. Complete all road forms before exporting.",
+  "remainingQuestionsAllDone": "All questions on this path are answered",
+  "remainingQuestionsRemaining": "{count, plural, =1{1 question left on this path} other{{count} questions left on this path}}",
+  "@remainingQuestionsRemaining": {
+    "placeholders": {
+      "count": { "type": "int", "format": "decimalPattern" }
+    }
+  }
 }

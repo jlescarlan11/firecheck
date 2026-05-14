@@ -1157,4 +1157,23 @@ class AppLocalizationsTl extends AppLocalizations {
   @override
   String get exportValidationRoadsMissingFields =>
       'May ilang kalsada na may kulang na impormasyon. Kumpletuhin ang lahat ng form ng kalsada bago mag-export.';
+
+  @override
+  String get remainingQuestionsAllDone =>
+      'Lahat ng tanong sa daanang ito ay nasagutan na';
+
+  @override
+  String remainingQuestionsRemaining(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString tanong ang natitira sa daanang ito',
+      one: '1 tanong na natitira sa daanang ito',
+    );
+    return '$_temp0';
+  }
 }
