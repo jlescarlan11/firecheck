@@ -188,6 +188,45 @@ void main() {
     }
   });
 
+  test('exported .prj declares EPSG:4326 authority (US-40 QGIS-clean)', () async {
+    const assignmentId = 'prj-test';
+    await _seedBuilding(db, assignmentId: assignmentId, featureId: 'f1', submissionId: 's1');
+
+    final capturedPaths = <String>[];
+    await makeExporter(capturedPaths: capturedPaths).export(assignmentId: assignmentId);
+
+    final zipBytes = await File(capturedPaths.first).readAsBytes();
+    final archive = ZipDecoder().decodeBytes(zipBytes);
+    final prj = utf8.decode(
+      archive.files.firstWhere((f) => f.name == 'buildings.prj').content as List<int>,
+    );
+    expect(prj, contains('AUTHORITY["EPSG","4326"]'));
+  });
+
+  test('exported buildings.dbf uses 10-char RA9514_TYP field name (US-40)', () async {
+    const assignmentId = 'fieldname-test';
+    await _seedBuilding(db, assignmentId: assignmentId, featureId: 'f1', submissionId: 's1');
+
+    final capturedPaths = <String>[];
+    await makeExporter(capturedPaths: capturedPaths).export(assignmentId: assignmentId);
+
+    final zipBytes = await File(capturedPaths.first).readAsBytes();
+    final archive = ZipDecoder().decodeBytes(zipBytes);
+    final dbfBytes = archive.files.firstWhere((f) => f.name == 'buildings.dbf').content as List<int>;
+    // Field descriptor names live in 11-byte slots starting at offset 32.
+    // Pull them out and verify the 10-char name made it through intact.
+    final names = <String>[];
+    var i = 32;
+    while (i + 11 <= dbfBytes.length && dbfBytes[i] != 0x0D) {
+      final raw = dbfBytes.sublist(i, i + 11);
+      final nul = raw.indexOf(0);
+      names.add(String.fromCharCodes(nul == -1 ? raw : raw.sublist(0, nul)));
+      i += 32;
+    }
+    expect(names, contains('RA9514_TYP'));
+    expect(names, isNot(contains('RA9514_TYPE')));
+  });
+
   test('doesNotExist building is included in ZIP output', () async {
     const assignmentId = 'assignment-004';
     await _seedBuilding(

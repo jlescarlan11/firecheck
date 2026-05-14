@@ -110,9 +110,54 @@ class _LayerOutput {
 // PRJ / CPG constants
 // ---------------------------------------------------------------------------
 
+// EPSG:4326 WKT with full AUTHORITY codes — QGIS recognizes this as
+// "WGS 84 / EPSG:4326" without prompting the user to choose a CRS.
 const _prjContent =
-    'GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.257223563]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]]';
+    'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]';
 const _cpgContent = 'UTF-8';
+
+// Signed area via the shoelace formula. Positive = CCW, negative = CW.
+double _signedArea(List<List<double>> ring) {
+  if (ring.length < 3) return 0;
+  var sum = 0.0;
+  for (var i = 0; i < ring.length - 1; i++) {
+    final a = ring[i];
+    final b = ring[i + 1];
+    sum += (b[0] - a[0]) * (b[1] + a[1]);
+  }
+  // Shoelace as written gives 2× area; sign here = positive when CW because
+  // we used (x2-x1)*(y2+y1). Invert to follow the "positive = CCW" convention.
+  return -sum / 2;
+}
+
+List<List<double>> _ensureClosed(List<List<double>> ring) {
+  if (ring.length < 2) return ring;
+  final first = ring.first;
+  final last = ring.last;
+  if (first[0] == last[0] && first[1] == last[1]) return ring;
+  return [...ring, [first[0], first[1]]];
+}
+
+/// For polygon parts, normalize to Esri orientation: first ring CW (outer),
+/// any subsequent rings CCW (holes). Also ensures rings are closed.
+List<List<List<double>>> _normalizePolygonParts(
+  List<List<List<double>>> parts,
+) {
+  if (parts.isEmpty) return parts;
+  final out = <List<List<double>>>[];
+  for (var i = 0; i < parts.length; i++) {
+    final closed = _ensureClosed(parts[i]);
+    final area = _signedArea(closed);
+    final shouldBeCw = i == 0; // outer ring is CW in Esri spec
+    final isCw = area < 0;
+    if (shouldBeCw != isCw && closed.length >= 3) {
+      out.add(closed.reversed.toList());
+    } else {
+      out.add(closed);
+    }
+  }
+  return out;
+}
 
 // ---------------------------------------------------------------------------
 // Top-level function required by compute()
@@ -197,7 +242,7 @@ _LayerOutput _writeLayer(_LayerInput input) {
       parts = [];
     }
 
-    geometries.add(parts);
+    geometries.add(input.isPolygon ? _normalizePolygonParts(parts) : parts);
   }
 
   // Write SHP/SHX
@@ -253,7 +298,9 @@ List<DbfFieldDef> _buildingFields() => const [
       DbfFieldDef(name: 'FEAT_ID', type: 'C', width: 36),
       DbfFieldDef(name: 'CBMS_ID', type: 'C', width: 20),
       DbfFieldDef(name: 'BLDG_NAME', type: 'C', width: 60),
-      DbfFieldDef(name: 'RA9514_TYPE', type: 'C', width: 20),
+      // DBF field names are limited to 10 chars (11th byte is the null
+      // terminator); QGIS silently truncates anything longer.
+      DbfFieldDef(name: 'RA9514_TYP', type: 'C', width: 20),
       DbfFieldDef(name: 'STOREYS', type: 'N', width: 3),
       DbfFieldDef(name: 'MATERIAL', type: 'C', width: 30),
       DbfFieldDef(name: 'COST_EXACT', type: 'L', width: 1),
@@ -295,7 +342,7 @@ Map<String, String?> _buildingRecord(_BuildingRow r, String featureId) => {
       'FEAT_ID': featureId,
       'CBMS_ID': r.cbmsId,
       'BLDG_NAME': r.buildingName,
-      'RA9514_TYPE': r.ra9514Type,
+      'RA9514_TYP': r.ra9514Type,
       'STOREYS': r.storeys?.toString(),
       'MATERIAL': r.material,
       'COST_EXACT': r.costIsExact ? 'T' : 'F',

@@ -128,6 +128,11 @@ class ShpWriter {
         if (pt[1] > maxY) maxY = pt[1];
       }
     }
+    // A feature with no vertices would otherwise write ±infinity into the
+    // record bbox, which QGIS rejects as an invalid shapefile.
+    if (numPoints == 0) {
+      minX = minY = maxX = maxY = 0.0;
+    }
 
     final size = 4 + 32 + 4 + 4 + numParts * 4 + numPoints * 16;
     final d = ByteData(size);
