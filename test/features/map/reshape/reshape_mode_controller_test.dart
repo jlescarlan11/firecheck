@@ -108,6 +108,100 @@ void main() {
     expect(s.isActive, isFalse);
   });
 
+  Feature _seedRoad({String id = 'r1'}) => Feature(
+        id: id,
+        assignmentId: 'a1',
+        featureType: 'road',
+        geometryGeojson:
+            '{"type":"LineString","coordinates":[[0,0],[1,1],[2,1]]}',
+        isNew: false,
+        status: 'unfilled',
+        createdAt: DateTime.utc(2026, 1, 1),
+      );
+
+  test('translateAll shifts every vertex and pushes a Translate op (US-11)', () {
+    final c = _container();
+    addTearDown(c.dispose);
+    final n = c.read(reshapeModeControllerProvider.notifier);
+    n.enterReshape(feature: _seedBuilding(), overrideReason: null);
+    n.translateAll(10, 20);
+    final s = c.read(reshapeModeControllerProvider);
+    expect(s.workingRings[0][0], (lng: 10.0, lat: 20.0));
+    expect(s.workingRings[0][1], (lng: 11.0, lat: 20.0));
+    expect(s.workingRings[0][2], (lng: 11.0, lat: 21.0));
+    expect(s.workingRings[0][3], (lng: 10.0, lat: 21.0));
+    expect(s.undoStack.last, isA<Translate>());
+  });
+
+  test('translateAll undo restores original positions (US-11)', () {
+    final c = _container();
+    addTearDown(c.dispose);
+    final n = c.read(reshapeModeControllerProvider.notifier);
+    n.enterReshape(feature: _seedBuilding(), overrideReason: null);
+    n.translateAll(10, 20);
+    n.undo();
+    final s = c.read(reshapeModeControllerProvider);
+    expect(s.workingRings[0][0], (lng: 0.0, lat: 0.0));
+    expect(s.workingRings[0][1], (lng: 1.0, lat: 0.0));
+    expect(s.undoStack, isEmpty);
+  });
+
+  test('translateAll zero-delta is a no-op (US-11)', () {
+    final c = _container();
+    addTearDown(c.dispose);
+    final n = c.read(reshapeModeControllerProvider.notifier);
+    n.enterReshape(feature: _seedBuilding(), overrideReason: null);
+    n.translateAll(0, 0);
+    expect(c.read(reshapeModeControllerProvider).undoStack, isEmpty);
+  });
+
+  test('LineString feature enters reshape as open (isClosed=false) (US-10)', () {
+    final c = _container();
+    addTearDown(c.dispose);
+    final n = c.read(reshapeModeControllerProvider.notifier);
+    n.enterReshape(feature: _seedRoad(), overrideReason: null);
+    final s = c.read(reshapeModeControllerProvider);
+    expect(s.isActive, isTrue);
+    expect(s.isClosed, isFalse);
+    expect(s.workingRings, hasLength(1));
+    expect(s.workingRings[0], hasLength(3));
+  });
+
+  test('LineString serialize round-trips as LineString GeoJSON (US-10)', () {
+    final c = _container();
+    addTearDown(c.dispose);
+    final n = c.read(reshapeModeControllerProvider.notifier);
+    n.enterReshape(feature: _seedRoad(), overrideReason: null);
+    n.moveVertex(0, 1, (lng: 1.5, lat: 1.5));
+    final json = n.serializeWorking();
+    expect(json, contains('"LineString"'));
+    expect(json, contains('1.5'));
+  });
+
+  test('polyline removeVertex floor is 2 vertices, not 3 (US-10)', () {
+    final c = _container();
+    addTearDown(c.dispose);
+    final n = c.read(reshapeModeControllerProvider.notifier);
+    n.enterReshape(feature: _seedRoad(), overrideReason: null);
+    // 3 → 2 should succeed
+    n.removeVertex(0, 2);
+    expect(c.read(reshapeModeControllerProvider).workingRings[0], hasLength(2));
+    // 2 → 1 should be refused
+    n.removeVertex(0, 1);
+    expect(c.read(reshapeModeControllerProvider).workingRings[0], hasLength(2));
+  });
+
+  test('polyline never sets selfIntersects (US-10)', () {
+    final c = _container();
+    addTearDown(c.dispose);
+    final n = c.read(reshapeModeControllerProvider.notifier);
+    n.enterReshape(feature: _seedRoad(), overrideReason: null);
+    // Try to force a degenerate state — should not flip the flag for polylines.
+    n.moveVertex(0, 0, (lng: 1, lat: 1));
+    n.moveVertex(0, 1, (lng: 1, lat: 1));
+    expect(c.read(reshapeModeControllerProvider).selfIntersects, isFalse);
+  });
+
   test('selfIntersects flag tracks bowtie state during drag', () {
     final c = _container();
     addTearDown(c.dispose);

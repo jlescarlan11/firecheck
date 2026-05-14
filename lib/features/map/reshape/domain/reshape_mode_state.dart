@@ -10,6 +10,7 @@ class ReshapeModeState {
     this.selfIntersects = false,
     this.saving = false,
     this.overrideReason,
+    this.isClosed = true,
   });
 
   final Feature? originalFeature;
@@ -18,6 +19,11 @@ class ReshapeModeState {
   final bool selfIntersects;
   final bool saving;
   final String? overrideReason;
+
+  /// `true` for polygon features (rings; midpoint wraps last→first; validated
+  /// for self-intersection). `false` for polyline features (parts; no wrap;
+  /// no polygon validity check).
+  final bool isClosed;
 
   bool get isActive => originalFeature != null;
   bool get isDirty => undoStack.isNotEmpty;
@@ -29,6 +35,7 @@ class ReshapeModeState {
     bool? selfIntersects,
     bool? saving,
     Object? overrideReason = _sentinel,
+    bool? isClosed,
   }) {
     return ReshapeModeState(
       originalFeature: identical(originalFeature, _sentinel)
@@ -41,6 +48,7 @@ class ReshapeModeState {
       overrideReason: identical(overrideReason, _sentinel)
           ? this.overrideReason
           : overrideReason as String?,
+      isClosed: isClosed ?? this.isClosed,
     );
   }
 

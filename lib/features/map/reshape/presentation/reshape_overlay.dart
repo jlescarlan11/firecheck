@@ -15,71 +15,128 @@ class ReshapeOverlay extends ConsumerWidget {
     final state = ref.watch(reshapeModeControllerProvider);
     if (!state.isActive) return const SizedBox.shrink();
     final notifier = ref.read(reshapeModeControllerProvider.notifier);
-    final ring = state.workingRings[0];
 
     final children = <Widget>[];
 
-    for (var i = 0; i < ring.length; i++) {
-      final v = ring[i];
-      final p = projection.screenPointFromLngLat(v.lng, v.lat);
-      children.add(Positioned(
-        left: p.dx - 22,
-        top: p.dy - 22,
-        child: GestureDetector(
-          key: Key('reshape.vertex.$i'),
-          onPanUpdate: (d) {
-            // Read live vertex position from state, not the build-time `p`.
-            // onPanUpdate fires multiple times per gesture; `d.delta` is the
-            // per-event delta, so adding it to a stale anchor under-tracks
-            // the finger.
-            final cur = ref.read(reshapeModeControllerProvider).workingRings[0];
-            if (i >= cur.length) return;
-            final cv = cur[i];
-            final screen = projection.screenPointFromLngLat(cv.lng, cv.lat);
-            final next = screen + d.delta;
-            final nextLngLat = projection.lngLatFromScreenPoint(next);
-            notifier.moveVertex(0, i, nextLngLat);
-          },
-          onLongPress: () async {
-            final confirm = await showReshapeRemoveConfirm(
-              context,
-              currentRingLength: ring.length,
-            );
-            if (confirm) notifier.removeVertex(0, i);
-          },
-          child: const VertexHandle(),
-        ),
-      ),);
+    // For closed shapes (polygons), draw an invisible body-drag area covering
+    // the outer ring's bounding rect. Pan on this area translates the entire
+    // shape (US-11). It's drawn FIRST so vertex/midpoint handles render on
+    // top — Flutter hit-tests in reverse z-order, so the smaller handle hit
+    // areas win, and only pans on empty interior fall through to the body.
+    if (state.isClosed && state.workingRings.isNotEmpty) {
+      final outer = state.workingRings[0];
+      if (outer.length >= 3) {
+        var minX = double.infinity;
+        var minY = double.infinity;
+        var maxX = double.negativeInfinity;
+        var maxY = double.negativeInfinity;
+        for (final v in outer) {
+          final p = projection.screenPointFromLngLat(v.lng, v.lat);
+          if (p.dx < minX) minX = p.dx;
+          if (p.dx > maxX) maxX = p.dx;
+          if (p.dy < minY) minY = p.dy;
+          if (p.dy > maxY) maxY = p.dy;
+        }
+        children.add(Positioned(
+          left: minX,
+          top: minY,
+          width: maxX - minX,
+          height: maxY - minY,
+          child: GestureDetector(
+            key: const Key('reshape.body'),
+            behavior: HitTestBehavior.translucent,
+            onPanUpdate: (d) {
+              // Translate the working geometry by the screen-delta converted
+              // to lng/lat. Use the centroid as the projection anchor so the
+              // delta is locally accurate across both small and large extents.
+              final centerLng = (minX + maxX) / 2;
+              final centerLat = (minY + maxY) / 2;
+              final origin = projection.lngLatFromScreenPoint(
+                Offset(centerLng, centerLat),
+              );
+              final moved = projection.lngLatFromScreenPoint(
+                Offset(centerLng + d.delta.dx, centerLat + d.delta.dy),
+              );
+              notifier.translateAll(
+                moved.lng - origin.lng,
+                moved.lat - origin.lat,
+              );
+            },
+            child: const SizedBox.expand(),
+          ),
+        ),);
+      }
     }
 
-    for (var i = 0; i < ring.length; i++) {
-      final a = ring[i];
-      final b = ring[(i + 1) % ring.length];
-      final mLng = (a.lng + b.lng) / 2;
-      final mLat = (a.lat + b.lat) / 2;
-      final p = projection.screenPointFromLngLat(mLng, mLat);
-      final insertAt = i + 1;
-      children.add(Positioned(
-        left: p.dx - 22,
-        top: p.dy - 22,
-        child: GestureDetector(
-          key: Key('reshape.midpoint.$i'),
-          onPanStart: (d) {
-            // A2 gesture: insert immediately, then drag with same gesture.
-            notifier.addVertex(0, insertAt, (lng: mLng, lat: mLat));
-          },
-          onPanUpdate: (d) {
-            final cur = ref.read(reshapeModeControllerProvider).workingRings[0];
-            if (insertAt >= cur.length) return;
-            final v = cur[insertAt];
-            final screen = projection.screenPointFromLngLat(v.lng, v.lat);
-            final next = screen + d.delta;
-            final nextLngLat = projection.lngLatFromScreenPoint(next);
-            notifier.moveVertex(0, insertAt, nextLngLat);
-          },
-          child: const MidpointHandle(),
-        ),
-      ),);
+    for (var ringIdx = 0; ringIdx < state.workingRings.length; ringIdx++) {
+      final ring = state.workingRings[ringIdx];
+      final wraps = state.isClosed;
+
+      for (var i = 0; i < ring.length; i++) {
+        final v = ring[i];
+        final p = projection.screenPointFromLngLat(v.lng, v.lat);
+        children.add(Positioned(
+          left: p.dx - 22,
+          top: p.dy - 22,
+          child: GestureDetector(
+            key: Key('reshape.vertex.$ringIdx.$i'),
+            onPanUpdate: (d) {
+              final cur = ref
+                  .read(reshapeModeControllerProvider)
+                  .workingRings[ringIdx];
+              if (i >= cur.length) return;
+              final cv = cur[i];
+              final screen = projection.screenPointFromLngLat(cv.lng, cv.lat);
+              final next = screen + d.delta;
+              final nextLngLat = projection.lngLatFromScreenPoint(next);
+              notifier.moveVertex(ringIdx, i, nextLngLat);
+            },
+            onLongPress: () async {
+              final confirm = await showReshapeRemoveConfirm(
+                context,
+                currentRingLength: ring.length,
+              );
+              if (confirm) notifier.removeVertex(ringIdx, i);
+            },
+            child: const VertexHandle(),
+          ),
+        ),);
+      }
+
+      // For closed shapes the midpoint wraps last→first; for open polylines
+      // it only sits between successive vertices.
+      final segmentCount = wraps ? ring.length : ring.length - 1;
+      for (var i = 0; i < segmentCount; i++) {
+        final a = ring[i];
+        final b = ring[(i + 1) % ring.length];
+        final mLng = (a.lng + b.lng) / 2;
+        final mLat = (a.lat + b.lat) / 2;
+        final p = projection.screenPointFromLngLat(mLng, mLat);
+        final insertAt = i + 1;
+        children.add(Positioned(
+          left: p.dx - 22,
+          top: p.dy - 22,
+          child: GestureDetector(
+            key: Key('reshape.midpoint.$ringIdx.$i'),
+            onPanStart: (d) {
+              // A2 gesture: insert immediately, then drag with same gesture.
+              notifier.addVertex(ringIdx, insertAt, (lng: mLng, lat: mLat));
+            },
+            onPanUpdate: (d) {
+              final cur = ref
+                  .read(reshapeModeControllerProvider)
+                  .workingRings[ringIdx];
+              if (insertAt >= cur.length) return;
+              final v = cur[insertAt];
+              final screen = projection.screenPointFromLngLat(v.lng, v.lat);
+              final next = screen + d.delta;
+              final nextLngLat = projection.lngLatFromScreenPoint(next);
+              notifier.moveVertex(ringIdx, insertAt, nextLngLat);
+            },
+            child: const MidpointHandle(),
+          ),
+        ),);
+      }
     }
 
     return Stack(children: children);

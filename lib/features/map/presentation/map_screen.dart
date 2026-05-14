@@ -286,23 +286,28 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final assignment = ref.read(currentAssignmentProvider).value;
     if (s.originalFeature == null || assignment == null) return;
 
-    final res = validateBuildingPolygon(
-      s.workingRings,
-      boundaryGeojson: assignment.boundaryPolygonGeojson,
-    );
-    if (!res.valid) {
-      final msg = _validationMessage(res.error!, l);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(msg)));
-      ref.read(analyticsServiceProvider).track(
-        'map.reshape.validation_failed',
-        properties: {
-          'feature_id': s.originalFeature!.id,
-          'rule': res.error!.name,
-        },
+    // validateBuildingPolygon enforces polygon rules (closure, orientation,
+    // self-intersection). Polyline reshape (US-10) doesn't have those rules;
+    // skip the check when the working geometry is open.
+    if (s.isClosed) {
+      final res = validateBuildingPolygon(
+        s.workingRings,
+        boundaryGeojson: assignment.boundaryPolygonGeojson,
       );
-      return;
+      if (!res.valid) {
+        final msg = _validationMessage(res.error!, l);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(msg)));
+        ref.read(analyticsServiceProvider).track(
+          'map.reshape.validation_failed',
+          properties: {
+            'feature_id': s.originalFeature!.id,
+            'rule': res.error!.name,
+          },
+        );
+        return;
+      }
     }
 
     ctrl.markSaving(saving: true);
