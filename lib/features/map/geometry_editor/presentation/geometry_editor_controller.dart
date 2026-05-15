@@ -20,6 +20,14 @@ class GeometryEditorController extends Notifier<GeometryEditorState> {
     );
   }
 
+  void enterSketch({required String featureType}) {
+    state = GeometryEditorState(
+      pendingFeatureType: featureType,
+      workingRings: const [<LngLat>[]],
+      isClosed: featureType == 'building',
+    );
+  }
+
   void cancel() {
     state = const GeometryEditorState();
   }

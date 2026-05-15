@@ -1,4 +1,5 @@
 import 'package:firecheck/core/db/database.dart';
+import 'package:firecheck/core/geo/polygon_validator.dart' show LngLat;
 import 'package:firecheck/features/map/geometry_editor/domain/geometry_editor_state.dart';
 import 'package:firecheck/features/map/geometry_editor/domain/reshape_op.dart';
 import 'package:firecheck/features/map/geometry_editor/presentation/geometry_editor_controller.dart';
@@ -241,6 +242,52 @@ void main() {
       );
       expect(s.isSketchMode, isFalse);
       expect(s.isActive, isTrue);
+    });
+  });
+
+  group('enterSketch', () {
+    ProviderContainer makeContainer() => ProviderContainer();
+
+    test('building → empty closed ring, sketch mode active', () {
+      final c = makeContainer();
+      c.read(geometryEditorControllerProvider.notifier)
+          .enterSketch(featureType: 'building');
+      final s = c.read(geometryEditorControllerProvider);
+      expect(s.pendingFeatureType, 'building');
+      expect(s.isSketchMode, isTrue);
+      expect(s.isClosed, isTrue);
+      expect(s.workingRings, [<LngLat>[]]);
+      expect(s.undoStack, isEmpty);
+      expect(s.selfIntersects, isFalse);
+    });
+
+    test('road → empty open ring, isClosed false', () {
+      final c = makeContainer();
+      c.read(geometryEditorControllerProvider.notifier)
+          .enterSketch(featureType: 'road');
+      final s = c.read(geometryEditorControllerProvider);
+      expect(s.pendingFeatureType, 'road');
+      expect(s.isClosed, isFalse);
+      expect(s.workingRings, [<LngLat>[]]);
+    });
+
+    test('point → empty open ring, isClosed false', () {
+      final c = makeContainer();
+      c.read(geometryEditorControllerProvider.notifier)
+          .enterSketch(featureType: 'point');
+      final s = c.read(geometryEditorControllerProvider);
+      expect(s.pendingFeatureType, 'point');
+      expect(s.isClosed, isFalse);
+    });
+
+    test('cancel() clears sketch state', () {
+      final c = makeContainer();
+      final n = c.read(geometryEditorControllerProvider.notifier)
+        ..enterSketch(featureType: 'building');
+      n.cancel();
+      final s = c.read(geometryEditorControllerProvider);
+      expect(s.isActive, isFalse);
+      expect(s.pendingFeatureType, isNull);
     });
   });
 }
