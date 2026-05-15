@@ -250,6 +250,7 @@ void main() {
 
     test('building → empty closed ring, sketch mode active', () {
       final c = makeContainer();
+      addTearDown(c.dispose);
       c.read(geometryEditorControllerProvider.notifier)
           .enterSketch(featureType: 'building');
       final s = c.read(geometryEditorControllerProvider);
@@ -263,6 +264,7 @@ void main() {
 
     test('road → empty open ring, isClosed false', () {
       final c = makeContainer();
+      addTearDown(c.dispose);
       c.read(geometryEditorControllerProvider.notifier)
           .enterSketch(featureType: 'road');
       final s = c.read(geometryEditorControllerProvider);
@@ -273,6 +275,7 @@ void main() {
 
     test('point → empty open ring, isClosed false', () {
       final c = makeContainer();
+      addTearDown(c.dispose);
       c.read(geometryEditorControllerProvider.notifier)
           .enterSketch(featureType: 'point');
       final s = c.read(geometryEditorControllerProvider);
@@ -282,6 +285,7 @@ void main() {
 
     test('cancel() clears sketch state', () {
       final c = makeContainer();
+      addTearDown(c.dispose);
       final n = c.read(geometryEditorControllerProvider.notifier)
         ..enterSketch(featureType: 'building');
       n.cancel();
@@ -296,6 +300,7 @@ void main() {
 
     test('building: each tap appends a vertex (Add op)', () {
       final c = makeContainer();
+      addTearDown(c.dispose);
       c.read(geometryEditorControllerProvider.notifier)
         ..enterSketch(featureType: 'building')
         ..appendSketchVertex((lng: 1.0, lat: 1.0))
@@ -313,17 +318,22 @@ void main() {
 
     test('road: each tap appends a vertex', () {
       final c = makeContainer();
+      addTearDown(c.dispose);
       c.read(geometryEditorControllerProvider.notifier)
         ..enterSketch(featureType: 'road')
         ..appendSketchVertex((lng: 1.0, lat: 1.0))
         ..appendSketchVertex((lng: 2.0, lat: 2.0));
       final s = c.read(geometryEditorControllerProvider);
-      expect(s.workingRings[0], hasLength(2));
+      expect(s.workingRings[0], [
+        (lng: 1.0, lat: 1.0),
+        (lng: 2.0, lat: 2.0),
+      ]);
       expect(s.undoStack, hasLength(2));
     });
 
     test('point: first tap appends; second tap replaces (Move op)', () {
       final c = makeContainer();
+      addTearDown(c.dispose);
       c.read(geometryEditorControllerProvider.notifier)
         ..enterSketch(featureType: 'point')
         ..appendSketchVertex((lng: 1.0, lat: 1.0))
@@ -341,6 +351,7 @@ void main() {
 
     test('point: identical re-tap is a no-op', () {
       final c = makeContainer();
+      addTearDown(c.dispose);
       c.read(geometryEditorControllerProvider.notifier)
         ..enterSketch(featureType: 'point')
         ..appendSketchVertex((lng: 1.0, lat: 1.0))
@@ -352,6 +363,7 @@ void main() {
 
     test('appendSketchVertex is a no-op when not active', () {
       final c = makeContainer();
+      addTearDown(c.dispose);
       c.read(geometryEditorControllerProvider.notifier)
           .appendSketchVertex((lng: 1.0, lat: 1.0));
       expect(c.read(geometryEditorControllerProvider).workingRings, isEmpty);
@@ -359,6 +371,7 @@ void main() {
 
     test('undo after building tap pops the vertex', () {
       final c = makeContainer();
+      addTearDown(c.dispose);
       c.read(geometryEditorControllerProvider.notifier)
         ..enterSketch(featureType: 'building')
         ..appendSketchVertex((lng: 1.0, lat: 1.0))
