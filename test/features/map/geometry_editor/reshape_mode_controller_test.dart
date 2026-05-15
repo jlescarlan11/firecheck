@@ -2,6 +2,7 @@ import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/geo/polygon_validator.dart' show LngLat;
 import 'package:firecheck/features/map/geometry_editor/domain/geometry_editor_state.dart';
 import 'package:firecheck/features/map/geometry_editor/domain/reshape_op.dart';
+import 'package:firecheck/features/map/geometry_editor/domain/sketch_validation_error.dart';
 import 'package:firecheck/features/map/geometry_editor/presentation/geometry_editor_controller.dart';
 import 'package:firecheck/features/map/geometry_editor/presentation/geometry_editor_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -380,6 +381,121 @@ void main() {
       final s = c.read(geometryEditorControllerProvider);
       expect(s.workingRings[0], [(lng: 1.0, lat: 1.0)]);
       expect(s.undoStack, hasLength(1));
+    });
+  });
+
+  group('validateSketch', () {
+    // 10x10 square boundary in lng/lat units.
+    const boundary =
+        '{"type":"Polygon","coordinates":[[[0,0],[10,0],[10,10],[0,10],[0,0]]]}';
+
+    ProviderContainer makeContainer() => ProviderContainer();
+
+    test('building: 3 in-bounds vertices → null (valid)', () {
+      final c = makeContainer();
+      addTearDown(c.dispose);
+      c.read(geometryEditorControllerProvider.notifier)
+        ..enterSketch(featureType: 'building')
+        ..appendSketchVertex((lng: 1.0, lat: 1.0))
+        ..appendSketchVertex((lng: 2.0, lat: 1.0))
+        ..appendSketchVertex((lng: 1.5, lat: 2.0));
+      final r = c.read(geometryEditorControllerProvider.notifier)
+          .validateSketch(boundaryGeojson: boundary);
+      expect(r, isNull);
+    });
+
+    test('building: 2 vertices → notEnoughVertices', () {
+      final c = makeContainer();
+      addTearDown(c.dispose);
+      c.read(geometryEditorControllerProvider.notifier)
+        ..enterSketch(featureType: 'building')
+        ..appendSketchVertex((lng: 1.0, lat: 1.0))
+        ..appendSketchVertex((lng: 2.0, lat: 2.0));
+      final r = c.read(geometryEditorControllerProvider.notifier)
+          .validateSketch(boundaryGeojson: boundary);
+      expect(r, SketchValidationError.notEnoughVertices);
+    });
+
+    test('building: 3 vertices, one outside boundary → vertexOutsideBoundary', () {
+      final c = makeContainer();
+      addTearDown(c.dispose);
+      c.read(geometryEditorControllerProvider.notifier)
+        ..enterSketch(featureType: 'building')
+        ..appendSketchVertex((lng: 1.0, lat: 1.0))
+        ..appendSketchVertex((lng: 2.0, lat: 2.0))
+        ..appendSketchVertex((lng: 99.0, lat: 99.0));
+      final r = c.read(geometryEditorControllerProvider.notifier)
+          .validateSketch(boundaryGeojson: boundary);
+      expect(r, SketchValidationError.vertexOutsideBoundary);
+    });
+
+    test('building: bowtie self-intersection → selfIntersection', () {
+      final c = makeContainer();
+      addTearDown(c.dispose);
+      c.read(geometryEditorControllerProvider.notifier)
+        ..enterSketch(featureType: 'building')
+        ..appendSketchVertex((lng: 0.5, lat: 0.5))
+        ..appendSketchVertex((lng: 2.0, lat: 0.5))
+        ..appendSketchVertex((lng: 0.5, lat: 2.0))
+        ..appendSketchVertex((lng: 2.0, lat: 2.0));
+      final r = c.read(geometryEditorControllerProvider.notifier)
+          .validateSketch(boundaryGeojson: boundary);
+      expect(r, SketchValidationError.selfIntersection);
+    });
+
+    test('road: 2 in-bounds vertices → null', () {
+      final c = makeContainer();
+      addTearDown(c.dispose);
+      c.read(geometryEditorControllerProvider.notifier)
+        ..enterSketch(featureType: 'road')
+        ..appendSketchVertex((lng: 1.0, lat: 1.0))
+        ..appendSketchVertex((lng: 2.0, lat: 2.0));
+      final r = c.read(geometryEditorControllerProvider.notifier)
+          .validateSketch(boundaryGeojson: boundary);
+      expect(r, isNull);
+    });
+
+    test('road: 1 vertex → notEnoughVertices', () {
+      final c = makeContainer();
+      addTearDown(c.dispose);
+      c.read(geometryEditorControllerProvider.notifier)
+        ..enterSketch(featureType: 'road')
+        ..appendSketchVertex((lng: 1.0, lat: 1.0));
+      final r = c.read(geometryEditorControllerProvider.notifier)
+          .validateSketch(boundaryGeojson: boundary);
+      expect(r, SketchValidationError.notEnoughVertices);
+    });
+
+    test('point: 1 in-bounds vertex → null', () {
+      final c = makeContainer();
+      addTearDown(c.dispose);
+      c.read(geometryEditorControllerProvider.notifier)
+        ..enterSketch(featureType: 'point')
+        ..appendSketchVertex((lng: 1.0, lat: 1.0));
+      final r = c.read(geometryEditorControllerProvider.notifier)
+          .validateSketch(boundaryGeojson: boundary);
+      expect(r, isNull);
+    });
+
+    test('point: 0 vertices → notEnoughVertices', () {
+      final c = makeContainer();
+      addTearDown(c.dispose);
+      c.read(geometryEditorControllerProvider.notifier)
+          .enterSketch(featureType: 'point');
+      final r = c.read(geometryEditorControllerProvider.notifier)
+          .validateSketch(boundaryGeojson: boundary);
+      expect(r, SketchValidationError.notEnoughVertices);
+    });
+
+    test('empty boundary GeoJSON skips the boundary check', () {
+      final c = makeContainer();
+      addTearDown(c.dispose);
+      c.read(geometryEditorControllerProvider.notifier)
+        ..enterSketch(featureType: 'point')
+        ..appendSketchVertex((lng: 999.0, lat: 999.0));
+      final r = c.read(geometryEditorControllerProvider.notifier)
+          .validateSketch(boundaryGeojson: '');
+      expect(r, isNull);
     });
   });
 }

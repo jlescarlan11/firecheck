@@ -1,4 +1,3 @@
-import 'package:firecheck/core/geo/polygon_validator.dart' show LngLat;
 import 'package:firecheck/core/geo/polyline_validator.dart';
 import 'package:flutter_test/flutter_test.dart';
 

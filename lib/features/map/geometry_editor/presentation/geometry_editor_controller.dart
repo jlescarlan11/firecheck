@@ -1,9 +1,13 @@
 import 'dart:convert';
 
 import 'package:firecheck/core/db/database.dart';
+import 'package:firecheck/core/geo/point_in_polygon.dart';
+import 'package:firecheck/core/geo/polygon_bounds.dart';
 import 'package:firecheck/core/geo/polygon_validator.dart';
+import 'package:firecheck/core/geo/polyline_validator.dart';
 import 'package:firecheck/features/map/geometry_editor/domain/geometry_editor_state.dart';
 import 'package:firecheck/features/map/geometry_editor/domain/reshape_op.dart';
+import 'package:firecheck/features/map/geometry_editor/domain/sketch_validation_error.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class GeometryEditorController extends Notifier<GeometryEditorState> {
@@ -95,6 +99,69 @@ class GeometryEditorController extends Notifier<GeometryEditorState> {
       ],
       selfIntersects: _recomputeSelfIntersect(state, rings),
     );
+  }
+
+  /// Validates the in-progress sketch. Returns null when the geometry is OK to
+  /// commit; otherwise returns the first failure. Boundary check is skipped
+  /// when [boundaryGeojson] is empty or doesn't parse to a Polygon — matches
+  /// the empty-coords-Polygon fallback fix from 2026-05-15.
+  SketchValidationError? validateSketch({required String boundaryGeojson}) {
+    if (!state.isSketchMode) return null;
+    final ring = state.workingRings.isNotEmpty
+        ? state.workingRings[0]
+        : const <LngLat>[];
+    final type = state.pendingFeatureType;
+
+    // 1. Min vertex count.
+    final min = type == 'building' ? 3 : (type == 'road' ? 2 : 1);
+    final maxAllowed = type == 'point' ? 1 : 1 << 30;
+    if (ring.length < min || ring.length > maxAllowed) {
+      return SketchValidationError.notEnoughVertices;
+    }
+
+    // 2. Per-vertex boundary (skipped when boundary unparseable/empty).
+    final hasBoundary = boundaryGeojson.isNotEmpty &&
+        polygonBoundsFromGeojson(boundaryGeojson) != null;
+    if (hasBoundary) {
+      for (final v in ring) {
+        if (!pointInPolygonGeojson(v.lat, v.lng, boundaryGeojson)) {
+          return SketchValidationError.vertexOutsideBoundary;
+        }
+      }
+    }
+
+    // 3. Type-specific structural checks.
+    if (type == 'building') {
+      // World boundary so per-vertex check above isn't double-counted; we only
+      // care about closure/orientation/self-intersection here.
+      const world =
+          '{"type":"Polygon","coordinates":[[[-180,-90],[180,-90],[180,90],[-180,90],[-180,-90]]]}';
+      final r = validateBuildingPolygon([ring], boundaryGeojson: world);
+      if (!r.valid) {
+        return switch (r.error!) {
+          PolygonValidationError.selfIntersection =>
+            SketchValidationError.selfIntersection,
+          PolygonValidationError.zeroLengthEdge =>
+            SketchValidationError.zeroLengthEdge,
+          // The world boundary makes outsideBoundary impossible here; if it
+          // somehow surfaces, treat as selfIntersection (conservative).
+          _ => SketchValidationError.selfIntersection,
+        };
+      }
+    } else if (type == 'road') {
+      final r = validatePolyline(ring);
+      if (r != null) {
+        return switch (r) {
+          PolylineValidationError.notEnoughVertices =>
+            SketchValidationError.notEnoughVertices,
+          PolylineValidationError.zeroLengthEdge =>
+            SketchValidationError.zeroLengthEdge,
+        };
+      }
+    }
+    // 'point' has no extra structural rules.
+
+    return null;
   }
 
   void removeVertex(int ringIdx, int vertexIdx) {
