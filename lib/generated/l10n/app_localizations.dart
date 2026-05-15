@@ -1988,6 +1988,36 @@ abstract class AppLocalizations {
   /// **'Adjacent corners cannot be on the same spot'**
   String get reshapeErrorZeroLengthEdge;
 
+  /// No description provided for @sketchErrorNotEnoughVertices.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough vertices for this feature type'**
+  String get sketchErrorNotEnoughVertices;
+
+  /// No description provided for @sketchDiscardConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard sketch?'**
+  String get sketchDiscardConfirmTitle;
+
+  /// No description provided for @sketchDiscardConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your dropped vertices will be lost.'**
+  String get sketchDiscardConfirmBody;
+
+  /// No description provided for @sketchDiscardKeepEditing.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep editing'**
+  String get sketchDiscardKeepEditing;
+
+  /// No description provided for @sketchDiscardConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get sketchDiscardConfirm;
+
   /// No description provided for @reshapeLockedSnackbar.
   ///
   /// In en, this message translates to:

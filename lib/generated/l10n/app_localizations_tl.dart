@@ -1064,6 +1064,23 @@ class AppLocalizationsTl extends AppLocalizations {
       'Adjacent corners cannot be on the same spot';
 
   @override
+  String get sketchErrorNotEnoughVertices =>
+      'Kulang ang vertices para sa uri ng feature na ito';
+
+  @override
+  String get sketchDiscardConfirmTitle => 'Itapon ang pagguhit?';
+
+  @override
+  String get sketchDiscardConfirmBody =>
+      'Mawawala ang mga vertice na ginawa mo.';
+
+  @override
+  String get sketchDiscardKeepEditing => 'Magpatuloy';
+
+  @override
+  String get sketchDiscardConfirm => 'Itapon';
+
+  @override
   String get reshapeLockedSnackbar =>
       'Assignment is closed; reshape unavailable';
 

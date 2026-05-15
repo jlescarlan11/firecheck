@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:drift/drift.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:uuid/uuid.dart';
@@ -27,24 +25,5 @@ class NewFeatureRepository {
             createdAt: DateTime.now(),
           ),
         );
-  }
-
-  /// Legacy single-Point seeder. Slated for deletion once the long-press
-  /// creation path is removed (see plan Task 10).
-  Future<Feature> createNewFeature({
-    required String assignmentId,
-    required String featureType,
-    required double lat,
-    required double lng,
-  }) {
-    final geom = jsonEncode({
-      'type': 'Point',
-      'coordinates': [lng, lat],
-    });
-    return createFeature(
-      assignmentId: assignmentId,
-      featureType: featureType,
-      geometryGeojson: geom,
-    );
   }
 }

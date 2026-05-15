@@ -134,8 +134,10 @@ void main() {
       );
     });
 
+    // skip reason: rewritten in plan Task 12 for sketch flow — add-mode no
+    // longer exists; the pill now opens the type picker directly.
     testWidgets('long-press on a polygon (add-mode on) does NOT open sheet',
-        (tester) async {
+        skip: true, (tester) async {
       final renderer = FakeMapRenderer();
       final feature = fakeFeature();
       await pumpMap(tester, renderer: renderer, features: [feature]);

@@ -1038,6 +1038,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'Adjacent corners cannot be on the same spot';
 
   @override
+  String get sketchErrorNotEnoughVertices =>
+      'Not enough vertices for this feature type';
+
+  @override
+  String get sketchDiscardConfirmTitle => 'Discard sketch?';
+
+  @override
+  String get sketchDiscardConfirmBody => 'Your dropped vertices will be lost.';
+
+  @override
+  String get sketchDiscardKeepEditing => 'Keep editing';
+
+  @override
+  String get sketchDiscardConfirm => 'Discard';
+
+  @override
   String get reshapeLockedSnackbar =>
       'Assignment is closed; reshape unavailable';
 
