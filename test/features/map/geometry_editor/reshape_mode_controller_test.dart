@@ -1,4 +1,5 @@
 import 'package:firecheck/core/db/database.dart';
+import 'package:firecheck/features/map/geometry_editor/domain/geometry_editor_state.dart';
 import 'package:firecheck/features/map/geometry_editor/domain/reshape_op.dart';
 import 'package:firecheck/features/map/geometry_editor/presentation/geometry_editor_controller.dart';
 import 'package:firecheck/features/map/geometry_editor/presentation/geometry_editor_providers.dart';
@@ -216,5 +217,29 @@ void main() {
     n.moveVertex(0, 3, (lng: 1, lat: 0));
     final s2 = c.read(geometryEditorControllerProvider);
     expect(s2.selfIntersects, isTrue);
+  });
+
+  group('sketch state', () {
+    test('default state has no pending feature type and is not active', () {
+      const s = GeometryEditorState();
+      expect(s.pendingFeatureType, isNull);
+      expect(s.isSketchMode, isFalse);
+      expect(s.isActive, isFalse);
+    });
+
+    test('pendingFeatureType set with no originalFeature → isSketchMode + isActive', () {
+      const s = GeometryEditorState(pendingFeatureType: 'building');
+      expect(s.isSketchMode, isTrue);
+      expect(s.isActive, isTrue);
+    });
+
+    test('originalFeature set → isActive remains true (reshape mode)', () {
+      final s = GeometryEditorState(
+        originalFeature: _seedBuilding(),
+        pendingFeatureType: null,
+      );
+      expect(s.isSketchMode, isFalse);
+      expect(s.isActive, isTrue);
+    });
   });
 }

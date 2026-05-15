@@ -5,6 +5,7 @@ import 'package:firecheck/features/map/geometry_editor/domain/reshape_op.dart';
 class GeometryEditorState {
   const GeometryEditorState({
     this.originalFeature,
+    this.pendingFeatureType,
     this.workingRings = const [],
     this.undoStack = const [],
     this.selfIntersects = false,
@@ -14,6 +15,12 @@ class GeometryEditorState {
   });
 
   final Feature? originalFeature;
+
+  /// 'building' | 'road' | 'point' when sketching a new feature; null otherwise.
+  /// Mutually exclusive with [originalFeature]: reshape mode sets the latter,
+  /// sketch mode sets this.
+  final String? pendingFeatureType;
+
   final List<List<LngLat>> workingRings;
   final List<ReshapeOp> undoStack;
   final bool selfIntersects;
@@ -25,11 +32,14 @@ class GeometryEditorState {
   /// no polygon validity check).
   final bool isClosed;
 
-  bool get isActive => originalFeature != null;
+  bool get isSketchMode =>
+      originalFeature == null && pendingFeatureType != null;
+  bool get isActive => originalFeature != null || isSketchMode;
   bool get isDirty => undoStack.isNotEmpty;
 
   GeometryEditorState copyWith({
     Object? originalFeature = _sentinel,
+    Object? pendingFeatureType = _sentinel,
     List<List<LngLat>>? workingRings,
     List<ReshapeOp>? undoStack,
     bool? selfIntersects,
@@ -41,6 +51,9 @@ class GeometryEditorState {
       originalFeature: identical(originalFeature, _sentinel)
           ? this.originalFeature
           : originalFeature as Feature?,
+      pendingFeatureType: identical(pendingFeatureType, _sentinel)
+          ? this.pendingFeatureType
+          : pendingFeatureType as String?,
       workingRings: workingRings ?? this.workingRings,
       undoStack: undoStack ?? this.undoStack,
       selfIntersects: selfIntersects ?? this.selfIntersects,
