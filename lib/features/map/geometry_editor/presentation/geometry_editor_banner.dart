@@ -1,7 +1,9 @@
+import 'package:firecheck/features/map/geometry_editor/presentation/geometry_editor_providers.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class GeometryEditorBanner extends StatelessWidget {
+class GeometryEditorBanner extends ConsumerWidget {
   const GeometryEditorBanner({
     required this.editCount,
     required this.undoEnabled,
@@ -20,8 +22,16 @@ class GeometryEditorBanner extends StatelessWidget {
   final VoidCallback? onSave;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context)!;
+    final state = ref.watch(geometryEditorControllerProvider);
+    final isSketch = state.isSketchMode;
+    final type = state.pendingFeatureType;
+    final title = isSketch
+        ? l.sketchBannerTitle(editCount, type ?? '')
+        : l.reshapeBannerTitle(editCount);
+    final primaryLabel = isSketch ? l.sketchBannerFinish : l.reshapeBannerSave;
+
     return Material(
       color: const Color(0xFF3182CE),
       child: SafeArea(
@@ -41,7 +51,7 @@ class GeometryEditorBanner extends StatelessWidget {
                   ),
                   Expanded(
                     child: Text(
-                      l.reshapeBannerTitle(editCount),
+                      title,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: Colors.white,
@@ -58,7 +68,7 @@ class GeometryEditorBanner extends StatelessWidget {
                       disabledBackgroundColor:
                           Colors.white.withValues(alpha: 0.4),
                     ),
-                    child: Text(l.reshapeBannerSave),
+                    child: Text(primaryLabel),
                   ),
                 ],
               ),

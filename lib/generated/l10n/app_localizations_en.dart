@@ -1150,4 +1150,12 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String sketchBannerTitle(int count, String type) {
+    return '$count vertices · $type';
+  }
+
+  @override
+  String get sketchBannerFinish => 'Finish';
 }

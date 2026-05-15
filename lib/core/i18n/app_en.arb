@@ -418,5 +418,13 @@
     "placeholders": {
       "count": { "type": "int", "format": "decimalPattern" }
     }
-  }
+  },
+  "sketchBannerTitle": "{count} vertices · {type}",
+  "@sketchBannerTitle": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "type": {"type": "String"}
+    }
+  },
+  "sketchBannerFinish": "Finish"
 }

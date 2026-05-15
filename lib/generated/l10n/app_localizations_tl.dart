@@ -1176,4 +1176,12 @@ class AppLocalizationsTl extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String sketchBannerTitle(int count, String type) {
+    return '$count vertice · $type';
+  }
+
+  @override
+  String get sketchBannerFinish => 'Tapusin';
 }

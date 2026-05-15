@@ -336,5 +336,7 @@
     "placeholders": {
       "count": { "type": "int", "format": "decimalPattern" }
     }
-  }
+  },
+  "sketchBannerTitle": "{count} vertice · {type}",
+  "sketchBannerFinish": "Tapusin"
 }

@@ -2161,6 +2161,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 question left on this path} other{{count} questions left on this path}}'**
   String remainingQuestionsRemaining(int count);
+
+  /// No description provided for @sketchBannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} vertices · {type}'**
+  String sketchBannerTitle(int count, String type);
+
+  /// No description provided for @sketchBannerFinish.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish'**
+  String get sketchBannerFinish;
 }
 
 class _AppLocalizationsDelegate
