@@ -71,4 +71,36 @@ void main() {
     );
     expect(a.id, isNot(equals(b.id)));
   });
+
+  group('createFeature', () {
+    test('inserts a row with the supplied GeoJSON, isNew=true', () async {
+      const geom =
+          '{"type":"Polygon","coordinates":[[[1,1],[2,1],[1.5,2],[1,1]]]}';
+      final f = await repo.createFeature(
+        assignmentId: 'a1',
+        featureType: 'building',
+        geometryGeojson: geom,
+      );
+
+      expect(f.assignmentId, 'a1');
+      expect(f.featureType, 'building');
+      expect(f.geometryGeojson, geom);
+      expect(f.isNew, isTrue);
+      expect(f.id, isNotEmpty);
+    });
+
+    test('different calls produce different IDs', () async {
+      final f1 = await repo.createFeature(
+        assignmentId: 'a1',
+        featureType: 'point',
+        geometryGeojson: '{"type":"Point","coordinates":[1,1]}',
+      );
+      final f2 = await repo.createFeature(
+        assignmentId: 'a1',
+        featureType: 'point',
+        geometryGeojson: '{"type":"Point","coordinates":[2,2]}',
+      );
+      expect(f1.id, isNot(f2.id));
+    });
+  });
 }
