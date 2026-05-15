@@ -41,8 +41,9 @@ void main() {
     );
   }
 
+  // skip reason: rewritten in plan Task 12 for sketch flow
   testWidgets('+ New Feature pill toggles add-mode visual state',
-      (tester) async {
+      skip: true, (tester) async {
     await tester.pumpWidget(subject());
     await tester.pump();
 
@@ -65,8 +66,9 @@ void main() {
     expect(find.text('add-mode'), findsNothing);
   });
 
+  // skip reason: rewritten in plan Task 12 for sketch flow
   testWidgets('long-press inside boundary creates feature + routes',
-      (tester) async {
+      skip: true, (tester) async {
     // Create DB inside the test body (FakeAsync zone) per the deadlock note.
     final db = AppDatabase.forTesting(NativeDatabase.memory());
     final renderer = FakeMapRenderer();
@@ -132,7 +134,9 @@ void main() {
     await tester.pump();
 
     // Simulate long-press at a point inside the boundary.
-    await renderer.simulateLongPress(10.31810, 123.88270);
+    // simulateLongPress was removed in plan Task 8; this test is skipped
+    // and will be rewritten in plan Task 12 for the sketch flow.
+    await renderer.simulateMapTap(10.31810, 123.88270);
     await tester.pumpAndSettle();
 
     // Type picker is open; tap Building.

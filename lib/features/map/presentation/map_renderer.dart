@@ -21,9 +21,9 @@ abstract class MapRenderer {
     required List<Feature> features,
     required String boundaryGeojson,
     required void Function(Feature) onFeatureTap,
-    void Function(double lat, double lng)? onLongPress,
     void Function(double zoom, double lat, double lng)? onCameraChanged,
-    bool addModeActive,
+    bool sketchActive,
+    void Function(double lat, double lng)? onMapTap,
     CameraTarget? cameraTarget,
     CameraTarget? initialCameraTarget,
     // US-9 reshape additions:
@@ -43,19 +43,20 @@ abstract class MapProjection {
 /// Fake for widget tests — renders one tappable tile per feature instead of
 /// a real map. Matches the real renderer's tap contract.
 class FakeMapRenderer implements MapRenderer {
-  void Function(double, double)? _lastOnLongPress;
+  void Function(double, double)? _lastOnMapTap;
   void Function(double, double, double)? _lastOnCameraChanged;
   void Function(Feature)? _lastOnPolygonLongPress;
   CameraTarget? lastCameraTarget;
   CameraTarget? lastInitialCameraTarget;
   String? lastReshapeWorkingPolygonGeojson;
   String? lastReshapeInvalidEdgeGeojson;
+  bool lastSketchActive = false;
   final List<CameraTarget> cameraTargetHistory = [];
 
-  /// Test seam: simulates a long-press at the given coordinates. Invokes the
-  /// most recently stored onLongPress callback; no-op if none was provided.
-  Future<void> simulateLongPress(double lat, double lng) async {
-    final cb = _lastOnLongPress;
+  /// Test seam: simulates a tap on the map at the given coordinates. Invokes
+  /// the most recently stored onMapTap callback; no-op if none was provided.
+  Future<void> simulateMapTap(double lat, double lng) async {
+    final cb = _lastOnMapTap;
     if (cb != null) cb(lat, lng);
   }
 
@@ -83,9 +84,9 @@ class FakeMapRenderer implements MapRenderer {
     required List<Feature> features,
     required String boundaryGeojson,
     required void Function(Feature) onFeatureTap,
-    void Function(double lat, double lng)? onLongPress,
     void Function(double zoom, double lat, double lng)? onCameraChanged,
-    bool addModeActive = false,
+    bool sketchActive = false,
+    void Function(double lat, double lng)? onMapTap,
     CameraTarget? cameraTarget,
     CameraTarget? initialCameraTarget,
     void Function(Feature)? onPolygonLongPress,
@@ -93,10 +94,11 @@ class FakeMapRenderer implements MapRenderer {
     String? reshapeInvalidEdgeGeojson,
     void Function(MapProjection projection)? onProjectionReady,
   }) {
-    _lastOnLongPress = onLongPress;
+    _lastOnMapTap = onMapTap;
     _lastOnCameraChanged = onCameraChanged;
     _lastOnPolygonLongPress = onPolygonLongPress;
     lastInitialCameraTarget = initialCameraTarget;
+    lastSketchActive = sketchActive;
     if (cameraTarget != null && cameraTarget != lastCameraTarget) {
       cameraTargetHistory.add(cameraTarget);
     }
@@ -110,17 +112,18 @@ class FakeMapRenderer implements MapRenderer {
     return ListView(
       shrinkWrap: true,
       children: [
-        if (addModeActive)
+        if (sketchActive)
           const Padding(
             padding: EdgeInsets.all(8),
-            child: Text('add-mode'),
+            child: Text('sketch-mode'),
           ),
         ...features.map((f) {
           return GestureDetector(
             key: Key('fake-map-feature-${f.id}'),
-            onTap: () => onFeatureTap(f),
-            onLongPress:
-                f.isNew ? null : () => onPolygonLongPress?.call(f),
+            onTap: sketchActive ? null : () => onFeatureTap(f),
+            onLongPress: f.isNew || sketchActive
+                ? null
+                : () => onPolygonLongPress?.call(f),
             child: Container(
               key: f.isNew
                   ? Key('fake-map-new-feature-${f.id}')
@@ -173,9 +176,9 @@ class MapboxMapRenderer implements MapRenderer {
     required List<Feature> features,
     required String boundaryGeojson,
     required void Function(Feature) onFeatureTap,
-    void Function(double lat, double lng)? onLongPress,
     void Function(double zoom, double lat, double lng)? onCameraChanged,
-    bool addModeActive = false,
+    bool sketchActive = false,
+    void Function(double lat, double lng)? onMapTap,
     CameraTarget? cameraTarget,
     CameraTarget? initialCameraTarget,
     void Function(Feature)? onPolygonLongPress,
@@ -187,9 +190,9 @@ class MapboxMapRenderer implements MapRenderer {
       features: features,
       boundaryGeojson: boundaryGeojson,
       onFeatureTap: onFeatureTap,
-      onLongPress: onLongPress,
       onCameraChanged: onCameraChanged,
-      addModeActive: addModeActive,
+      sketchActive: sketchActive,
+      onMapTap: onMapTap,
       cameraTarget: cameraTarget,
       initialCameraTarget: initialCameraTarget,
       onPolygonLongPress: onPolygonLongPress,
@@ -205,9 +208,9 @@ class _MapboxMapView extends StatefulWidget {
     required this.features,
     required this.boundaryGeojson,
     required this.onFeatureTap,
-    this.onLongPress,
     this.onCameraChanged,
-    this.addModeActive = false,
+    this.sketchActive = false,
+    this.onMapTap,
     this.cameraTarget,
     this.initialCameraTarget,
     this.onPolygonLongPress,
@@ -219,9 +222,9 @@ class _MapboxMapView extends StatefulWidget {
   final List<Feature> features;
   final String boundaryGeojson;
   final void Function(Feature) onFeatureTap;
-  final void Function(double lat, double lng)? onLongPress;
   final void Function(double zoom, double lat, double lng)? onCameraChanged;
-  final bool addModeActive;
+  final bool sketchActive;
+  final void Function(double lat, double lng)? onMapTap;
   final CameraTarget? cameraTarget;
   final CameraTarget? initialCameraTarget;
   final void Function(Feature)? onPolygonLongPress;
@@ -294,13 +297,17 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
           // because no style is loaded. Streets v12 is the Phase 1 spec choice.
           styleUri: 'mapbox://styles/mapbox/streets-v12',
           onMapCreated: _onMapCreated,
-          onLongTapListener: (MapContentGestureContext ctx) async {
-            // Add-mode placement remains unchanged.
-            if (widget.addModeActive && widget.onLongPress != null) {
-              final pos = ctx.point.coordinates;
-              widget.onLongPress!(pos.lat.toDouble(), pos.lng.toDouble());
-              return;
+          // mapbox_maps_flutter 2.22 exposes a single-tap callback via
+          // MapWidget.onTapListener (OnMapTapListener typedef on the widget).
+          onTapListener: (MapContentGestureContext ctx) {
+            if (widget.sketchActive && widget.onMapTap != null) {
+              widget.onMapTap!(
+                ctx.point.coordinates.lat.toDouble(),
+                ctx.point.coordinates.lng.toDouble(),
+              );
             }
+          },
+          onLongTapListener: (MapContentGestureContext ctx) async {
             // Reshape entry: hit-test all rendered polygons against the
             // long-press point.
             final cb = widget.onPolygonLongPress;
@@ -413,6 +420,7 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
       _FeatureClickHandler(
         annotationToFeature: _annotationToFeature,
         onTap: widget.onFeatureTap,
+        sketchActive: widget.sketchActive,
       ),
     );
     // ignore: deprecated_member_use
@@ -420,6 +428,7 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
       _RoadClickHandler(
         annotationToFeature: _annotationToFeature,
         onTap: widget.onFeatureTap,
+        sketchActive: widget.sketchActive,
       ),
     );
 
@@ -552,6 +561,7 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
       _FeatureClickHandler(
         annotationToFeature: _annotationToFeature,
         onTap: widget.onFeatureTap,
+        sketchActive: widget.sketchActive,
       ),
     );
     // ignore: deprecated_member_use
@@ -559,6 +569,7 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
       _RoadClickHandler(
         annotationToFeature: _annotationToFeature,
         onTap: widget.onFeatureTap,
+        sketchActive: widget.sketchActive,
       ),
     );
 
@@ -727,13 +738,16 @@ class _FeatureClickHandler extends OnPolygonAnnotationClickListener {
   _FeatureClickHandler({
     required this.annotationToFeature,
     required this.onTap,
+    required this.sketchActive,
   });
 
   final Map<String, Feature> annotationToFeature;
   final void Function(Feature) onTap;
+  final bool sketchActive;
 
   @override
   void onPolygonAnnotationClick(PolygonAnnotation annotation) {
+    if (sketchActive) return;
     final feature = annotationToFeature[annotation.id];
     if (feature != null) onTap(feature);
   }
@@ -744,13 +758,16 @@ class _RoadClickHandler extends OnPolylineAnnotationClickListener {
   _RoadClickHandler({
     required this.annotationToFeature,
     required this.onTap,
+    required this.sketchActive,
   });
 
   final Map<String, Feature> annotationToFeature;
   final void Function(Feature) onTap;
+  final bool sketchActive;
 
   @override
   void onPolylineAnnotationClick(PolylineAnnotation annotation) {
+    if (sketchActive) return;
     final feature = annotationToFeature[annotation.id];
     if (feature != null) onTap(feature);
   }

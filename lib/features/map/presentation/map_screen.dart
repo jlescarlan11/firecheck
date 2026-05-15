@@ -119,9 +119,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     features: features ?? [],
                     boundaryGeojson: assignment?.boundaryPolygonGeojson ?? '',
                     onFeatureTap: _handleFeatureTap,
-                    onLongPress: _handleLongPress,
                     onCameraChanged: _onCameraChanged,
-                    addModeActive: _addModeActive,
                     initialCameraTarget: initialCameraTarget,
                     cameraTarget: _cameraTarget,
                     onPolygonLongPress: _handlePolygonLongPress,
@@ -363,6 +361,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     };
   }
 
+  // ignore: unused_element
   Future<void> _handleLongPress(double lat, double lng) async {
     if (!_addModeActive) return;
     final l = AppLocalizations.of(context)!;
