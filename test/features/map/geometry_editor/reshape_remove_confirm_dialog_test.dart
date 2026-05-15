@@ -1,4 +1,4 @@
-import 'package:firecheck/features/map/reshape/presentation/reshape_remove_confirm_dialog.dart';
+import 'package:firecheck/features/map/geometry_editor/presentation/reshape_remove_confirm_dialog.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';

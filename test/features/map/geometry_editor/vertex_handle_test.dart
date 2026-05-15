@@ -1,4 +1,4 @@
-import 'package:firecheck/features/map/reshape/presentation/vertex_handle.dart';
+import 'package:firecheck/features/map/geometry_editor/presentation/vertex_handle.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

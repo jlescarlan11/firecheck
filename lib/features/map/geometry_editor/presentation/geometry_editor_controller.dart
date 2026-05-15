@@ -2,17 +2,17 @@ import 'dart:convert';
 
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/geo/polygon_validator.dart';
-import 'package:firecheck/features/map/reshape/domain/reshape_mode_state.dart';
-import 'package:firecheck/features/map/reshape/domain/reshape_op.dart';
+import 'package:firecheck/features/map/geometry_editor/domain/geometry_editor_state.dart';
+import 'package:firecheck/features/map/geometry_editor/domain/reshape_op.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class ReshapeModeController extends Notifier<ReshapeModeState> {
+class GeometryEditorController extends Notifier<GeometryEditorState> {
   @override
-  ReshapeModeState build() => const ReshapeModeState();
+  GeometryEditorState build() => const GeometryEditorState();
 
   void enterReshape({required Feature feature, String? overrideReason}) {
     final parsed = _parseGeojson(feature.geometryGeojson);
-    state = ReshapeModeState(
+    state = GeometryEditorState(
       originalFeature: feature,
       workingRings: parsed.rings,
       overrideReason: overrideReason,
@@ -21,7 +21,7 @@ class ReshapeModeController extends Notifier<ReshapeModeState> {
   }
 
   void cancel() {
-    state = const ReshapeModeState();
+    state = const GeometryEditorState();
   }
 
   void moveVertex(int ringIdx, int vertexIdx, LngLat next) {
@@ -220,7 +220,7 @@ List<List<LngLat>> _cloneRings(List<List<LngLat>> rings) {
 }
 
 bool _recomputeSelfIntersect(
-  ReshapeModeState state,
+  GeometryEditorState state,
   List<List<LngLat>> rings,
 ) {
   // Polylines don't have a polygon-validity notion; skip the check entirely.

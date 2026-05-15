@@ -1,8 +1,8 @@
 import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
-class ReshapeBanner extends StatelessWidget {
-  const ReshapeBanner({
+class GeometryEditorBanner extends StatelessWidget {
+  const GeometryEditorBanner({
     required this.editCount,
     required this.undoEnabled,
     required this.saveEnabled,

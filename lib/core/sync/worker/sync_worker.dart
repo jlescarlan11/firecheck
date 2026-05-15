@@ -10,7 +10,7 @@ import 'package:firecheck/core/sync/domain/sync_entity_type.dart';
 import 'package:firecheck/core/sync/domain/sync_outcome.dart';
 import 'package:firecheck/core/sync/failure/assignment_lock_repository.dart';
 import 'package:firecheck/core/sync/failure/pending_work_bundle.dart';
-import 'package:firecheck/features/map/reshape/data/feature_geometry_revisions_repository.dart';
+import 'package:firecheck/features/map/geometry_editor/data/feature_geometry_revisions_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 

@@ -21,11 +21,11 @@ import 'package:firecheck/features/map/presentation/recenter_button_state.dart';
 import 'package:firecheck/features/map/presentation/zoom_button.dart';
 import 'package:firecheck/features/map/presentation/zoom_button_state.dart';
 import 'package:firecheck/features/map/presentation/zoom_direction.dart';
-import 'package:firecheck/features/map/reshape/domain/reshape_op.dart';
-import 'package:firecheck/features/map/reshape/presentation/reshape_action_sheet.dart';
-import 'package:firecheck/features/map/reshape/presentation/reshape_banner.dart';
-import 'package:firecheck/features/map/reshape/presentation/reshape_overlay.dart';
-import 'package:firecheck/features/map/reshape/presentation/reshape_providers.dart';
+import 'package:firecheck/features/map/geometry_editor/domain/reshape_op.dart';
+import 'package:firecheck/features/map/geometry_editor/presentation/reshape_action_sheet.dart';
+import 'package:firecheck/features/map/geometry_editor/presentation/geometry_editor_banner.dart';
+import 'package:firecheck/features/map/geometry_editor/presentation/geometry_editor_overlay.dart';
+import 'package:firecheck/features/map/geometry_editor/presentation/geometry_editor_providers.dart';
 import 'package:firecheck/features/new_feature/presentation/feature_type_picker.dart';
 import 'package:firecheck/features/survey/building_form/presentation/building_form_providers.dart';
 import 'package:firecheck/features/survey/building_form/presentation/override_reason_dialog.dart';
@@ -68,7 +68,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final renderer = ref.watch(mapRendererProvider);
     final featuresAsync = ref.watch(currentFeaturesProvider);
     final assignmentAsync = ref.watch(currentAssignmentProvider);
-    final reshape = ref.watch(reshapeModeControllerProvider);
+    final reshape = ref.watch(geometryEditorControllerProvider);
     final reshapeActive = reshape.isActive;
     // Subscribe so the GPS stream is hot from mount, not first tap.
     ref.watch(currentPositionProvider);
@@ -86,7 +86,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       } else if (!reshape.isDirty) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
-          ref.read(reshapeModeControllerProvider.notifier).cancel();
+          ref.read(geometryEditorControllerProvider.notifier).cancel();
         });
       }
     }
@@ -127,7 +127,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     onPolygonLongPress: _handlePolygonLongPress,
                     reshapeWorkingPolygonGeojson: reshapeActive
                         ? ref
-                            .read(reshapeModeControllerProvider.notifier)
+                            .read(geometryEditorControllerProvider.notifier)
                             .serializeWorkingPolygon()
                         : null,
                     onProjectionReady: (p) {
@@ -139,7 +139,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           ),
           if (reshapeActive && _reshapeProjection != null)
             Positioned.fill(
-              child: ReshapeOverlay(projection: _reshapeProjection!),
+              child: GeometryEditorOverlay(projection: _reshapeProjection!),
             ),
           if (!reshapeActive && _addModeActive)
             Positioned(
@@ -224,7 +224,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               top: 0,
               left: 0,
               right: 0,
-              child: ReshapeBanner(
+              child: GeometryEditorBanner(
                 editCount: reshape.undoStack.length,
                 undoEnabled: reshape.isDirty && !reshape.saving,
                 saveEnabled: reshape.isDirty && !reshape.saving,
@@ -233,7 +233,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 // UI exits edit mode, producing surprising state transitions.
                 onCancel: reshape.saving ? null : _onReshapeCancel,
                 onUndo: () => ref
-                    .read(reshapeModeControllerProvider.notifier)
+                    .read(geometryEditorControllerProvider.notifier)
                     .undo(),
                 onSave: _onReshapeSave,
               ),
@@ -244,10 +244,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   void _onReshapeCancel() {
-    final state = ref.read(reshapeModeControllerProvider);
+    final state = ref.read(geometryEditorControllerProvider);
     final featureId = state.originalFeature?.id ?? '';
     final ops = state.undoStack.length;
-    ref.read(reshapeModeControllerProvider.notifier).cancel();
+    ref.read(geometryEditorControllerProvider.notifier).cancel();
     ref.read(analyticsServiceProvider).track(
       'map.reshape.cancelled',
       properties: {
@@ -275,14 +275,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       ),
     );
     if (!mounted) return;
-    ref.read(reshapeModeControllerProvider.notifier).cancel();
+    ref.read(geometryEditorControllerProvider.notifier).cancel();
     setState(() => _lockBlockerShown = false);
   }
 
   Future<void> _onReshapeSave() async {
     final l = AppLocalizations.of(context)!;
-    final ctrl = ref.read(reshapeModeControllerProvider.notifier);
-    final s = ref.read(reshapeModeControllerProvider);
+    final ctrl = ref.read(geometryEditorControllerProvider.notifier);
+    final s = ref.read(geometryEditorControllerProvider);
     final assignment = ref.read(currentAssignmentProvider).value;
     if (s.originalFeature == null || assignment == null) return;
 
@@ -467,7 +467,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     }
 
     if (!mounted) return;
-    ref.read(reshapeModeControllerProvider.notifier).enterReshape(
+    ref.read(geometryEditorControllerProvider.notifier).enterReshape(
           feature: feature,
           overrideReason: overrideReason,
         );

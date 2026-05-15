@@ -1,4 +1,4 @@
-import 'package:firecheck/features/map/reshape/presentation/reshape_banner.dart';
+import 'package:firecheck/features/map/geometry_editor/presentation/geometry_editor_banner.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -19,7 +19,7 @@ void main() {
   testWidgets('renders edit count and title', (tester) async {
     await tester.pumpWidget(
       _wrap(
-        const ReshapeBanner(
+        const GeometryEditorBanner(
           editCount: 3,
           undoEnabled: true,
           saveEnabled: true,
@@ -33,7 +33,7 @@ void main() {
     var saves = 0;
     await tester.pumpWidget(
       _wrap(
-        ReshapeBanner(
+        GeometryEditorBanner(
           editCount: 1,
           undoEnabled: true,
           saveEnabled: true,
@@ -49,7 +49,7 @@ void main() {
     var cancels = 0;
     await tester.pumpWidget(
       _wrap(
-        ReshapeBanner(
+        GeometryEditorBanner(
           editCount: 0,
           undoEnabled: false,
           saveEnabled: false,
@@ -65,7 +65,7 @@ void main() {
     var undos = 0;
     await tester.pumpWidget(
       _wrap(
-        ReshapeBanner(
+        GeometryEditorBanner(
           editCount: 1,
           undoEnabled: true,
           saveEnabled: true,
@@ -81,7 +81,7 @@ void main() {
     var saves = 0;
     await tester.pumpWidget(
       _wrap(
-        ReshapeBanner(
+        GeometryEditorBanner(
           editCount: 0,
           undoEnabled: false,
           saveEnabled: false,

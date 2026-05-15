@@ -1,20 +1,20 @@
 import 'package:firecheck/features/map/presentation/map_renderer.dart';
-import 'package:firecheck/features/map/reshape/presentation/midpoint_handle.dart';
-import 'package:firecheck/features/map/reshape/presentation/reshape_providers.dart';
-import 'package:firecheck/features/map/reshape/presentation/reshape_remove_confirm_dialog.dart';
-import 'package:firecheck/features/map/reshape/presentation/vertex_handle.dart';
+import 'package:firecheck/features/map/geometry_editor/presentation/midpoint_handle.dart';
+import 'package:firecheck/features/map/geometry_editor/presentation/geometry_editor_providers.dart';
+import 'package:firecheck/features/map/geometry_editor/presentation/reshape_remove_confirm_dialog.dart';
+import 'package:firecheck/features/map/geometry_editor/presentation/vertex_handle.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class ReshapeOverlay extends ConsumerWidget {
-  const ReshapeOverlay({required this.projection, super.key});
+class GeometryEditorOverlay extends ConsumerWidget {
+  const GeometryEditorOverlay({required this.projection, super.key});
   final MapProjection projection;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(reshapeModeControllerProvider);
+    final state = ref.watch(geometryEditorControllerProvider);
     if (!state.isActive) return const SizedBox.shrink();
-    final notifier = ref.read(reshapeModeControllerProvider.notifier);
+    final notifier = ref.read(geometryEditorControllerProvider.notifier);
 
     final children = <Widget>[];
 
@@ -82,7 +82,7 @@ class ReshapeOverlay extends ConsumerWidget {
             key: Key('reshape.vertex.$ringIdx.$i'),
             onPanUpdate: (d) {
               final cur = ref
-                  .read(reshapeModeControllerProvider)
+                  .read(geometryEditorControllerProvider)
                   .workingRings[ringIdx];
               if (i >= cur.length) return;
               final cv = cur[i];
@@ -124,7 +124,7 @@ class ReshapeOverlay extends ConsumerWidget {
             },
             onPanUpdate: (d) {
               final cur = ref
-                  .read(reshapeModeControllerProvider)
+                  .read(geometryEditorControllerProvider)
                   .workingRings[ringIdx];
               if (insertAt >= cur.length) return;
               final v = cur[insertAt];

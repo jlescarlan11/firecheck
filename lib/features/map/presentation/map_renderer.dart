@@ -248,7 +248,7 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
   PolygonAnnotation? _reshapeWorkingAnnotation;
 
   // US-9: lat/lng <-> screen-px projection state. Refreshed on camera change
-  // so ReshapeOverlay can read it synchronously during finger drags.
+  // so GeometryEditorOverlay can read it synchronously during finger drags.
   _MapboxProjection? _projection;
   Size? _viewportSize;
 
@@ -444,7 +444,7 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
     );
 
     // US-9: instantiate the projection now that the map is alive and run
-    // an initial refresh so ReshapeOverlay has correct screen-px math
+    // an initial refresh so GeometryEditorOverlay has correct screen-px math
     // before the user's first drag.
     final projection = _MapboxProjection(map);
     _projection = projection;
@@ -454,7 +454,7 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
         await projection.refresh(size.width, size.height);
         widget.onProjectionReady?.call(projection);
       } on Object {
-        // Refresh failures are non-fatal; ReshapeOverlay tolerates a
+        // Refresh failures are non-fatal; GeometryEditorOverlay tolerates a
         // not-yet-ready projection (returns Offset.zero).
       }
     } else {
@@ -758,7 +758,7 @@ class _RoadClickHandler extends OnPolylineAnnotationClickListener {
 
 /// Caches lat/lng <-> screen-px projections via async `coordinateForPixel`
 /// and exposes a synchronous linear interpolation. Refreshed on each camera
-/// change so ReshapeOverlay (which rebuilds on every Riverpod tick during
+/// change so GeometryEditorOverlay (which rebuilds on every Riverpod tick during
 /// drags) can read sync without an async hop.
 ///
 /// The linear-corner calibration is approximate near map edges and at very

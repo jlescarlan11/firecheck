@@ -1,4 +1,4 @@
-import 'package:firecheck/features/map/reshape/domain/reshape_op.dart';
+import 'package:firecheck/features/map/geometry_editor/domain/reshape_op.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

@@ -1,9 +1,9 @@
 import 'package:firecheck/core/db/database.dart' show Feature;
 import 'package:firecheck/core/geo/polygon_validator.dart' show LngLat;
-import 'package:firecheck/features/map/reshape/domain/reshape_op.dart';
+import 'package:firecheck/features/map/geometry_editor/domain/reshape_op.dart';
 
-class ReshapeModeState {
-  const ReshapeModeState({
+class GeometryEditorState {
+  const GeometryEditorState({
     this.originalFeature,
     this.workingRings = const [],
     this.undoStack = const [],
@@ -28,7 +28,7 @@ class ReshapeModeState {
   bool get isActive => originalFeature != null;
   bool get isDirty => undoStack.isNotEmpty;
 
-  ReshapeModeState copyWith({
+  GeometryEditorState copyWith({
     Object? originalFeature = _sentinel,
     List<List<LngLat>>? workingRings,
     List<ReshapeOp>? undoStack,
@@ -37,7 +37,7 @@ class ReshapeModeState {
     Object? overrideReason = _sentinel,
     bool? isClosed,
   }) {
-    return ReshapeModeState(
+    return GeometryEditorState(
       originalFeature: identical(originalFeature, _sentinel)
           ? this.originalFeature
           : originalFeature as Feature?,
