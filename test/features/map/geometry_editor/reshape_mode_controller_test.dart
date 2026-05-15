@@ -229,6 +229,7 @@ void main() {
 
     test('pendingFeatureType set with no originalFeature → isSketchMode + isActive', () {
       const s = GeometryEditorState(pendingFeatureType: 'building');
+      expect(s.pendingFeatureType, 'building');
       expect(s.isSketchMode, isTrue);
       expect(s.isActive, isTrue);
     });
