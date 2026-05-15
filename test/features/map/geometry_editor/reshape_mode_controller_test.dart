@@ -391,6 +391,15 @@ void main() {
 
     ProviderContainer makeContainer() => ProviderContainer();
 
+    test('returns null when not in sketch mode (no-op)', () {
+      final c = makeContainer();
+      addTearDown(c.dispose);
+      // No enterSketch call.
+      final r = c.read(geometryEditorControllerProvider.notifier)
+          .validateSketch(boundaryGeojson: boundary);
+      expect(r, isNull);
+    });
+
     test('building: 3 in-bounds vertices → null (valid)', () {
       final c = makeContainer();
       addTearDown(c.dispose);

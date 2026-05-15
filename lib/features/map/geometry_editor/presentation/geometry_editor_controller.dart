@@ -114,6 +114,10 @@ class GeometryEditorController extends Notifier<GeometryEditorState> {
 
     // 1. Min vertex count.
     final min = type == 'building' ? 3 : (type == 'road' ? 2 : 1);
+    // Defensive max: appendSketchVertex already prevents a second 'point'
+    // vertex (it replaces vertex 0 instead of appending), so this branch is
+    // unreachable via the public API. Kept as a contract check — if a future
+    // change ever lets a point grow beyond 1 vertex, validation catches it.
     final maxAllowed = type == 'point' ? 1 : 1 << 30;
     if (ring.length < min || ring.length > maxAllowed) {
       return SketchValidationError.notEnoughVertices;
