@@ -134,30 +134,10 @@ void main() {
       );
     });
 
-    // skip reason: rewritten in plan Task 12 for sketch flow — add-mode no
-    // longer exists; the pill now opens the type picker directly.
-    testWidgets('long-press on a polygon (add-mode on) does NOT open sheet',
-        skip: true, (tester) async {
-      final renderer = FakeMapRenderer();
-      final feature = fakeFeature();
-      await pumpMap(tester, renderer: renderer, features: [feature]);
-
-      // Toggle add-mode pill on.
-      await tester.tap(find.byKey(const Key('map.add-feature-pill')));
-      await tester.pumpAndSettle();
-
-      await renderer.simulatePolygonLongPress(feature);
-      await tester.pumpAndSettle();
-
-      expect(
-        find.byKey(const Key('reshape.actionsheet.openForm')),
-        findsNothing,
-      );
-      expect(
-        find.byKey(const Key('reshape.actionsheet.reshape')),
-        findsNothing,
-      );
-    });
+    // (Removed in plan Task 12: the old "add-mode on suppresses long-press"
+    // test. The sketch-mode equivalent — that tapping an existing feature
+    // while sketching is suppressed — is covered by sketch_flow_test.dart's
+    // gesture-suppression group.)
   });
 
   group('US-9 T19 distance gate + override-reason → enterReshape', () {
