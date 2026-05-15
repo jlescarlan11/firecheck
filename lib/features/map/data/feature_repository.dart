@@ -11,6 +11,10 @@ class FeatureRepository {
         .watch();
   }
 
+  Stream<List<Feature>> watchAllFeatures() {
+    return _db.select(_db.features).watch();
+  }
+
   Future<Feature?> getFeature(String id) {
     return (_db.select(_db.features)..where((t) => t.id.equals(id)))
         .getSingleOrNull();

@@ -335,11 +335,30 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
   }
 
   Feature? _hitTestPolygon(double lat, double lng) {
+    // Polygons: containment test wins outright.
     for (final f in widget.features) {
       if (f.isNew) continue;
+      if (f.featureType == 'road') continue;
       if (pointInPolygonGeojson(lat, lng, f.geometryGeojson)) return f;
     }
-    return null;
+    // Polylines (roads): no area to contain a tap, so accept the nearest
+    // road within a finger-width tolerance. 20 m matches typical road width
+    // and finger-tap slop at reshape-working zoom.
+    const tapToleranceMeters = 20.0;
+    Feature? bestRoad;
+    var bestDistance = tapToleranceMeters;
+    for (final f in widget.features) {
+      if (f.isNew) continue;
+      if (f.featureType != 'road') continue;
+      final coords = decodePolylineGeojson(f.geometryGeojson);
+      if (coords == null) continue;
+      final d = pointToPolylineMeters(lat, lng, coords);
+      if (d <= bestDistance) {
+        bestDistance = d;
+        bestRoad = f;
+      }
+    }
+    return bestRoad;
   }
 
   Future<void> _onMapCreated(MapboxMap map) async {

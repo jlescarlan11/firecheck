@@ -367,9 +367,23 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     if (!_addModeActive) return;
     final l = AppLocalizations.of(context)!;
     final assignment = ref.read(currentAssignmentProvider).value;
-    final boundary = assignment?.boundaryPolygonGeojson ?? '';
 
-    if (!pointInPolygonGeojson(lat, lng, boundary)) {
+    if (assignment == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l.noAssignmentForEnumerator)),
+      );
+      return;
+    }
+
+    final boundary = assignment.boundaryPolygonGeojson;
+
+    // Treat any GeoJSON that doesn't parse to a Polygon with coordinates as
+    // "no boundary defined" — older imports may have stored an empty-coords
+    // Polygon JSON (non-empty string, but unmatchable), which would silently
+    // reject every long-press.
+    final hasBoundary = polygonBoundsFromGeojson(boundary) != null;
+    if (hasBoundary && !pointInPolygonGeojson(lat, lng, boundary)) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l.outsideBoundarySnackbar)),
@@ -386,7 +400,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
     final newFeatureRepo = ref.read(newFeatureRepositoryProvider);
     final feature = await newFeatureRepo.createNewFeature(
-      assignmentId: assignment!.id,
+      assignmentId: assignment.id,
       featureType: type,
       lat: lat,
       lng: lng,
@@ -424,9 +438,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
     String? overrideReason;
     if (pos != null) {
-      final ring = decodePolygonGeojson(feature.geometryGeojson);
-      if (ring == null || ring.isEmpty) return;
-      final centroid = polygonCentroid(ring);
+      final LatLng centroid;
+      if (feature.featureType == 'road') {
+        final coords = decodePolylineGeojson(feature.geometryGeojson);
+        if (coords == null || coords.isEmpty) return;
+        centroid = polylineMidpoint(coords);
+      } else {
+        final ring = decodePolygonGeojson(feature.geometryGeojson);
+        if (ring == null || ring.isEmpty) return;
+        centroid = polygonCentroid(ring);
+      }
       final meters = haversineMeters(
         pos.latitude,
         pos.longitude,
