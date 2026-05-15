@@ -63,6 +63,40 @@ class GeometryEditorController extends Notifier<GeometryEditorState> {
     );
   }
 
+  /// Sketch-mode tap-to-place. For 'building'/'road' appends a new vertex at
+  /// the end of ring 0. For 'point', the first call appends; subsequent calls
+  /// replace vertex 0 (recorded as a Move so undo behaves correctly).
+  void appendSketchVertex(LngLat lngLat) {
+    if (!state.isSketchMode) return;
+    final rings = _cloneRings(state.workingRings);
+    final ring = rings[0];
+
+    if (state.pendingFeatureType == 'point' && ring.isNotEmpty) {
+      final prev = ring[0];
+      if (prev == lngLat) return; // no-op on identical re-tap
+      ring[0] = lngLat;
+      state = state.copyWith(
+        workingRings: rings,
+        undoStack: [
+          ...state.undoStack,
+          Move(ringIdx: 0, vertexIdx: 0, prev: prev, next: lngLat),
+        ],
+        selfIntersects: _recomputeSelfIntersect(state, rings),
+      );
+      return;
+    }
+
+    ring.add(lngLat);
+    state = state.copyWith(
+      workingRings: rings,
+      undoStack: [
+        ...state.undoStack,
+        Add(ringIdx: 0, vertexIdx: ring.length - 1, lngLat: lngLat),
+      ],
+      selfIntersects: _recomputeSelfIntersect(state, rings),
+    );
+  }
+
   void removeVertex(int ringIdx, int vertexIdx) {
     if (!state.isActive) return;
     final ring = state.workingRings[ringIdx];

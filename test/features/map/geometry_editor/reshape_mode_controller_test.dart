@@ -290,4 +290,83 @@ void main() {
       expect(s.pendingFeatureType, isNull);
     });
   });
+
+  group('appendSketchVertex', () {
+    ProviderContainer makeContainer() => ProviderContainer();
+
+    test('building: each tap appends a vertex (Add op)', () {
+      final c = makeContainer();
+      c.read(geometryEditorControllerProvider.notifier)
+        ..enterSketch(featureType: 'building')
+        ..appendSketchVertex((lng: 1.0, lat: 1.0))
+        ..appendSketchVertex((lng: 2.0, lat: 2.0))
+        ..appendSketchVertex((lng: 3.0, lat: 3.0));
+      final s = c.read(geometryEditorControllerProvider);
+      expect(s.workingRings[0], [
+        (lng: 1.0, lat: 1.0),
+        (lng: 2.0, lat: 2.0),
+        (lng: 3.0, lat: 3.0),
+      ]);
+      expect(s.undoStack, hasLength(3));
+      expect(s.undoStack.every((op) => op is Add), isTrue);
+    });
+
+    test('road: each tap appends a vertex', () {
+      final c = makeContainer();
+      c.read(geometryEditorControllerProvider.notifier)
+        ..enterSketch(featureType: 'road')
+        ..appendSketchVertex((lng: 1.0, lat: 1.0))
+        ..appendSketchVertex((lng: 2.0, lat: 2.0));
+      final s = c.read(geometryEditorControllerProvider);
+      expect(s.workingRings[0], hasLength(2));
+      expect(s.undoStack, hasLength(2));
+    });
+
+    test('point: first tap appends; second tap replaces (Move op)', () {
+      final c = makeContainer();
+      c.read(geometryEditorControllerProvider.notifier)
+        ..enterSketch(featureType: 'point')
+        ..appendSketchVertex((lng: 1.0, lat: 1.0))
+        ..appendSketchVertex((lng: 5.0, lat: 5.0));
+      final s = c.read(geometryEditorControllerProvider);
+      expect(s.workingRings[0], hasLength(1));
+      expect(s.workingRings[0][0], (lng: 5.0, lat: 5.0));
+      expect(s.undoStack, hasLength(2));
+      expect(s.undoStack[0], isA<Add>());
+      expect(s.undoStack[1], isA<Move>());
+      final move = s.undoStack[1] as Move;
+      expect(move.prev, (lng: 1.0, lat: 1.0));
+      expect(move.next, (lng: 5.0, lat: 5.0));
+    });
+
+    test('point: identical re-tap is a no-op', () {
+      final c = makeContainer();
+      c.read(geometryEditorControllerProvider.notifier)
+        ..enterSketch(featureType: 'point')
+        ..appendSketchVertex((lng: 1.0, lat: 1.0))
+        ..appendSketchVertex((lng: 1.0, lat: 1.0));
+      final s = c.read(geometryEditorControllerProvider);
+      expect(s.workingRings[0], hasLength(1));
+      expect(s.undoStack, hasLength(1));
+    });
+
+    test('appendSketchVertex is a no-op when not active', () {
+      final c = makeContainer();
+      c.read(geometryEditorControllerProvider.notifier)
+          .appendSketchVertex((lng: 1.0, lat: 1.0));
+      expect(c.read(geometryEditorControllerProvider).workingRings, isEmpty);
+    });
+
+    test('undo after building tap pops the vertex', () {
+      final c = makeContainer();
+      c.read(geometryEditorControllerProvider.notifier)
+        ..enterSketch(featureType: 'building')
+        ..appendSketchVertex((lng: 1.0, lat: 1.0))
+        ..appendSketchVertex((lng: 2.0, lat: 2.0))
+        ..undo();
+      final s = c.read(geometryEditorControllerProvider);
+      expect(s.workingRings[0], [(lng: 1.0, lat: 1.0)]);
+      expect(s.undoStack, hasLength(1));
+    });
+  });
 }
