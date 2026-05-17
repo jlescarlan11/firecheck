@@ -76,3 +76,4 @@ flutter:
   generate: true
   assets:
     - .env
+    - assets/form_variants.json

@@ -1988,6 +1988,36 @@ abstract class AppLocalizations {
   /// **'Adjacent corners cannot be on the same spot'**
   String get reshapeErrorZeroLengthEdge;
 
+  /// No description provided for @sketchErrorNotEnoughVertices.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough vertices for this feature type'**
+  String get sketchErrorNotEnoughVertices;
+
+  /// No description provided for @sketchDiscardConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard sketch?'**
+  String get sketchDiscardConfirmTitle;
+
+  /// No description provided for @sketchDiscardConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your dropped vertices will be lost.'**
+  String get sketchDiscardConfirmBody;
+
+  /// No description provided for @sketchDiscardKeepEditing.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep editing'**
+  String get sketchDiscardKeepEditing;
+
+  /// No description provided for @sketchDiscardConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get sketchDiscardConfirm;
+
   /// No description provided for @reshapeLockedSnackbar.
   ///
   /// In en, this message translates to:
@@ -2149,6 +2179,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Some road entries are missing required fields. Complete all road forms before exporting.'**
   String get exportValidationRoadsMissingFields;
+
+  /// No description provided for @remainingQuestionsAllDone.
+  ///
+  /// In en, this message translates to:
+  /// **'All questions on this path are answered'**
+  String get remainingQuestionsAllDone;
+
+  /// No description provided for @remainingQuestionsRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 question left on this path} other{{count} questions left on this path}}'**
+  String remainingQuestionsRemaining(int count);
+
+  /// No description provided for @sketchBannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} vertices · {type}'**
+  String sketchBannerTitle(int count, String type);
+
+  /// No description provided for @sketchBannerFinish.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish'**
+  String get sketchBannerFinish;
 }
 
 class _AppLocalizationsDelegate

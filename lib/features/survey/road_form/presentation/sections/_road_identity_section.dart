@@ -1,5 +1,7 @@
+import 'package:firecheck/core/forms/form_variant_providers.dart';
 import 'package:firecheck/features/survey/building_form/presentation/sections/_persistent_text_field.dart';
 import 'package:firecheck/features/survey/building_form/presentation/sections/_section_card.dart';
+import 'package:firecheck/features/survey/road_form/domain/road_form_applicability.dart';
 import 'package:firecheck/features/survey/road_form/presentation/road_form_providers.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -30,29 +32,38 @@ class RoadIdentitySection extends ConsumerWidget {
       roadFormNotifierProvider(_key(submissionId, featureId)).notifier,
     );
 
+    final hidden = ref.watch(currentFormVariantProvider).hideRoadFields;
+    final children = <Widget>[];
+    if (!hidden.contains(RoadFormField.roadName)) {
+      children.add(
+        PersistentTextField(
+          enabled: !disabled,
+          value: state.roadName ?? '',
+          labelText: l.fieldRoadName,
+          onChanged: (v) => notifier.update(
+            (s) => s.copyWith(roadName: v),
+          ),
+        ),
+      );
+      children.add(const SizedBox(height: 8));
+    }
+    // isBridge has no RoadFormField entry today — always shown.
+    children.add(
+      SwitchListTile(
+        title: Text(l.fieldIsBridge),
+        value: state.isBridge,
+        onChanged: disabled
+            ? null
+            : (v) => notifier.update((s) => s.copyWith(isBridge: v)),
+        contentPadding: EdgeInsets.zero,
+      ),
+    );
+
     return SectionCard(
       title: l.sectionRoadIdentity,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          PersistentTextField(
-            enabled: !disabled,
-            value: state.roadName ?? '',
-            labelText: l.fieldRoadName,
-            onChanged: (v) => notifier.update(
-              (s) => s.copyWith(roadName: v),
-            ),
-          ),
-          const SizedBox(height: 8),
-          SwitchListTile(
-            title: Text(l.fieldIsBridge),
-            value: state.isBridge,
-            onChanged: disabled
-                ? null
-                : (v) => notifier.update((s) => s.copyWith(isBridge: v)),
-            contentPadding: EdgeInsets.zero,
-          ),
-        ],
+        children: children,
       ),
     );
   }

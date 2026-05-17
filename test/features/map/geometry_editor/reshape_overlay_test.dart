@@ -1,9 +1,9 @@
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/features/map/presentation/map_renderer.dart';
-import 'package:firecheck/features/map/reshape/presentation/midpoint_handle.dart';
-import 'package:firecheck/features/map/reshape/presentation/reshape_overlay.dart';
-import 'package:firecheck/features/map/reshape/presentation/reshape_providers.dart';
-import 'package:firecheck/features/map/reshape/presentation/vertex_handle.dart';
+import 'package:firecheck/features/map/geometry_editor/presentation/midpoint_handle.dart';
+import 'package:firecheck/features/map/geometry_editor/presentation/geometry_editor_overlay.dart';
+import 'package:firecheck/features/map/geometry_editor/presentation/geometry_editor_providers.dart';
+import 'package:firecheck/features/map/geometry_editor/presentation/vertex_handle.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -48,13 +48,13 @@ void main() {
     final container = ProviderContainer();
     addTearDown(container.dispose);
     container
-        .read(reshapeModeControllerProvider.notifier)
+        .read(geometryEditorControllerProvider.notifier)
         .enterReshape(feature: _seedBuilding());
 
     await tester.pumpWidget(
       _wrap(
         container,
-        ReshapeOverlay(projection: _IdentityProjection()),
+        GeometryEditorOverlay(projection: _IdentityProjection()),
       ),
     );
     expect(find.byType(VertexHandle), findsNWidgets(4));
@@ -67,7 +67,7 @@ void main() {
     await tester.pumpWidget(
       _wrap(
         container,
-        ReshapeOverlay(projection: _IdentityProjection()),
+        GeometryEditorOverlay(projection: _IdentityProjection()),
       ),
     );
     expect(find.byType(VertexHandle), findsNothing);

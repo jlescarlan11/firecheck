@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:drift/drift.dart';
 import 'package:firecheck/core/db/database.dart';
+import 'package:firecheck/core/geo/ph_epsg.dart';
 import 'package:firecheck/core/sync/shapefile/export/dbf_writer.dart';
 import 'package:firecheck/core/sync/shapefile/export/export_failure.dart';
 import 'package:firecheck/core/sync/shapefile/export/shp_writer.dart';
@@ -12,6 +13,7 @@ import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:proj4dart/proj4dart.dart' as proj4;
 
 // ---------------------------------------------------------------------------
 // Serializable structs passed to compute()
@@ -110,9 +112,50 @@ class _LayerOutput {
 // PRJ / CPG constants
 // ---------------------------------------------------------------------------
 
-const _prjContent =
-    'GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.257223563]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]]';
 const _cpgContent = 'UTF-8';
+
+// Signed area via the shoelace formula. Positive = CCW, negative = CW.
+double _signedArea(List<List<double>> ring) {
+  if (ring.length < 3) return 0;
+  var sum = 0.0;
+  for (var i = 0; i < ring.length - 1; i++) {
+    final a = ring[i];
+    final b = ring[i + 1];
+    sum += (b[0] - a[0]) * (b[1] + a[1]);
+  }
+  // Shoelace as written gives 2× area; sign here = positive when CW because
+  // we used (x2-x1)*(y2+y1). Invert to follow the "positive = CCW" convention.
+  return -sum / 2;
+}
+
+List<List<double>> _ensureClosed(List<List<double>> ring) {
+  if (ring.length < 2) return ring;
+  final first = ring.first;
+  final last = ring.last;
+  if (first[0] == last[0] && first[1] == last[1]) return ring;
+  return [...ring, [first[0], first[1]]];
+}
+
+/// For polygon parts, normalize to Esri orientation: first ring CW (outer),
+/// any subsequent rings CCW (holes). Also ensures rings are closed.
+List<List<List<double>>> _normalizePolygonParts(
+  List<List<List<double>>> parts,
+) {
+  if (parts.isEmpty) return parts;
+  final out = <List<List<double>>>[];
+  for (var i = 0; i < parts.length; i++) {
+    final closed = _ensureClosed(parts[i]);
+    final area = _signedArea(closed);
+    final shouldBeCw = i == 0; // outer ring is CW in Esri spec
+    final isCw = area < 0;
+    if (shouldBeCw != isCw && closed.length >= 3) {
+      out.add(closed.reversed.toList());
+    } else {
+      out.add(closed);
+    }
+  }
+  return out;
+}
 
 // ---------------------------------------------------------------------------
 // Top-level function required by compute()
@@ -197,7 +240,7 @@ _LayerOutput _writeLayer(_LayerInput input) {
       parts = [];
     }
 
-    geometries.add(parts);
+    geometries.add(input.isPolygon ? _normalizePolygonParts(parts) : parts);
   }
 
   // Write SHP/SHX
@@ -253,7 +296,9 @@ List<DbfFieldDef> _buildingFields() => const [
       DbfFieldDef(name: 'FEAT_ID', type: 'C', width: 36),
       DbfFieldDef(name: 'CBMS_ID', type: 'C', width: 20),
       DbfFieldDef(name: 'BLDG_NAME', type: 'C', width: 60),
-      DbfFieldDef(name: 'RA9514_TYPE', type: 'C', width: 20),
+      // DBF field names are limited to 10 chars (11th byte is the null
+      // terminator); QGIS silently truncates anything longer.
+      DbfFieldDef(name: 'RA9514_TYP', type: 'C', width: 20),
       DbfFieldDef(name: 'STOREYS', type: 'N', width: 3),
       DbfFieldDef(name: 'MATERIAL', type: 'C', width: 30),
       DbfFieldDef(name: 'COST_EXACT', type: 'L', width: 1),
@@ -295,7 +340,7 @@ Map<String, String?> _buildingRecord(_BuildingRow r, String featureId) => {
       'FEAT_ID': featureId,
       'CBMS_ID': r.cbmsId,
       'BLDG_NAME': r.buildingName,
-      'RA9514_TYPE': r.ra9514Type,
+      'RA9514_TYP': r.ra9514Type,
       'STOREYS': r.storeys?.toString(),
       'MATERIAL': r.material,
       'COST_EXACT': r.costIsExact ? 'T' : 'F',
@@ -327,11 +372,21 @@ class ShapefileExporter {
     required this.db,
     this.shareFile,
     this.tempDirOverride,
-  });
+    this.targetEpsg = 4326,
+  }) : _targetCrs = requirePhCrs(targetEpsg);
 
   final AppDatabase db;
   final Future<void> Function(String path)? shareFile;
   final Directory? tempDirOverride;
+
+  /// EPSG code for the output coordinates. Defaults to 4326 (WGS 84
+  /// lng/lat), matching how geometries are stored in the database — in
+  /// that case the export pipeline writes coordinates straight through
+  /// with no reprojection. Setting this to a projected PH CRS (e.g.
+  /// 32651 for UTM 51N) reprojects every vertex before SHP write and
+  /// emits the matching .prj.
+  final int targetEpsg;
+  final PhCrs _targetCrs;
 
   Future<ExportFailure?> export({required String assignmentId}) async {
     final destDir = tempDirOverride ?? await getTemporaryDirectory();
@@ -374,6 +429,13 @@ class ShapefileExporter {
       return (const NoCompletedFeatures(), null);
     }
 
+    // Geometries are stored in EPSG:4326. When the user asks for a
+    // projected output CRS, reproject every vertex here on the main
+    // isolate — proj4dart's Projection cache lives per-isolate, so doing
+    // it before the compute() handoff keeps the worker pure.
+    String reproject(String geojson) =>
+        targetEpsg == 4326 ? geojson : _reprojectGeojson(geojson, _targetCrs);
+
     // Build layer inputs
     final inputs = <_LayerInput>[];
 
@@ -382,7 +444,7 @@ class ShapefileExporter {
           .map(
             (r) => _FeatureRow(
               featureId: r.featureId,
-              geometryGeojson: r.geometryGeojson,
+              geometryGeojson: reproject(r.geometryGeojson),
             ),
           )
           .toList();
@@ -402,7 +464,7 @@ class ShapefileExporter {
           .map(
             (r) => _FeatureRow(
               featureId: r.featureId,
-              geometryGeojson: r.geometryGeojson,
+              geometryGeojson: reproject(r.geometryGeojson),
             ),
           )
           .toList();
@@ -436,19 +498,15 @@ class ShapefileExporter {
 
     // Build ZIP archive
     final archive = Archive();
+    final prjContent = _targetCrs.wkt;
+    final prjBytes = utf8.encode(prjContent);
     for (final out in outputs) {
       final name = out.layerName;
       archive
         ..addFile(ArchiveFile('$name.shp', out.shp.length, out.shp))
         ..addFile(ArchiveFile('$name.shx', out.shx.length, out.shx))
         ..addFile(ArchiveFile('$name.dbf', out.dbf.length, out.dbf))
-        ..addFile(
-          ArchiveFile(
-            '$name.prj',
-            _prjContent.length,
-            _prjContent.codeUnits,
-          ),
-        )
+        ..addFile(ArchiveFile('$name.prj', prjBytes.length, prjBytes))
         ..addFile(
           ArchiveFile(
             '$name.cpg',
@@ -588,4 +646,37 @@ class _RoadQueryRow {
   final String featureId;
   final String geometryGeojson;
   final _RoadRow roadRow;
+}
+
+/// Reprojects every coordinate inside a GeoJSON geometry from EPSG:4326 to
+/// the target CRS. Operates on the parsed structure and re-encodes, so the
+/// downstream `_writeLayer` worker sees the same shape of input it already
+/// knows how to consume — only the numeric values change.
+String _reprojectGeojson(String geojson, PhCrs target) {
+  final wgs84 = proj4.Projection.parse(phEpsgRegistry[4326]!.proj4);
+  final dst = proj4.Projection.parse(target.proj4);
+
+  List<double> transformPair(List<dynamic> pair) {
+    final pt = wgs84.transform(
+      dst,
+      proj4.Point(x: (pair[0] as num).toDouble(), y: (pair[1] as num).toDouble()),
+    );
+    return [pt.x, pt.y];
+  }
+
+  dynamic walk(dynamic node) {
+    // Bottom-out at a [lng, lat] coordinate pair (a 2-element List of nums).
+    if (node is List &&
+        node.length >= 2 &&
+        node.length <= 3 &&
+        node.first is num) {
+      return transformPair(node);
+    }
+    if (node is List) return node.map(walk).toList();
+    return node;
+  }
+
+  final geo = jsonDecode(geojson) as Map<String, dynamic>;
+  geo['coordinates'] = walk(geo['coordinates']);
+  return jsonEncode(geo);
 }

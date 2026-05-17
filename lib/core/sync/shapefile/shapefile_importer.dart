@@ -85,16 +85,23 @@ class ShapefileImporter {
     final buildingRecords = buildingDbf?.records ?? [];
     final roadRecords = roadDbf?.records ?? [];
 
-    // Boundary: use boundary.shp if present, otherwise derive a bbox from buildings.
-    final Map<String, dynamic> boundaryGeojson;
+    // Boundary: use boundary.shp if present, otherwise derive a bbox from
+    // buildings. If neither is available, leave the column empty — callers
+    // (e.g. the map-screen long-press gate) treat an empty string as
+    // "no boundary defined" and skip the containment check. Writing an
+    // empty-coords Polygon JSON here would be non-empty but unmatchable,
+    // and would silently reject every tap.
+    final Map<String, dynamic>? boundaryGeojson;
     if (boundaryShp != null) {
       final geoms = _shpParser.parse(boundaryShp);
       boundaryGeojson = _reprojectGeom(geoms.first);
     } else if (buildingGeoms.isNotEmpty) {
       boundaryGeojson = _bboxFromGeoms(buildingGeoms);
     } else {
-      boundaryGeojson = {'type': 'Polygon', 'coordinates': <dynamic>[]};
+      boundaryGeojson = null;
     }
+    final boundaryGeojsonStr =
+        boundaryGeojson == null ? '' : jsonEncode(boundaryGeojson);
 
     // Capture a single timestamp for all rows written in this import
     final now = DateTime.now();
@@ -106,7 +113,7 @@ class ShapefileImporter {
               id: Value(assignmentId),
               enumeratorId: Value(enumeratorId),
               campaignId: Value(assignmentId),
-              boundaryPolygonGeojson: Value(jsonEncode(boundaryGeojson)),
+              boundaryPolygonGeojson: Value(boundaryGeojsonStr),
               downloadedAt: Value(now),
               driveModifiedTime: Value(driveModifiedTime),
               driveFolderId: Value(driveFolderId),
@@ -149,7 +156,7 @@ class ShapefileImporter {
     return ImportResult(
       buildingCount: buildingRecords.length,
       roadCount: roadRecords.length,
-      boundaryGeojson: jsonEncode(boundaryGeojson),
+      boundaryGeojson: boundaryGeojsonStr,
     );
   }
 

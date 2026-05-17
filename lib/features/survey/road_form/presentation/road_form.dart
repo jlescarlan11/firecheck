@@ -1,4 +1,5 @@
 import 'package:firecheck/features/survey/road_form/presentation/road_form_providers.dart';
+import 'package:firecheck/features/survey/road_form/presentation/road_remaining_questions_badge.dart';
 import 'package:firecheck/features/survey/road_form/presentation/sections/_road_dimensions_section.dart';
 import 'package:firecheck/features/survey/road_form/presentation/sections/_road_features_section.dart';
 import 'package:firecheck/features/survey/road_form/presentation/sections/_road_identity_section.dart';
@@ -74,6 +75,11 @@ class RoadForm extends ConsumerWidget {
               ),
             ],
           ),
+        ),
+        const SizedBox(height: 8),
+        RoadRemainingQuestionsBadge(
+          submissionId: submissionId,
+          featureId: featureId,
         ),
         const SizedBox(height: 8),
         RoadIdentitySection(

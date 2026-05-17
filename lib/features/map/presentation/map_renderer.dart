@@ -21,9 +21,9 @@ abstract class MapRenderer {
     required List<Feature> features,
     required String boundaryGeojson,
     required void Function(Feature) onFeatureTap,
-    void Function(double lat, double lng)? onLongPress,
     void Function(double zoom, double lat, double lng)? onCameraChanged,
-    bool addModeActive,
+    bool sketchActive,
+    void Function(double lat, double lng)? onMapTap,
     CameraTarget? cameraTarget,
     CameraTarget? initialCameraTarget,
     // US-9 reshape additions:
@@ -31,6 +31,9 @@ abstract class MapRenderer {
     String? reshapeWorkingPolygonGeojson,
     String? reshapeInvalidEdgeGeojson,
     void Function(MapProjection projection)? onProjectionReady,
+    // When set, skip rendering this feature's static annotation so the
+    // working preview overlay isn't drawn on top of a stale snapshot.
+    String? reshapingFeatureId,
   });
 }
 
@@ -43,19 +46,20 @@ abstract class MapProjection {
 /// Fake for widget tests — renders one tappable tile per feature instead of
 /// a real map. Matches the real renderer's tap contract.
 class FakeMapRenderer implements MapRenderer {
-  void Function(double, double)? _lastOnLongPress;
+  void Function(double, double)? _lastOnMapTap;
   void Function(double, double, double)? _lastOnCameraChanged;
   void Function(Feature)? _lastOnPolygonLongPress;
   CameraTarget? lastCameraTarget;
   CameraTarget? lastInitialCameraTarget;
   String? lastReshapeWorkingPolygonGeojson;
   String? lastReshapeInvalidEdgeGeojson;
+  bool lastSketchActive = false;
   final List<CameraTarget> cameraTargetHistory = [];
 
-  /// Test seam: simulates a long-press at the given coordinates. Invokes the
-  /// most recently stored onLongPress callback; no-op if none was provided.
-  Future<void> simulateLongPress(double lat, double lng) async {
-    final cb = _lastOnLongPress;
+  /// Test seam: simulates a tap on the map at the given coordinates. Invokes
+  /// the most recently stored onMapTap callback; no-op if none was provided.
+  Future<void> simulateMapTap(double lat, double lng) async {
+    final cb = _lastOnMapTap;
     if (cb != null) cb(lat, lng);
   }
 
@@ -83,20 +87,22 @@ class FakeMapRenderer implements MapRenderer {
     required List<Feature> features,
     required String boundaryGeojson,
     required void Function(Feature) onFeatureTap,
-    void Function(double lat, double lng)? onLongPress,
     void Function(double zoom, double lat, double lng)? onCameraChanged,
-    bool addModeActive = false,
+    bool sketchActive = false,
+    void Function(double lat, double lng)? onMapTap,
     CameraTarget? cameraTarget,
     CameraTarget? initialCameraTarget,
     void Function(Feature)? onPolygonLongPress,
     String? reshapeWorkingPolygonGeojson,
     String? reshapeInvalidEdgeGeojson,
     void Function(MapProjection projection)? onProjectionReady,
+    String? reshapingFeatureId,
   }) {
-    _lastOnLongPress = onLongPress;
+    _lastOnMapTap = onMapTap;
     _lastOnCameraChanged = onCameraChanged;
     _lastOnPolygonLongPress = onPolygonLongPress;
     lastInitialCameraTarget = initialCameraTarget;
+    lastSketchActive = sketchActive;
     if (cameraTarget != null && cameraTarget != lastCameraTarget) {
       cameraTargetHistory.add(cameraTarget);
     }
@@ -110,17 +116,18 @@ class FakeMapRenderer implements MapRenderer {
     return ListView(
       shrinkWrap: true,
       children: [
-        if (addModeActive)
+        if (sketchActive)
           const Padding(
             padding: EdgeInsets.all(8),
-            child: Text('add-mode'),
+            child: Text('sketch-mode'),
           ),
         ...features.map((f) {
           return GestureDetector(
             key: Key('fake-map-feature-${f.id}'),
-            onTap: () => onFeatureTap(f),
-            onLongPress:
-                f.isNew ? null : () => onPolygonLongPress?.call(f),
+            onTap: sketchActive ? null : () => onFeatureTap(f),
+            onLongPress: sketchActive
+                ? null
+                : () => onPolygonLongPress?.call(f),
             child: Container(
               key: f.isNew
                   ? Key('fake-map-new-feature-${f.id}')
@@ -173,29 +180,31 @@ class MapboxMapRenderer implements MapRenderer {
     required List<Feature> features,
     required String boundaryGeojson,
     required void Function(Feature) onFeatureTap,
-    void Function(double lat, double lng)? onLongPress,
     void Function(double zoom, double lat, double lng)? onCameraChanged,
-    bool addModeActive = false,
+    bool sketchActive = false,
+    void Function(double lat, double lng)? onMapTap,
     CameraTarget? cameraTarget,
     CameraTarget? initialCameraTarget,
     void Function(Feature)? onPolygonLongPress,
     String? reshapeWorkingPolygonGeojson,
     String? reshapeInvalidEdgeGeojson,
     void Function(MapProjection projection)? onProjectionReady,
+    String? reshapingFeatureId,
   }) {
     return _MapboxMapView(
       features: features,
       boundaryGeojson: boundaryGeojson,
       onFeatureTap: onFeatureTap,
-      onLongPress: onLongPress,
       onCameraChanged: onCameraChanged,
-      addModeActive: addModeActive,
+      sketchActive: sketchActive,
+      onMapTap: onMapTap,
       cameraTarget: cameraTarget,
       initialCameraTarget: initialCameraTarget,
       onPolygonLongPress: onPolygonLongPress,
       reshapeWorkingPolygonGeojson: reshapeWorkingPolygonGeojson,
       reshapeInvalidEdgeGeojson: reshapeInvalidEdgeGeojson,
       onProjectionReady: onProjectionReady,
+      reshapingFeatureId: reshapingFeatureId,
     );
   }
 }
@@ -205,29 +214,31 @@ class _MapboxMapView extends StatefulWidget {
     required this.features,
     required this.boundaryGeojson,
     required this.onFeatureTap,
-    this.onLongPress,
     this.onCameraChanged,
-    this.addModeActive = false,
+    this.sketchActive = false,
+    this.onMapTap,
     this.cameraTarget,
     this.initialCameraTarget,
     this.onPolygonLongPress,
     this.reshapeWorkingPolygonGeojson,
     this.reshapeInvalidEdgeGeojson,
     this.onProjectionReady,
+    this.reshapingFeatureId,
   });
 
   final List<Feature> features;
   final String boundaryGeojson;
   final void Function(Feature) onFeatureTap;
-  final void Function(double lat, double lng)? onLongPress;
   final void Function(double zoom, double lat, double lng)? onCameraChanged;
-  final bool addModeActive;
+  final bool sketchActive;
+  final void Function(double lat, double lng)? onMapTap;
   final CameraTarget? cameraTarget;
   final CameraTarget? initialCameraTarget;
   final void Function(Feature)? onPolygonLongPress;
   final String? reshapeWorkingPolygonGeojson;
   final String? reshapeInvalidEdgeGeojson;
   final void Function(MapProjection projection)? onProjectionReady;
+  final String? reshapingFeatureId;
 
   @override
   State<_MapboxMapView> createState() => _MapboxMapViewState();
@@ -244,11 +255,37 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
   // the tap listener can resolve the Drift row from the tapped annotation.
   final Map<String, Feature> _annotationToFeature = <String, Feature>{};
 
+  // Per-feature handle to the live polygon/road annotation + a fingerprint
+  // (geometry + status) used to detect whether the annotation needs to be
+  // updated when the features list re-emits. Lets us diff incremental
+  // changes instead of nuking and re-creating every annotation on every
+  // change, which the user sees as a full-map flicker.
+  final Map<String, PolygonAnnotation> _polygonByFeatureId =
+      <String, PolygonAnnotation>{};
+  final Map<String, PolylineAnnotation> _roadByFeatureId =
+      <String, PolylineAnnotation>{};
+  final Map<String, String> _fingerprintByFeatureId = <String, String>{};
+
+  // Serializes _rerenderFeatures() calls. didUpdateWidget kicks off
+  // rerenders via unawaited(...); two rebuilds in quick succession (e.g.
+  // reshape exit + status change) used to start parallel rerenders whose
+  // async deletes and creates interleaved, leaving orphan annotations on
+  // the map (the ghost outline behind a freshly-saved reshape).
+  Future<void> _rerenderChain = Future.value();
+
+  Future<void> _scheduleRerender() {
+    final next = _rerenderChain.then((_) => _rerenderFeatures());
+    _rerenderChain = next.catchError((_) {});
+    return next;
+  }
+
+  String _fingerprintOf(Feature f) => '${f.geometryGeojson}|${f.status}';
+
   // US-9: working-polygon overlay rendered while reshape mode is active.
   PolygonAnnotation? _reshapeWorkingAnnotation;
 
   // US-9: lat/lng <-> screen-px projection state. Refreshed on camera change
-  // so ReshapeOverlay can read it synchronously during finger drags.
+  // so GeometryEditorOverlay can read it synchronously during finger drags.
   _MapboxProjection? _projection;
   Size? _viewportSize;
 
@@ -294,13 +331,17 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
           // because no style is loaded. Streets v12 is the Phase 1 spec choice.
           styleUri: 'mapbox://styles/mapbox/streets-v12',
           onMapCreated: _onMapCreated,
-          onLongTapListener: (MapContentGestureContext ctx) async {
-            // Add-mode placement remains unchanged.
-            if (widget.addModeActive && widget.onLongPress != null) {
-              final pos = ctx.point.coordinates;
-              widget.onLongPress!(pos.lat.toDouble(), pos.lng.toDouble());
-              return;
+          // mapbox_maps_flutter 2.22 exposes a single-tap callback via
+          // MapWidget.onTapListener (OnMapTapListener typedef on the widget).
+          onTapListener: (MapContentGestureContext ctx) {
+            if (widget.sketchActive && widget.onMapTap != null) {
+              widget.onMapTap!(
+                ctx.point.coordinates.lat.toDouble(),
+                ctx.point.coordinates.lng.toDouble(),
+              );
             }
+          },
+          onLongTapListener: (MapContentGestureContext ctx) async {
             // Reshape entry: hit-test all rendered polygons against the
             // long-press point.
             final cb = widget.onPolygonLongPress;
@@ -335,11 +376,33 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
   }
 
   Feature? _hitTestPolygon(double lat, double lng) {
+    // Roads are thin polylines that frequently cross or lie inside building
+    // footprints. Polygon containment alone would always steal the long-press
+    // away from any road sitting on top of a building, so we hit-test roads
+    // FIRST with a tight tolerance: when the finger is dead-on a road, the
+    // road wins; otherwise we fall through to polygon containment.
+    const closeRoadMeters = 12.0;
+    const farRoadMeters = 30.0;
+    Feature? bestRoad;
+    var bestRoadDistance = farRoadMeters;
     for (final f in widget.features) {
-      if (f.isNew) continue;
+      if (f.featureType != 'road') continue;
+      final coords = decodePolylineGeojson(f.geometryGeojson);
+      if (coords == null) continue;
+      final d = pointToPolylineMeters(lat, lng, coords);
+      if (d <= bestRoadDistance) {
+        bestRoadDistance = d;
+        bestRoad = f;
+      }
+    }
+    if (bestRoad != null && bestRoadDistance <= closeRoadMeters) {
+      return bestRoad;
+    }
+    for (final f in widget.features) {
+      if (f.featureType == 'road' || f.featureType == 'point') continue;
       if (pointInPolygonGeojson(lat, lng, f.geometryGeojson)) return f;
     }
-    return null;
+    return bestRoad;
   }
 
   Future<void> _onMapCreated(MapboxMap map) async {
@@ -394,6 +457,7 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
       _FeatureClickHandler(
         annotationToFeature: _annotationToFeature,
         onTap: widget.onFeatureTap,
+        sketchActive: widget.sketchActive,
       ),
     );
     // ignore: deprecated_member_use
@@ -401,6 +465,7 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
       _RoadClickHandler(
         annotationToFeature: _annotationToFeature,
         onTap: widget.onFeatureTap,
+        sketchActive: widget.sketchActive,
       ),
     );
 
@@ -425,7 +490,7 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
     );
 
     // US-9: instantiate the projection now that the map is alive and run
-    // an initial refresh so ReshapeOverlay has correct screen-px math
+    // an initial refresh so GeometryEditorOverlay has correct screen-px math
     // before the user's first drag.
     final projection = _MapboxProjection(map);
     _projection = projection;
@@ -435,7 +500,7 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
         await projection.refresh(size.width, size.height);
         widget.onProjectionReady?.call(projection);
       } on Object {
-        // Refresh failures are non-fatal; ReshapeOverlay tolerates a
+        // Refresh failures are non-fatal; GeometryEditorOverlay tolerates a
         // not-yet-ready projection (returns Offset.zero).
       }
     } else {
@@ -459,8 +524,10 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
     // for boundary changes.
     final featuresChanged = oldWidget.features != widget.features;
     final boundaryChanged = oldWidget.boundaryGeojson != widget.boundaryGeojson;
-    if (featuresChanged && _featureManager != null) {
-      unawaited(_rerenderFeatures());
+    final reshapingChanged =
+        oldWidget.reshapingFeatureId != widget.reshapingFeatureId;
+    if ((featuresChanged || reshapingChanged) && _featureManager != null) {
+      unawaited(_scheduleRerender());
     }
     if (boundaryChanged && _boundaryManager != null) {
       unawaited(_rerenderBoundary());
@@ -513,43 +580,103 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
   Future<void> _rerenderFeatures() async {
     final manager = _featureManager;
     if (manager == null) return;
-    await manager.deleteAll();
-    await _roadManager?.deleteAll();
-    _reshapeWorkingAnnotation = null; // deleteAll() destroyed it too
-    _annotationToFeature.clear();
-    await _renderFeatures();
-    await _renderRoads();
+
+    // Per-feature diff: only touch annotations whose feature is new, removed,
+    // changed (geometry/status), or transitioned in/out of reshape mode. The
+    // rest stay rendered, so the user no longer sees a full-map flicker
+    // every time a single feature mutates.
+    final desiredPolygonIds = <String>{};
+    final desiredRoadIds = <String>{};
+
+    for (final f in widget.features) {
+      // While reshape is active for this feature, suppress its annotation;
+      // the live working preview overlay renders it instead.
+      if (widget.reshapingFeatureId == f.id) continue;
+      if (f.featureType == 'point') continue;
+      if (f.featureType == 'road') {
+        desiredRoadIds.add(f.id);
+      } else {
+        desiredPolygonIds.add(f.id);
+      }
+
+      final fp = _fingerprintOf(f);
+      if (_fingerprintByFeatureId[f.id] == fp) continue; // unchanged
+
+      // Out-of-date or new → recreate this one annotation.
+      if (f.featureType == 'road') {
+        await _replaceRoadAnnotation(f);
+      } else {
+        await _replacePolygonAnnotation(f);
+      }
+      _fingerprintByFeatureId[f.id] = fp;
+    }
+
+    // Drop annotations whose features are no longer in the list (or are now
+    // being reshaped — they're in features but excluded above).
+    for (final fid in _polygonByFeatureId.keys.toList()) {
+      if (desiredPolygonIds.contains(fid)) continue;
+      final ann = _polygonByFeatureId.remove(fid)!;
+      _annotationToFeature.remove(ann.id);
+      _fingerprintByFeatureId.remove(fid);
+      await manager.delete(ann);
+    }
+    for (final fid in _roadByFeatureId.keys.toList()) {
+      if (desiredRoadIds.contains(fid)) continue;
+      final ann = _roadByFeatureId.remove(fid)!;
+      _annotationToFeature.remove(ann.id);
+      _fingerprintByFeatureId.remove(fid);
+      await _roadManager?.delete(ann);
+    }
+
+    // Point pins (is_new placeholder markers) — small, infrequent, keep the
+    // existing wipe-and-recreate path. Skip if there's no manager yet.
     final pointManager = _pointManager;
     if (pointManager != null) {
       await pointManager.deleteAll();
       await _renderNewFeatures();
     }
-    // Re-attach the click listener AFTER annotations exist. Belt-and-
-    // braces against the mapbox_maps_flutter 2.22 quirk where a listener
-    // attached to an empty manager doesn't pick up annotations added
-    // later. Bug 13.
-    // ignore: deprecated_member_use
-    manager.addOnPolygonAnnotationClickListener(
-      _FeatureClickHandler(
-        annotationToFeature: _annotationToFeature,
-        onTap: widget.onFeatureTap,
-      ),
-    );
-    // ignore: deprecated_member_use
-    _roadManager?.addOnPolylineAnnotationClickListener(
-      _RoadClickHandler(
-        annotationToFeature: _annotationToFeature,
-        onTap: widget.onFeatureTap,
-      ),
-    );
+  }
 
-    // Re-render the in-progress reshape polygon if one is active. Doing this
-    // inside _rerenderFeatures serializes it after deleteAll() instead of
-    // racing it via a parallel unawaited call from didUpdateWidget.
-    if (widget.reshapeWorkingPolygonGeojson != null &&
-        widget.reshapeWorkingPolygonGeojson!.isNotEmpty) {
-      await _rerenderReshapeWorkingPolygon();
+  Future<void> _replacePolygonAnnotation(Feature f) async {
+    final manager = _featureManager;
+    if (manager == null) return;
+    final existing = _polygonByFeatureId.remove(f.id);
+    if (existing != null) {
+      _annotationToFeature.remove(existing.id);
+      await manager.delete(existing);
     }
+    final polygon = _decodePolygon(f.geometryGeojson);
+    if (polygon == null) return;
+    final created = await manager.create(
+      PolygonAnnotationOptions(
+        geometry: polygon,
+        fillColor: _colorForStatus(f.status),
+        fillOpacity: 0.4,
+      ),
+    );
+    _polygonByFeatureId[f.id] = created;
+    _annotationToFeature[created.id] = f;
+  }
+
+  Future<void> _replaceRoadAnnotation(Feature f) async {
+    final manager = _roadManager;
+    if (manager == null) return;
+    final existing = _roadByFeatureId.remove(f.id);
+    if (existing != null) {
+      _annotationToFeature.remove(existing.id);
+      await manager.delete(existing);
+    }
+    final coords = _decodeLineString(f.geometryGeojson);
+    if (coords == null) return;
+    final created = await manager.create(
+      PolylineAnnotationOptions(
+        geometry: LineString(coordinates: coords),
+        lineColor: _colorForStatus(f.status),
+        lineWidth: 4,
+      ),
+    );
+    _roadByFeatureId[f.id] = created;
+    _annotationToFeature[created.id] = f;
   }
 
   Future<void> _rerenderBoundary() async {
@@ -563,10 +690,14 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
     final manager = _featureManager;
     if (manager == null) return;
     for (final f in widget.features) {
-      // is_new features are rendered as point pins — skip them here so they
-      // don't appear as polygons as well.
-      if (f.isNew) continue;
-      if (f.featureType == 'road') continue;
+      // Skip non-polygon features — roads render via _renderRoads, point
+      // features via _renderNewFeatures. Sketch-on-create produces real
+      // Polygon geometry for building features even when isNew is true,
+      // so isNew is not a reason to skip here.
+      if (f.featureType == 'road' || f.featureType == 'point') continue;
+      // While reshape mode is active for this feature, suppress its static
+      // snapshot — the working overlay shows the live shape instead.
+      if (widget.reshapingFeatureId == f.id) continue;
       final polygon = _decodePolygon(f.geometryGeojson);
       if (polygon == null) continue;
       final created = await manager.create(
@@ -577,6 +708,8 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
         ),
       );
       _annotationToFeature[created.id] = f;
+      _polygonByFeatureId[f.id] = created;
+      _fingerprintByFeatureId[f.id] = _fingerprintOf(f);
     }
   }
 
@@ -603,8 +736,9 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
     final manager = _roadManager;
     if (manager == null) return;
     for (final f in widget.features) {
-      if (f.isNew) continue;
       if (f.featureType != 'road') continue;
+      // Suppress the road's static snapshot while it's being reshaped.
+      if (widget.reshapingFeatureId == f.id) continue;
       final coords = _decodeLineString(f.geometryGeojson);
       if (coords == null) {
         debugPrint(
@@ -620,6 +754,8 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
         ),
       );
       _annotationToFeature[created.id] = f;
+      _roadByFeatureId[f.id] = created;
+      _fingerprintByFeatureId[f.id] = _fingerprintOf(f);
     }
   }
 
@@ -633,7 +769,10 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
     final manager = _pointManager;
     if (manager == null) return;
     for (final f in widget.features) {
-      if (!f.isNew) continue;
+      // Only point-type features get the pin marker; sketch-created
+      // building/road features render as their real polygon/linestring
+      // geometry in _renderFeatures / _renderRoads.
+      if (f.featureType != 'point') continue;
       final point = _decodePoint(f.geometryGeojson);
       if (point == null) continue;
       await manager.create(
@@ -708,13 +847,16 @@ class _FeatureClickHandler extends OnPolygonAnnotationClickListener {
   _FeatureClickHandler({
     required this.annotationToFeature,
     required this.onTap,
+    required this.sketchActive,
   });
 
   final Map<String, Feature> annotationToFeature;
   final void Function(Feature) onTap;
+  final bool sketchActive;
 
   @override
   void onPolygonAnnotationClick(PolygonAnnotation annotation) {
+    if (sketchActive) return;
     final feature = annotationToFeature[annotation.id];
     if (feature != null) onTap(feature);
   }
@@ -725,13 +867,16 @@ class _RoadClickHandler extends OnPolylineAnnotationClickListener {
   _RoadClickHandler({
     required this.annotationToFeature,
     required this.onTap,
+    required this.sketchActive,
   });
 
   final Map<String, Feature> annotationToFeature;
   final void Function(Feature) onTap;
+  final bool sketchActive;
 
   @override
   void onPolylineAnnotationClick(PolylineAnnotation annotation) {
+    if (sketchActive) return;
     final feature = annotationToFeature[annotation.id];
     if (feature != null) onTap(feature);
   }
@@ -739,7 +884,7 @@ class _RoadClickHandler extends OnPolylineAnnotationClickListener {
 
 /// Caches lat/lng <-> screen-px projections via async `coordinateForPixel`
 /// and exposes a synchronous linear interpolation. Refreshed on each camera
-/// change so ReshapeOverlay (which rebuilds on every Riverpod tick during
+/// change so GeometryEditorOverlay (which rebuilds on every Riverpod tick during
 /// drags) can read sync without an async hop.
 ///
 /// The linear-corner calibration is approximate near map edges and at very

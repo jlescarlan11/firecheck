@@ -1,3 +1,4 @@
+import 'package:firecheck/core/forms/form_variant_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
 import 'package:firecheck/features/home/presentation/home_providers.dart';
 import 'package:firecheck/features/survey/building_form/data/building_attributes_repository.dart';
@@ -38,12 +39,14 @@ class BuildingFormKey {
 final buildingFormNotifierProvider = StateNotifierProvider.autoDispose
     .family<BuildingFormNotifier, BuildingFormState, BuildingFormKey>(
   (ref, key) {
+    final variant = ref.watch(currentFormVariantProvider);
     return BuildingFormNotifier(
       submissionId: key.submissionId,
       featureId: key.featureId,
       submissionRepo: ref.watch(submissionRepositoryProvider),
       attrsRepo: ref.watch(buildingAttributesRepositoryProvider),
       featureRepo: ref.watch(featureRepositoryProvider),
+      hiddenFields: variant.hideBuildingFields,
     );
   },
 );

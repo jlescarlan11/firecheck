@@ -22,6 +22,11 @@ class DbfWriter {
     List<DbfFieldDef> fields,
     List<Map<String, String?>> records,
   ) {
+    for (final f in fields) {
+      // DBF field-name area is 11 bytes including the trailing NUL — names
+      // longer than 10 chars get silently truncated by readers (e.g. QGIS).
+      assert(f.name.length <= 10, 'DBF field name "${f.name}" exceeds 10 chars');
+    }
     final recordCount = records.length;
     final fieldCount = fields.length;
     final headerSize = 32 + 32 * fieldCount + 1;
@@ -79,9 +84,17 @@ class DbfWriter {
 
     switch (field.type) {
       case 'C':
-        final bytes = utf8.encode(value);
-        for (var i = 0; i < bytes.length && i < field.width; i++) {
-          out[i] = bytes[i];
+        // Encode codepoint-by-codepoint so a multi-byte char that wouldn't
+        // fit is skipped entirely — never split mid-codepoint, which would
+        // make the .dbf invalid UTF-8 even with a UTF-8 .cpg sidecar.
+        var written = 0;
+        for (final rune in value.runes) {
+          final charBytes = utf8.encode(String.fromCharCode(rune));
+          if (written + charBytes.length > field.width) break;
+          for (var i = 0; i < charBytes.length; i++) {
+            out[written + i] = charBytes[i];
+          }
+          written += charBytes.length;
         }
       case 'N':
         final bytes = utf8.encode(value);

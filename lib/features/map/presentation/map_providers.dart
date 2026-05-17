@@ -5,16 +5,13 @@ import 'package:firecheck/features/map/presentation/map_renderer.dart';
 import 'package:firecheck/features/new_feature/data/new_feature_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Stream of features for the currently-active assignment. Emits an empty
-/// list until an assignment is downloaded.
+/// Stream of every imported feature, across every downloaded assignment.
+/// Each "Get Maps" / shapefile import creates its own assignment row, but
+/// users expect prior folders to keep rendering after a new one is added —
+/// so we don't filter by the latest assignment here. (See progress_repository,
+/// which counts features the same unfiltered way.)
 final currentFeaturesProvider = StreamProvider<List<Feature>>((ref) {
-  final assignment = ref.watch(currentAssignmentProvider).value;
-  if (assignment == null) {
-    return Stream.value(const <Feature>[]);
-  }
-  return ref
-      .watch(featureRepositoryProvider)
-      .watchFeaturesForAssignment(assignment.id);
+  return ref.watch(featureRepositoryProvider).watchAllFeatures();
 });
 
 /// Defaults to the fake renderer for widget tests / early-build safety.

@@ -1038,6 +1038,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'Adjacent corners cannot be on the same spot';
 
   @override
+  String get sketchErrorNotEnoughVertices =>
+      'Not enough vertices for this feature type';
+
+  @override
+  String get sketchDiscardConfirmTitle => 'Discard sketch?';
+
+  @override
+  String get sketchDiscardConfirmBody => 'Your dropped vertices will be lost.';
+
+  @override
+  String get sketchDiscardKeepEditing => 'Keep editing';
+
+  @override
+  String get sketchDiscardConfirm => 'Discard';
+
+  @override
   String get reshapeLockedSnackbar =>
       'Assignment is closed; reshape unavailable';
 
@@ -1131,4 +1147,31 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get exportValidationRoadsMissingFields =>
       'Some road entries are missing required fields. Complete all road forms before exporting.';
+
+  @override
+  String get remainingQuestionsAllDone =>
+      'All questions on this path are answered';
+
+  @override
+  String remainingQuestionsRemaining(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString questions left on this path',
+      one: '1 question left on this path',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String sketchBannerTitle(int count, String type) {
+    return '$count vertices · $type';
+  }
+
+  @override
+  String get sketchBannerFinish => 'Finish';
 }

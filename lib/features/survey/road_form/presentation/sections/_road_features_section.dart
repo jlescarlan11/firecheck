@@ -1,5 +1,7 @@
+import 'package:firecheck/core/forms/form_variant_providers.dart';
 import 'package:firecheck/features/survey/building_form/presentation/sections/_persistent_text_field.dart';
 import 'package:firecheck/features/survey/building_form/presentation/sections/_section_card.dart';
+import 'package:firecheck/features/survey/road_form/domain/road_form_applicability.dart';
 import 'package:firecheck/features/survey/road_form/presentation/road_form_providers.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -54,6 +56,12 @@ class RoadFeaturesSection extends ConsumerWidget {
 
     final selected = state.roadFeatures;
     final hasOthers = selected.contains('others');
+    final hidden = ref.watch(currentFormVariantProvider).hideRoadFields;
+    if (hidden.contains(RoadFormField.roadFeatures)) {
+      return const SizedBox.shrink();
+    }
+    final showOthersDesc =
+        hasOthers && !hidden.contains(RoadFormField.othersDescription);
 
     return SectionCard(
       title: l.sectionRoadFeatures,
@@ -86,7 +94,7 @@ class RoadFeaturesSection extends ConsumerWidget {
               contentPadding: EdgeInsets.zero,
               dense: true,
             ),
-          if (hasOthers) ...[
+          if (showOthersDesc) ...[
             const SizedBox(height: 8),
             PersistentTextField(
               enabled: !disabled,

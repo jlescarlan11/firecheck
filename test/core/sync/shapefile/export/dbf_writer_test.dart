@@ -1,4 +1,6 @@
 // test/core/sync/shapefile/export/dbf_writer_test.dart
+import 'dart:convert';
+
 import 'package:firecheck/core/sync/shapefile/dbf_parser.dart';
 import 'package:firecheck/core/sync/shapefile/export/dbf_writer.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -90,5 +92,36 @@ void main() {
     expect(result.records[0]['FEAT_ID'], equals('id-1'));
     expect(result.records[1]['FEAT_ID'], equals('id-2'));
     expect(result.records[1]['NOT_EXIST'], equals('T'));
+  });
+
+  test('field names longer than 10 chars trip the assertion (US-40)', () {
+    final tooLong = [
+      const DbfFieldDef(name: 'TOO_LONG_NAME', type: 'C', width: 10),
+    ];
+    expect(() => writer.write(tooLong, []), throwsA(isA<AssertionError>()));
+  });
+
+  test('multi-byte UTF-8 strings are never split mid-codepoint (US-40)', () {
+    // 'á' is 2 UTF-8 bytes (0xC3 0xA1). With width=3, we can fit one 'á'
+    // (2 bytes) plus 1 padding byte; the second 'á' must be skipped entirely
+    // rather than half-written, which would produce an invalid UTF-8 sequence
+    // that QGIS (with .cpg=UTF-8) would surface as warnings.
+    final narrow = [const DbfFieldDef(name: 'NAME', type: 'C', width: 3)];
+    final bytes = writer.write(narrow, [
+      {'NAME': 'áá'},
+    ]);
+    // Field-data area for a 1-record DBF with one width-3 field lives
+    // immediately after the header. Easier to extract via the parser's
+    // header-size math, but simpler: scan for the data bytes and assert
+    // that the bytes form a valid UTF-8 prefix.
+    // Locate the start of the records area: header is 32 + 32*1 + 1 = 65 bytes.
+    // Each record is 1 (deletion flag) + 3 (field) = 4 bytes.
+    final fieldBytes = bytes.sublist(65 + 1, 65 + 1 + 3);
+    // Trim trailing 0x20 (DBF space padding) before validating.
+    final end = fieldBytes.lastIndexWhere((b) => b != 0x20) + 1;
+    final trimmed = fieldBytes.sublist(0, end);
+    // Bytes must be a valid UTF-8 sequence — decode without throwing.
+    expect(() => utf8.decode(trimmed), returnsNormally);
+    expect(utf8.decode(trimmed), equals('á'));
   });
 }

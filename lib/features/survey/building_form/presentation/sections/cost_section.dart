@@ -1,3 +1,5 @@
+import 'package:firecheck/core/forms/form_variant_providers.dart';
+import 'package:firecheck/features/survey/building_form/domain/building_form_applicability.dart';
 import 'package:firecheck/features/survey/building_form/presentation/building_form_providers.dart';
 import 'package:firecheck/features/survey/building_form/presentation/sections/_persistent_text_field.dart';
 import 'package:firecheck/features/survey/building_form/presentation/sections/_section_card.dart';
@@ -57,6 +59,16 @@ class CostSection extends ConsumerWidget {
     final notifier = ref.read(
       buildingFormNotifierProvider(_key(submissionId, featureId)).notifier,
     );
+
+    // The cost pair is a single toggle with two mutually-exclusive inputs;
+    // hiding only one side would leave a broken radio. Variant hides take
+    // effect only when BOTH costAmount and costEstimateRange are listed —
+    // anything else is treated as "show cost" to keep the toggle coherent.
+    final hidden = ref.watch(currentFormVariantProvider).hideBuildingFields;
+    if (hidden.contains(BuildingFormField.costAmount) &&
+        hidden.contains(BuildingFormField.costEstimateRange)) {
+      return const SizedBox.shrink();
+    }
 
     return SectionCard(
       title: l.sectionCost,

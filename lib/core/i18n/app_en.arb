@@ -380,6 +380,11 @@
   "reshapeErrorSelfIntersection": "Edges cannot cross. Tap Undo or move a corner.",
   "reshapeErrorOutsideBoundary": "Some vertices are outside the assignment area",
   "reshapeErrorZeroLengthEdge": "Adjacent corners cannot be on the same spot",
+  "sketchErrorNotEnoughVertices": "Not enough vertices for this feature type",
+  "sketchDiscardConfirmTitle": "Discard sketch?",
+  "sketchDiscardConfirmBody": "Your dropped vertices will be lost.",
+  "sketchDiscardKeepEditing": "Keep editing",
+  "sketchDiscardConfirm": "Discard",
   "reshapeLockedSnackbar": "Assignment is closed; reshape unavailable",
   "reshapeLockWhileDirtyBanner": "Assignment was closed by supervisor — your edits cannot be saved",
   "reshapeLockExit": "Exit",
@@ -411,5 +416,20 @@
   "exportValidationBuildingsEmpty": "No buildings recorded. Survey at least one building before exporting.",
   "exportValidationRoadsEmpty": "No roads recorded. Survey at least one road before exporting.",
   "exportValidationBuildingsMissingFields": "Some building entries are missing required fields. Complete all building forms before exporting.",
-  "exportValidationRoadsMissingFields": "Some road entries are missing required fields. Complete all road forms before exporting."
+  "exportValidationRoadsMissingFields": "Some road entries are missing required fields. Complete all road forms before exporting.",
+  "remainingQuestionsAllDone": "All questions on this path are answered",
+  "remainingQuestionsRemaining": "{count, plural, =1{1 question left on this path} other{{count} questions left on this path}}",
+  "@remainingQuestionsRemaining": {
+    "placeholders": {
+      "count": { "type": "int", "format": "decimalPattern" }
+    }
+  },
+  "sketchBannerTitle": "{count} vertices · {type}",
+  "@sketchBannerTitle": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "type": {"type": "String"}
+    }
+  },
+  "sketchBannerFinish": "Finish"
 }

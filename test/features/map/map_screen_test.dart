@@ -104,4 +104,31 @@ void main() {
       inInclusiveRange(12.0, 18.0),
     );
   });
+
+  testWidgets(
+    'FakeMapRenderer.simulateMapTap fires onMapTap with the right coords',
+    (tester) async {
+      double? gotLat;
+      double? gotLng;
+      final fake = FakeMapRenderer();
+      await tester.pumpWidget(MaterialApp(
+        home: Builder(
+          builder: (ctx) => fake.build(
+            ctx,
+            features: const [],
+            boundaryGeojson: '',
+            onFeatureTap: (_) {},
+            sketchActive: true,
+            onMapTap: (lat, lng) {
+              gotLat = lat;
+              gotLng = lng;
+            },
+          ),
+        ),
+      ),);
+      await fake.simulateMapTap(1.5, 2.5);
+      expect(gotLat, 1.5);
+      expect(gotLng, 2.5);
+    },
+  );
 }

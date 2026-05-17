@@ -322,6 +322,11 @@
   "reshapeErrorSelfIntersection": "Edges cannot cross. Tap Undo or move a corner.",
   "reshapeErrorOutsideBoundary": "Some vertices are outside the assignment area",
   "reshapeErrorZeroLengthEdge": "Adjacent corners cannot be on the same spot",
+  "sketchErrorNotEnoughVertices": "Kulang ang vertices para sa uri ng feature na ito",
+  "sketchDiscardConfirmTitle": "Itapon ang pagguhit?",
+  "sketchDiscardConfirmBody": "Mawawala ang mga vertice na ginawa mo.",
+  "sketchDiscardKeepEditing": "Magpatuloy",
+  "sketchDiscardConfirm": "Itapon",
   "reshapeLockedSnackbar": "Assignment is closed; reshape unavailable",
   "reshapeLockWhileDirtyBanner": "Assignment was closed by supervisor — your edits cannot be saved",
   "reshapeLockExit": "Exit",
@@ -329,5 +334,14 @@
   "exportValidationBuildingsEmpty": "Walang naitalagang gusali. Mag-survey ng kahit isang gusali bago mag-export.",
   "exportValidationRoadsEmpty": "Walang naitalagang kalsada. Mag-survey ng kahit isang kalsada bago mag-export.",
   "exportValidationBuildingsMissingFields": "May ilang gusali na may kulang na impormasyon. Kumpletuhin ang lahat ng form ng gusali bago mag-export.",
-  "exportValidationRoadsMissingFields": "May ilang kalsada na may kulang na impormasyon. Kumpletuhin ang lahat ng form ng kalsada bago mag-export."
+  "exportValidationRoadsMissingFields": "May ilang kalsada na may kulang na impormasyon. Kumpletuhin ang lahat ng form ng kalsada bago mag-export.",
+  "remainingQuestionsAllDone": "Lahat ng tanong sa daanang ito ay nasagutan na",
+  "remainingQuestionsRemaining": "{count, plural, =1{1 tanong na natitira sa daanang ito} other{{count} tanong ang natitira sa daanang ito}}",
+  "@remainingQuestionsRemaining": {
+    "placeholders": {
+      "count": { "type": "int", "format": "decimalPattern" }
+    }
+  },
+  "sketchBannerTitle": "{count} vertice · {type}",
+  "sketchBannerFinish": "Tapusin"
 }

@@ -1,3 +1,4 @@
+import 'package:firecheck/core/forms/form_variant_providers.dart';
 import 'package:firecheck/features/home/presentation/home_providers.dart';
 import 'package:firecheck/features/survey/building_form/presentation/building_form_providers.dart';
 import 'package:firecheck/features/survey/road_form/data/road_attributes_repository.dart';
@@ -29,10 +30,12 @@ class RoadFormKey {
 
 final roadFormNotifierProvider = StateNotifierProvider.autoDispose
     .family<RoadFormNotifier, RoadFormState, RoadFormKey>((ref, key) {
+  final variant = ref.watch(currentFormVariantProvider);
   return RoadFormNotifier(
     submissionId: key.submissionId,
     featureId: key.featureId,
     attrsRepo: ref.watch(roadAttributesRepositoryProvider),
     submissionRepo: ref.watch(submissionRepositoryProvider),
+    hiddenFields: variant.hideRoadFields,
   );
 });

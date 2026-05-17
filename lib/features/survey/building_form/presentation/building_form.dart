@@ -1,4 +1,5 @@
 import 'package:firecheck/features/survey/building_form/presentation/building_form_providers.dart';
+import 'package:firecheck/features/survey/building_form/presentation/remaining_questions_badge.dart';
 import 'package:firecheck/features/survey/building_form/presentation/sections/construction_section.dart';
 import 'package:firecheck/features/survey/building_form/presentation/sections/cost_section.dart';
 import 'package:firecheck/features/survey/building_form/presentation/sections/ff_facilities_section.dart';
@@ -85,6 +86,11 @@ class BuildingForm extends ConsumerWidget {
               ),
             ],
           ),
+        ),
+        const SizedBox(height: 12),
+        BuildingRemainingQuestionsBadge(
+          submissionId: submissionId,
+          featureId: featureId,
         ),
         const SizedBox(height: 12),
         IdentitySection(

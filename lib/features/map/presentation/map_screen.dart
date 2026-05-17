@@ -4,7 +4,6 @@ import 'package:firecheck/core/analytics/analytics_providers.dart';
 import 'package:firecheck/core/auth/current_user_provider.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/geo/centroid.dart';
-import 'package:firecheck/core/geo/point_in_polygon.dart';
 import 'package:firecheck/core/geo/polygon_bounds.dart';
 import 'package:firecheck/core/geo/polygon_validator.dart';
 import 'package:firecheck/core/geo/polyline_midpoint.dart';
@@ -21,11 +20,13 @@ import 'package:firecheck/features/map/presentation/recenter_button_state.dart';
 import 'package:firecheck/features/map/presentation/zoom_button.dart';
 import 'package:firecheck/features/map/presentation/zoom_button_state.dart';
 import 'package:firecheck/features/map/presentation/zoom_direction.dart';
-import 'package:firecheck/features/map/reshape/domain/reshape_op.dart';
-import 'package:firecheck/features/map/reshape/presentation/reshape_action_sheet.dart';
-import 'package:firecheck/features/map/reshape/presentation/reshape_banner.dart';
-import 'package:firecheck/features/map/reshape/presentation/reshape_overlay.dart';
-import 'package:firecheck/features/map/reshape/presentation/reshape_providers.dart';
+import 'package:firecheck/features/map/geometry_editor/domain/geometry_editor_state.dart';
+import 'package:firecheck/features/map/geometry_editor/domain/reshape_op.dart';
+import 'package:firecheck/features/map/geometry_editor/presentation/reshape_action_sheet.dart';
+import 'package:firecheck/features/map/geometry_editor/presentation/geometry_editor_banner.dart';
+import 'package:firecheck/features/map/geometry_editor/presentation/geometry_editor_overlay.dart';
+import 'package:firecheck/features/map/geometry_editor/presentation/geometry_editor_providers.dart';
+import 'package:firecheck/features/map/geometry_editor/presentation/sketch_error_messages.dart';
 import 'package:firecheck/features/new_feature/presentation/feature_type_picker.dart';
 import 'package:firecheck/features/survey/building_form/presentation/building_form_providers.dart';
 import 'package:firecheck/features/survey/building_form/presentation/override_reason_dialog.dart';
@@ -44,8 +45,6 @@ class MapScreen extends ConsumerStatefulWidget {
 }
 
 class _MapScreenState extends ConsumerState<MapScreen> {
-  bool _addModeActive = false;
-
   RecenterButtonState _recenterState = RecenterButtonState.idle;
   CameraTarget? _cameraTarget;
   int _cameraRequestSeq = 0;
@@ -59,6 +58,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Timer? _animationSettleTimer;
 
   MapProjection? _reshapeProjection;
+  // Incremented on every projection refresh — forces the editor overlay
+  // to rebuild (and the preview painter to repaint) even when the
+  // underlying projection instance is reused.
+  int _projectionEpoch = 0;
 
   bool _lockBlockerShown = false;
 
@@ -68,8 +71,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final renderer = ref.watch(mapRendererProvider);
     final featuresAsync = ref.watch(currentFeaturesProvider);
     final assignmentAsync = ref.watch(currentAssignmentProvider);
-    final reshape = ref.watch(reshapeModeControllerProvider);
-    final reshapeActive = reshape.isActive;
+    final editorState = ref.watch(geometryEditorControllerProvider);
+    final reshapeActive = editorState.isActive && !editorState.isSketchMode;
+    final sketchActive = editorState.isSketchMode;
     // Subscribe so the GPS stream is hot from mount, not first tap.
     ref.watch(currentPositionProvider);
 
@@ -78,15 +82,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     // (Exit discards), and a clean session exits silently.
     final isLocked = ref.watch(isAssignmentLockedProvider);
     if (reshapeActive && isLocked) {
-      if (reshape.isDirty && !_lockBlockerShown) {
+      if (editorState.isDirty && !_lockBlockerShown) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
           _showLockWhileDirtyBlocker();
         });
-      } else if (!reshape.isDirty) {
+      } else if (!editorState.isDirty) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
-          ref.read(reshapeModeControllerProvider.notifier).cancel();
+          ref.read(geometryEditorControllerProvider.notifier).cancel();
         });
       }
     }
@@ -119,43 +123,40 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     features: features ?? [],
                     boundaryGeojson: assignment?.boundaryPolygonGeojson ?? '',
                     onFeatureTap: _handleFeatureTap,
-                    onLongPress: _handleLongPress,
                     onCameraChanged: _onCameraChanged,
-                    addModeActive: _addModeActive,
+                    sketchActive: sketchActive,
+                    onMapTap: _onSketchTap,
                     initialCameraTarget: initialCameraTarget,
                     cameraTarget: _cameraTarget,
                     onPolygonLongPress: _handlePolygonLongPress,
-                    reshapeWorkingPolygonGeojson: reshapeActive
-                        ? ref
-                            .read(reshapeModeControllerProvider.notifier)
-                            .serializeWorkingPolygon()
-                        : null,
+                    // The CustomPaint preview inside GeometryEditorOverlay is
+                    // now the single source of truth for the live working
+                    // shape (both sketch and reshape). Keeping the Mapbox-
+                    // annotation preview as well caused phantom trails: each
+                    // drag fires an async delete+create on the polygon
+                    // manager and the creates can land before earlier
+                    // deletes, leaving stacked polygons. Always-null here.
+                    reshapeWorkingPolygonGeojson: null,
+                    reshapingFeatureId:
+                        reshapeActive ? editorState.originalFeature?.id : null,
                     onProjectionReady: (p) {
-                      if (_reshapeProjection != p) {
-                        setState(() => _reshapeProjection = p);
-                      }
+                      // Always rebuild on every camera change — the
+                      // renderer reuses the same projection instance and
+                      // mutates its internal state on refresh, so identity
+                      // equality would always be true and the overlay
+                      // would never reproject as the user pans/zooms.
+                      setState(() {
+                        _reshapeProjection = p;
+                        _projectionEpoch++;
+                      });
                     },
                   ),
           ),
-          if (reshapeActive && _reshapeProjection != null)
+          if ((reshapeActive || sketchActive) && _reshapeProjection != null)
             Positioned.fill(
-              child: ReshapeOverlay(projection: _reshapeProjection!),
-            ),
-          if (!reshapeActive && _addModeActive)
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: Material(
-                color: const Color(0xFF3B82F6),
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  child: Text(
-                    l.addModeBannerHint,
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                ),
+              child: GeometryEditorOverlay(
+                key: ValueKey('editor-overlay-$_projectionEpoch'),
+                projection: _reshapeProjection!,
               ),
             ),
           Positioned(
@@ -203,15 +204,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                         final isLocked =
                             ref2.watch(isAssignmentLockedProvider);
                         return _pill(
-                          _addModeActive
+                          sketchActive
                               ? l.addModePillActiveLabel
                               : l.newFeaturePlaceholder,
-                          on: _addModeActive,
-                          disabled: isLocked,
+                          on: sketchActive,
+                          disabled:
+                              sketchActive || reshapeActive || isLocked,
                           key: const Key('map.add-feature-pill'),
-                          onTap: () => setState(
-                            () => _addModeActive = !_addModeActive,
-                          ),
+                          onTap: _onPlusPressed,
                         );
                       },
                     ),
@@ -224,18 +224,36 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               top: 0,
               left: 0,
               right: 0,
-              child: ReshapeBanner(
-                editCount: reshape.undoStack.length,
-                undoEnabled: reshape.isDirty && !reshape.saving,
-                saveEnabled: reshape.isDirty && !reshape.saving,
+              child: GeometryEditorBanner(
+                editCount: editorState.undoStack.length,
+                undoEnabled: editorState.isDirty && !editorState.saving,
+                saveEnabled: editorState.isDirty && !editorState.saving,
                 // Disable Cancel while saving — the async commit transaction
                 // would otherwise still complete in the background after the
                 // UI exits edit mode, producing surprising state transitions.
-                onCancel: reshape.saving ? null : _onReshapeCancel,
+                onCancel: editorState.saving ? null : _onReshapeCancel,
                 onUndo: () => ref
-                    .read(reshapeModeControllerProvider.notifier)
+                    .read(geometryEditorControllerProvider.notifier)
                     .undo(),
                 onSave: _onReshapeSave,
+              ),
+            ),
+          if (sketchActive)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: GeometryEditorBanner(
+                editCount: editorState.workingRings.isNotEmpty
+                    ? editorState.workingRings[0].length
+                    : 0,
+                undoEnabled: editorState.undoStack.isNotEmpty,
+                saveEnabled: _sketchFinishEnabled(editorState),
+                onCancel: _onSketchCancel,
+                onUndo: () => ref
+                    .read(geometryEditorControllerProvider.notifier)
+                    .undo(),
+                onSave: _onSketchFinish,
               ),
             ),
         ],
@@ -244,10 +262,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   void _onReshapeCancel() {
-    final state = ref.read(reshapeModeControllerProvider);
+    final state = ref.read(geometryEditorControllerProvider);
     final featureId = state.originalFeature?.id ?? '';
     final ops = state.undoStack.length;
-    ref.read(reshapeModeControllerProvider.notifier).cancel();
+    ref.read(geometryEditorControllerProvider.notifier).cancel();
     ref.read(analyticsServiceProvider).track(
       'map.reshape.cancelled',
       properties: {
@@ -275,34 +293,52 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       ),
     );
     if (!mounted) return;
-    ref.read(reshapeModeControllerProvider.notifier).cancel();
+    ref.read(geometryEditorControllerProvider.notifier).cancel();
     setState(() => _lockBlockerShown = false);
   }
 
   Future<void> _onReshapeSave() async {
     final l = AppLocalizations.of(context)!;
-    final ctrl = ref.read(reshapeModeControllerProvider.notifier);
-    final s = ref.read(reshapeModeControllerProvider);
+    final ctrl = ref.read(geometryEditorControllerProvider.notifier);
+    final s = ref.read(geometryEditorControllerProvider);
     final assignment = ref.read(currentAssignmentProvider).value;
     if (s.originalFeature == null || assignment == null) return;
 
-    final res = validateBuildingPolygon(
-      s.workingRings,
-      boundaryGeojson: assignment.boundaryPolygonGeojson,
-    );
-    if (!res.valid) {
-      final msg = _validationMessage(res.error!, l);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(msg)));
-      ref.read(analyticsServiceProvider).track(
-        'map.reshape.validation_failed',
-        properties: {
-          'feature_id': s.originalFeature!.id,
-          'rule': res.error!.name,
-        },
+    // validateBuildingPolygon enforces polygon rules (closure, orientation,
+    // self-intersection). Polyline reshape (US-10) doesn't have those rules;
+    // skip the check when the working geometry is open.
+    //
+    // Boundary handling: when the user provided an override reason at
+    // reshape entry (e.g. they're editing a building from far away), also
+    // skip the per-vertex boundary check. The user already justified the
+    // edit; blocking on boundary here would force them to cancel and start
+    // over even though they explicitly accepted responsibility. Pass the
+    // empty-string sentinel to validateBuildingPolygon, which short-circuits
+    // the boundary check the same way the morning fix for empty-coords
+    // Polygons did.
+    if (s.isClosed) {
+      final boundaryForCheck = s.overrideReason != null
+          ? ''
+          : assignment.boundaryPolygonGeojson;
+      final res = validateBuildingPolygon(
+        s.workingRings,
+        boundaryGeojson: boundaryForCheck,
       );
-      return;
+      if (!res.valid) {
+        final msg = _validationMessage(res.error!, l);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(msg)));
+        ref.read(analyticsServiceProvider).track(
+          'map.reshape.validation_failed',
+          properties: {
+            'feature_id': s.originalFeature!.id,
+            'rule': res.error!.name,
+            'override_used': s.overrideReason != null,
+          },
+        );
+        return;
+      }
     }
 
     ctrl.markSaving(saving: true);
@@ -358,42 +394,153 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     };
   }
 
-  Future<void> _handleLongPress(double lat, double lng) async {
-    if (!_addModeActive) return;
+  Future<void> _onPlusPressed() async {
     final l = AppLocalizations.of(context)!;
     final assignment = ref.read(currentAssignmentProvider).value;
-    final boundary = assignment?.boundaryPolygonGeojson ?? '';
-
-    if (!pointInPolygonGeojson(lat, lng, boundary)) {
-      if (!mounted) return;
+    if (assignment == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l.outsideBoundarySnackbar)),
+        SnackBar(content: Text(l.noAssignmentForEnumerator)),
+      );
+      return;
+    }
+    final type = await showFeatureTypePicker(context);
+    if (type == null) return;
+    ref
+        .read(geometryEditorControllerProvider.notifier)
+        .enterSketch(featureType: type);
+    ref.read(analyticsServiceProvider).track(
+      'map.sketch.entered',
+      properties: {'feature_type': type},
+    );
+  }
+
+  void _onSketchTap(double lat, double lng) {
+    if (!ref.read(geometryEditorControllerProvider).isSketchMode) return;
+    ref
+        .read(geometryEditorControllerProvider.notifier)
+        .appendSketchVertex((lng: lng, lat: lat));
+  }
+
+  bool _sketchFinishEnabled(GeometryEditorState s) {
+    final n = s.workingRings.isNotEmpty ? s.workingRings[0].length : 0;
+    switch (s.pendingFeatureType) {
+      case 'building':
+        return n >= 3;
+      case 'road':
+        return n >= 2;
+      case 'point':
+        return n >= 1;
+      default:
+        return false;
+    }
+  }
+
+  Future<void> _onSketchFinish() async {
+    final l = AppLocalizations.of(context)!;
+    final assignment = ref.read(currentAssignmentProvider).value;
+    if (assignment == null) return;
+    final ctrl = ref.read(geometryEditorControllerProvider.notifier);
+    final state = ref.read(geometryEditorControllerProvider);
+    final type = state.pendingFeatureType;
+    if (type == null) return;
+
+    final err = ctrl.validateSketch(
+      boundaryGeojson: assignment.boundaryPolygonGeojson,
+    );
+    if (err != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(sketchErrorMessage(err, l))),
+      );
+      ref.read(analyticsServiceProvider).track(
+        'map.sketch.validation_failed',
+        properties: {'feature_type': type, 'rule': err.name},
       );
       return;
     }
 
+    // serializeWorking() handles polygon/polyline correctly; for point we
+    // need to override since it's a single coord, not a ring.
+    final geom = type == 'point'
+        ? '{"type":"Point","coordinates":[${state.workingRings[0][0].lng},${state.workingRings[0][0].lat}]}'
+        : ctrl.serializeWorking();
+
+    final repo = ref.read(newFeatureRepositoryProvider);
+    final feature = await repo.createFeature(
+      assignmentId: assignment.id,
+      featureType: type,
+      geometryGeojson: geom,
+    );
+
+    ref.read(analyticsServiceProvider).track(
+      'map.sketch.completed',
+      properties: {
+        'feature_type': type,
+        'vertex_count': state.workingRings[0].length,
+        'ops_made': state.undoStack.length,
+      },
+    );
+
+    ctrl.cancel();
     if (!mounted) return;
-    final type = await showFeatureTypePicker(context);
-    if (type == null) {
-      if (mounted) setState(() => _addModeActive = false);
+    // Await the push so we can refresh after the user pops back. The Mapbox
+    // annotation channel can briefly disconnect during the push transition;
+    // if the initial _rerenderFeatures call silently fails on that dead
+    // channel, the polygon stays invisible until something else mutates the
+    // features list. Invalidating the provider on return forces a fresh
+    // emission and a clean re-render on a healthy channel.
+    await context.push('/feature/${Uri.encodeComponent(feature.id)}');
+    if (!mounted) return;
+    ref.invalidate(currentFeaturesProvider);
+  }
+
+  Future<void> _onSketchCancel() async {
+    final l = AppLocalizations.of(context)!;
+    final state = ref.read(geometryEditorControllerProvider);
+    final type = state.pendingFeatureType ?? '';
+    final vertexCount = state.workingRings.isNotEmpty
+        ? state.workingRings[0].length
+        : 0;
+
+    if (vertexCount == 0) {
+      ref.read(geometryEditorControllerProvider.notifier).cancel();
+      ref.read(analyticsServiceProvider).track(
+        'map.sketch.cancelled',
+        properties: {'feature_type': type, 'vertex_count': 0, 'ops_made': 0},
+      );
       return;
     }
 
-    final newFeatureRepo = ref.read(newFeatureRepositoryProvider);
-    final feature = await newFeatureRepo.createNewFeature(
-      assignmentId: assignment!.id,
-      featureType: type,
-      lat: lat,
-      lng: lng,
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l.sketchDiscardConfirmTitle),
+        content: Text(l.sketchDiscardConfirmBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l.sketchDiscardKeepEditing),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(l.sketchDiscardConfirm),
+          ),
+        ],
+      ),
     );
-
-    if (!mounted) return;
-    setState(() => _addModeActive = false);
-    context.push('/feature/${Uri.encodeComponent(feature.id)}');
+    if (confirmed == true) {
+      ref.read(geometryEditorControllerProvider.notifier).cancel();
+      ref.read(analyticsServiceProvider).track(
+        'map.sketch.cancelled',
+        properties: {
+          'feature_type': type,
+          'vertex_count': vertexCount,
+          'ops_made': state.undoStack.length,
+        },
+      );
+    }
   }
 
   Future<void> _handlePolygonLongPress(Feature feature) async {
-    if (_addModeActive) return;
     final l = AppLocalizations.of(context)!;
     final locked = ref.read(isAssignmentLockedProvider);
     if (locked) {
@@ -419,9 +566,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
     String? overrideReason;
     if (pos != null) {
-      final ring = decodePolygonGeojson(feature.geometryGeojson);
-      if (ring == null || ring.isEmpty) return;
-      final centroid = polygonCentroid(ring);
+      final LatLng centroid;
+      if (feature.featureType == 'road') {
+        final coords = decodePolylineGeojson(feature.geometryGeojson);
+        if (coords == null || coords.isEmpty) return;
+        centroid = polylineMidpoint(coords);
+      } else {
+        final ring = decodePolygonGeojson(feature.geometryGeojson);
+        if (ring == null || ring.isEmpty) return;
+        centroid = polygonCentroid(ring);
+      }
       final meters = haversineMeters(
         pos.latitude,
         pos.longitude,
@@ -441,7 +595,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     }
 
     if (!mounted) return;
-    ref.read(reshapeModeControllerProvider.notifier).enterReshape(
+    ref.read(geometryEditorControllerProvider.notifier).enterReshape(
           feature: feature,
           overrideReason: overrideReason,
         );

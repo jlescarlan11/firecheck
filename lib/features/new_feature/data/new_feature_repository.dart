@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:drift/drift.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:uuid/uuid.dart';
@@ -9,22 +7,20 @@ class NewFeatureRepository {
   final AppDatabase _db;
   static const _uuid = Uuid();
 
-  Future<Feature> createNewFeature({
+  /// Generic creator used by the sketch-on-create flow. The caller (the
+  /// geometry editor) is responsible for serializing the right GeoJSON shape
+  /// for [featureType].
+  Future<Feature> createFeature({
     required String assignmentId,
     required String featureType,
-    required double lat,
-    required double lng,
+    required String geometryGeojson,
   }) {
-    final geom = jsonEncode({
-      'type': 'Point',
-      'coordinates': [lng, lat],
-    });
     return _db.into(_db.features).insertReturning(
           FeaturesCompanion.insert(
             id: _uuid.v4(),
             assignmentId: assignmentId,
             featureType: featureType,
-            geometryGeojson: geom,
+            geometryGeojson: geometryGeojson,
             isNew: const Value(true),
             createdAt: DateTime.now(),
           ),

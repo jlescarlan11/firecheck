@@ -1064,6 +1064,23 @@ class AppLocalizationsTl extends AppLocalizations {
       'Adjacent corners cannot be on the same spot';
 
   @override
+  String get sketchErrorNotEnoughVertices =>
+      'Kulang ang vertices para sa uri ng feature na ito';
+
+  @override
+  String get sketchDiscardConfirmTitle => 'Itapon ang pagguhit?';
+
+  @override
+  String get sketchDiscardConfirmBody =>
+      'Mawawala ang mga vertice na ginawa mo.';
+
+  @override
+  String get sketchDiscardKeepEditing => 'Magpatuloy';
+
+  @override
+  String get sketchDiscardConfirm => 'Itapon';
+
+  @override
   String get reshapeLockedSnackbar =>
       'Assignment is closed; reshape unavailable';
 
@@ -1157,4 +1174,31 @@ class AppLocalizationsTl extends AppLocalizations {
   @override
   String get exportValidationRoadsMissingFields =>
       'May ilang kalsada na may kulang na impormasyon. Kumpletuhin ang lahat ng form ng kalsada bago mag-export.';
+
+  @override
+  String get remainingQuestionsAllDone =>
+      'Lahat ng tanong sa daanang ito ay nasagutan na';
+
+  @override
+  String remainingQuestionsRemaining(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString tanong ang natitira sa daanang ito',
+      one: '1 tanong na natitira sa daanang ito',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String sketchBannerTitle(int count, String type) {
+    return '$count vertice · $type';
+  }
+
+  @override
+  String get sketchBannerFinish => 'Tapusin';
 }

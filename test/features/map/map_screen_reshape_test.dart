@@ -12,7 +12,7 @@ import 'package:firecheck/features/home/presentation/home_providers.dart';
 import 'package:firecheck/features/map/presentation/map_providers.dart';
 import 'package:firecheck/features/map/presentation/map_renderer.dart';
 import 'package:firecheck/features/map/presentation/map_screen.dart';
-import 'package:firecheck/features/map/reshape/presentation/reshape_providers.dart';
+import 'package:firecheck/features/map/geometry_editor/presentation/geometry_editor_providers.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -134,28 +134,10 @@ void main() {
       );
     });
 
-    testWidgets('long-press on a polygon (add-mode on) does NOT open sheet',
-        (tester) async {
-      final renderer = FakeMapRenderer();
-      final feature = fakeFeature();
-      await pumpMap(tester, renderer: renderer, features: [feature]);
-
-      // Toggle add-mode pill on.
-      await tester.tap(find.byKey(const Key('map.add-feature-pill')));
-      await tester.pumpAndSettle();
-
-      await renderer.simulatePolygonLongPress(feature);
-      await tester.pumpAndSettle();
-
-      expect(
-        find.byKey(const Key('reshape.actionsheet.openForm')),
-        findsNothing,
-      );
-      expect(
-        find.byKey(const Key('reshape.actionsheet.reshape')),
-        findsNothing,
-      );
-    });
+    // (Removed in plan Task 12: the old "add-mode on suppresses long-press"
+    // test. The sketch-mode equivalent — that tapping an existing feature
+    // while sketching is suppressed — is covered by sketch_flow_test.dart's
+    // gesture-suppression group.)
   });
 
   group('US-9 T19 distance gate + override-reason → enterReshape', () {
@@ -182,7 +164,7 @@ void main() {
       expect(find.byKey(const Key('override.reason')), findsNothing);
 
       // Reshape mode is active and the working feature was seeded.
-      final state = container.read(reshapeModeControllerProvider);
+      final state = container.read(geometryEditorControllerProvider);
       expect(state.isActive, isTrue);
       expect(state.originalFeature?.id, feature.id);
       expect(state.overrideReason, isNull);
@@ -231,7 +213,7 @@ void main() {
       expect(find.byKey(const Key('override.reason')), findsNothing);
 
       // Reshape mode active with override reason captured.
-      final state = container.read(reshapeModeControllerProvider);
+      final state = container.read(geometryEditorControllerProvider);
       expect(state.isActive, isTrue);
       expect(state.originalFeature?.id, feature.id);
       expect(state.overrideReason, 'visible from sidewalk');
@@ -343,7 +325,7 @@ void main() {
 
       // Drive the controller into a dirty state by performing a small valid
       // move directly (avoids dependency on overlay layout):
-      container.read(reshapeModeControllerProvider.notifier).moveVertex(
+      container.read(geometryEditorControllerProvider.notifier).moveVertex(
             0,
             0,
             (lng: 123.8826, lat: 10.3176),
@@ -359,7 +341,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       // Mode is inactive in the controller.
-      expect(container.read(reshapeModeControllerProvider).isActive, isFalse);
+      expect(container.read(geometryEditorControllerProvider).isActive, isFalse);
       // Save exited the mode (banner gone).
       expect(find.byKey(const Key('reshape.banner.save')), findsNothing);
 
@@ -401,8 +383,8 @@ void main() {
       // Edges SW→NE and SE→NW are the two diagonals of the rectangle and cross
       // at its centre — that is the self-intersection.
       // (Swapping indices 0 and 2 only reverses the winding — no crossing.)
-      final n = container.read(reshapeModeControllerProvider.notifier);
-      final ring = container.read(reshapeModeControllerProvider).workingRings[0];
+      final n = container.read(geometryEditorControllerProvider.notifier);
+      final ring = container.read(geometryEditorControllerProvider).workingRings[0];
       final c1 = ring[1];
       final c2 = ring[2];
       n
@@ -419,7 +401,7 @@ void main() {
       // Snackbar visible — exact text uses i18n. Check by ARB-key text.
       expect(find.textContaining('cross'), findsWidgets);
       // Still in reshape mode.
-      expect(container.read(reshapeModeControllerProvider).isActive, isTrue);
+      expect(container.read(geometryEditorControllerProvider).isActive, isTrue);
 
       // Validation_failed analytics fired with the rule name.
       expect(
@@ -451,7 +433,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Make at least one edit so state.isDirty == true.
-      container.read(reshapeModeControllerProvider.notifier).moveVertex(
+      container.read(geometryEditorControllerProvider.notifier).moveVertex(
             0,
             0,
             (lng: 123.8835, lat: 10.3185),
@@ -470,7 +452,7 @@ void main() {
       // Reshape exited; banner gone.
       expect(find.byKey(const Key('reshape.banner.save')), findsNothing);
       expect(
-        container.read(reshapeModeControllerProvider).isActive,
+        container.read(geometryEditorControllerProvider).isActive,
         isFalse,
       );
     });
@@ -503,7 +485,7 @@ void main() {
       expect(find.textContaining('Assignment was closed'), findsNothing);
       // Reshape exited silently.
       expect(
-        container.read(reshapeModeControllerProvider).isActive,
+        container.read(geometryEditorControllerProvider).isActive,
         isFalse,
       );
     });

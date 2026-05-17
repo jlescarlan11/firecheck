@@ -1,6 +1,6 @@
 import 'package:drift/native.dart';
 import 'package:firecheck/core/db/database.dart';
-import 'package:firecheck/features/map/reshape/data/feature_geometry_revisions_repository.dart';
+import 'package:firecheck/features/map/geometry_editor/data/feature_geometry_revisions_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

@@ -1,6 +1,7 @@
 // test/core/sync/shapefile/export/shapefile_exporter_test.dart
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:drift/drift.dart' show Value;
@@ -186,6 +187,94 @@ void main() {
         reason: 'roads$ext must not be empty',
       );
     }
+  });
+
+  test('exported .prj declares EPSG:4326 authority (US-40 QGIS-clean)', () async {
+    const assignmentId = 'prj-test';
+    await _seedBuilding(db, assignmentId: assignmentId, featureId: 'f1', submissionId: 's1');
+
+    final capturedPaths = <String>[];
+    await makeExporter(capturedPaths: capturedPaths).export(assignmentId: assignmentId);
+
+    final zipBytes = await File(capturedPaths.first).readAsBytes();
+    final archive = ZipDecoder().decodeBytes(zipBytes);
+    final prj = utf8.decode(
+      archive.files.firstWhere((f) => f.name == 'buildings.prj').content as List<int>,
+    );
+    expect(prj, contains('AUTHORITY["EPSG","4326"]'));
+  });
+
+  test('exported buildings.dbf uses 10-char RA9514_TYP field name (US-40)', () async {
+    const assignmentId = 'fieldname-test';
+    await _seedBuilding(db, assignmentId: assignmentId, featureId: 'f1', submissionId: 's1');
+
+    final capturedPaths = <String>[];
+    await makeExporter(capturedPaths: capturedPaths).export(assignmentId: assignmentId);
+
+    final zipBytes = await File(capturedPaths.first).readAsBytes();
+    final archive = ZipDecoder().decodeBytes(zipBytes);
+    final dbfBytes = archive.files.firstWhere((f) => f.name == 'buildings.dbf').content as List<int>;
+    // Field descriptor names live in 11-byte slots starting at offset 32.
+    // Pull them out and verify the 10-char name made it through intact.
+    final names = <String>[];
+    var i = 32;
+    while (i + 11 <= dbfBytes.length && dbfBytes[i] != 0x0D) {
+      final raw = dbfBytes.sublist(i, i + 11);
+      final nul = raw.indexOf(0);
+      names.add(String.fromCharCodes(nul == -1 ? raw : raw.sublist(0, nul)));
+      i += 32;
+    }
+    expect(names, contains('RA9514_TYP'));
+    expect(names, isNot(contains('RA9514_TYPE')));
+  });
+
+  test('targetEpsg=32651 writes UTM 51N .prj and projected coords (PH)', () async {
+    const assignmentId = 'utm-test';
+    await _seedBuilding(db, assignmentId: assignmentId, featureId: 'f1', submissionId: 's1');
+
+    final capturedPaths = <String>[];
+    final exporter = ShapefileExporter(
+      db: db,
+      shareFile: (path) async => capturedPaths.add(path),
+      tempDirOverride: Directory.systemTemp.createTempSync('shp_utm_test_'),
+      targetEpsg: 32651,
+    );
+    await exporter.export(assignmentId: assignmentId);
+
+    final zipBytes = await File(capturedPaths.first).readAsBytes();
+    final archive = ZipDecoder().decodeBytes(zipBytes);
+
+    // .prj must carry the UTM 51N authority.
+    final prj = utf8.decode(
+      archive.files.firstWhere((f) => f.name == 'buildings.prj').content as List<int>,
+    );
+    expect(prj, contains('AUTHORITY["EPSG","32651"]'));
+
+    // The seeded polygon corners are around (120-121°, 14-15°). Reprojected
+    // to UTM 51N (central meridian 123°E), x should land in the high
+    // 100k-300k range and y around 1.5 million metres — way out of the
+    // WGS84 lng/lat domain. Read the first vertex from the SHP record to
+    // confirm the export actually reprojected.
+    final shpBytes = Uint8List.fromList(
+      archive.files.firstWhere((f) => f.name == 'buildings.shp').content as List<int>,
+    );
+    // First polygon record sits at byte offset 100 (header) + 8 (record
+    // header) + 4 (shape type) + 32 (bbox) + 4 (numParts) + 4 (numPoints)
+    // + 4 (parts[0]) = 156. Then the first point's X is a float64.
+    final view = ByteData.sublistView(shpBytes);
+    final firstX = view.getFloat64(156, Endian.little);
+    final firstY = view.getFloat64(164, Endian.little);
+    // EPSG:4326 would have left these at ~120 and ~14. UTM 51N puts them
+    // in the hundreds-of-thousands / millions range.
+    expect(firstX, greaterThan(10000));
+    expect(firstY, greaterThan(1000000));
+  });
+
+  test('targetEpsg unknown to the PH registry throws ArgumentError', () {
+    expect(
+      () => ShapefileExporter(db: db, targetEpsg: 99999),
+      throwsArgumentError,
+    );
   });
 
   test('doesNotExist building is included in ZIP output', () async {

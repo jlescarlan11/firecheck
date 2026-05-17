@@ -1,0 +1,15 @@
+{
+  "$comment": "Form variants for FireCheck. Each variant lists the building/road form fields to HIDE for the surveys it's applied to. Edit the assignments map (lguId or enumeratorId → variantId) and the variants array to roll a pilot survey without changing app code. The 'default' variant must always exist and is used when no assignment matches.",
+  "variants": [
+    {
+      "id": "default",
+      "name": "Standard",
+      "hideBuildingFields": [],
+      "hideRoadFields": []
+    }
+  ],
+  "assignments": {
+    "lgu": {},
+    "enumerator": {}
+  }
+}

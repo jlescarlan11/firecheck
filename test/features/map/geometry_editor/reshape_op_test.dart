@@ -1,4 +1,4 @@
-import 'package:firecheck/features/map/reshape/domain/reshape_op.dart';
+import 'package:firecheck/features/map/geometry_editor/domain/reshape_op.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -33,17 +33,28 @@ void main() {
     expect(op.removed, (lng: 9.0, lat: 9.0));
   });
 
+  test('Translate op stores lng/lat deltas', () {
+    const op = Translate(dLng: 0.5, dLat: -0.25);
+    expect(op.dLng, 0.5);
+    expect(op.dLat, -0.25);
+    // Whole-shape op uses sentinel indices.
+    expect(op.ringIdx, -1);
+    expect(op.vertexIdx, -1);
+  });
+
   test('switch over ReshapeOp is exhaustive', () {
     const List<ReshapeOp> ops = [
       Move(ringIdx: 0, vertexIdx: 0, prev: (lng: 0, lat: 0), next: (lng: 1, lat: 1)),
       Add(ringIdx: 0, vertexIdx: 0, lngLat: (lng: 0, lat: 0)),
       Remove(ringIdx: 0, vertexIdx: 0, removed: (lng: 0, lat: 0)),
+      Translate(dLng: 0, dLat: 0),
     ];
     final names = ops.map((op) => switch (op) {
           Move() => 'move',
           Add() => 'add',
           Remove() => 'remove',
+          Translate() => 'translate',
         });
-    expect(names, ['move', 'add', 'remove']);
+    expect(names, ['move', 'add', 'remove', 'translate']);
   });
 }

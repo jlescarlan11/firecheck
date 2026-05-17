@@ -34,3 +34,12 @@ class Remove extends ReshapeOp {
   });
   final LngLat removed;
 }
+
+/// Whole-shape translation. ringIdx/vertexIdx are sentinel -1 since the op
+/// applies uniformly to every vertex of every ring.
+class Translate extends ReshapeOp {
+  const Translate({required this.dLng, required this.dLat})
+      : super(ringIdx: -1, vertexIdx: -1);
+  final double dLng;
+  final double dLat;
+}
