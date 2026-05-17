@@ -157,6 +157,30 @@ class GoogleDriveApi implements DriveApi {
   }
 
   @override
+  Future<Uint8List?> fetchFieldRequirementsSidecar(String assignmentId) async {
+    final files = _fileCache[assignmentId];
+    if (files == null) return null;
+    String? fileId;
+    for (final entry in files.entries) {
+      if (entry.key.toLowerCase() == _configFilename) {
+        fileId = entry.value;
+        break;
+      }
+    }
+    if (fileId == null) return null;
+    final api = await _api();
+    final media = await api.files.get(
+      fileId,
+      downloadOptions: gdrive.DownloadOptions.fullMedia,
+    ) as gdrive.Media;
+    final chunks = <int>[];
+    await for (final chunk in media.stream) {
+      chunks.addAll(chunk);
+    }
+    return Uint8List.fromList(chunks);
+  }
+
+  @override
   Future<({String folderPath, String folderUrl})> uploadAssignmentFiles({
     required String enumeratorId,
     required String assignmentId,

@@ -192,9 +192,15 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
         s.assignments.firstWhere((a) => a.assignmentId == s.selectedId);
     _selectedAssignment = selected;
 
-    // Delta skip — already imported, go straight to tile download
+    // Delta skip — already imported, go straight to tile download.
+    // Still refresh the field_requirements.txt sidecar: Drive doesn't
+    // reliably bump folder.modifiedTime when only a small sidecar is
+    // added, so without this pull a freshly-dropped requirements file
+    // would never reach the form layer on an already-imported folder.
     if (selected.alreadyDownloaded) {
       _enumeratorId = await googleAuthRepo.getEnumeratorId();
+      if (!mounted) return;
+      await _refreshFieldRequirementsSidecar(selected.assignmentId);
       if (!mounted) return;
       await _startTileDownload();
       return;
@@ -293,14 +299,7 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
     if (configKey.isNotEmpty) {
       final bytes = shapefiles.remove(configKey);
       shapeMd5s.remove(configKey);
-      if (bytes != null) {
-        try {
-          await writeFieldRequirements(bytes);
-          onRequirementsUpdated?.call();
-        } catch (_) {
-          // Non-fatal — the form falls back to the bundled asset.
-        }
-      }
+      if (bytes != null) await _persistFieldRequirements(bytes);
     }
 
     state = const ValidatingShapefiles();
@@ -333,6 +332,24 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
     }
 
     await _doImport(selected, shapefiles);
+  }
+
+  Future<void> _persistFieldRequirements(Uint8List bytes) async {
+    try {
+      await writeFieldRequirements(bytes);
+      onRequirementsUpdated?.call();
+    } catch (_) {
+      // Non-fatal — the form falls back to the bundled asset.
+    }
+  }
+
+  Future<void> _refreshFieldRequirementsSidecar(String assignmentId) async {
+    try {
+      final bytes = await _activeSource.fetchFieldRequirementsSidecar(assignmentId);
+      if (bytes != null) await _persistFieldRequirements(bytes);
+    } catch (_) {
+      // Non-fatal — keep moving to the tile download.
+    }
   }
 
   Future<void> _doImport(
