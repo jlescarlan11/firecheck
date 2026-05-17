@@ -127,7 +127,8 @@ class _SubmissionDetailScreenState
                 // then pop explicitly. Without this, dispose-time _flush is
                 // fire-and-forget and the feature can render red on the map
                 // until the user re-opens and saves again.
-                // Done uses context.go and bypasses PopScope.
+                // Done also routes through this handler via context.pop(); its
+                // own flushNow + markFeatureStatus calls are idempotent.
                 canPop: false,
                 onPopInvokedWithResult: (didPop, _) async {
                   if (didPop) return;
@@ -380,7 +381,14 @@ class _Footer extends ConsumerWidget {
                         await ref
                             .read(featureRepositoryProvider)
                             .markFeatureStatus(featureId);
-                        if (context.mounted) context.go('/map');
+                        // Pop the form off the router stack so the user lands
+                        // back on /map with /home still beneath it. Using
+                        // context.go('/map') here would flatten the stack to
+                        // [/map] and a subsequent Back from /map would exit
+                        // the app. PopScope's handler re-runs flushNow +
+                        // markFeatureStatus (both idempotent) before its
+                        // manual pop completes the navigation.
+                        if (context.mounted) context.pop();
                       }
                     : null,
                 child: Text(l.doneButton),
