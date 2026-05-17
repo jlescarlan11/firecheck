@@ -504,6 +504,11 @@ Populates `possible_duplicate_of` on insert of a new feature (`is_new = true`) w
 -- Sets features.possible_duplicate_of for newly-added user features
 -- when a same-type feature already exists within the assignment's
 -- dedup_proximity_meters. No-op for is_new = false (base map) rows.
+--
+-- IMPORTANT: BEFORE-INSERT triggers fire *before* generated columns are
+-- computed, so NEW.centroid is NULL at trigger time. We re-derive the
+-- centroid inline using the same expression as the stored generated
+-- column on features.centroid.
 
 create or replace function public.set_feature_possible_duplicate()
 returns trigger
@@ -538,8 +543,11 @@ begin
         and s.superseded_at is not null
         and s.superseded_by_id is null
     )
-    and st_dwithin(f.centroid, NEW.centroid, v_threshold)
-  order by st_distance(f.centroid, NEW.centroid) asc
+    and st_dwithin(f.centroid,
+                   st_centroid(NEW.geometry::geometry)::geography,
+                   v_threshold)
+  order by st_distance(f.centroid,
+                       st_centroid(NEW.geometry::geometry)::geography) asc
   limit 1;
 
   return NEW;

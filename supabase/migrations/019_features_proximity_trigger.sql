@@ -2,6 +2,11 @@
 -- Sets features.possible_duplicate_of for newly-added user features
 -- when a same-type feature already exists within the assignment's
 -- dedup_proximity_meters. No-op for is_new = false (base map) rows.
+--
+-- IMPORTANT: BEFORE-INSERT triggers fire *before* generated columns are
+-- computed, so NEW.centroid is NULL at trigger time. We re-derive the
+-- centroid inline using the same expression as the stored generated
+-- column on features.centroid.
 
 create or replace function public.set_feature_possible_duplicate()
 returns trigger
