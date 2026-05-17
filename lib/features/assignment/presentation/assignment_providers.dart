@@ -7,6 +7,9 @@ import 'package:firecheck/core/drive/drive_assignment.dart';
 import 'package:firecheck/core/device/storage_checker.dart';
 import 'package:firecheck/core/drive/drive_api.dart';
 import 'package:firecheck/core/drive/drive_download_event.dart';
+import 'package:firecheck/core/drive/ftp_credentials.dart';
+import 'package:firecheck/core/drive/ftp_map_source_api.dart';
+import 'package:firecheck/core/drive/transport_source.dart';
 import 'package:firecheck/core/errors/failure.dart';
 import 'package:firecheck/core/mapbox/offline_pack_adapter.dart';
 import 'package:firecheck/core/sync/shapefile/shapefile_importer.dart';
@@ -83,6 +86,34 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
   final ShapefileValidator validator;
   final ValidationFailureReporter reporter;
 
+  /// Active map-source transport (Issue #45). Defaults to Google Drive
+  /// (which uses the injected [driveApi]). When set to FTP the notifier
+  /// builds an [FtpMapSourceApi] on the fly from the supplied credentials.
+  TransportSource _transport = TransportSource.googleDrive;
+  FtpCredentials? _ftpCredentials;
+
+  void setTransport(TransportSource transport, {FtpCredentials? ftp}) {
+    _transport = transport;
+    _ftpCredentials = ftp;
+  }
+
+  /// Resolves the [DriveApi] for the currently selected transport.
+  DriveApi get _activeSource {
+    switch (_transport) {
+      case TransportSource.googleDrive:
+        return driveApi;
+      case TransportSource.ftp:
+        final c = _ftpCredentials;
+        if (c == null || !c.isComplete) {
+          throw StateError(
+            'FTP transport selected but credentials are missing — fill in '
+            'the host/user/password fields before starting.',
+          );
+        }
+        return FtpMapSourceApi(c);
+    }
+  }
+
   static const _styleUri = 'mapbox://styles/mapbox/streets-v12';
   static const _minZoom = 12;
   static const _maxZoom = 17;
@@ -91,13 +122,22 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
   DriveAssignment? _selectedAssignment;
   String? _enumeratorId;
 
+  /// Issue #46: when true, the validator demotes fatals to warnings so any
+  /// available map data passes through to the importer, regardless of
+  /// source, format, or predefined limitations.
+  bool unrestricted = false;
+
+  void setUnrestricted({required bool value}) {
+    unrestricted = value;
+  }
+
   Future<void> start() async {
     _cancelled = false;
     state = const DiscoveringAssignments();
 
     List<DriveAssignment> rawAssignments;
     try {
-      rawAssignments = await driveApi.listAssignments();
+      rawAssignments = await _activeSource.listAssignments();
     } catch (e) {
       if (!mounted) return;
       state = GetMapsError(NetworkFailure(e.toString()), isRetryable: true);
@@ -153,7 +193,7 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
     }
 
     // Storage pre-check
-    final needed = await driveApi.getTotalSize(selected.assignmentId);
+    final needed = await _activeSource.getTotalSize(selected.assignmentId);
     final available = await storageChecker.getAvailableBytes();
     if (!mounted) return;
     if (available < needed) {
@@ -178,7 +218,7 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
     if (s is! GetMapsError || !s.isRetryable) return;
     final selected = _selectedAssignment;
     if (selected == null) return;
-    final needed = await driveApi.getTotalSize(selected.assignmentId);
+    final needed = await _activeSource.getTotalSize(selected.assignmentId);
     await _downloadAndValidate(selected, needed);
   }
 
@@ -192,7 +232,7 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
 
     try {
       await for (final event
-          in driveApi.downloadShapefiles(selected.assignmentId)) {
+          in _activeSource.downloadShapefiles(selected.assignmentId)) {
         if (_cancelled || !mounted) return;
         switch (event) {
           case DriveDownloadProgress(:final downloaded, :final total):
@@ -218,7 +258,11 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
     }
 
     state = const ValidatingShapefiles();
-    final report = validator.validate(shapefiles, shapeMd5s);
+    final report = validator.validate(
+      shapefiles,
+      shapeMd5s,
+      relaxedMode: unrestricted,
+    );
 
     if (report.hasFatals) {
       final fatal = report.fatal!;

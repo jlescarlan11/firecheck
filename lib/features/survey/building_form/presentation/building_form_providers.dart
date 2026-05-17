@@ -1,4 +1,5 @@
 import 'package:firecheck/core/forms/form_variant_providers.dart';
+import 'package:firecheck/core/forms/geometry_signal_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
 import 'package:firecheck/features/home/presentation/home_providers.dart';
 import 'package:firecheck/features/survey/building_form/data/building_attributes_repository.dart';
@@ -40,7 +41,7 @@ final buildingFormNotifierProvider = StateNotifierProvider.autoDispose
     .family<BuildingFormNotifier, BuildingFormState, BuildingFormKey>(
   (ref, key) {
     final variant = ref.watch(currentFormVariantProvider);
-    return BuildingFormNotifier(
+    final notifier = BuildingFormNotifier(
       submissionId: key.submissionId,
       featureId: key.featureId,
       submissionRepo: ref.watch(submissionRepositoryProvider),
@@ -48,5 +49,17 @@ final buildingFormNotifierProvider = StateNotifierProvider.autoDispose
       featureRepo: ref.watch(featureRepositoryProvider),
       hiddenFields: variant.hideBuildingFields,
     );
+    // Issue #44: re-evaluate skip-logic when the feature is reshaped
+    // mid-survey. The stream emits whenever the underlying Drift row
+    // changes — including the reshape commit path.
+    ref.listen(
+      geometrySignalProvider(key.featureId),
+      (_, next) {
+        final signal = next.valueOrNull;
+        if (signal != null) notifier.onGeometryChanged(signal);
+      },
+      fireImmediately: true,
+    );
+    return notifier;
   },
 );

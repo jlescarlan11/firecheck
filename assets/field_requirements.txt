@@ -1,0 +1,27 @@
+# FireCheck — Field Requirements Config (Issue #43)
+#
+# Toggle whether each form field is required or optional WITHOUT rebuilding
+# the app. Edit this file, then redeploy the asset bundle (or sideload it
+# under the documented override path on device).
+#
+# Format: <field_key> = required | optional
+# Lines starting with `#` and blank lines are ignored.
+# Unknown keys are ignored. Unknown values default to `required`.
+#
+# Fallback: if this file is missing or unparseable, ALL fields are treated
+# as required (parity with the pre-Issue-#43 behavior).
+
+# Building form
+building.buildingName        = required
+building.ra9514Type          = required
+building.storeys             = required
+building.material            = required
+building.cost                = required
+building.fireLoad            = required
+building.photo               = required
+
+# Road form
+road.widthMeters             = required
+road.roadFeatures            = optional
+road.othersDescription       = required
+road.photo                   = required

@@ -1,3 +1,4 @@
+import 'package:firecheck/core/forms/field_requirements.dart';
 import 'package:firecheck/features/survey/road_form/domain/road_form_state.dart';
 
 class ValidationResult {
@@ -11,12 +12,16 @@ class ValidationResult {
   bool get isComplete => fieldErrors.isEmpty;
 }
 
-ValidationResult validateRoadForm(RoadFormState state, int photoCount) {
+ValidationResult validateRoadForm(
+  RoadFormState state,
+  int photoCount, {
+  FieldRequirements requirements = FieldRequirements.allRequired,
+}) {
   final errors = <String, String>{};
   final warnings = <String>[];
 
-  // Photo always required (parity with building form).
-  if (photoCount < 1) {
+  if (requirements.isRequired(FieldRequirementKeys.roadPhoto) &&
+      photoCount < 1) {
     errors['photo'] = 'photo_required';
   }
 
@@ -24,13 +29,19 @@ ValidationResult validateRoadForm(RoadFormState state, int photoCount) {
     return ValidationResult(fieldErrors: errors, warnings: warnings);
   }
 
-  if (state.widthMeters == null || state.widthMeters! <= 0) {
+  final widthRequired =
+      requirements.isRequired(FieldRequirementKeys.roadWidthMeters);
+  if (state.widthMeters == null) {
+    if (widthRequired) errors['widthMeters'] = 'width_required_positive';
+  } else if (state.widthMeters! <= 0) {
+    // Out-of-range is still an error even if the field is "optional".
     errors['widthMeters'] = 'width_required_positive';
   } else if (state.widthMeters! > 30) {
     warnings.add('width_meters_warning_too_wide');
   }
 
-  if (state.roadFeatures.contains('others')) {
+  if (state.roadFeatures.contains('others') &&
+      requirements.isRequired(FieldRequirementKeys.roadOthersDescription)) {
     final desc = state.othersDescription?.trim() ?? '';
     if (desc.isEmpty) {
       errors['othersDescription'] = 'others_description_required';

@@ -3,6 +3,7 @@ import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/photos/photo_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_lock_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_lock_state.dart';
+import 'package:firecheck/core/forms/field_requirements_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
 import 'package:firecheck/features/home/presentation/home_providers.dart';
 import 'package:firecheck/features/survey/building_form/domain/building_form_validator.dart';
@@ -282,6 +283,7 @@ class _Footer extends ConsumerWidget {
     if (isLocked) return const SizedBox.shrink();
     final photoCountAsync = ref.watch(_photoCountProvider(submissionId));
 
+    final requirements = ref.watch(fieldRequirementsProvider);
     final ready = photoCountAsync.maybeWhen(
       data: (photoCount) {
         if (isRoad) {
@@ -290,14 +292,22 @@ class _Footer extends ConsumerWidget {
             featureId: featureId,
           );
           final state = ref.watch(roadFormNotifierProvider(key));
-          return validateRoadForm(state, photoCount).isComplete;
+          return validateRoadForm(
+            state,
+            photoCount,
+            requirements: requirements,
+          ).isComplete;
         } else {
           final key = BuildingFormKey(
             submissionId: submissionId,
             featureId: featureId,
           );
           final state = ref.watch(buildingFormNotifierProvider(key));
-          return validateBuildingForm(state, photoCount).isComplete;
+          return validateBuildingForm(
+            state,
+            photoCount,
+            requirements: requirements,
+          ).isComplete;
         }
       },
       orElse: () => false,

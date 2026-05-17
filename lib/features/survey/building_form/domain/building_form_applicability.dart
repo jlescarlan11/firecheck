@@ -4,6 +4,13 @@
 // current path through the form, and which of those still need an answer.
 // Drives field-level visibility (US-6), automatic clearing of skipped
 // answers (US-7) and the remaining-questions indicator (US-8).
+//
+// [geometry] flows through every applicability call so skip-logic that
+// depends on the feature's shape — area thresholds, vertex counts — can
+// re-evaluate the moment a reshape commits (Issue #44). Current rules
+// don't consume the signal yet; the parameter exists so adding a
+// geometry-dependent rule is a one-line change.
+import 'package:firecheck/core/forms/geometry_signal.dart';
 import 'package:firecheck/features/survey/building_form/domain/building_form_state.dart';
 
 enum BuildingFormField {
@@ -30,8 +37,10 @@ bool isApplicable(
   BuildingFormState s,
   BuildingFormField f, {
   Set<BuildingFormField> hidden = const {},
+  GeometrySignal? geometry,
 }) {
   if (hidden.contains(f)) return false;
+  // `geometry` is intentionally unused by today's rules — see file header.
   // "Does not exist" short-circuits the whole survey: nothing else applies.
   if (s.doesNotExist) return false;
   switch (f) {
@@ -76,10 +85,11 @@ bool isAnswered(BuildingFormState s, BuildingFormField f) {
 int remainingQuestionCount(
   BuildingFormState s, {
   Set<BuildingFormField> hidden = const {},
+  GeometrySignal? geometry,
 }) {
   var n = 0;
   for (final f in BuildingFormField.values) {
-    if (!isApplicable(s, f, hidden: hidden)) continue;
+    if (!isApplicable(s, f, hidden: hidden, geometry: geometry)) continue;
     if (isAnswered(s, f)) continue;
     n++;
   }
@@ -94,7 +104,9 @@ int remainingQuestionCount(
 BuildingFormState applyApplicability(
   BuildingFormState s, {
   Set<BuildingFormField> hidden = const {},
+  GeometrySignal? geometry,
 }) {
+  // `geometry` routed through for future skip-rules (Issue #44).
   if (s.doesNotExist) {
     // Whole-form skip: clear every conditional answer, keep only the
     // submission id, the toggle itself, and the override reason (the latter

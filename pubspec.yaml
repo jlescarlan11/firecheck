@@ -77,3 +77,4 @@ flutter:
   assets:
     - .env
     - assets/form_variants.json
+    - assets/field_requirements.txt
