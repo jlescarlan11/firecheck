@@ -1,8 +1,12 @@
 # FireCheck — Field Requirements Config (Issue #43)
 #
 # Toggle whether each form field is required or optional WITHOUT rebuilding
-# the app. Edit this file, then redeploy the asset bundle (or sideload it
-# under the documented override path on device).
+# the app. Two ways to update:
+#   1. Drop a file named `field_requirements.txt` in the same Google Drive
+#      (or FTP) folder that holds the shapefile components. It downloads
+#      with the assignment and overrides this bundled copy.
+#   2. Edit this bundled asset and rebuild — used when no sidecar file
+#      has been imported yet.
 #
 # Format: <field_key> = required | optional
 # Lines starting with `#` and blank lines are ignored.

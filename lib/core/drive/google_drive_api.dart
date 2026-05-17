@@ -23,6 +23,10 @@ class GoogleDriveApi implements DriveApi {
   final _sizeCache = <String, Map<String, int>>{};
 
   static const _shapefileExts = {'.shp', '.dbf', '.shx', '.prj'};
+  // Sidecar config the enumerator can drop next to the shapefile to control
+  // form-field validation without a rebuild (Issue #43). Matched by exact
+  // filename, case-insensitive.
+  static const _configFilename = 'field_requirements.txt';
 
   Future<gdrive.DriveApi> _api() async {
     final token = await _googleAuthRepo.getAccessToken();
@@ -89,8 +93,10 @@ class GoogleDriveApi implements DriveApi {
       for (final f in filesResult.files ?? <gdrive.File>[]) {
         final name = f.name!;
         final dot = name.lastIndexOf('.');
-        final ext = dot >= 0 ? name.substring(dot) : '';
-        if (_shapefileExts.contains(ext)) {
+        final ext = dot >= 0 ? name.substring(dot).toLowerCase() : '';
+        final isShapefile = _shapefileExts.contains(ext);
+        final isConfig = name.toLowerCase() == _configFilename;
+        if (isShapefile || isConfig) {
           shapefiles[name] = f.id!;
           if (f.md5Checksum != null) md5s[name] = f.md5Checksum!;
           sizes[name] = int.tryParse(f.size ?? '0') ?? 0;

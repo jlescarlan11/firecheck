@@ -10,6 +10,8 @@ import 'package:firecheck/core/drive/drive_download_event.dart';
 import 'package:firecheck/core/drive/ftp_credentials.dart';
 import 'package:firecheck/core/drive/ftp_map_source_api.dart';
 import 'package:firecheck/core/drive/transport_source.dart';
+import 'package:firecheck/core/forms/field_requirements_providers.dart';
+import 'package:firecheck/core/forms/field_requirements_store.dart';
 import 'package:firecheck/core/errors/failure.dart';
 import 'package:firecheck/core/mapbox/offline_pack_adapter.dart';
 import 'package:firecheck/core/sync/shapefile/shapefile_importer.dart';
@@ -73,7 +75,13 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
     required this.storageChecker,
     required this.validator,
     required this.reporter,
+    this.onRequirementsUpdated,
   }) : super(const Idle());
+
+  /// Invoked after a freshly downloaded `field_requirements.txt` is
+  /// written to local storage so the form layer re-reads it. Optional so
+  /// tests can construct the notifier without a Riverpod ref.
+  final void Function()? onRequirementsUpdated;
 
   final AssignmentRepository assignmentRepo;
   final OfflineTilePackRepository packRepo;
@@ -274,6 +282,27 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
       return;
     }
 
+    // Issue #43 (post-review): if a `field_requirements.txt` rode along
+    // with the shapefile, persist it locally and refresh the form-layer
+    // cache. Done before validation so the .txt never feeds into the
+    // shapefile rules (FileSetRule would otherwise flag it as extra).
+    final configKey = shapefiles.keys.firstWhere(
+      (k) => k.toLowerCase() == fieldRequirementsFilename,
+      orElse: () => '',
+    );
+    if (configKey.isNotEmpty) {
+      final bytes = shapefiles.remove(configKey);
+      shapeMd5s.remove(configKey);
+      if (bytes != null) {
+        try {
+          await writeFieldRequirements(bytes);
+          onRequirementsUpdated?.call();
+        } catch (_) {
+          // Non-fatal — the form falls back to the bundled asset.
+        }
+      }
+    }
+
     state = const ValidatingShapefiles();
     final report = validator.validate(
       shapefiles,
@@ -436,6 +465,8 @@ final getMapsNotifierProvider =
     storageChecker: ref.watch(storageCheckerProvider),
     validator: ref.watch(shapefileValidatorProvider),
     reporter: ref.watch(validationFailureReporterProvider),
+    onRequirementsUpdated: () =>
+        ref.read(fieldRequirementsRevisionProvider.notifier).state++,
   );
 });
 
