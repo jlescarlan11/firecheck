@@ -21,7 +21,11 @@ void main() {
     await tester.pumpWidget(_wrap(Builder(builder: (ctx) {
       return TextButton(
         onPressed: () async {
-          result = await showReshapeRemoveConfirm(ctx, currentRingLength: 5);
+          result = await showReshapeRemoveConfirm(
+            ctx,
+            currentRingLength: 5,
+            minRingLength: 3,
+          );
         },
         child: const Text('open'),
       );
@@ -38,7 +42,11 @@ void main() {
     await tester.pumpWidget(_wrap(Builder(builder: (ctx) {
       return TextButton(
         onPressed: () async {
-          result = await showReshapeRemoveConfirm(ctx, currentRingLength: 5);
+          result = await showReshapeRemoveConfirm(
+            ctx,
+            currentRingLength: 5,
+            minRingLength: 3,
+          );
         },
         child: const Text('open'),
       );
@@ -50,11 +58,15 @@ void main() {
     expect(result, isFalse);
   });
 
-  testWidgets('confirm disabled at 3 vertices', (tester) async {
+  testWidgets('polygon confirm disabled at minRingLength=3', (tester) async {
     await tester.pumpWidget(_wrap(Builder(builder: (ctx) {
       return TextButton(
         onPressed: () async {
-          await showReshapeRemoveConfirm(ctx, currentRingLength: 3);
+          await showReshapeRemoveConfirm(
+            ctx,
+            currentRingLength: 3,
+            minRingLength: 3,
+          );
         },
         child: const Text('open'),
       );
@@ -65,5 +77,50 @@ void main() {
       find.byKey(const Key('reshape.remove.confirm')),
     );
     expect(btn.onPressed, isNull);
+  });
+
+  testWidgets('polyline confirm enabled at 3 vertices, disabled at 2',
+      (tester) async {
+    await tester.pumpWidget(_wrap(Builder(builder: (ctx) {
+      return TextButton(
+        onPressed: () async {
+          await showReshapeRemoveConfirm(
+            ctx,
+            currentRingLength: 3,
+            minRingLength: 2,
+          );
+        },
+        child: const Text('open-3'),
+      );
+    },),),);
+    await tester.tap(find.text('open-3'));
+    await tester.pumpAndSettle();
+    var btn = tester.widget<FilledButton>(
+      find.byKey(const Key('reshape.remove.confirm')),
+    );
+    expect(btn.onPressed, isNotNull,
+        reason: 'polyline floor is 2, so 3 → 2 must be confirmable',);
+    await tester.tap(find.byKey(const Key('reshape.remove.cancel')));
+    await tester.pumpAndSettle();
+
+    await tester.pumpWidget(_wrap(Builder(builder: (ctx) {
+      return TextButton(
+        onPressed: () async {
+          await showReshapeRemoveConfirm(
+            ctx,
+            currentRingLength: 2,
+            minRingLength: 2,
+          );
+        },
+        child: const Text('open-2'),
+      );
+    },),),);
+    await tester.tap(find.text('open-2'));
+    await tester.pumpAndSettle();
+    btn = tester.widget<FilledButton>(
+      find.byKey(const Key('reshape.remove.confirm')),
+    );
+    expect(btn.onPressed, isNull,
+        reason: 'polyline floor is 2, so 2 → 1 must be refused',);
   });
 }

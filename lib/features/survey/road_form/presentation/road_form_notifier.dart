@@ -14,11 +14,14 @@ class RoadFormNotifier extends StateNotifier<RoadFormState> {
     required this.featureId,
     required this.attrsRepo,
     required this.submissionRepo,
+    this.hiddenFields = const {},
   }) : super(RoadFormState(submissionId: submissionId));
 
   final String featureId;
   final RoadAttributesRepository attrsRepo;
   final SubmissionRepository submissionRepo;
+  // US-41: fields the active form variant hides for this user/assignment.
+  final Set<RoadFormField> hiddenFields;
 
   Timer? _debounce;
   static const _window = Duration(milliseconds: 500);
@@ -26,7 +29,7 @@ class RoadFormNotifier extends StateNotifier<RoadFormState> {
   void update(RoadFormState Function(RoadFormState) mutate) {
     // Apply field applicability after the mutation — US-6/US-7 share this
     // hook with the remaining-questions count (US-8).
-    state = applyApplicability(mutate(state));
+    state = applyApplicability(mutate(state), hidden: hiddenFields);
     _debounce?.cancel();
     _debounce = Timer(_window, _flush);
   }

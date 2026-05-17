@@ -1,5 +1,7 @@
 import 'package:drift/native.dart';
 import 'package:firecheck/core/db/database.dart';
+import 'package:firecheck/core/forms/form_variant.dart';
+import 'package:firecheck/core/forms/form_variant_providers.dart';
 import 'package:firecheck/features/home/presentation/home_providers.dart';
 import 'package:firecheck/features/survey/road_form/presentation/sections/_road_features_section.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
@@ -18,7 +20,14 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [appDatabaseProvider.overrideWithValue(db)],
+        overrides: [
+          appDatabaseProvider.overrideWithValue(db),
+          // Bypass the async asset load so no pending Future survives the
+          // test's drain — the FutureProvider would otherwise still be in
+          // flight when the widget tree disposes.
+          currentFormVariantProvider
+              .overrideWithValue(FormVariant.defaultVariant),
+        ],
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,

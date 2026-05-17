@@ -3,6 +3,7 @@
 // US-8: shows how many applicable fields on the enumerator's current path
 // still need an answer. Hides itself when the "does not exist" toggle is on
 // (no applicable fields remain to count).
+import 'package:firecheck/core/forms/form_variant_providers.dart';
 import 'package:firecheck/features/survey/building_form/domain/building_form_applicability.dart';
 import 'package:firecheck/features/survey/building_form/presentation/building_form_providers.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
@@ -26,7 +27,13 @@ class BuildingRemainingQuestionsBadge extends ConsumerWidget {
       ),
     );
     if (state.doesNotExist) return const SizedBox.shrink();
-    return RemainingQuestionsChip(remaining: remainingQuestionCount(state));
+    final variant = ref.watch(currentFormVariantProvider);
+    return RemainingQuestionsChip(
+      remaining: remainingQuestionCount(
+        state,
+        hidden: variant.hideBuildingFields,
+      ),
+    );
   }
 }
 

@@ -114,6 +114,7 @@ class GeometryEditorOverlay extends ConsumerWidget {
               final confirm = await showReshapeRemoveConfirm(
                 context,
                 currentRingLength: ring.length,
+                minRingLength: state.isClosed ? 3 : 2,
               );
               if (confirm) notifier.removeVertex(ringIdx, i);
             },

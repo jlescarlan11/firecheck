@@ -1,3 +1,5 @@
+import 'package:firecheck/core/forms/form_variant_providers.dart';
+import 'package:firecheck/features/survey/building_form/domain/building_form_applicability.dart';
 import 'package:firecheck/features/survey/building_form/presentation/building_form_providers.dart';
 import 'package:firecheck/features/survey/building_form/presentation/sections/_section_card.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
@@ -57,6 +59,10 @@ class FireLoadSection extends ConsumerWidget {
       buildingFormNotifierProvider(_key(submissionId, featureId)).notifier,
     );
     final selected = state.fireLoad.toSet();
+    final hidden = ref.watch(currentFormVariantProvider).hideBuildingFields;
+    if (hidden.contains(BuildingFormField.fireLoad)) {
+      return const SizedBox.shrink();
+    }
 
     return SectionCard(
       title: l.sectionFireLoad,

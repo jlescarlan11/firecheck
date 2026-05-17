@@ -11,7 +11,15 @@ enum RoadFormField {
   othersDescription,
 }
 
-bool isApplicable(RoadFormState s, RoadFormField f) {
+/// [hidden] is the form variant's `hideRoadFields` set (US-41). When the
+/// variant hides a field, it is treated identically to a non-applicable
+/// field: not rendered, not counted.
+bool isApplicable(
+  RoadFormState s,
+  RoadFormField f, {
+  Set<RoadFormField> hidden = const {},
+}) {
+  if (hidden.contains(f)) return false;
   if (s.doesNotExist) return false;
   switch (f) {
     case RoadFormField.othersDescription:
@@ -36,17 +44,23 @@ bool isAnswered(RoadFormState s, RoadFormField f) {
   }
 }
 
-int remainingQuestionCount(RoadFormState s) {
+int remainingQuestionCount(
+  RoadFormState s, {
+  Set<RoadFormField> hidden = const {},
+}) {
   var n = 0;
   for (final f in RoadFormField.values) {
-    if (!isApplicable(s, f)) continue;
+    if (!isApplicable(s, f, hidden: hidden)) continue;
     if (isAnswered(s, f)) continue;
     n++;
   }
   return n;
 }
 
-RoadFormState applyApplicability(RoadFormState s) {
+RoadFormState applyApplicability(
+  RoadFormState s, {
+  Set<RoadFormField> hidden = const {},
+}) {
   if (s.doesNotExist) {
     return RoadFormState(submissionId: s.submissionId, doesNotExist: true);
   }

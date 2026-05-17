@@ -35,6 +35,22 @@ void main() {
         expect(isApplicable(s, f), isFalse, reason: '$f');
       }
     });
+
+    test('US-41 variant-hidden unanswered field drops from the count', () {
+      // Empty state: buildingName is applicable and unanswered, so it
+      // contributes to the remaining-questions tally.
+      final s = _empty();
+      expect(isApplicable(s, BuildingFormField.buildingName), isTrue);
+      const hidden = {BuildingFormField.buildingName};
+      expect(
+        isApplicable(s, BuildingFormField.buildingName, hidden: hidden),
+        isFalse,
+      );
+      final before = remainingQuestionCount(s);
+      final after = remainingQuestionCount(s, hidden: hidden);
+      expect(after, before - 1,
+          reason: 'hiding an unanswered applicable field reduces the count by 1',);
+    });
   });
 
   group('US-7 applyApplicability clears skipped answers', () {

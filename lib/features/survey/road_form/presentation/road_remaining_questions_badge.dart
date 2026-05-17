@@ -2,6 +2,7 @@
 //
 // US-8 (road variant): shows applicable-but-unanswered count for the road
 // form. Shares the chip widget with the building variant for visual parity.
+import 'package:firecheck/core/forms/form_variant_providers.dart';
 import 'package:firecheck/features/survey/building_form/presentation/remaining_questions_badge.dart';
 import 'package:firecheck/features/survey/road_form/domain/road_form_applicability.dart';
 import 'package:firecheck/features/survey/road_form/presentation/road_form_providers.dart';
@@ -25,6 +26,12 @@ class RoadRemainingQuestionsBadge extends ConsumerWidget {
       ),
     );
     if (state.doesNotExist) return const SizedBox.shrink();
-    return RemainingQuestionsChip(remaining: remainingQuestionCount(state));
+    final variant = ref.watch(currentFormVariantProvider);
+    return RemainingQuestionsChip(
+      remaining: remainingQuestionCount(
+        state,
+        hidden: variant.hideRoadFields,
+      ),
+    );
   }
 }

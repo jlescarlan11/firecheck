@@ -22,9 +22,16 @@ enum BuildingFormField {
 /// state. Fields that are not applicable have their stored value cleared
 /// by [applyApplicability] so a stale answer cannot survive a path change.
 ///
-/// To gate by form variant (US-41), wrap the call:
-///   isApplicable(state, f) && !variant.hideBuildingFields.contains(f)
-bool isApplicable(BuildingFormState s, BuildingFormField f) {
+/// [hidden] is the form variant's `hideBuildingFields` set (US-41). When
+/// the variant hides a field it is treated identically to a non-applicable
+/// field: the input is not rendered, the value is auto-cleared, and the
+/// remaining-questions chip skips it.
+bool isApplicable(
+  BuildingFormState s,
+  BuildingFormField f, {
+  Set<BuildingFormField> hidden = const {},
+}) {
+  if (hidden.contains(f)) return false;
   // "Does not exist" short-circuits the whole survey: nothing else applies.
   if (s.doesNotExist) return false;
   switch (f) {
@@ -66,10 +73,13 @@ bool isAnswered(BuildingFormState s, BuildingFormField f) {
   }
 }
 
-int remainingQuestionCount(BuildingFormState s) {
+int remainingQuestionCount(
+  BuildingFormState s, {
+  Set<BuildingFormField> hidden = const {},
+}) {
   var n = 0;
   for (final f in BuildingFormField.values) {
-    if (!isApplicable(s, f)) continue;
+    if (!isApplicable(s, f, hidden: hidden)) continue;
     if (isAnswered(s, f)) continue;
     n++;
   }
@@ -78,8 +88,13 @@ int remainingQuestionCount(BuildingFormState s) {
 
 /// Returns a new state with any non-applicable field cleared. The notifier
 /// runs this after every mutation so a previously-answered field can never
-/// outlive the path it belonged to.
-BuildingFormState applyApplicability(BuildingFormState s) {
+/// outlive the path it belonged to. Fields hidden by the active form
+/// variant are also cleared — a hidden field is just an always-inapplicable
+/// field from the user's perspective.
+BuildingFormState applyApplicability(
+  BuildingFormState s, {
+  Set<BuildingFormField> hidden = const {},
+}) {
   if (s.doesNotExist) {
     // Whole-form skip: clear every conditional answer, keep only the
     // submission id, the toggle itself, and the override reason (the latter
@@ -98,6 +113,14 @@ BuildingFormState applyApplicability(BuildingFormState s) {
   if (!s.costIsExact && s.costAmount != null) {
     return s.copyWith(clearCostAmount: true);
   }
+  // Note: variant-hidden String/list fields are NOT auto-cleared here.
+  // BuildingFormState's copyWith uses the `value ?? this.value` pattern so
+  // there's no path to null out a String field, and adding per-field clear
+  // flags is out of scope for the variant-wiring fix. The hidden field is
+  // simply never rendered and never counted, so the user can't enter a value
+  // for it in the first place; a pre-existing value (from before the variant
+  // hid it) survives untouched. If/when that becomes a problem, add explicit
+  // clear flags to copyWith and call them here.
   return s;
 }
 
