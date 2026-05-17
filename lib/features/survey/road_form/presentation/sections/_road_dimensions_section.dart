@@ -1,4 +1,7 @@
+import 'package:firecheck/core/forms/field_requirements.dart';
+import 'package:firecheck/core/forms/field_requirements_providers.dart';
 import 'package:firecheck/core/forms/form_variant_providers.dart';
+import 'package:firecheck/core/forms/required_label.dart';
 import 'package:firecheck/features/survey/building_form/presentation/sections/_persistent_text_field.dart';
 import 'package:firecheck/features/survey/building_form/presentation/sections/_section_card.dart';
 import 'package:firecheck/features/survey/road_form/domain/road_form_applicability.dart';
@@ -38,6 +41,7 @@ class RoadDimensionsSection extends ConsumerWidget {
     if (hidden.contains(RoadFormField.widthMeters)) {
       return const SizedBox.shrink();
     }
+    final reqs = ref.watch(fieldRequirementsProvider);
 
     return SectionCard(
       title: l.sectionRoadDimensions,
@@ -45,7 +49,11 @@ class RoadDimensionsSection extends ConsumerWidget {
         enabled: !disabled,
         value: width?.toString() ?? '',
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        labelText: l.fieldWidthMeters,
+        labelText: requiredLabel(
+          l.fieldWidthMeters,
+          reqs,
+          FieldRequirementKeys.roadWidthMeters,
+        ),
         helperText: showWarning ? l.widthMetersUnusual : null,
         onChanged: (v) {
           final parsed = double.tryParse(v);
