@@ -7,7 +7,10 @@ create table public.attribution_audit_log (
   table_name      text not null check (table_name in ('submissions','features')),
   row_id          uuid not null,
   action          text not null check (action in ('supersede','force_overwrite','dedup_resolve')),
-  performed_by    uuid not null references public.enumerators(id) on delete set null,
+  -- Nullable + on delete set null: preserves audit history if the acting
+  -- enumerator is later removed (same pattern as submissions.submitted_by
+  -- in 001_initial_schema.sql).
+  performed_by    uuid references public.enumerators(id) on delete set null,
   performed_at    timestamptz not null default now(),
   prior_snapshot  jsonb not null,
   resolution_note text
