@@ -58,6 +58,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Timer? _animationSettleTimer;
 
   MapProjection? _reshapeProjection;
+  // Incremented on every projection refresh — forces the editor overlay
+  // to rebuild (and the preview painter to repaint) even when the
+  // underlying projection instance is reused.
+  int _projectionEpoch = 0;
 
   bool _lockBlockerShown = false;
 
@@ -125,21 +129,35 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     initialCameraTarget: initialCameraTarget,
                     cameraTarget: _cameraTarget,
                     onPolygonLongPress: _handlePolygonLongPress,
-                    reshapeWorkingPolygonGeojson: reshapeActive
-                        ? ref
-                            .read(geometryEditorControllerProvider.notifier)
-                            .serializeWorkingPolygon()
-                        : null,
+                    // The CustomPaint preview inside GeometryEditorOverlay is
+                    // now the single source of truth for the live working
+                    // shape (both sketch and reshape). Keeping the Mapbox-
+                    // annotation preview as well caused phantom trails: each
+                    // drag fires an async delete+create on the polygon
+                    // manager and the creates can land before earlier
+                    // deletes, leaving stacked polygons. Always-null here.
+                    reshapeWorkingPolygonGeojson: null,
+                    reshapingFeatureId:
+                        reshapeActive ? editorState.originalFeature?.id : null,
                     onProjectionReady: (p) {
-                      if (_reshapeProjection != p) {
-                        setState(() => _reshapeProjection = p);
-                      }
+                      // Always rebuild on every camera change — the
+                      // renderer reuses the same projection instance and
+                      // mutates its internal state on refresh, so identity
+                      // equality would always be true and the overlay
+                      // would never reproject as the user pans/zooms.
+                      setState(() {
+                        _reshapeProjection = p;
+                        _projectionEpoch++;
+                      });
                     },
                   ),
           ),
-          if (reshapeActive && _reshapeProjection != null)
+          if ((reshapeActive || sketchActive) && _reshapeProjection != null)
             Positioned.fill(
-              child: GeometryEditorOverlay(projection: _reshapeProjection!),
+              child: GeometryEditorOverlay(
+                key: ValueKey('editor-overlay-$_projectionEpoch'),
+                projection: _reshapeProjection!,
+              ),
             ),
           Positioned(
             right: 16,
@@ -289,10 +307,22 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     // validateBuildingPolygon enforces polygon rules (closure, orientation,
     // self-intersection). Polyline reshape (US-10) doesn't have those rules;
     // skip the check when the working geometry is open.
+    //
+    // Boundary handling: when the user provided an override reason at
+    // reshape entry (e.g. they're editing a building from far away), also
+    // skip the per-vertex boundary check. The user already justified the
+    // edit; blocking on boundary here would force them to cancel and start
+    // over even though they explicitly accepted responsibility. Pass the
+    // empty-string sentinel to validateBuildingPolygon, which short-circuits
+    // the boundary check the same way the morning fix for empty-coords
+    // Polygons did.
     if (s.isClosed) {
+      final boundaryForCheck = s.overrideReason != null
+          ? ''
+          : assignment.boundaryPolygonGeojson;
       final res = validateBuildingPolygon(
         s.workingRings,
-        boundaryGeojson: assignment.boundaryPolygonGeojson,
+        boundaryGeojson: boundaryForCheck,
       );
       if (!res.valid) {
         final msg = _validationMessage(res.error!, l);
@@ -304,6 +334,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           properties: {
             'feature_id': s.originalFeature!.id,
             'rule': res.error!.name,
+            'override_used': s.overrideReason != null,
           },
         );
         return;
@@ -451,7 +482,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
     ctrl.cancel();
     if (!mounted) return;
-    context.push('/feature/${Uri.encodeComponent(feature.id)}');
+    // Await the push so we can refresh after the user pops back. The Mapbox
+    // annotation channel can briefly disconnect during the push transition;
+    // if the initial _rerenderFeatures call silently fails on that dead
+    // channel, the polygon stays invisible until something else mutates the
+    // features list. Invalidating the provider on return forces a fresh
+    // emission and a clean re-render on a healthy channel.
+    await context.push('/feature/${Uri.encodeComponent(feature.id)}');
+    if (!mounted) return;
+    ref.invalidate(currentFeaturesProvider);
   }
 
   Future<void> _onSketchCancel() async {

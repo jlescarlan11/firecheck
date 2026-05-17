@@ -1,3 +1,4 @@
+import 'package:firecheck/core/geo/polygon_validator.dart' show LngLat;
 import 'package:firecheck/features/map/presentation/map_renderer.dart';
 import 'package:firecheck/features/map/geometry_editor/presentation/midpoint_handle.dart';
 import 'package:firecheck/features/map/geometry_editor/presentation/geometry_editor_providers.dart';
@@ -17,6 +18,24 @@ class GeometryEditorOverlay extends ConsumerWidget {
     final notifier = ref.read(geometryEditorControllerProvider.notifier);
 
     final children = <Widget>[];
+
+    // Live preview of the in-progress geometry. Draws connecting lines
+    // between vertices (and the closing edge for closed shapes) using the
+    // same projection the vertex handles use. Drawn BEFORE the body-drag
+    // area and handles so it appears underneath them.
+    children.add(
+      Positioned.fill(
+        child: IgnorePointer(
+          child: CustomPaint(
+            painter: _SketchPreviewPainter(
+              rings: state.workingRings,
+              isClosed: state.isClosed,
+              projection: projection,
+            ),
+          ),
+        ),
+      ),
+    );
 
     // For closed shapes (polygons), draw an invisible body-drag area covering
     // the outer ring's bounding rect. Pan on this area translates the entire
@@ -140,5 +159,66 @@ class GeometryEditorOverlay extends ConsumerWidget {
     }
 
     return Stack(children: children);
+  }
+}
+
+/// Paints the live geometry of an in-progress sketch (or active reshape):
+/// connecting lines between vertices, plus a translucent fill for closed
+/// shapes with at least 3 vertices.
+class _SketchPreviewPainter extends CustomPainter {
+  _SketchPreviewPainter({
+    required this.rings,
+    required this.isClosed,
+    required this.projection,
+  });
+
+  final List<List<LngLat>> rings;
+  final bool isClosed;
+  final MapProjection projection;
+
+  static const _color = Color(0xFF3182CE);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (rings.isEmpty) return;
+    final stroke = Paint()
+      ..color = _color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    final fill = Paint()
+      ..color = _color.withValues(alpha: 0.18)
+      ..style = PaintingStyle.fill;
+
+    for (final ring in rings) {
+      if (ring.length < 2) continue;
+      final path = Path();
+      final first = projection.screenPointFromLngLat(ring[0].lng, ring[0].lat);
+      path.moveTo(first.dx, first.dy);
+      for (var i = 1; i < ring.length; i++) {
+        final p = projection.screenPointFromLngLat(ring[i].lng, ring[i].lat);
+        path.lineTo(p.dx, p.dy);
+      }
+      if (isClosed && ring.length >= 3) {
+        path.close();
+        canvas.drawPath(path, fill);
+      }
+      canvas.drawPath(path, stroke);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _SketchPreviewPainter old) {
+    if (old.isClosed != isClosed) return true;
+    if (old.projection != projection) return true;
+    if (old.rings.length != rings.length) return true;
+    for (var r = 0; r < rings.length; r++) {
+      if (old.rings[r].length != rings[r].length) return true;
+      for (var i = 0; i < rings[r].length; i++) {
+        if (old.rings[r][i] != rings[r][i]) return true;
+      }
+    }
+    return false;
   }
 }

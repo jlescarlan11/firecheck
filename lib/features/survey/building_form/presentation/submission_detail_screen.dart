@@ -121,7 +121,42 @@ class _SubmissionDetailScreenState
                 _activeIndex = submissions.length - 1;
               }
               final active = submissions[_activeIndex];
-              return Column(
+              return PopScope(
+                // Block the default pop, run flushNow + markFeatureStatus,
+                // then pop explicitly. Without this, dispose-time _flush is
+                // fire-and-forget and the feature can render red on the map
+                // until the user re-opens and saves again.
+                // Done uses context.go and bypasses PopScope.
+                canPop: false,
+                onPopInvokedWithResult: (didPop, _) async {
+                  if (didPop) return;
+                  try {
+                    if (isRoad) {
+                      final fkey = RoadFormKey(
+                        submissionId: active.id,
+                        featureId: widget.featureId,
+                      );
+                      await ref
+                          .read(roadFormNotifierProvider(fkey).notifier)
+                          .flushNow();
+                    } else {
+                      final fkey = BuildingFormKey(
+                        submissionId: active.id,
+                        featureId: widget.featureId,
+                      );
+                      await ref
+                          .read(buildingFormNotifierProvider(fkey).notifier)
+                          .flushNow();
+                    }
+                    await ref
+                        .read(featureRepositoryProvider)
+                        .markFeatureStatus(widget.featureId);
+                  } catch (_) {
+                    // Don't trap the user in the form if save fails.
+                  }
+                  if (context.mounted) Navigator.of(context).pop();
+                },
+                child: Column(
                 children: [
                   // Read-only banner when the assignment is locked. Renders
                   // above SubmissionTabs so it's the first thing the user
@@ -219,6 +254,7 @@ class _SubmissionDetailScreenState
                     isRoad: isRoad,
                   ),
                 ],
+                ),
               );
             },
           ),

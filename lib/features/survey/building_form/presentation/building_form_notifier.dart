@@ -67,24 +67,34 @@ class BuildingFormNotifier extends StateNotifier<BuildingFormState> {
   }
 
   Future<void> _flush() async {
-    await attrsRepo.upsertForSubmission(
-      submissionId: state.submissionId,
-      cbmsId: state.cbmsId,
-      buildingName: state.buildingName,
-      ra9514Type: state.ra9514Type,
-      storeys: state.storeys,
-      material: state.material,
-      costIsExact: state.costIsExact,
-      costAmount: state.costAmount,
-      costEstimateRange: state.costEstimateRange,
-      fireFightingFacilities: state.fireFightingFacilities,
-      fireLoad: state.fireLoad,
-    );
-    await submissionRepo.updateDoesNotExist(
-      state.submissionId,
-      doesNotExist: state.doesNotExist,
-    );
-    await featureRepo.markFeatureStatus(featureId);
+    // Snapshot state into a local before any await. After the notifier is
+    // disposed, even reading `state` throws (state_notifier's debug guard),
+    // and dispose() invokes an unawaited _flush() that would otherwise crash
+    // mid-write — leaving the feature's status stale and the polygon stuck
+    // red on the map. Matches the pattern RoadFormNotifier already uses.
+    final s = state;
+    try {
+      await attrsRepo.upsertForSubmission(
+        submissionId: s.submissionId,
+        cbmsId: s.cbmsId,
+        buildingName: s.buildingName,
+        ra9514Type: s.ra9514Type,
+        storeys: s.storeys,
+        material: s.material,
+        costIsExact: s.costIsExact,
+        costAmount: s.costAmount,
+        costEstimateRange: s.costEstimateRange,
+        fireFightingFacilities: s.fireFightingFacilities,
+        fireLoad: s.fireLoad,
+      );
+      await submissionRepo.updateDoesNotExist(
+        s.submissionId,
+        doesNotExist: s.doesNotExist,
+      );
+      await featureRepo.markFeatureStatus(featureId);
+    } catch (_) {
+      // Silently ignore flush errors (e.g. DB already closed during teardown).
+    }
   }
 
   @override

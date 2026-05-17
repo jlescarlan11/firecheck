@@ -307,7 +307,7 @@ class _ReadyView extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         FilledButton(
-          onPressed: () => context.go('/map'),
+          onPressed: () => context.pushReplacement('/map'),
           child: Text(l.openMap),
         ),
         const SizedBox(height: 8),
