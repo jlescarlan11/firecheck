@@ -9,11 +9,35 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class GetMapsScreen extends ConsumerWidget {
+class GetMapsScreen extends ConsumerStatefulWidget {
   const GetMapsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<GetMapsScreen> createState() => _GetMapsScreenState();
+}
+
+class _GetMapsScreenState extends ConsumerState<GetMapsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // The GetMaps notifier outlives this screen (not autoDispose). If the
+    // user finished, cancelled, or errored on a previous visit, they're
+    // returning to start a new download — drop the stale terminal state so
+    // they don't land on the success/error screen with no way forward.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final s = ref.read(getMapsNotifierProvider);
+      if (s is Ready ||
+          s is Cancelled ||
+          s is GetMapsError ||
+          s is InsufficientStorage) {
+        ref.read(getMapsNotifierProvider.notifier).reset();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(getMapsNotifierProvider);
     final l = AppLocalizations.of(context)!;
 
