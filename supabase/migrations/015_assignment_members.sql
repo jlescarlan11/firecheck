@@ -19,11 +19,12 @@ create index assignment_members_by_enumerator
 insert into public.assignment_members (assignment_id, enumerator_id, role)
 select id, enumerator_id, 'owner'
 from public.assignments
-on conflict do nothing;
+on conflict (assignment_id, enumerator_id) do nothing;
 
 alter table public.assignment_members enable row level security;
 
 -- Members can see their own membership rows (used by client to list assignments).
+drop policy if exists assignment_members_self_read on public.assignment_members;
 create policy assignment_members_self_read
   on public.assignment_members
   for select
