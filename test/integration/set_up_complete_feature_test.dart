@@ -134,6 +134,8 @@ class FakeDriveApi implements DriveApi {
   @override
   Stream<DriveDownloadEvent> downloadShapefiles(String assignmentId) async* {}
   @override
+  Future<Uint8List?> fetchFieldRequirementsSidecar(String assignmentId) async => null;
+  @override
   Future<({String folderPath, String folderUrl})> uploadAssignmentFiles({
     required String enumeratorId,
     required String assignmentId,

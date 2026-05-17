@@ -11,7 +11,7 @@ final supabaseAuthStateProvider = StreamProvider<Session?>((ref) async* {
   yield* client.auth.onAuthStateChange.map((e) => e.session);
 });
 
-/// Overridden in main.dart with SupabaseGoogleAuthRepository.
+/// Overridden in main.dart with GoogleSignInAuthRepository.
 final googleAuthRepositoryProvider = Provider<GoogleAuthRepository>((ref) {
   throw UnimplementedError(
     'Override googleAuthRepositoryProvider in main.dart',

@@ -24,10 +24,19 @@ class ShapefileValidator {
 
   final List<ShapefileValidationRule> _rules;
 
+  /// Runs every rule against the candidate file set.
+  ///
+  /// [relaxedMode] (Issue #46): when true, fatal rule outcomes are demoted
+  /// to warnings so the import proceeds regardless of source format,
+  /// projection, or file-set completeness. The GIS specialist still sees
+  /// the warning list — they just aren't blocked from continuing. The
+  /// default (false) preserves the strict-shapefile pipeline used by the
+  /// Google Drive path.
   ValidationReport validate(
     Map<String, Uint8List> files,
-    Map<String, String> expectedMd5s,
-  ) {
+    Map<String, String> expectedMd5s, {
+    bool relaxedMode = false,
+  }) {
     final warnings = <RuleWarning>[];
     for (final rule in _rules) {
       final outcome = rule.check(files, expectedMd5s);
@@ -35,6 +44,15 @@ class ShapefileValidator {
         case RulePassed():
           continue;
         case RuleFatal():
+          if (relaxedMode) {
+            warnings.add(
+              RuleWarning(
+                userMessage:
+                    '${outcome.userMessage} (allowed by unrestricted mode)',
+              ),
+            );
+            continue;
+          }
           return ValidationReport(fatal: outcome, warnings: warnings);
         case RuleWarning():
           warnings.add(outcome);

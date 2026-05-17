@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firecheck/core/forms/geometry_signal.dart';
 import 'package:firecheck/features/map/data/feature_repository.dart';
 import 'package:firecheck/features/survey/building_form/data/building_attributes_repository.dart';
 import 'package:firecheck/features/survey/building_form/data/submission_repository.dart';
@@ -18,6 +19,13 @@ class BuildingFormNotifier extends StateNotifier<BuildingFormState> {
   }) : super(BuildingFormState(submissionId: submissionId)) {
     _loadInitial();
   }
+
+  /// Latest geometry-derived signal for the feature this form is filling.
+  /// Updated by [onGeometryChanged] whenever a reshape commit lands; routed
+  /// through to [applyApplicability] so skip-logic re-evaluates without the
+  /// user re-opening the form (Issue #44).
+  GeometrySignal? _geometrySignal;
+  GeometrySignal? get geometrySignal => _geometrySignal;
 
   final String submissionId;
   final String featureId;
@@ -59,9 +67,27 @@ class BuildingFormNotifier extends StateNotifier<BuildingFormState> {
     // non-applicable (e.g. cost-range when the user just switched to exact)
     // can't carry a stale value into the database (US-7). Visibility (US-6)
     // and the remaining-questions count (US-8) read the same predicate.
-    state = applyApplicability(mutate(state), hidden: hiddenFields);
+    state = applyApplicability(
+      mutate(state),
+      hidden: hiddenFields,
+      geometry: _geometrySignal,
+    );
     _debounce?.cancel();
     _debounce = Timer(_window, _flush);
+  }
+
+  /// Called when the feature's geometry changes (e.g. reshape commit).
+  /// Re-runs applicability against the current form state so any
+  /// geometry-dependent skip rule clears or surfaces the affected field
+  /// without waiting for the next field edit (Issue #44).
+  void onGeometryChanged(GeometrySignal signal) {
+    if (signal == _geometrySignal) return;
+    _geometrySignal = signal;
+    state = applyApplicability(
+      state,
+      hidden: hiddenFields,
+      geometry: signal,
+    );
   }
 
   /// For external triggers (e.g. Done button) that need to wait for the

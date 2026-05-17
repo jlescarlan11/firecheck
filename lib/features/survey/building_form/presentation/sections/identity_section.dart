@@ -1,4 +1,7 @@
+import 'package:firecheck/core/forms/field_requirements.dart';
+import 'package:firecheck/core/forms/field_requirements_providers.dart';
 import 'package:firecheck/core/forms/form_variant_providers.dart';
+import 'package:firecheck/core/forms/required_label.dart';
 import 'package:firecheck/features/survey/building_form/domain/building_form_applicability.dart';
 import 'package:firecheck/features/survey/building_form/domain/ra_9514_fallback.dart';
 import 'package:firecheck/features/survey/building_form/presentation/building_form_providers.dart';
@@ -60,6 +63,7 @@ class IdentitySection extends ConsumerWidget {
       buildingFormNotifierProvider(_key(submissionId, featureId)).notifier,
     );
     final hidden = ref.watch(currentFormVariantProvider).hideBuildingFields;
+    final reqs = ref.watch(fieldRequirementsProvider);
     bool show(BuildingFormField f) => !hidden.contains(f);
 
     final children = <Widget>[];
@@ -81,7 +85,11 @@ class IdentitySection extends ConsumerWidget {
         PersistentTextField(
           enabled: !disabled,
           value: state.buildingName ?? '',
-          labelText: l.fieldBuildingName,
+          labelText: requiredLabel(
+            l.fieldBuildingName,
+            reqs,
+            FieldRequirementKeys.buildingName,
+          ),
           onChanged: (v) => notifier.update(
             (s) => s.copyWith(buildingName: v),
           ),
@@ -93,7 +101,13 @@ class IdentitySection extends ConsumerWidget {
       children.add(
         DropdownButtonFormField<String>(
           initialValue: state.ra9514Type,
-          decoration: InputDecoration(labelText: l.fieldRa9514Type),
+          decoration: InputDecoration(
+            labelText: requiredLabel(
+              l.fieldRa9514Type,
+              reqs,
+              FieldRequirementKeys.buildingRa9514Type,
+            ),
+          ),
           items: [
             for (final entry in ra9514Fallback)
               DropdownMenuItem<String>(

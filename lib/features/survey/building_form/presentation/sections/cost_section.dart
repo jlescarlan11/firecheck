@@ -1,4 +1,7 @@
+import 'package:firecheck/core/forms/field_requirements.dart';
+import 'package:firecheck/core/forms/field_requirements_providers.dart';
 import 'package:firecheck/core/forms/form_variant_providers.dart';
+import 'package:firecheck/core/forms/required_label.dart';
 import 'package:firecheck/features/survey/building_form/domain/building_form_applicability.dart';
 import 'package:firecheck/features/survey/building_form/presentation/building_form_providers.dart';
 import 'package:firecheck/features/survey/building_form/presentation/sections/_persistent_text_field.dart';
@@ -69,6 +72,7 @@ class CostSection extends ConsumerWidget {
         hidden.contains(BuildingFormField.costEstimateRange)) {
       return const SizedBox.shrink();
     }
+    final reqs = ref.watch(fieldRequirementsProvider);
 
     return SectionCard(
       title: l.sectionCost,
@@ -126,7 +130,11 @@ class CostSection extends ConsumerWidget {
               value: state.costAmount?.toString() ?? '',
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
-              labelText: l.fieldCostExactInput,
+              labelText: requiredLabel(
+                l.fieldCostExactInput,
+                reqs,
+                FieldRequirementKeys.buildingCost,
+              ),
               prefixText: '₱ ',
               onChanged: (v) {
                 final parsed = double.tryParse(v);
@@ -136,7 +144,13 @@ class CostSection extends ConsumerWidget {
           else
             DropdownButtonFormField<String>(
               initialValue: state.costEstimateRange,
-              decoration: InputDecoration(labelText: l.fieldCostRangeInput),
+              decoration: InputDecoration(
+                labelText: requiredLabel(
+                  l.fieldCostRangeInput,
+                  reqs,
+                  FieldRequirementKeys.buildingCost,
+                ),
+              ),
               items: [
                 for (final (code, labelKey) in _ranges)
                   DropdownMenuItem<String>(

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firecheck/app.dart';
 import 'package:firecheck/core/device/storage_checker.dart';
 import 'package:firecheck/core/drive/drive_upload_providers.dart';
@@ -13,7 +15,8 @@ import 'package:firecheck/core/validation/supabase_validation_failure_reporter.d
 import 'package:firecheck/features/assignment/presentation/assignment_lock_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_lock_state.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
-import 'package:firecheck/features/auth/data/supabase_google_auth_repository.dart';
+import 'package:firecheck/features/auth/data/google_access_token_cache.dart';
+import 'package:firecheck/features/auth/data/google_sign_in_auth_repository.dart';
 import 'package:firecheck/features/auth/presentation/auth_providers.dart';
 import 'package:firecheck/features/home/presentation/home_providers.dart';
 import 'package:firecheck/features/map/presentation/map_providers.dart';
@@ -21,6 +24,7 @@ import 'package:firecheck/features/map/presentation/map_renderer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -31,6 +35,7 @@ Future<void> main() async {
   final supaUrl = dotenv.env['SUPABASE_URL'];
   final supaKey = dotenv.env['SUPABASE_ANON_KEY'];
   final mapboxToken = dotenv.env['MAPBOX_ACCESS_TOKEN'];
+  final googleWebClientId = dotenv.env['GOOGLE_WEB_CLIENT_ID'];
   if (supaUrl == null ||
       supaUrl.isEmpty ||
       supaKey == null ||
@@ -46,8 +51,18 @@ Future<void> main() async {
       'Add your Mapbox public token (pk.…) to .env.',
     );
   }
+  if (googleWebClientId == null || googleWebClientId.isEmpty) {
+    throw StateError(
+      'GOOGLE_WEB_CLIENT_ID missing from .env. '
+      'Add the Web OAuth client ID from Google Cloud Console.',
+    );
+  }
 
   await Supabase.initialize(url: supaUrl, anonKey: supaKey);
+  await GoogleSignIn.instance.initialize(serverClientId: googleWebClientId);
+  // Restore a prior Google sign-in silently if one exists, so the Drive
+  // access token is available without user interaction on app launch.
+  unawaited(GoogleSignIn.instance.attemptLightweightAuthentication());
   await registerPeriodicSync();
   await registerPeriodicDriveUpload();
   MapboxOptions.setAccessToken(mapboxToken);
@@ -63,8 +78,12 @@ Future<void> main() async {
     ProviderScope(
       overrides: [
         googleAuthRepositoryProvider.overrideWith(
-          (ref) => SupabaseGoogleAuthRepository(
+          (ref) => GoogleSignInAuthRepository(
             auth: Supabase.instance.client.auth,
+            googleSignIn: GoogleSignIn.instance,
+            tokenCache: SecureStorageGoogleAccessTokenCache(
+              ref.watch(secureStorageProvider),
+            ),
           ),
         ),
         driveApiProvider.overrideWith(

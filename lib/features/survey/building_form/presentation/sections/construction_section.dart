@@ -1,4 +1,7 @@
+import 'package:firecheck/core/forms/field_requirements.dart';
+import 'package:firecheck/core/forms/field_requirements_providers.dart';
 import 'package:firecheck/core/forms/form_variant_providers.dart';
+import 'package:firecheck/core/forms/required_label.dart';
 import 'package:firecheck/features/survey/building_form/domain/building_form_applicability.dart';
 import 'package:firecheck/features/survey/building_form/presentation/building_form_providers.dart';
 import 'package:firecheck/features/survey/building_form/presentation/sections/_persistent_text_field.dart';
@@ -63,6 +66,7 @@ class ConstructionSection extends ConsumerWidget {
     final storeys = state.storeys;
     final showWarning = storeys != null && storeys > 50;
     final hidden = ref.watch(currentFormVariantProvider).hideBuildingFields;
+    final reqs = ref.watch(fieldRequirementsProvider);
     bool show(BuildingFormField f) => !hidden.contains(f);
 
     final children = <Widget>[];
@@ -72,7 +76,11 @@ class ConstructionSection extends ConsumerWidget {
           enabled: !disabled,
           value: storeys?.toString() ?? '',
           keyboardType: TextInputType.number,
-          labelText: l.fieldStoreys,
+          labelText: requiredLabel(
+            l.fieldStoreys,
+            reqs,
+            FieldRequirementKeys.buildingStoreys,
+          ),
           helperText: showWarning ? l.storeysWarningTooTall : null,
           onChanged: (v) {
             final parsed = int.tryParse(v);
@@ -86,7 +94,13 @@ class ConstructionSection extends ConsumerWidget {
       children.add(
         DropdownButtonFormField<String>(
           initialValue: state.material,
-          decoration: InputDecoration(labelText: l.fieldMaterial),
+          decoration: InputDecoration(
+            labelText: requiredLabel(
+              l.fieldMaterial,
+              reqs,
+              FieldRequirementKeys.buildingMaterial,
+            ),
+          ),
           items: [
             for (final (code, labelKey) in _materials)
               DropdownMenuItem<String>(
