@@ -493,3 +493,50 @@ Same layout, but with:
 8. **Decommission old upload path.**
 
 Each step is independently shippable; conflicts only become visible to users at step 4 (badges) and actionable at step 6 (review screen).
+
+---
+
+## Appendix A — Schema Adaptation to Existing Codebase
+
+The body of this spec describes the design in clean greenfield terms — new tables `assignment_attributions` and `assignment_new_features` with `jsonb` attribute blobs. The existing FireCheck Supabase schema is different, and pinning to it produces a smaller, cleaner change. This appendix overrides the SQL portions of the spec where they conflict; the design intent is unchanged.
+
+### Existing structures we reuse
+
+- `public.submissions(id, feature_id, submitted_by, …, created_at, updated_at)` already stores per-user attributions, one row per (feature, attributor).
+- Typed child tables `building_attributes`, `road_attributes`, `household_surveys` carry the actual attribute values (no `jsonb` blob).
+- `public.features(id, assignment_id, feature_type, geometry, is_new, …)` already stores both base-map and user-added features (the latter with `is_new = true`).
+- `public.enumerators(id references auth.users)` — application-level user table; everything user-scoped references this, not `auth.users` directly.
+- `public.assignments(id, enumerator_id, …)` — currently a single-owner model. **This must be generalized to multi-membership before any multi-user feature works.**
+
+### Multi-membership prerequisite
+
+A new `public.assignment_members(assignment_id, enumerator_id, role, joined_at)` join table replaces the assumption that `assignments.enumerator_id` is the sole owner. The existing `enumerator_id` column is retained as the "primary owner" (creator), and an initial migration backfills `assignment_members` from it. All RLS policies on `assignments`, `features`, `submissions`, the three typed-attribute tables, and `photos` are rewritten from `enumerator_id = auth.uid()` to `exists (select 1 from assignment_members am where am.assignment_id = … and am.enumerator_id = auth.uid())`.
+
+### Tables touched (instead of the new tables in the body)
+
+| Spec table (body) | Real change |
+|---|---|
+| `assignment_attributions` | Add columns to existing `public.submissions`: `superseded_at timestamptz`, `superseded_by_id uuid references submissions(id)`. The existing row + child-table rows is the canonical attribution. Conflict comparison hashes the relevant child-table values. |
+| `assignment_new_features` | Add columns to existing `public.features` (only meaningful when `is_new = true`): `possible_duplicate_of uuid references features(id)`, `dedup_reviewed_at timestamptz`. A `centroid geography(Point) generated always as (st_centroid(geometry)::geography) stored` column is added to support the proximity trigger. |
+| `attribution_audit_log` | New table, as in spec body. References `submissions.id` or `features.id` via `(table_name, row_id)` pair. |
+
+### Idempotency
+
+`submissions.id` is client-generated already (uuid PK). It serves as the `client_submission_id` from the spec body — no separate column needed.
+
+### Conflict comparison
+
+For existing-feature conflicts, comparing two attributions = comparing typed child-table rows (e.g., two `building_attributes` rows for two `submissions` on the same `feature_id`). A helper function `attribution_values_equal(submission_id_a, submission_id_b, feature_type)` does the comparison; details in the Phase 1 plan.
+
+### RPCs
+
+The existing `upload_submission_bundle(payload)` RPC stays — it's still the right shape for the *uncontested* upload. A new RPC `submit_attribution_with_conflict_check(payload)` wraps it, doing the conflict detection first and either returning a conflict response or invoking the bundle insert. The new-feature counterpart wraps `upload_new_feature(payload)` similarly.
+
+### Realtime
+
+Realtime publication on `public.submissions` and `public.features`, filtered client-side by `assignment_id` (joined via `features.assignment_id` for the submissions stream).
+
+### Local Drift cache
+
+The Drift table names in the body (`RemoteAttributionsCache`, `RemoteNewFeaturesCache`) remain — they cache *remote* server state regardless of which server tables it lives in. Their schema is unchanged: id, feature_id, attribute_values (denormalized jsonb for display), submitted_by, timestamps, supersede flags.
+
