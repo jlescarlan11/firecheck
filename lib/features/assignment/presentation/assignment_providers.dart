@@ -192,8 +192,18 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
       return;
     }
 
-    // Storage pre-check
-    final needed = await _activeSource.getTotalSize(selected.assignmentId);
+    // Storage pre-check. getTotalSize hits the network for the FTP
+    // transport — wrap so a transient socket/auth/path failure routes to
+    // the retry path instead of bubbling out and stranding the user in
+    // PreparingDownload.
+    final int needed;
+    try {
+      needed = await _activeSource.getTotalSize(selected.assignmentId);
+    } catch (e) {
+      if (!mounted) return;
+      state = GetMapsError(NetworkFailure(e.toString()), isRetryable: true);
+      return;
+    }
     final available = await storageChecker.getAvailableBytes();
     if (!mounted) return;
     if (available < needed) {
@@ -218,7 +228,14 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
     if (s is! GetMapsError || !s.isRetryable) return;
     final selected = _selectedAssignment;
     if (selected == null) return;
-    final needed = await _activeSource.getTotalSize(selected.assignmentId);
+    final int needed;
+    try {
+      needed = await _activeSource.getTotalSize(selected.assignmentId);
+    } catch (e) {
+      if (!mounted) return;
+      state = GetMapsError(NetworkFailure(e.toString()), isRetryable: true);
+      return;
+    }
     await _downloadAndValidate(selected, needed);
   }
 
