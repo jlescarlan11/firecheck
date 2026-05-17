@@ -33,13 +33,22 @@ begin
     and f.feature_type = NEW.feature_type
     and f.is_new = true
     and f.id <> NEW.id
-    and not exists (
-      -- Skip features whose latest submission is superseded with no replacement
-      -- (i.e., the feature was "discarded mine" during a prior dedup resolve).
-      select 1 from public.submissions s
-      where s.feature_id = f.id
-        and s.superseded_at is not null
-        and s.superseded_by_id is null
+    -- Skip features that have been "discarded" via dedup resolve: their only
+    -- submissions are superseded with null replacement AND no live submission
+    -- exists. A feature with no submissions yet (just inserted, not attributed)
+    -- is still a valid duplicate candidate.
+    and (
+      exists (
+        select 1 from public.submissions s
+        where s.feature_id = f.id
+          and s.superseded_at is null
+      )
+      or not exists (
+        select 1 from public.submissions s
+        where s.feature_id = f.id
+          and s.superseded_at is not null
+          and s.superseded_by_id is null
+      )
     )
     and st_dwithin(f.centroid,
                    st_centroid(NEW.geometry::geometry)::geography,
