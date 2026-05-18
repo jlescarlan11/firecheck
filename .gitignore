@@ -72,3 +72,6 @@ client_secret_*.json
 google-services.json *.json
 .agents/
 skills-lock.json
+
+# Per-session Claude Code local config and skill symlinks
+.claude/
