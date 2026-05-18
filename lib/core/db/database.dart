@@ -2,8 +2,10 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+import 'package:firecheck/core/db/tables/assignment_sync_cursors.dart';
 import 'package:firecheck/core/db/tables/assignments.dart';
 import 'package:firecheck/core/db/tables/building_attributes.dart';
+import 'package:firecheck/core/db/tables/drive_upload_jobs.dart';
 import 'package:firecheck/core/db/tables/enumerators.dart';
 import 'package:firecheck/core/db/tables/feature_geometry_revisions.dart';
 import 'package:firecheck/core/db/tables/features.dart';
@@ -11,9 +13,10 @@ import 'package:firecheck/core/db/tables/household_surveys.dart';
 import 'package:firecheck/core/db/tables/offline_tile_packs.dart';
 import 'package:firecheck/core/db/tables/photos.dart';
 import 'package:firecheck/core/db/tables/ra_9514_types.dart';
+import 'package:firecheck/core/db/tables/remote_attributions_cache.dart';
+import 'package:firecheck/core/db/tables/remote_new_features_cache.dart';
 import 'package:firecheck/core/db/tables/road_attributes.dart';
 import 'package:firecheck/core/db/tables/submissions.dart';
-import 'package:firecheck/core/db/tables/drive_upload_jobs.dart';
 import 'package:firecheck/core/db/tables/sync_jobs.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -35,6 +38,9 @@ part 'database.g.dart';
     SyncJobs,
     OfflineTilePacks,
     DriveUploadJobs,
+    RemoteAttributionsCache,
+    RemoteNewFeaturesCache,
+    AssignmentSyncCursors,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -44,7 +50,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -99,6 +105,20 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(assignments, assignments.driveFolderPath);
             await m.addColumn(assignments, assignments.driveFolderUrl);
             await m.addColumn(assignments, assignments.driveUploadConfirmedAt);
+          }
+          if (from < 10) {
+            // v9 → v10: Phase 2 of multi-user attribution sync.
+            // Local read-only cache of remote canonical state, plus per-
+            // assignment cursors for delta pulls. The cache is populated by
+            // cold-open / reconnect pulls (and by realtime in phase 3); the
+            // user's own submissions stay in `submissions` — the cache
+            // never touches them.
+            await m.createTable(remoteAttributionsCache);
+            await m.createIndex(remoteAttributionsCacheFeatureIdx);
+            await m.createIndex(remoteAttributionsCacheUpdatedAtIdx);
+            await m.createTable(remoteNewFeaturesCache);
+            await m.createIndex(remoteNewFeaturesCacheAssignmentIdx);
+            await m.createTable(assignmentSyncCursors);
           }
         },
         beforeOpen: (details) async {

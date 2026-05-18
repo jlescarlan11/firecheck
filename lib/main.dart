@@ -6,6 +6,7 @@ import 'package:firecheck/core/drive/drive_upload_providers.dart';
 import 'package:firecheck/core/drive/drive_upload_workmanager.dart';
 import 'package:firecheck/core/drive/google_drive_api.dart';
 import 'package:firecheck/core/mapbox/offline_pack_adapter.dart';
+import 'package:firecheck/core/sync/presentation/remote_cache_providers.dart';
 import 'package:firecheck/core/sync/presentation/sync_providers.dart';
 import 'package:firecheck/core/sync/shapefile/dbf_parser.dart';
 import 'package:firecheck/core/sync/shapefile/reprojector.dart';
@@ -169,6 +170,14 @@ class _SyncBootstrapState extends ConsumerState<_SyncBootstrap> {
     super.initState();
     Future.microtask(() async {
       await ref.read(syncControllerProvider).start();
+      // Phase 2 of multi-user attribution sync: cold-open full pull of
+      // remote canonical state for the active assignment, then listen for
+      // reconnects/resumes to fire delta pulls. Runs only when authenticated
+      // (the RPCs RLS-filter to membership, but skipping when signed-out
+      // avoids noisy logs).
+      if (Supabase.instance.client.auth.currentSession != null) {
+        await ref.read(remoteCacheControllerProvider).start();
+      }
       _attachSubmittedLock();
     });
   }
