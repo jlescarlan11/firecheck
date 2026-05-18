@@ -1,8 +1,11 @@
 import 'package:drift/drift.dart';
 import 'package:firecheck/core/db/database.dart';
+import 'package:firecheck/core/sync/data/realtime_subscriber.dart';
 import 'package:firecheck/core/sync/data/remote_attributions_cache_repository.dart';
 import 'package:firecheck/core/sync/data/remote_attributions_pull_service.dart';
 import 'package:firecheck/core/sync/data/remote_cache_api.dart';
+import 'package:firecheck/core/sync/worker/realtime_sync_controller.dart';
+import 'package:firecheck/core/sync/worker/realtime_wiring.dart';
 import 'package:firecheck/core/sync/worker/remote_cache_controller.dart';
 import 'package:firecheck/features/home/presentation/home_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -33,6 +36,29 @@ final remoteCacheControllerProvider =
   );
   ref.onDispose(controller.stop);
   return controller;
+});
+
+final realtimeSubscriberProvider = Provider<RealtimeSubscriber>((ref) {
+  return SupabaseRealtimeSubscriber(Supabase.instance.client);
+});
+
+final realtimeSyncControllerProvider =
+    Provider<RealtimeSyncController>((ref) {
+  final controller = RealtimeSyncController(
+    subscriber: ref.watch(realtimeSubscriberProvider),
+    pullService: ref.watch(remoteAttributionsPullServiceProvider),
+    db: ref.watch(appDatabaseProvider),
+  );
+  ref.onDispose(controller.stop);
+  return controller;
+});
+
+final realtimeWiringProvider = Provider<RealtimeWiring>((ref) {
+  final wiring = RealtimeWiring(
+    controller: ref.watch(realtimeSyncControllerProvider),
+  );
+  ref.onDispose(wiring.dispose);
+  return wiring;
 });
 
 /// Live stream of canonical remote attributions for an assignment.

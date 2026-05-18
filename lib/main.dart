@@ -170,13 +170,15 @@ class _SyncBootstrapState extends ConsumerState<_SyncBootstrap> {
     super.initState();
     Future.microtask(() async {
       await ref.read(syncControllerProvider).start();
-      // Phase 2 of multi-user attribution sync: cold-open full pull of
-      // remote canonical state for the active assignment, then listen for
-      // reconnects/resumes to fire delta pulls. Runs only when authenticated
-      // (the RPCs RLS-filter to membership, but skipping when signed-out
-      // avoids noisy logs).
+      // Phases 2 + 3 of multi-user attribution sync: cold-open full pull
+      // (phase 2) plus realtime subscription with connection state
+      // machine (phase 3). Runs only when authenticated — the server RPCs
+      // RLS-filter to membership, but skipping when signed-out avoids
+      // noisy logs.
       if (Supabase.instance.client.auth.currentSession != null) {
         await ref.read(remoteCacheControllerProvider).start();
+        ref.read(realtimeWiringProvider).start();
+        await ref.read(realtimeSyncControllerProvider).start();
       }
       _attachSubmittedLock();
     });
