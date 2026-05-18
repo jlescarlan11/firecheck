@@ -53,7 +53,7 @@ class ShapefileValidationFailure extends Failure {
   final String ruleName;
 }
 
-/// Drive inbox has no folders accessible to the signed-in user.
+/// /firecheck/ has no assignment subfolders accessible to the signed-in user.
 class NoAssignmentsFailure extends Failure {
   const NoAssignmentsFailure()
       : super(

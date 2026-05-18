@@ -3,7 +3,6 @@ import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/drive/drive_upload_api.dart';
 import 'package:firecheck/core/drive/drive_upload_job_status.dart';
 import 'package:firecheck/core/drive/drive_upload_repository.dart';
-import 'package:intl/intl.dart';
 
 class DriveUploadWorker {
   DriveUploadWorker({
@@ -77,21 +76,18 @@ class DriveUploadWorker {
   }
 
   Future<String> _resolveParentFolder(DriveUploadJob job) async {
-    final assignment = await (db.select(db.assignments)
-          ..where((t) => t.id.equals(job.assignmentId)))
-        .getSingle();
-    final enumeratorId = assignment.enumeratorId;
-    final dateKey = DateFormat('yyyy-MM-dd').format(job.capturedAt);
-    final subfolderName =
-        job.fileType == DriveFileType.photo ? 'photos' : 'shapefiles';
-    final cacheKey = '$enumeratorId/$dateKey/$subfolderName';
+    // Unified Drive layout per assignment:
+    //   <rootFolderId>/<assignmentId>/                  ← shapefile zips overwrite here
+    //   <rootFolderId>/<assignmentId>/photos/           ← photos (unique filenames, no overwrite)
+    // Conflict safety for shapefile overwrites is handled at the DB
+    // layer via submit_attribution_with_conflict_check; Drive is the
+    // file mirror, not the source of truth for attributions.
+    final isPhoto = job.fileType == DriveFileType.photo;
+    final cacheKey = isPhoto ? '${job.assignmentId}/photos' : job.assignmentId;
     if (_folderCache.containsKey(cacheKey)) return _folderCache[cacheKey]!;
     // Store only successful results; remove on failure so retries hit Drive again.
-    _folderCache[cacheKey] = _createFolderHierarchy(
-      enumeratorId,
-      dateKey,
-      subfolderName,
-    ).then(
+    _folderCache[cacheKey] = _createFolderHierarchy(job.assignmentId, isPhoto)
+        .then(
       (id) => id,
       onError: (Object e, StackTrace s) {
         _folderCache.remove(cacheKey);
@@ -102,15 +98,13 @@ class DriveUploadWorker {
   }
 
   Future<String> _createFolderHierarchy(
-    String enumeratorId,
-    String dateKey,
-    String subfolderName,
+    String assignmentId,
+    bool isPhoto,
   ) async {
-    final enumeratorFolderId =
-        await api.createOrGetFolder(enumeratorId, rootFolderId);
-    final dateFolderId =
-        await api.createOrGetFolder(dateKey, enumeratorFolderId);
-    return api.createOrGetFolder(subfolderName, dateFolderId);
+    final assignmentFolderId =
+        await api.createOrGetFolder(assignmentId, rootFolderId);
+    if (!isPhoto) return assignmentFolderId;
+    return api.createOrGetFolder('photos', assignmentFolderId);
   }
 
   DateTime? _nextRetryAt(int attempts) {
