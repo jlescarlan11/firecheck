@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:drift/drift.dart';
 import 'package:firecheck/core/db/database.dart';
+import 'package:firecheck/core/forms/geometry_signal.dart';
 import 'package:firecheck/features/survey/building_form/data/submission_repository.dart';
 import 'package:firecheck/features/survey/road_form/data/road_attributes_repository.dart';
 import 'package:firecheck/features/survey/road_form/domain/road_form_applicability.dart';
@@ -23,15 +24,35 @@ class RoadFormNotifier extends StateNotifier<RoadFormState> {
   // US-41: fields the active form variant hides for this user/assignment.
   final Set<RoadFormField> hiddenFields;
 
+  /// Latest geometry-derived signal for the feature this form is filling.
+  /// Updated by [onGeometryChanged] whenever a reshape commit lands so
+  /// skip-logic re-evaluates automatically (Issue #44).
+  GeometrySignal? _geometrySignal;
+  GeometrySignal? get geometrySignal => _geometrySignal;
+
   Timer? _debounce;
   static const _window = Duration(milliseconds: 500);
 
   void update(RoadFormState Function(RoadFormState) mutate) {
     // Apply field applicability after the mutation — US-6/US-7 share this
     // hook with the remaining-questions count (US-8).
-    state = applyApplicability(mutate(state), hidden: hiddenFields);
+    state = applyApplicability(
+      mutate(state),
+      hidden: hiddenFields,
+      geometry: _geometrySignal,
+    );
     _debounce?.cancel();
     _debounce = Timer(_window, _flush);
+  }
+
+  void onGeometryChanged(GeometrySignal signal) {
+    if (signal == _geometrySignal) return;
+    _geometrySignal = signal;
+    state = applyApplicability(
+      state,
+      hidden: hiddenFields,
+      geometry: signal,
+    );
   }
 
   Future<void> flushNow() async {

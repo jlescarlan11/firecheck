@@ -4,6 +4,14 @@
 // current path through the form, and which of those still need an answer.
 // Drives field-level visibility (US-6), automatic clearing of skipped
 // answers (US-7) and the remaining-questions indicator (US-8).
+//
+// [geometry] flows through every applicability call so skip-logic that
+// depends on the feature's shape — area thresholds, vertex counts — can
+// re-evaluate the moment a reshape commits (Issue #44). Current rules
+// don't consume the signal yet; the parameter exists so adding a
+// geometry-dependent rule is a one-line change.
+import 'package:firecheck/core/forms/field_requirements.dart';
+import 'package:firecheck/core/forms/geometry_signal.dart';
 import 'package:firecheck/features/survey/building_form/domain/building_form_state.dart';
 
 enum BuildingFormField {
@@ -30,8 +38,10 @@ bool isApplicable(
   BuildingFormState s,
   BuildingFormField f, {
   Set<BuildingFormField> hidden = const {},
+  GeometrySignal? geometry,
 }) {
   if (hidden.contains(f)) return false;
+  // `geometry` is intentionally unused by today's rules — see file header.
   // "Does not exist" short-circuits the whole survey: nothing else applies.
   if (s.doesNotExist) return false;
   switch (f) {
@@ -76,14 +86,50 @@ bool isAnswered(BuildingFormState s, BuildingFormField f) {
 int remainingQuestionCount(
   BuildingFormState s, {
   Set<BuildingFormField> hidden = const {},
+  GeometrySignal? geometry,
+  FieldRequirements? requirements,
 }) {
   var n = 0;
   for (final f in BuildingFormField.values) {
-    if (!isApplicable(s, f, hidden: hidden)) continue;
+    if (!isApplicable(s, f, hidden: hidden, geometry: geometry)) continue;
     if (isAnswered(s, f)) continue;
+    // Optional fields don't count as "questions left" — the user can submit
+    // without filling them in (Issue #43, sidecar-driven validation).
+    final key = _requirementKeyFor(f);
+    if (key != null &&
+        requirements != null &&
+        !requirements.isRequired(key)) {
+      continue;
+    }
     n++;
   }
   return n;
+}
+
+/// Maps each [BuildingFormField] to the requirement key the sidecar config
+/// uses. Returns null for fields that don't have a corresponding key — they
+/// always count as remaining when unanswered (today only [cbmsId] and
+/// [fireFightingFacilities] fall in this bucket; both are pre-#43 optional
+/// in spirit but not yet wired into the sidecar).
+String? _requirementKeyFor(BuildingFormField f) {
+  switch (f) {
+    case BuildingFormField.buildingName:
+      return FieldRequirementKeys.buildingName;
+    case BuildingFormField.ra9514Type:
+      return FieldRequirementKeys.buildingRa9514Type;
+    case BuildingFormField.storeys:
+      return FieldRequirementKeys.buildingStoreys;
+    case BuildingFormField.material:
+      return FieldRequirementKeys.buildingMaterial;
+    case BuildingFormField.costAmount:
+    case BuildingFormField.costEstimateRange:
+      return FieldRequirementKeys.buildingCost;
+    case BuildingFormField.fireLoad:
+      return FieldRequirementKeys.buildingFireLoad;
+    case BuildingFormField.cbmsId:
+    case BuildingFormField.fireFightingFacilities:
+      return null;
+  }
 }
 
 /// Returns a new state with any non-applicable field cleared. The notifier
@@ -94,7 +140,9 @@ int remainingQuestionCount(
 BuildingFormState applyApplicability(
   BuildingFormState s, {
   Set<BuildingFormField> hidden = const {},
+  GeometrySignal? geometry,
 }) {
+  // `geometry` routed through for future skip-rules (Issue #44).
   if (s.doesNotExist) {
     // Whole-form skip: clear every conditional answer, keep only the
     // submission id, the toggle itself, and the override reason (the latter

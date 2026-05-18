@@ -36,6 +36,7 @@ dependencies:
   # platform
   flutter_secure_storage: ^9.2.2
   # google
+  google_sign_in: ^7.1.0
   googleapis: ^13.2.0
   googleapis_auth: ^2.3.0
   http: ^1.2.0

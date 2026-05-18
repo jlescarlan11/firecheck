@@ -7,6 +7,11 @@ import 'package:firecheck/core/drive/drive_assignment.dart';
 import 'package:firecheck/core/device/storage_checker.dart';
 import 'package:firecheck/core/drive/drive_api.dart';
 import 'package:firecheck/core/drive/drive_download_event.dart';
+import 'package:firecheck/core/drive/ftp_credentials.dart';
+import 'package:firecheck/core/drive/ftp_map_source_api.dart';
+import 'package:firecheck/core/drive/transport_source.dart';
+import 'package:firecheck/core/forms/field_requirements_providers.dart';
+import 'package:firecheck/core/forms/field_requirements_store.dart';
 import 'package:firecheck/core/errors/failure.dart';
 import 'package:firecheck/core/mapbox/offline_pack_adapter.dart';
 import 'package:firecheck/core/sync/shapefile/shapefile_importer.dart';
@@ -70,7 +75,13 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
     required this.storageChecker,
     required this.validator,
     required this.reporter,
+    this.onRequirementsUpdated,
   }) : super(const Idle());
+
+  /// Invoked after a freshly downloaded `field_requirements.txt` is
+  /// written to local storage so the form layer re-reads it. Optional so
+  /// tests can construct the notifier without a Riverpod ref.
+  final void Function()? onRequirementsUpdated;
 
   final AssignmentRepository assignmentRepo;
   final OfflineTilePackRepository packRepo;
@@ -83,6 +94,34 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
   final ShapefileValidator validator;
   final ValidationFailureReporter reporter;
 
+  /// Active map-source transport (Issue #45). Defaults to Google Drive
+  /// (which uses the injected [driveApi]). When set to FTP the notifier
+  /// builds an [FtpMapSourceApi] on the fly from the supplied credentials.
+  TransportSource _transport = TransportSource.googleDrive;
+  FtpCredentials? _ftpCredentials;
+
+  void setTransport(TransportSource transport, {FtpCredentials? ftp}) {
+    _transport = transport;
+    _ftpCredentials = ftp;
+  }
+
+  /// Resolves the [DriveApi] for the currently selected transport.
+  DriveApi get _activeSource {
+    switch (_transport) {
+      case TransportSource.googleDrive:
+        return driveApi;
+      case TransportSource.ftp:
+        final c = _ftpCredentials;
+        if (c == null || !c.isComplete) {
+          throw StateError(
+            'FTP transport selected but credentials are missing — fill in '
+            'the host/user/password fields before starting.',
+          );
+        }
+        return FtpMapSourceApi(c);
+    }
+  }
+
   static const _styleUri = 'mapbox://styles/mapbox/streets-v12';
   static const _minZoom = 12;
   static const _maxZoom = 17;
@@ -91,13 +130,22 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
   DriveAssignment? _selectedAssignment;
   String? _enumeratorId;
 
+  /// Issue #46: when true, the validator demotes fatals to warnings so any
+  /// available map data passes through to the importer, regardless of
+  /// source, format, or predefined limitations.
+  bool unrestricted = false;
+
+  void setUnrestricted({required bool value}) {
+    unrestricted = value;
+  }
+
   Future<void> start() async {
     _cancelled = false;
     state = const DiscoveringAssignments();
 
     List<DriveAssignment> rawAssignments;
     try {
-      rawAssignments = await driveApi.listAssignments();
+      rawAssignments = await _activeSource.listAssignments();
     } catch (e) {
       if (!mounted) return;
       state = GetMapsError(NetworkFailure(e.toString()), isRetryable: true);
@@ -144,16 +192,32 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
         s.assignments.firstWhere((a) => a.assignmentId == s.selectedId);
     _selectedAssignment = selected;
 
-    // Delta skip — already imported, go straight to tile download
+    // Delta skip — already imported, go straight to tile download.
+    // Still refresh the field_requirements.txt sidecar: Drive doesn't
+    // reliably bump folder.modifiedTime when only a small sidecar is
+    // added, so without this pull a freshly-dropped requirements file
+    // would never reach the form layer on an already-imported folder.
     if (selected.alreadyDownloaded) {
       _enumeratorId = await googleAuthRepo.getEnumeratorId();
+      if (!mounted) return;
+      await _refreshFieldRequirementsSidecar(selected.assignmentId);
       if (!mounted) return;
       await _startTileDownload();
       return;
     }
 
-    // Storage pre-check
-    final needed = await driveApi.getTotalSize(selected.assignmentId);
+    // Storage pre-check. getTotalSize hits the network for the FTP
+    // transport — wrap so a transient socket/auth/path failure routes to
+    // the retry path instead of bubbling out and stranding the user in
+    // PreparingDownload.
+    final int needed;
+    try {
+      needed = await _activeSource.getTotalSize(selected.assignmentId);
+    } catch (e) {
+      if (!mounted) return;
+      state = GetMapsError(NetworkFailure(e.toString()), isRetryable: true);
+      return;
+    }
     final available = await storageChecker.getAvailableBytes();
     if (!mounted) return;
     if (available < needed) {
@@ -178,7 +242,14 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
     if (s is! GetMapsError || !s.isRetryable) return;
     final selected = _selectedAssignment;
     if (selected == null) return;
-    final needed = await driveApi.getTotalSize(selected.assignmentId);
+    final int needed;
+    try {
+      needed = await _activeSource.getTotalSize(selected.assignmentId);
+    } catch (e) {
+      if (!mounted) return;
+      state = GetMapsError(NetworkFailure(e.toString()), isRetryable: true);
+      return;
+    }
     await _downloadAndValidate(selected, needed);
   }
 
@@ -192,7 +263,7 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
 
     try {
       await for (final event
-          in driveApi.downloadShapefiles(selected.assignmentId)) {
+          in _activeSource.downloadShapefiles(selected.assignmentId)) {
         if (_cancelled || !mounted) return;
         switch (event) {
           case DriveDownloadProgress(:final downloaded, :final total):
@@ -217,8 +288,26 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
       return;
     }
 
+    // Issue #43 (post-review): if a `field_requirements.txt` rode along
+    // with the shapefile, persist it locally and refresh the form-layer
+    // cache. Done before validation so the .txt never feeds into the
+    // shapefile rules (FileSetRule would otherwise flag it as extra).
+    final configKey = shapefiles.keys.firstWhere(
+      (k) => k.toLowerCase() == fieldRequirementsFilename,
+      orElse: () => '',
+    );
+    if (configKey.isNotEmpty) {
+      final bytes = shapefiles.remove(configKey);
+      shapeMd5s.remove(configKey);
+      if (bytes != null) await _persistFieldRequirements(bytes);
+    }
+
     state = const ValidatingShapefiles();
-    final report = validator.validate(shapefiles, shapeMd5s);
+    final report = validator.validate(
+      shapefiles,
+      shapeMd5s,
+      relaxedMode: unrestricted,
+    );
 
     if (report.hasFatals) {
       final fatal = report.fatal!;
@@ -243,6 +332,24 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
     }
 
     await _doImport(selected, shapefiles);
+  }
+
+  Future<void> _persistFieldRequirements(Uint8List bytes) async {
+    try {
+      await writeFieldRequirements(bytes);
+      onRequirementsUpdated?.call();
+    } catch (_) {
+      // Non-fatal — the form falls back to the bundled asset.
+    }
+  }
+
+  Future<void> _refreshFieldRequirementsSidecar(String assignmentId) async {
+    try {
+      final bytes = await _activeSource.fetchFieldRequirementsSidecar(assignmentId);
+      if (bytes != null) await _persistFieldRequirements(bytes);
+    } catch (_) {
+      // Non-fatal — keep moving to the tile download.
+    }
   }
 
   Future<void> _doImport(
@@ -375,6 +482,8 @@ final getMapsNotifierProvider =
     storageChecker: ref.watch(storageCheckerProvider),
     validator: ref.watch(shapefileValidatorProvider),
     reporter: ref.watch(validationFailureReporterProvider),
+    onRequirementsUpdated: () =>
+        ref.read(fieldRequirementsRevisionProvider.notifier).state++,
   );
 });
 

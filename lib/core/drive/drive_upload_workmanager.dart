@@ -5,7 +5,10 @@ import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/drive/drive_upload_repository.dart';
 import 'package:firecheck/core/drive/drive_upload_worker.dart';
 import 'package:firecheck/core/drive/google_drive_upload_api.dart';
-import 'package:firecheck/features/auth/data/supabase_google_auth_repository.dart';
+import 'package:firecheck/core/errors/failure.dart';
+import 'package:firecheck/core/security/secure_storage.dart';
+import 'package:firecheck/features/auth/data/cached_google_auth_repository.dart';
+import 'package:firecheck/features/auth/data/google_access_token_cache.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:workmanager/workmanager.dart';
@@ -38,8 +41,11 @@ void driveUploadCallbackDispatcher() {
       final session = Supabase.instance.client.auth.currentSession;
       if (session == null) return true;
 
-      final googleAuthRepo = SupabaseGoogleAuthRepository(
+      final googleAuthRepo = CachedGoogleAuthRepository(
         auth: Supabase.instance.client.auth,
+        cache: SecureStorageGoogleAccessTokenCache(
+          FlutterSecureStorageAdapter(),
+        ),
       );
       final uploadApi = GoogleDriveUploadApi(googleAuthRepo: googleAuthRepo);
       final repo = DriveUploadRepository(db);
@@ -49,7 +55,14 @@ void driveUploadCallbackDispatcher() {
         db: db,
         rootFolderId: rootFolderId,
       );
-      await worker.drain();
+      try {
+        await worker.drain();
+      } on AuthFailure {
+        // No fresh access token in the cache — foreground app will refresh
+        // and the next periodic run will pick up where we left off.
+        await db.close();
+        return true;
+      }
       await db.close();
       return true;
     } on Object {

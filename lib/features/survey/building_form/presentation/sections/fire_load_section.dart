@@ -1,4 +1,7 @@
+import 'package:firecheck/core/forms/field_requirements.dart';
+import 'package:firecheck/core/forms/field_requirements_providers.dart';
 import 'package:firecheck/core/forms/form_variant_providers.dart';
+import 'package:firecheck/core/forms/required_label.dart';
 import 'package:firecheck/features/survey/building_form/domain/building_form_applicability.dart';
 import 'package:firecheck/features/survey/building_form/presentation/building_form_providers.dart';
 import 'package:firecheck/features/survey/building_form/presentation/sections/_section_card.dart';
@@ -63,9 +66,14 @@ class FireLoadSection extends ConsumerWidget {
     if (hidden.contains(BuildingFormField.fireLoad)) {
       return const SizedBox.shrink();
     }
+    final reqs = ref.watch(fieldRequirementsProvider);
 
     return SectionCard(
-      title: l.sectionFireLoad,
+      title: requiredLabel(
+        l.sectionFireLoad,
+        reqs,
+        FieldRequirementKeys.buildingFireLoad,
+      ),
       child: Wrap(
         spacing: 8,
         runSpacing: 4,

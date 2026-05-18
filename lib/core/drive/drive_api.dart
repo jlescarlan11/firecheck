@@ -15,6 +15,13 @@ abstract interface class DriveApi {
   /// Streams download events for all shapefile components in the folder.
   Stream<DriveDownloadEvent> downloadShapefiles(String assignmentId);
 
+  /// Fetches only the `field_requirements.txt` sidecar from the assignment
+  /// folder, or returns null if the folder doesn't have one. Used to refresh
+  /// form validation rules on the delta-skip path, where a full shapefile
+  /// re-download would be wasteful but the sidecar may have been updated
+  /// since the last import.
+  Future<Uint8List?> fetchFieldRequirementsSidecar(String assignmentId);
+
   /// Uploads [files] to /firecheck/{assignmentId}/ on Drive.
   ///
   /// Files whose name already exists in the assignment folder are
