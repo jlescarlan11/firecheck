@@ -3,6 +3,7 @@ import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/photos/photo_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_lock_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_lock_state.dart';
+import 'package:firecheck/core/forms/field_requirements_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
 import 'package:firecheck/features/home/presentation/home_providers.dart';
 import 'package:firecheck/features/survey/building_form/domain/building_form_validator.dart';
@@ -126,7 +127,8 @@ class _SubmissionDetailScreenState
                 // then pop explicitly. Without this, dispose-time _flush is
                 // fire-and-forget and the feature can render red on the map
                 // until the user re-opens and saves again.
-                // Done uses context.go and bypasses PopScope.
+                // Done also routes through this handler via context.pop(); its
+                // own flushNow + markFeatureStatus calls are idempotent.
                 canPop: false,
                 onPopInvokedWithResult: (didPop, _) async {
                   if (didPop) return;
@@ -282,6 +284,7 @@ class _Footer extends ConsumerWidget {
     if (isLocked) return const SizedBox.shrink();
     final photoCountAsync = ref.watch(_photoCountProvider(submissionId));
 
+    final requirements = ref.watch(fieldRequirementsProvider);
     final ready = photoCountAsync.maybeWhen(
       data: (photoCount) {
         if (isRoad) {
@@ -290,14 +293,22 @@ class _Footer extends ConsumerWidget {
             featureId: featureId,
           );
           final state = ref.watch(roadFormNotifierProvider(key));
-          return validateRoadForm(state, photoCount).isComplete;
+          return validateRoadForm(
+            state,
+            photoCount,
+            requirements: requirements,
+          ).isComplete;
         } else {
           final key = BuildingFormKey(
             submissionId: submissionId,
             featureId: featureId,
           );
           final state = ref.watch(buildingFormNotifierProvider(key));
-          return validateBuildingForm(state, photoCount).isComplete;
+          return validateBuildingForm(
+            state,
+            photoCount,
+            requirements: requirements,
+          ).isComplete;
         }
       },
       orElse: () => false,
@@ -370,7 +381,14 @@ class _Footer extends ConsumerWidget {
                         await ref
                             .read(featureRepositoryProvider)
                             .markFeatureStatus(featureId);
-                        if (context.mounted) context.go('/map');
+                        // Pop the form off the router stack so the user lands
+                        // back on /map with /home still beneath it. Using
+                        // context.go('/map') here would flatten the stack to
+                        // [/map] and a subsequent Back from /map would exit
+                        // the app. PopScope's handler re-runs flushNow +
+                        // markFeatureStatus (both idempotent) before its
+                        // manual pop completes the navigation.
+                        if (context.mounted) context.pop();
                       }
                     : null,
                 child: Text(l.doneButton),

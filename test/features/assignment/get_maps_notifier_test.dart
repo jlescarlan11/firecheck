@@ -194,6 +194,43 @@ void main() {
     expect(n.state, isA<DownloadingTiles>());
   });
 
+  test('delta skip still pulls field_requirements.txt sidecar', () async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    await db.into(db.assignments).insert(
+          AssignmentsCompanion(
+            id: const Value('brgy-001'),
+            enumeratorId: const Value('e'),
+            campaignId: const Value('brgy-001'),
+            boundaryPolygonGeojson: const Value('{"type":"Polygon","coordinates":[[[0,0],[0,1],[1,1],[1,0],[0,0]]]}'),
+            driveModifiedTime: const Value('2026-04-28T10:00:00Z'),
+            createdAt: Value(DateTime.now()),
+          ),
+        );
+    final driveApi = FakeDriveApi(assignments: [_brgy001]);
+    final imp = _NoopImporter(db);
+    final n = GetMapsNotifier(
+      assignmentRepo: AssignmentRepository(db: db),
+      packRepo: OfflineTilePackRepository(db),
+      packAdapter: FakeOfflinePackAdapter(),
+      featureRepo: FeatureRepository(db),
+      driveApi: driveApi,
+      googleAuthRepo: FakeGoogleAuthRepository(),
+      shapefileImporter: imp,
+      storageChecker: FakeStorageChecker(availableBytes: 100 * 1024 * 1024),
+      validator: ShapefileValidator(rules: [const _SpyRule(RulePassed())]),
+      reporter: FakeValidationFailureReporter(),
+    );
+    await n.start();
+    expect((n.state as PickingAssignment).assignments.first.alreadyDownloaded,
+        isTrue);
+    await n.confirmDownload();
+    // Sidecar is fetched even though shapefile download/import is skipped —
+    // this is the fix for "added field_requirements.txt to an already-
+    // imported folder, app still requires all fields".
+    expect(driveApi.fetchFieldRequirementsSidecarCalled, isTrue);
+    expect(imp.callCount, 0);
+  });
+
   test('download stream error → GetMapsError', () async {
     final n = _makeNotifier(downloadError: Exception('timeout'));
     await n.start();

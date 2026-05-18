@@ -1,4 +1,6 @@
 // lib/features/assignment/presentation/get_maps_screen.dart
+import 'package:firecheck/core/drive/ftp_credentials.dart';
+import 'package:firecheck/core/drive/transport_source.dart';
 import 'package:firecheck/core/errors/failure.dart';
 import 'package:firecheck/features/assignment/domain/get_maps_state.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
@@ -7,11 +9,35 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class GetMapsScreen extends ConsumerWidget {
+class GetMapsScreen extends ConsumerStatefulWidget {
   const GetMapsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<GetMapsScreen> createState() => _GetMapsScreenState();
+}
+
+class _GetMapsScreenState extends ConsumerState<GetMapsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // The GetMaps notifier outlives this screen (not autoDispose). If the
+    // user finished, cancelled, or errored on a previous visit, they're
+    // returning to start a new download — drop the stale terminal state so
+    // they don't land on the success/error screen with no way forward.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final s = ref.read(getMapsNotifierProvider);
+      if (s is Ready ||
+          s is Cancelled ||
+          s is GetMapsError ||
+          s is InsufficientStorage) {
+        ref.read(getMapsNotifierProvider.notifier).reset();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(getMapsNotifierProvider);
     final l = AppLocalizations.of(context)!;
 
@@ -49,27 +75,137 @@ class GetMapsScreen extends ConsumerWidget {
   }
 }
 
-class _IdleView extends StatelessWidget {
+class _IdleView extends ConsumerStatefulWidget {
   const _IdleView({required this.onStart});
   final VoidCallback onStart;
 
   @override
+  ConsumerState<_IdleView> createState() => _IdleViewState();
+}
+
+class _IdleViewState extends ConsumerState<_IdleView> {
+  // Issue #45: which transport the user picked for this download.
+  TransportSource _source = TransportSource.googleDrive;
+  // Issue #46: when on, the validator demotes fatals to warnings so the
+  // importer accepts any geospatial data the team happens to have.
+  bool _unrestricted = false;
+
+  // Issue #45 — credentials are kept in-memory only for the current
+  // download. Persisting them would require secure storage and a
+  // permissions UX that's out of scope for this batch.
+  final _host = TextEditingController();
+  final _user = TextEditingController();
+  final _pass = TextEditingController();
+  final _remotePath = TextEditingController(text: '/');
+
+  @override
+  void dispose() {
+    _host.dispose();
+    _user.dispose();
+    _pass.dispose();
+    _remotePath.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          l.getMapsExplainer('~100 MB', 10),
-          style: Theme.of(context).textTheme.bodyMedium,
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 24),
-        FilledButton(
-          onPressed: onStart,
-          child: Text(l.startDownload),
-        ),
-      ],
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            l.getMapsExplainer('~100 MB', 10),
+            style: Theme.of(context).textTheme.bodyMedium,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          SegmentedButton<TransportSource>(
+            segments: const [
+              ButtonSegment(
+                value: TransportSource.googleDrive,
+                label: Text('Google Drive'),
+                icon: Icon(Icons.cloud),
+              ),
+              ButtonSegment(
+                value: TransportSource.ftp,
+                label: Text('FTP'),
+                icon: Icon(Icons.dns),
+              ),
+            ],
+            selected: {_source},
+            onSelectionChanged: (s) => setState(() => _source = s.first),
+          ),
+          if (_source == TransportSource.ftp) ...[
+            const SizedBox(height: 12),
+            TextField(
+              controller: _host,
+              decoration: const InputDecoration(
+                labelText: 'FTP host (e.g. ftp.example.org)',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _user,
+              decoration: const InputDecoration(
+                labelText: 'Username',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _pass,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Password',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _remotePath,
+              decoration: const InputDecoration(
+                labelText: 'Remote folder (path on server)',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          SwitchListTile(
+            title: const Text('Allow any map data (no restrictions)'),
+            subtitle: const Text(
+              'Bypass shapefile validation — every file is imported as-is. '
+              'Use only when you trust the source.',
+            ),
+            value: _unrestricted,
+            onChanged: (v) => setState(() => _unrestricted = v),
+          ),
+          const SizedBox(height: 16),
+          FilledButton(
+            onPressed: () {
+              ref.read(getMapsNotifierProvider.notifier)
+                ..setUnrestricted(value: _unrestricted)
+                ..setTransport(
+                  _source,
+                  ftp: _source == TransportSource.ftp
+                      ? FtpCredentials(
+                          host: _host.text.trim(),
+                          user: _user.text,
+                          password: _pass.text,
+                          remotePath: _remotePath.text.trim().isEmpty
+                              ? '/'
+                              : _remotePath.text.trim(),
+                        )
+                      : null,
+                );
+              widget.onStart();
+            },
+            child: Text(l.startDownload),
+          ),
+        ],
+      ),
     );
   }
 }
