@@ -1665,6 +1665,16 @@ No client code has changed at this point. The existing `upload_submission_bundle
 
 ---
 
+## Security follow-up: migration `027_phase1_security_fixes.sql`
+
+PR #54 review surfaced two information-disclosure issues in the idempotency early-returns of `submit_attribution_with_conflict_check` and `submit_new_feature_with_dedup_check`. Both authorized off payload-supplied identifiers (feature_id / assignment_id) before returning status for a row keyed on payload submission_id / feature_id. A member of assignment A could probe arbitrary UUIDs from assignment B and observe whether the row existed and its supersede/dedup state.
+
+**Fix:** when the idempotency branch fires (row already exists), re-derive `assignment_id` from the *stored* row's real `feature_id` (or, for new features, its real `assignment_id`) and re-check membership against that value. If the caller is not a member of the stored row's assignment, the RPC raises `not_member` (`42501`) without revealing anything.
+
+`027_phase1_security_fixes.sql` re-emits both functions via `create or replace function`. The non-idempotent paths are unchanged — they still authorize off the payload, which is correct because a newly-inserted row's `assignment_id` is whatever the caller claims and must match their membership.
+
+---
+
 ## What's Next
 
 Phase 1 is one of five phases derived from the spec's migration plan. The next phases will each get their own implementation plan:
