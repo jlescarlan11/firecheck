@@ -504,6 +504,11 @@ Populates `possible_duplicate_of` on insert of a new feature (`is_new = true`) w
 -- Sets features.possible_duplicate_of for newly-added user features
 -- when a same-type feature already exists within the assignment's
 -- dedup_proximity_meters. No-op for is_new = false (base map) rows.
+--
+-- IMPORTANT: BEFORE-INSERT triggers fire *before* generated columns are
+-- computed, so NEW.centroid is NULL at trigger time. We re-derive the
+-- centroid inline using the same expression as the stored generated
+-- column on features.centroid.
 
 create or replace function public.set_feature_possible_duplicate()
 returns trigger
@@ -530,16 +535,28 @@ begin
     and f.feature_type = NEW.feature_type
     and f.is_new = true
     and f.id <> NEW.id
-    and not exists (
-      -- Skip features whose latest submission is superseded with no replacement
-      -- (i.e., the feature was "discarded mine" during a prior dedup resolve).
-      select 1 from public.submissions s
-      where s.feature_id = f.id
-        and s.superseded_at is not null
-        and s.superseded_by_id is null
+    -- Skip features that have been "discarded" via dedup resolve: their only
+    -- submissions are superseded with null replacement AND no live submission
+    -- exists. A feature with no submissions yet (just inserted, not attributed)
+    -- is still a valid duplicate candidate.
+    and (
+      exists (
+        select 1 from public.submissions s
+        where s.feature_id = f.id
+          and s.superseded_at is null
+      )
+      or not exists (
+        select 1 from public.submissions s
+        where s.feature_id = f.id
+          and s.superseded_at is not null
+          and s.superseded_by_id is null
+      )
     )
-    and st_dwithin(f.centroid, NEW.centroid, v_threshold)
-  order by st_distance(f.centroid, NEW.centroid) asc
+    and st_dwithin(f.centroid,
+                   st_centroid(NEW.geometry::geometry)::geography,
+                   v_threshold)
+  order by st_distance(f.centroid,
+                       st_centroid(NEW.geometry::geometry)::geography) asc
   limit 1;
 
   return NEW;
@@ -659,7 +676,10 @@ create table public.attribution_audit_log (
   table_name      text not null check (table_name in ('submissions','features')),
   row_id          uuid not null,
   action          text not null check (action in ('supersede','force_overwrite','dedup_resolve')),
-  performed_by    uuid not null references public.enumerators(id) on delete set null,
+  -- Nullable + on delete set null: preserves audit history if the acting
+  -- enumerator is later removed (same pattern as submissions.submitted_by
+  -- in 001_initial_schema.sql).
+  performed_by    uuid references public.enumerators(id) on delete set null,
   performed_at    timestamptz not null default now(),
   prior_snapshot  jsonb not null,
   resolution_note text
@@ -1642,6 +1662,16 @@ When all 11 tasks above are committed, the following should be true:
 - [ ] `supabase_realtime` publication includes both `submissions` and `features` with replica identity full.
 
 No client code has changed at this point. The existing `upload_submission_bundle` / `upload_new_feature` RPCs continue to work for existing single-user uploads.
+
+---
+
+## Security follow-up: migration `027_phase1_security_fixes.sql`
+
+PR #54 review surfaced two information-disclosure issues in the idempotency early-returns of `submit_attribution_with_conflict_check` and `submit_new_feature_with_dedup_check`. Both authorized off payload-supplied identifiers (feature_id / assignment_id) before returning status for a row keyed on payload submission_id / feature_id. A member of assignment A could probe arbitrary UUIDs from assignment B and observe whether the row existed and its supersede/dedup state.
+
+**Fix:** when the idempotency branch fires (row already exists), re-derive `assignment_id` from the *stored* row's real `feature_id` (or, for new features, its real `assignment_id`) and re-check membership against that value. If the caller is not a member of the stored row's assignment, the RPC raises `not_member` (`42501`) without revealing anything.
+
+`027_phase1_security_fixes.sql` re-emits both functions via `create or replace function`. The non-idempotent paths are unchanged — they still authorize off the payload, which is correct because a newly-inserted row's `assignment_id` is whatever the caller claims and must match their membership.
 
 ---
 

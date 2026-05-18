@@ -70,3 +70,8 @@ GoogleService-Info.plist
 client_secret_*.json
 # Timestamped google-services backup copies created by Android Studio
 google-services.json *.json
+.agents/
+skills-lock.json
+
+# Per-session Claude Code local config and skill symlinks
+.claude/
