@@ -165,23 +165,62 @@ class _SyncBootstrap extends ConsumerStatefulWidget {
 }
 
 class _SyncBootstrapState extends ConsumerState<_SyncBootstrap> {
+  StreamSubscription<AuthState>? _authSub;
+  bool _remoteStarted = false;
+
   @override
   void initState() {
     super.initState();
     Future.microtask(() async {
       await ref.read(syncControllerProvider).start();
-      // Phases 2 + 3 of multi-user attribution sync: cold-open full pull
-      // (phase 2) plus realtime subscription with connection state
-      // machine (phase 3). Runs only when authenticated — the server RPCs
-      // RLS-filter to membership, but skipping when signed-out avoids
-      // noisy logs.
-      if (Supabase.instance.client.auth.currentSession != null) {
-        await ref.read(remoteCacheControllerProvider).start();
-        ref.read(realtimeWiringProvider).start();
-        await ref.read(realtimeSyncControllerProvider).start();
-      }
       _attachSubmittedLock();
+      _wireRemoteSyncToAuth();
     });
+  }
+
+  @override
+  void dispose() {
+    _authSub?.cancel();
+    super.dispose();
+  }
+
+  /// Phases 2 + 3 of multi-user attribution sync: cold-open full pull
+  /// (phase 2) plus realtime subscription with connection state machine
+  /// (phase 3). Must be (re)evaluated on every auth state change — the
+  /// common flow is app launch → sign-in screen → user signs in, so a
+  /// one-shot check at `initState` would never fire start() for that
+  /// session and the cache would stay empty until app restart.
+  void _wireRemoteSyncToAuth() {
+    final client = Supabase.instance.client;
+    if (client.auth.currentSession != null) {
+      unawaited(_startRemoteSync());
+    }
+    _authSub = client.auth.onAuthStateChange.listen((event) {
+      if (event.session != null) {
+        unawaited(_startRemoteSync());
+      } else {
+        _stopRemoteSync();
+      }
+    });
+  }
+
+  Future<void> _startRemoteSync() async {
+    if (_remoteStarted) return;
+    _remoteStarted = true;
+    await ref.read(remoteCacheControllerProvider).start();
+    ref.read(realtimeWiringProvider).start();
+    await ref.read(realtimeSyncControllerProvider).start();
+  }
+
+  void _stopRemoteSync() {
+    if (!_remoteStarted) return;
+    _remoteStarted = false;
+    // Invalidate so the controllers' onDispose hooks (which call stop())
+    // run, and the next sign-in starts from fresh instances.
+    ref
+      ..invalidate(realtimeSyncControllerProvider)
+      ..invalidate(realtimeWiringProvider)
+      ..invalidate(remoteCacheControllerProvider);
   }
 
   void _attachSubmittedLock() {

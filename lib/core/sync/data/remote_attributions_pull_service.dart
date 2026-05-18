@@ -73,13 +73,16 @@ class RemoteAttributionsPullService {
     DateTime? sinceAttributions,
     DateTime? sinceNewFeatures,
   }) async {
-    final attribFuture =
-        _api.fetchAttributions(assignmentId, since: sinceAttributions);
-    final newFeatFuture =
-        _api.fetchNewFeatures(assignmentId, since: sinceNewFeatures);
-
-    final attributions = await attribFuture;
-    final newFeatures = await newFeatFuture;
+    // Awaiting via Future.wait — not sequential awaits — so a thrown error
+    // in the first call still leaves the second future awaited. Sequential
+    // `await`s would orphan the second future and surface as an uncaught
+    // async exception outside our try/catch on transient network failures.
+    final results = await Future.wait<List<Map<String, dynamic>>>([
+      _api.fetchAttributions(assignmentId, since: sinceAttributions),
+      _api.fetchNewFeatures(assignmentId, since: sinceNewFeatures),
+    ]);
+    final attributions = results[0];
+    final newFeatures = results[1];
 
     // Attach assignment_id sidecar so the upsert doesn't have to re-derive
     // it from the row (fetch_remote_attributions omits it on each row since

@@ -43,6 +43,32 @@ class _RecordingApi implements RemoteCacheApi {
   }
 }
 
+/// fetchAttributions throws synchronously-on-async; fetchNewFeatures
+/// resolves a tick later (would surface as uncaught if orphaned).
+class _ThrowingThenSucceedingApi implements RemoteCacheApi {
+  int attribCalls = 0;
+  int newFeatCalls = 0;
+
+  @override
+  Future<List<Map<String, dynamic>>> fetchAttributions(
+    String assignmentId, {
+    DateTime? since,
+  }) async {
+    attribCalls++;
+    throw StateError('boom');
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> fetchNewFeatures(
+    String assignmentId, {
+    DateTime? since,
+  }) async {
+    newFeatCalls++;
+    await Future<void>.delayed(Duration.zero);
+    return const [];
+  }
+}
+
 Map<String, dynamic> _attrib({
   required String id,
   required String featureId,
@@ -209,6 +235,25 @@ void main() {
     final live = await cache.liveAttributionsFor('a1');
     expect(live, hasLength(1));
     expect(live.first.id, 's1');
+  });
+
+  test('pullAll throws atomically — second future is awaited, not orphaned',
+      () async {
+    // The bug we're guarding against: if fetchAttributions throws while
+    // fetchNewFeatures is still in-flight, sequential awaits would leave
+    // the second future unawaited and its later error becomes an uncaught
+    // async exception. Future.wait awaits both, so we get a single
+    // rejection from pullAll() and no zombie futures.
+    final throwingApi = _ThrowingThenSucceedingApi();
+    final svc = RemoteAttributionsPullService(api: throwingApi, cache: cache);
+
+    await expectLater(svc.pullAll('a1'), throwsA(isA<StateError>()));
+    // Both calls were initiated even though the first errored:
+    expect(throwingApi.attribCalls, 1);
+    expect(throwingApi.newFeatCalls, 1);
+    // Yielding a microtask is enough for any orphan to surface as uncaught;
+    // none does, because Future.wait propagated the rejection synchronously.
+    await Future<void>.delayed(Duration.zero);
   });
 
   test('pullAll preserves cursor when response is empty', () async {
