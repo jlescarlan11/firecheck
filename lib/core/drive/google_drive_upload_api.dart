@@ -85,16 +85,46 @@ class GoogleDriveUploadApi implements DriveUploadApi {
       fileSize,
       contentType: mimeType,
     );
-    final metadata = gdrive.File()
-      ..name = fileName
-      ..parents = [driveParentId];
 
-    final created = await api.files.create(
-      metadata,
-      uploadMedia: media,
-      $fields: 'id',
+    // Overwrite-in-place: shapefile exports for the same assignment land
+    // at the same path (/firecheck/<assignmentId>/<assignmentId>.zip), so
+    // a plain files.create would accumulate duplicate siblings and break
+    // the documented "last upload wins" contract on [DriveApi]. Photos
+    // are expected to use unique filenames, so the lookup is a no-op for
+    // them in practice.
+    final escapedName =
+        fileName.replaceAll(r'\', r'\\').replaceAll("'", r"\'");
+    final escapedParent =
+        driveParentId.replaceAll(r'\', r'\\').replaceAll("'", r"\'");
+    final existing = await api.files.list(
+      q: "name = '$escapedName'"
+          " and '$escapedParent' in parents"
+          ' and trashed = false',
+      spaces: 'drive',
+      $fields: 'files(id)',
     );
-    final fileId = created.id;
+    final existingId = existing.files?.firstOrNull?.id;
+
+    final String? fileId;
+    if (existingId != null) {
+      final updated = await api.files.update(
+        gdrive.File()..name = fileName,
+        existingId,
+        uploadMedia: media,
+        $fields: 'id',
+      );
+      fileId = updated.id;
+    } else {
+      final metadata = gdrive.File()
+        ..name = fileName
+        ..parents = [driveParentId];
+      final created = await api.files.create(
+        metadata,
+        uploadMedia: media,
+        $fields: 'id',
+      );
+      fileId = created.id;
+    }
     if (fileId == null) {
       throw NetworkFailure('Drive did not return id for uploaded file: $fileName');
     }

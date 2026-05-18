@@ -188,7 +188,13 @@ class GoogleDriveApi implements DriveApi {
     // upload wins); photos use unique filenames so they accumulate.
     // enumeratorId is preserved on the signature for callers but is
     // no longer part of the Drive path.
-    final firecheckId = await _findOrCreateFolder(api, null, 'firecheck');
+    //
+    // The 'firecheck' root is discovered using the same parent-agnostic
+    // query as [listAssignments] so uploads target the shared folder
+    // even when it lives outside the user's My Drive root (e.g.
+    // shared-with-me or a shared drive). Otherwise downloads and
+    // uploads would diverge to different folder trees.
+    final firecheckId = await _findOrCreateFirecheckRoot(api);
     final assignmentFolderId =
         await _findOrCreateFolder(api, firecheckId, assignmentId);
 
@@ -234,17 +240,15 @@ class GoogleDriveApi implements DriveApi {
 
   Future<String> _findOrCreateFolder(
     gdrive.DriveApi api,
-    String? parentId,
+    String parentId,
     String name,
   ) async {
     final escapedName = name.replaceAll("'", "\\'");
-    final parentClause =
-        parentId != null ? " and '$parentId' in parents" : " and 'root' in parents";
     final result = await api.files.list(
       q: "name = '$escapedName'"
           " and mimeType = 'application/vnd.google-apps.folder'"
           " and trashed = false"
-          '$parentClause',
+          " and '$parentId' in parents",
       spaces: 'drive',
       $fields: 'files(id)',
     );
@@ -255,7 +259,30 @@ class GoogleDriveApi implements DriveApi {
       gdrive.File()
         ..name = name
         ..mimeType = 'application/vnd.google-apps.folder'
-        ..parents = parentId != null ? [parentId] : null,
+        ..parents = [parentId],
+    );
+    return folder.id!;
+  }
+
+  /// Mirrors the parent-agnostic 'firecheck' lookup used by
+  /// [listAssignments] so uploads land in the same folder that downloads
+  /// read from — including shared-with-me or shared-drive layouts where
+  /// the folder is not in the user's My Drive root. Only creates a new
+  /// folder in My Drive root if none is visible to the user anywhere.
+  Future<String> _findOrCreateFirecheckRoot(gdrive.DriveApi api) async {
+    final result = await api.files.list(
+      q: "name = 'firecheck'"
+          " and mimeType = 'application/vnd.google-apps.folder'"
+          " and trashed = false",
+      spaces: 'drive',
+      $fields: 'files(id)',
+    );
+    final existingId = result.files?.firstOrNull?.id;
+    if (existingId != null) return existingId;
+    final folder = await api.files.create(
+      gdrive.File()
+        ..name = 'firecheck'
+        ..mimeType = 'application/vnd.google-apps.folder',
     );
     return folder.id!;
   }
