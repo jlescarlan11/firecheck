@@ -56,20 +56,13 @@ class GoogleDriveApi implements DriveApi {
     final firecheckId = firecheckResult.files?.firstOrNull?.id;
     if (firecheckId == null) return [];
 
-    // Locate /firecheck/inbox
-    final inboxResult = await api.files.list(
-      q: "name = 'inbox' and mimeType = 'application/vnd.google-apps.folder'"
-          " and '$firecheckId' in parents and trashed = false",
-      spaces: 'drive',
-      $fields: 'files(id)',
-    );
-    final inboxId = inboxResult.files?.firstOrNull?.id;
-    if (inboxId == null) return [];
-
-    // List assignment subfolders — fetch modifiedTime to use as delta key
+    // Assignments live directly inside /firecheck/<assignment_id>/.
+    // (Previously /firecheck/inbox/<assignment_id>/ — the inbox layer was
+    // dropped in favour of a single shared assignment folder that holds
+    // both the base map and any per-user uploads.)
     final foldersResult = await api.files.list(
       q: "mimeType = 'application/vnd.google-apps.folder'"
-          " and '$inboxId' in parents and trashed = false",
+          " and '$firecheckId' in parents and trashed = false",
       spaces: 'drive',
       $fields: 'files(id,name,modifiedTime)',
     );
@@ -187,48 +180,75 @@ class GoogleDriveApi implements DriveApi {
     required List<({String filename, Uint8List bytes})> files,
   }) async {
     final api = await _api();
-    final now = DateTime.now();
-    final date =
-        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 
-    final fieldDataId = await _findOrCreateFolder(api, null, 'FieldData');
-    final enumeratorFolderId =
-        await _findOrCreateFolder(api, fieldDataId, enumeratorId);
-    final dateFolderId =
-        await _findOrCreateFolder(api, enumeratorFolderId, date);
+    // Target: /firecheck/<assignment_id>/<file>. Same folder downloads
+    // read from; conflict safety is handled at the database layer via
+    // submit_attribution_with_conflict_check + resolve_attribution.
+    // Files with the same name overwrite the prior version (latest
+    // upload wins); photos use unique filenames so they accumulate.
+    // enumeratorId is preserved on the signature for callers but is
+    // no longer part of the Drive path.
+    //
+    // The 'firecheck' root is discovered using the same parent-agnostic
+    // query as [listAssignments] so uploads target the shared folder
+    // even when it lives outside the user's My Drive root (e.g.
+    // shared-with-me or a shared drive). Otherwise downloads and
+    // uploads would diverge to different folder trees.
+    final firecheckId = await _findOrCreateFirecheckRoot(api);
+    final assignmentFolderId =
+        await _findOrCreateFolder(api, firecheckId, assignmentId);
 
     for (final file in files) {
       final media = gdrive.Media(
         Stream.value(file.bytes),
         file.bytes.length,
       );
-      await api.files.create(
-        gdrive.File()
-          ..name = file.filename
-          ..parents = [dateFolderId],
-        uploadMedia: media,
+
+      // Overwrite-in-place: if a file with this name already exists in
+      // the assignment folder, update its content rather than creating
+      // a duplicate.
+      final existing = await api.files.list(
+        q: "name = '${file.filename.replaceAll("'", "\\'")}'"
+            " and '$assignmentFolderId' in parents"
+            " and trashed = false",
+        spaces: 'drive',
+        $fields: 'files(id)',
       );
+      final existingId = existing.files?.firstOrNull?.id;
+      if (existingId != null) {
+        await api.files.update(
+          gdrive.File()..name = file.filename,
+          existingId,
+          uploadMedia: media,
+        );
+      } else {
+        await api.files.create(
+          gdrive.File()
+            ..name = file.filename
+            ..parents = [assignmentFolderId],
+          uploadMedia: media,
+        );
+      }
     }
 
     return (
-      folderPath: 'FieldData/$enumeratorId/$date/',
-      folderUrl: 'https://drive.google.com/drive/folders/$dateFolderId',
+      folderPath: 'firecheck/$assignmentId/',
+      folderUrl:
+          'https://drive.google.com/drive/folders/$assignmentFolderId',
     );
   }
 
   Future<String> _findOrCreateFolder(
     gdrive.DriveApi api,
-    String? parentId,
+    String parentId,
     String name,
   ) async {
     final escapedName = name.replaceAll("'", "\\'");
-    final parentClause =
-        parentId != null ? " and '$parentId' in parents" : " and 'root' in parents";
     final result = await api.files.list(
       q: "name = '$escapedName'"
           " and mimeType = 'application/vnd.google-apps.folder'"
           " and trashed = false"
-          '$parentClause',
+          " and '$parentId' in parents",
       spaces: 'drive',
       $fields: 'files(id)',
     );
@@ -239,7 +259,30 @@ class GoogleDriveApi implements DriveApi {
       gdrive.File()
         ..name = name
         ..mimeType = 'application/vnd.google-apps.folder'
-        ..parents = parentId != null ? [parentId] : null,
+        ..parents = [parentId],
+    );
+    return folder.id!;
+  }
+
+  /// Mirrors the parent-agnostic 'firecheck' lookup used by
+  /// [listAssignments] so uploads land in the same folder that downloads
+  /// read from — including shared-with-me or shared-drive layouts where
+  /// the folder is not in the user's My Drive root. Only creates a new
+  /// folder in My Drive root if none is visible to the user anywhere.
+  Future<String> _findOrCreateFirecheckRoot(gdrive.DriveApi api) async {
+    final result = await api.files.list(
+      q: "name = 'firecheck'"
+          " and mimeType = 'application/vnd.google-apps.folder'"
+          " and trashed = false",
+      spaces: 'drive',
+      $fields: 'files(id)',
+    );
+    final existingId = result.files?.firstOrNull?.id;
+    if (existingId != null) return existingId;
+    final folder = await api.files.create(
+      gdrive.File()
+        ..name = 'firecheck'
+        ..mimeType = 'application/vnd.google-apps.folder',
     );
     return folder.id!;
   }

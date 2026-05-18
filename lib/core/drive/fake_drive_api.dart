@@ -87,7 +87,7 @@ class FakeDriveApi implements DriveApi {
     if (_uploadError != null) throw _uploadError;
     return _uploadResult ??
         (
-          folderPath: 'FieldData/$enumeratorId/2026-05-02/',
+          folderPath: 'firecheck/$assignmentId/',
           folderUrl: 'https://drive.google.com/drive/folders/fake-folder-id',
         );
   }

@@ -5,7 +5,8 @@ import 'package:firecheck/core/drive/drive_assignment.dart';
 import 'package:firecheck/core/drive/drive_download_event.dart';
 
 abstract interface class DriveApi {
-  /// Lists /firecheck/inbox/ subfolders readable by the signed-in user.
+  /// Lists assignment subfolders directly under /firecheck/, readable by
+  /// the signed-in user. Each subfolder name is treated as the assignment id.
   Future<List<DriveAssignment>> listAssignments();
 
   /// Sum of all shapefile component sizes in bytes from Drive file metadata.
@@ -21,7 +22,17 @@ abstract interface class DriveApi {
   /// since the last import.
   Future<Uint8List?> fetchFieldRequirementsSidecar(String assignmentId);
 
-  /// Uploads [files] to FieldData/{enumeratorId}/{YYYY-MM-DD}/ on Drive.
+  /// Uploads [files] to /firecheck/{assignmentId}/ on Drive.
+  ///
+  /// Files whose name already exists in the assignment folder are
+  /// overwritten (last upload wins). Conflict safety is handled at the
+  /// database layer (see submit_attribution_with_conflict_check), not
+  /// by per-user file separation. Photos should use unique filenames
+  /// so they accumulate rather than overwriting each other.
+  ///
+  /// [enumeratorId] is retained on the signature for audit metadata but
+  /// is no longer part of the Drive path.
+  ///
   /// Returns the folder's human-readable path and its full Drive URL.
   Future<({String folderPath, String folderUrl})> uploadAssignmentFiles({
     required String enumeratorId,
