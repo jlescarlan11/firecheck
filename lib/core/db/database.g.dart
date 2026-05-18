@@ -6292,6 +6292,1599 @@ class DriveUploadJobsCompanion extends UpdateCompanion<DriveUploadJob> {
   }
 }
 
+class $RemoteAttributionsCacheTable extends RemoteAttributionsCache
+    with TableInfo<$RemoteAttributionsCacheTable, RemoteAttributionsCacheData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RemoteAttributionsCacheTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _assignmentIdMeta =
+      const VerificationMeta('assignmentId');
+  @override
+  late final GeneratedColumn<String> assignmentId = GeneratedColumn<String>(
+      'assignment_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _featureIdMeta =
+      const VerificationMeta('featureId');
+  @override
+  late final GeneratedColumn<String> featureId = GeneratedColumn<String>(
+      'feature_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _featureTypeMeta =
+      const VerificationMeta('featureType');
+  @override
+  late final GeneratedColumn<String> featureType = GeneratedColumn<String>(
+      'feature_type', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _attributeValuesJsonMeta =
+      const VerificationMeta('attributeValuesJson');
+  @override
+  late final GeneratedColumn<String> attributeValuesJson =
+      GeneratedColumn<String>('attribute_values_json', aliasedName, false,
+          type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _submittedByMeta =
+      const VerificationMeta('submittedBy');
+  @override
+  late final GeneratedColumn<String> submittedBy = GeneratedColumn<String>(
+      'submitted_by', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _submittedAtMeta =
+      const VerificationMeta('submittedAt');
+  @override
+  late final GeneratedColumn<DateTime> submittedAt = GeneratedColumn<DateTime>(
+      'submitted_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _supersededAtMeta =
+      const VerificationMeta('supersededAt');
+  @override
+  late final GeneratedColumn<DateTime> supersededAt = GeneratedColumn<DateTime>(
+      'superseded_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _supersededByIdMeta =
+      const VerificationMeta('supersededById');
+  @override
+  late final GeneratedColumn<String> supersededById = GeneratedColumn<String>(
+      'superseded_by_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _cachedAtMeta =
+      const VerificationMeta('cachedAt');
+  @override
+  late final GeneratedColumn<DateTime> cachedAt = GeneratedColumn<DateTime>(
+      'cached_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        assignmentId,
+        featureId,
+        featureType,
+        attributeValuesJson,
+        submittedBy,
+        submittedAt,
+        supersededAt,
+        supersededById,
+        updatedAt,
+        cachedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'remote_attributions_cache';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<RemoteAttributionsCacheData> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('assignment_id')) {
+      context.handle(
+          _assignmentIdMeta,
+          assignmentId.isAcceptableOrUnknown(
+              data['assignment_id']!, _assignmentIdMeta));
+    } else if (isInserting) {
+      context.missing(_assignmentIdMeta);
+    }
+    if (data.containsKey('feature_id')) {
+      context.handle(_featureIdMeta,
+          featureId.isAcceptableOrUnknown(data['feature_id']!, _featureIdMeta));
+    } else if (isInserting) {
+      context.missing(_featureIdMeta);
+    }
+    if (data.containsKey('feature_type')) {
+      context.handle(
+          _featureTypeMeta,
+          featureType.isAcceptableOrUnknown(
+              data['feature_type']!, _featureTypeMeta));
+    } else if (isInserting) {
+      context.missing(_featureTypeMeta);
+    }
+    if (data.containsKey('attribute_values_json')) {
+      context.handle(
+          _attributeValuesJsonMeta,
+          attributeValuesJson.isAcceptableOrUnknown(
+              data['attribute_values_json']!, _attributeValuesJsonMeta));
+    } else if (isInserting) {
+      context.missing(_attributeValuesJsonMeta);
+    }
+    if (data.containsKey('submitted_by')) {
+      context.handle(
+          _submittedByMeta,
+          submittedBy.isAcceptableOrUnknown(
+              data['submitted_by']!, _submittedByMeta));
+    }
+    if (data.containsKey('submitted_at')) {
+      context.handle(
+          _submittedAtMeta,
+          submittedAt.isAcceptableOrUnknown(
+              data['submitted_at']!, _submittedAtMeta));
+    } else if (isInserting) {
+      context.missing(_submittedAtMeta);
+    }
+    if (data.containsKey('superseded_at')) {
+      context.handle(
+          _supersededAtMeta,
+          supersededAt.isAcceptableOrUnknown(
+              data['superseded_at']!, _supersededAtMeta));
+    }
+    if (data.containsKey('superseded_by_id')) {
+      context.handle(
+          _supersededByIdMeta,
+          supersededById.isAcceptableOrUnknown(
+              data['superseded_by_id']!, _supersededByIdMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('cached_at')) {
+      context.handle(_cachedAtMeta,
+          cachedAt.isAcceptableOrUnknown(data['cached_at']!, _cachedAtMeta));
+    } else if (isInserting) {
+      context.missing(_cachedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  RemoteAttributionsCacheData map(Map<String, dynamic> data,
+      {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RemoteAttributionsCacheData(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      assignmentId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}assignment_id'])!,
+      featureId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}feature_id'])!,
+      featureType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}feature_type'])!,
+      attributeValuesJson: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}attribute_values_json'])!,
+      submittedBy: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}submitted_by']),
+      submittedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}submitted_at'])!,
+      supersededAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}superseded_at']),
+      supersededById: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}superseded_by_id']),
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+      cachedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}cached_at'])!,
+    );
+  }
+
+  @override
+  $RemoteAttributionsCacheTable createAlias(String alias) {
+    return $RemoteAttributionsCacheTable(attachedDatabase, alias);
+  }
+}
+
+class RemoteAttributionsCacheData extends DataClass
+    implements Insertable<RemoteAttributionsCacheData> {
+  final String id;
+  final String assignmentId;
+  final String featureId;
+  final String featureType;
+  final String attributeValuesJson;
+  final String? submittedBy;
+  final DateTime submittedAt;
+  final DateTime? supersededAt;
+  final String? supersededById;
+  final DateTime updatedAt;
+  final DateTime cachedAt;
+  const RemoteAttributionsCacheData(
+      {required this.id,
+      required this.assignmentId,
+      required this.featureId,
+      required this.featureType,
+      required this.attributeValuesJson,
+      this.submittedBy,
+      required this.submittedAt,
+      this.supersededAt,
+      this.supersededById,
+      required this.updatedAt,
+      required this.cachedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['assignment_id'] = Variable<String>(assignmentId);
+    map['feature_id'] = Variable<String>(featureId);
+    map['feature_type'] = Variable<String>(featureType);
+    map['attribute_values_json'] = Variable<String>(attributeValuesJson);
+    if (!nullToAbsent || submittedBy != null) {
+      map['submitted_by'] = Variable<String>(submittedBy);
+    }
+    map['submitted_at'] = Variable<DateTime>(submittedAt);
+    if (!nullToAbsent || supersededAt != null) {
+      map['superseded_at'] = Variable<DateTime>(supersededAt);
+    }
+    if (!nullToAbsent || supersededById != null) {
+      map['superseded_by_id'] = Variable<String>(supersededById);
+    }
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['cached_at'] = Variable<DateTime>(cachedAt);
+    return map;
+  }
+
+  RemoteAttributionsCacheCompanion toCompanion(bool nullToAbsent) {
+    return RemoteAttributionsCacheCompanion(
+      id: Value(id),
+      assignmentId: Value(assignmentId),
+      featureId: Value(featureId),
+      featureType: Value(featureType),
+      attributeValuesJson: Value(attributeValuesJson),
+      submittedBy: submittedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(submittedBy),
+      submittedAt: Value(submittedAt),
+      supersededAt: supersededAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supersededAt),
+      supersededById: supersededById == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supersededById),
+      updatedAt: Value(updatedAt),
+      cachedAt: Value(cachedAt),
+    );
+  }
+
+  factory RemoteAttributionsCacheData.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RemoteAttributionsCacheData(
+      id: serializer.fromJson<String>(json['id']),
+      assignmentId: serializer.fromJson<String>(json['assignmentId']),
+      featureId: serializer.fromJson<String>(json['featureId']),
+      featureType: serializer.fromJson<String>(json['featureType']),
+      attributeValuesJson:
+          serializer.fromJson<String>(json['attributeValuesJson']),
+      submittedBy: serializer.fromJson<String?>(json['submittedBy']),
+      submittedAt: serializer.fromJson<DateTime>(json['submittedAt']),
+      supersededAt: serializer.fromJson<DateTime?>(json['supersededAt']),
+      supersededById: serializer.fromJson<String?>(json['supersededById']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cachedAt: serializer.fromJson<DateTime>(json['cachedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'assignmentId': serializer.toJson<String>(assignmentId),
+      'featureId': serializer.toJson<String>(featureId),
+      'featureType': serializer.toJson<String>(featureType),
+      'attributeValuesJson': serializer.toJson<String>(attributeValuesJson),
+      'submittedBy': serializer.toJson<String?>(submittedBy),
+      'submittedAt': serializer.toJson<DateTime>(submittedAt),
+      'supersededAt': serializer.toJson<DateTime?>(supersededAt),
+      'supersededById': serializer.toJson<String?>(supersededById),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cachedAt': serializer.toJson<DateTime>(cachedAt),
+    };
+  }
+
+  RemoteAttributionsCacheData copyWith(
+          {String? id,
+          String? assignmentId,
+          String? featureId,
+          String? featureType,
+          String? attributeValuesJson,
+          Value<String?> submittedBy = const Value.absent(),
+          DateTime? submittedAt,
+          Value<DateTime?> supersededAt = const Value.absent(),
+          Value<String?> supersededById = const Value.absent(),
+          DateTime? updatedAt,
+          DateTime? cachedAt}) =>
+      RemoteAttributionsCacheData(
+        id: id ?? this.id,
+        assignmentId: assignmentId ?? this.assignmentId,
+        featureId: featureId ?? this.featureId,
+        featureType: featureType ?? this.featureType,
+        attributeValuesJson: attributeValuesJson ?? this.attributeValuesJson,
+        submittedBy: submittedBy.present ? submittedBy.value : this.submittedBy,
+        submittedAt: submittedAt ?? this.submittedAt,
+        supersededAt:
+            supersededAt.present ? supersededAt.value : this.supersededAt,
+        supersededById:
+            supersededById.present ? supersededById.value : this.supersededById,
+        updatedAt: updatedAt ?? this.updatedAt,
+        cachedAt: cachedAt ?? this.cachedAt,
+      );
+  RemoteAttributionsCacheData copyWithCompanion(
+      RemoteAttributionsCacheCompanion data) {
+    return RemoteAttributionsCacheData(
+      id: data.id.present ? data.id.value : this.id,
+      assignmentId: data.assignmentId.present
+          ? data.assignmentId.value
+          : this.assignmentId,
+      featureId: data.featureId.present ? data.featureId.value : this.featureId,
+      featureType:
+          data.featureType.present ? data.featureType.value : this.featureType,
+      attributeValuesJson: data.attributeValuesJson.present
+          ? data.attributeValuesJson.value
+          : this.attributeValuesJson,
+      submittedBy:
+          data.submittedBy.present ? data.submittedBy.value : this.submittedBy,
+      submittedAt:
+          data.submittedAt.present ? data.submittedAt.value : this.submittedAt,
+      supersededAt: data.supersededAt.present
+          ? data.supersededAt.value
+          : this.supersededAt,
+      supersededById: data.supersededById.present
+          ? data.supersededById.value
+          : this.supersededById,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cachedAt: data.cachedAt.present ? data.cachedAt.value : this.cachedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RemoteAttributionsCacheData(')
+          ..write('id: $id, ')
+          ..write('assignmentId: $assignmentId, ')
+          ..write('featureId: $featureId, ')
+          ..write('featureType: $featureType, ')
+          ..write('attributeValuesJson: $attributeValuesJson, ')
+          ..write('submittedBy: $submittedBy, ')
+          ..write('submittedAt: $submittedAt, ')
+          ..write('supersededAt: $supersededAt, ')
+          ..write('supersededById: $supersededById, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cachedAt: $cachedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      assignmentId,
+      featureId,
+      featureType,
+      attributeValuesJson,
+      submittedBy,
+      submittedAt,
+      supersededAt,
+      supersededById,
+      updatedAt,
+      cachedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RemoteAttributionsCacheData &&
+          other.id == this.id &&
+          other.assignmentId == this.assignmentId &&
+          other.featureId == this.featureId &&
+          other.featureType == this.featureType &&
+          other.attributeValuesJson == this.attributeValuesJson &&
+          other.submittedBy == this.submittedBy &&
+          other.submittedAt == this.submittedAt &&
+          other.supersededAt == this.supersededAt &&
+          other.supersededById == this.supersededById &&
+          other.updatedAt == this.updatedAt &&
+          other.cachedAt == this.cachedAt);
+}
+
+class RemoteAttributionsCacheCompanion
+    extends UpdateCompanion<RemoteAttributionsCacheData> {
+  final Value<String> id;
+  final Value<String> assignmentId;
+  final Value<String> featureId;
+  final Value<String> featureType;
+  final Value<String> attributeValuesJson;
+  final Value<String?> submittedBy;
+  final Value<DateTime> submittedAt;
+  final Value<DateTime?> supersededAt;
+  final Value<String?> supersededById;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime> cachedAt;
+  final Value<int> rowid;
+  const RemoteAttributionsCacheCompanion({
+    this.id = const Value.absent(),
+    this.assignmentId = const Value.absent(),
+    this.featureId = const Value.absent(),
+    this.featureType = const Value.absent(),
+    this.attributeValuesJson = const Value.absent(),
+    this.submittedBy = const Value.absent(),
+    this.submittedAt = const Value.absent(),
+    this.supersededAt = const Value.absent(),
+    this.supersededById = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cachedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  RemoteAttributionsCacheCompanion.insert({
+    required String id,
+    required String assignmentId,
+    required String featureId,
+    required String featureType,
+    required String attributeValuesJson,
+    this.submittedBy = const Value.absent(),
+    required DateTime submittedAt,
+    this.supersededAt = const Value.absent(),
+    this.supersededById = const Value.absent(),
+    required DateTime updatedAt,
+    required DateTime cachedAt,
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        assignmentId = Value(assignmentId),
+        featureId = Value(featureId),
+        featureType = Value(featureType),
+        attributeValuesJson = Value(attributeValuesJson),
+        submittedAt = Value(submittedAt),
+        updatedAt = Value(updatedAt),
+        cachedAt = Value(cachedAt);
+  static Insertable<RemoteAttributionsCacheData> custom({
+    Expression<String>? id,
+    Expression<String>? assignmentId,
+    Expression<String>? featureId,
+    Expression<String>? featureType,
+    Expression<String>? attributeValuesJson,
+    Expression<String>? submittedBy,
+    Expression<DateTime>? submittedAt,
+    Expression<DateTime>? supersededAt,
+    Expression<String>? supersededById,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? cachedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (assignmentId != null) 'assignment_id': assignmentId,
+      if (featureId != null) 'feature_id': featureId,
+      if (featureType != null) 'feature_type': featureType,
+      if (attributeValuesJson != null)
+        'attribute_values_json': attributeValuesJson,
+      if (submittedBy != null) 'submitted_by': submittedBy,
+      if (submittedAt != null) 'submitted_at': submittedAt,
+      if (supersededAt != null) 'superseded_at': supersededAt,
+      if (supersededById != null) 'superseded_by_id': supersededById,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cachedAt != null) 'cached_at': cachedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  RemoteAttributionsCacheCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? assignmentId,
+      Value<String>? featureId,
+      Value<String>? featureType,
+      Value<String>? attributeValuesJson,
+      Value<String?>? submittedBy,
+      Value<DateTime>? submittedAt,
+      Value<DateTime?>? supersededAt,
+      Value<String?>? supersededById,
+      Value<DateTime>? updatedAt,
+      Value<DateTime>? cachedAt,
+      Value<int>? rowid}) {
+    return RemoteAttributionsCacheCompanion(
+      id: id ?? this.id,
+      assignmentId: assignmentId ?? this.assignmentId,
+      featureId: featureId ?? this.featureId,
+      featureType: featureType ?? this.featureType,
+      attributeValuesJson: attributeValuesJson ?? this.attributeValuesJson,
+      submittedBy: submittedBy ?? this.submittedBy,
+      submittedAt: submittedAt ?? this.submittedAt,
+      supersededAt: supersededAt ?? this.supersededAt,
+      supersededById: supersededById ?? this.supersededById,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cachedAt: cachedAt ?? this.cachedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (assignmentId.present) {
+      map['assignment_id'] = Variable<String>(assignmentId.value);
+    }
+    if (featureId.present) {
+      map['feature_id'] = Variable<String>(featureId.value);
+    }
+    if (featureType.present) {
+      map['feature_type'] = Variable<String>(featureType.value);
+    }
+    if (attributeValuesJson.present) {
+      map['attribute_values_json'] =
+          Variable<String>(attributeValuesJson.value);
+    }
+    if (submittedBy.present) {
+      map['submitted_by'] = Variable<String>(submittedBy.value);
+    }
+    if (submittedAt.present) {
+      map['submitted_at'] = Variable<DateTime>(submittedAt.value);
+    }
+    if (supersededAt.present) {
+      map['superseded_at'] = Variable<DateTime>(supersededAt.value);
+    }
+    if (supersededById.present) {
+      map['superseded_by_id'] = Variable<String>(supersededById.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cachedAt.present) {
+      map['cached_at'] = Variable<DateTime>(cachedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RemoteAttributionsCacheCompanion(')
+          ..write('id: $id, ')
+          ..write('assignmentId: $assignmentId, ')
+          ..write('featureId: $featureId, ')
+          ..write('featureType: $featureType, ')
+          ..write('attributeValuesJson: $attributeValuesJson, ')
+          ..write('submittedBy: $submittedBy, ')
+          ..write('submittedAt: $submittedAt, ')
+          ..write('supersededAt: $supersededAt, ')
+          ..write('supersededById: $supersededById, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cachedAt: $cachedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $RemoteNewFeaturesCacheTable extends RemoteNewFeaturesCache
+    with TableInfo<$RemoteNewFeaturesCacheTable, RemoteNewFeaturesCacheData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RemoteNewFeaturesCacheTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _assignmentIdMeta =
+      const VerificationMeta('assignmentId');
+  @override
+  late final GeneratedColumn<String> assignmentId = GeneratedColumn<String>(
+      'assignment_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _featureTypeMeta =
+      const VerificationMeta('featureType');
+  @override
+  late final GeneratedColumn<String> featureType = GeneratedColumn<String>(
+      'feature_type', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _geometryGeojsonMeta =
+      const VerificationMeta('geometryGeojson');
+  @override
+  late final GeneratedColumn<String> geometryGeojson = GeneratedColumn<String>(
+      'geometry_geojson', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _centroidLatMeta =
+      const VerificationMeta('centroidLat');
+  @override
+  late final GeneratedColumn<double> centroidLat = GeneratedColumn<double>(
+      'centroid_lat', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _centroidLngMeta =
+      const VerificationMeta('centroidLng');
+  @override
+  late final GeneratedColumn<double> centroidLng = GeneratedColumn<double>(
+      'centroid_lng', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _submittedByMeta =
+      const VerificationMeta('submittedBy');
+  @override
+  late final GeneratedColumn<String> submittedBy = GeneratedColumn<String>(
+      'submitted_by', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _submittedAtMeta =
+      const VerificationMeta('submittedAt');
+  @override
+  late final GeneratedColumn<DateTime> submittedAt = GeneratedColumn<DateTime>(
+      'submitted_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _possibleDuplicateOfMeta =
+      const VerificationMeta('possibleDuplicateOf');
+  @override
+  late final GeneratedColumn<String> possibleDuplicateOf =
+      GeneratedColumn<String>('possible_duplicate_of', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _dedupReviewedAtMeta =
+      const VerificationMeta('dedupReviewedAt');
+  @override
+  late final GeneratedColumn<DateTime> dedupReviewedAt =
+      GeneratedColumn<DateTime>('dedup_reviewed_at', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _supersededAtMeta =
+      const VerificationMeta('supersededAt');
+  @override
+  late final GeneratedColumn<DateTime> supersededAt = GeneratedColumn<DateTime>(
+      'superseded_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _supersededByIdMeta =
+      const VerificationMeta('supersededById');
+  @override
+  late final GeneratedColumn<String> supersededById = GeneratedColumn<String>(
+      'superseded_by_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _cachedAtMeta =
+      const VerificationMeta('cachedAt');
+  @override
+  late final GeneratedColumn<DateTime> cachedAt = GeneratedColumn<DateTime>(
+      'cached_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        assignmentId,
+        featureType,
+        geometryGeojson,
+        centroidLat,
+        centroidLng,
+        submittedBy,
+        submittedAt,
+        possibleDuplicateOf,
+        dedupReviewedAt,
+        supersededAt,
+        supersededById,
+        updatedAt,
+        cachedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'remote_new_features_cache';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<RemoteNewFeaturesCacheData> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('assignment_id')) {
+      context.handle(
+          _assignmentIdMeta,
+          assignmentId.isAcceptableOrUnknown(
+              data['assignment_id']!, _assignmentIdMeta));
+    } else if (isInserting) {
+      context.missing(_assignmentIdMeta);
+    }
+    if (data.containsKey('feature_type')) {
+      context.handle(
+          _featureTypeMeta,
+          featureType.isAcceptableOrUnknown(
+              data['feature_type']!, _featureTypeMeta));
+    } else if (isInserting) {
+      context.missing(_featureTypeMeta);
+    }
+    if (data.containsKey('geometry_geojson')) {
+      context.handle(
+          _geometryGeojsonMeta,
+          geometryGeojson.isAcceptableOrUnknown(
+              data['geometry_geojson']!, _geometryGeojsonMeta));
+    } else if (isInserting) {
+      context.missing(_geometryGeojsonMeta);
+    }
+    if (data.containsKey('centroid_lat')) {
+      context.handle(
+          _centroidLatMeta,
+          centroidLat.isAcceptableOrUnknown(
+              data['centroid_lat']!, _centroidLatMeta));
+    } else if (isInserting) {
+      context.missing(_centroidLatMeta);
+    }
+    if (data.containsKey('centroid_lng')) {
+      context.handle(
+          _centroidLngMeta,
+          centroidLng.isAcceptableOrUnknown(
+              data['centroid_lng']!, _centroidLngMeta));
+    } else if (isInserting) {
+      context.missing(_centroidLngMeta);
+    }
+    if (data.containsKey('submitted_by')) {
+      context.handle(
+          _submittedByMeta,
+          submittedBy.isAcceptableOrUnknown(
+              data['submitted_by']!, _submittedByMeta));
+    }
+    if (data.containsKey('submitted_at')) {
+      context.handle(
+          _submittedAtMeta,
+          submittedAt.isAcceptableOrUnknown(
+              data['submitted_at']!, _submittedAtMeta));
+    } else if (isInserting) {
+      context.missing(_submittedAtMeta);
+    }
+    if (data.containsKey('possible_duplicate_of')) {
+      context.handle(
+          _possibleDuplicateOfMeta,
+          possibleDuplicateOf.isAcceptableOrUnknown(
+              data['possible_duplicate_of']!, _possibleDuplicateOfMeta));
+    }
+    if (data.containsKey('dedup_reviewed_at')) {
+      context.handle(
+          _dedupReviewedAtMeta,
+          dedupReviewedAt.isAcceptableOrUnknown(
+              data['dedup_reviewed_at']!, _dedupReviewedAtMeta));
+    }
+    if (data.containsKey('superseded_at')) {
+      context.handle(
+          _supersededAtMeta,
+          supersededAt.isAcceptableOrUnknown(
+              data['superseded_at']!, _supersededAtMeta));
+    }
+    if (data.containsKey('superseded_by_id')) {
+      context.handle(
+          _supersededByIdMeta,
+          supersededById.isAcceptableOrUnknown(
+              data['superseded_by_id']!, _supersededByIdMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('cached_at')) {
+      context.handle(_cachedAtMeta,
+          cachedAt.isAcceptableOrUnknown(data['cached_at']!, _cachedAtMeta));
+    } else if (isInserting) {
+      context.missing(_cachedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  RemoteNewFeaturesCacheData map(Map<String, dynamic> data,
+      {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RemoteNewFeaturesCacheData(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      assignmentId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}assignment_id'])!,
+      featureType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}feature_type'])!,
+      geometryGeojson: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}geometry_geojson'])!,
+      centroidLat: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}centroid_lat'])!,
+      centroidLng: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}centroid_lng'])!,
+      submittedBy: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}submitted_by']),
+      submittedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}submitted_at'])!,
+      possibleDuplicateOf: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}possible_duplicate_of']),
+      dedupReviewedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}dedup_reviewed_at']),
+      supersededAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}superseded_at']),
+      supersededById: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}superseded_by_id']),
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+      cachedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}cached_at'])!,
+    );
+  }
+
+  @override
+  $RemoteNewFeaturesCacheTable createAlias(String alias) {
+    return $RemoteNewFeaturesCacheTable(attachedDatabase, alias);
+  }
+}
+
+class RemoteNewFeaturesCacheData extends DataClass
+    implements Insertable<RemoteNewFeaturesCacheData> {
+  final String id;
+  final String assignmentId;
+  final String featureType;
+  final String geometryGeojson;
+  final double centroidLat;
+  final double centroidLng;
+  final String? submittedBy;
+  final DateTime submittedAt;
+  final String? possibleDuplicateOf;
+  final DateTime? dedupReviewedAt;
+  final DateTime? supersededAt;
+  final String? supersededById;
+  final DateTime updatedAt;
+  final DateTime cachedAt;
+  const RemoteNewFeaturesCacheData(
+      {required this.id,
+      required this.assignmentId,
+      required this.featureType,
+      required this.geometryGeojson,
+      required this.centroidLat,
+      required this.centroidLng,
+      this.submittedBy,
+      required this.submittedAt,
+      this.possibleDuplicateOf,
+      this.dedupReviewedAt,
+      this.supersededAt,
+      this.supersededById,
+      required this.updatedAt,
+      required this.cachedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['assignment_id'] = Variable<String>(assignmentId);
+    map['feature_type'] = Variable<String>(featureType);
+    map['geometry_geojson'] = Variable<String>(geometryGeojson);
+    map['centroid_lat'] = Variable<double>(centroidLat);
+    map['centroid_lng'] = Variable<double>(centroidLng);
+    if (!nullToAbsent || submittedBy != null) {
+      map['submitted_by'] = Variable<String>(submittedBy);
+    }
+    map['submitted_at'] = Variable<DateTime>(submittedAt);
+    if (!nullToAbsent || possibleDuplicateOf != null) {
+      map['possible_duplicate_of'] = Variable<String>(possibleDuplicateOf);
+    }
+    if (!nullToAbsent || dedupReviewedAt != null) {
+      map['dedup_reviewed_at'] = Variable<DateTime>(dedupReviewedAt);
+    }
+    if (!nullToAbsent || supersededAt != null) {
+      map['superseded_at'] = Variable<DateTime>(supersededAt);
+    }
+    if (!nullToAbsent || supersededById != null) {
+      map['superseded_by_id'] = Variable<String>(supersededById);
+    }
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['cached_at'] = Variable<DateTime>(cachedAt);
+    return map;
+  }
+
+  RemoteNewFeaturesCacheCompanion toCompanion(bool nullToAbsent) {
+    return RemoteNewFeaturesCacheCompanion(
+      id: Value(id),
+      assignmentId: Value(assignmentId),
+      featureType: Value(featureType),
+      geometryGeojson: Value(geometryGeojson),
+      centroidLat: Value(centroidLat),
+      centroidLng: Value(centroidLng),
+      submittedBy: submittedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(submittedBy),
+      submittedAt: Value(submittedAt),
+      possibleDuplicateOf: possibleDuplicateOf == null && nullToAbsent
+          ? const Value.absent()
+          : Value(possibleDuplicateOf),
+      dedupReviewedAt: dedupReviewedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(dedupReviewedAt),
+      supersededAt: supersededAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supersededAt),
+      supersededById: supersededById == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supersededById),
+      updatedAt: Value(updatedAt),
+      cachedAt: Value(cachedAt),
+    );
+  }
+
+  factory RemoteNewFeaturesCacheData.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RemoteNewFeaturesCacheData(
+      id: serializer.fromJson<String>(json['id']),
+      assignmentId: serializer.fromJson<String>(json['assignmentId']),
+      featureType: serializer.fromJson<String>(json['featureType']),
+      geometryGeojson: serializer.fromJson<String>(json['geometryGeojson']),
+      centroidLat: serializer.fromJson<double>(json['centroidLat']),
+      centroidLng: serializer.fromJson<double>(json['centroidLng']),
+      submittedBy: serializer.fromJson<String?>(json['submittedBy']),
+      submittedAt: serializer.fromJson<DateTime>(json['submittedAt']),
+      possibleDuplicateOf:
+          serializer.fromJson<String?>(json['possibleDuplicateOf']),
+      dedupReviewedAt: serializer.fromJson<DateTime?>(json['dedupReviewedAt']),
+      supersededAt: serializer.fromJson<DateTime?>(json['supersededAt']),
+      supersededById: serializer.fromJson<String?>(json['supersededById']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      cachedAt: serializer.fromJson<DateTime>(json['cachedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'assignmentId': serializer.toJson<String>(assignmentId),
+      'featureType': serializer.toJson<String>(featureType),
+      'geometryGeojson': serializer.toJson<String>(geometryGeojson),
+      'centroidLat': serializer.toJson<double>(centroidLat),
+      'centroidLng': serializer.toJson<double>(centroidLng),
+      'submittedBy': serializer.toJson<String?>(submittedBy),
+      'submittedAt': serializer.toJson<DateTime>(submittedAt),
+      'possibleDuplicateOf': serializer.toJson<String?>(possibleDuplicateOf),
+      'dedupReviewedAt': serializer.toJson<DateTime?>(dedupReviewedAt),
+      'supersededAt': serializer.toJson<DateTime?>(supersededAt),
+      'supersededById': serializer.toJson<String?>(supersededById),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'cachedAt': serializer.toJson<DateTime>(cachedAt),
+    };
+  }
+
+  RemoteNewFeaturesCacheData copyWith(
+          {String? id,
+          String? assignmentId,
+          String? featureType,
+          String? geometryGeojson,
+          double? centroidLat,
+          double? centroidLng,
+          Value<String?> submittedBy = const Value.absent(),
+          DateTime? submittedAt,
+          Value<String?> possibleDuplicateOf = const Value.absent(),
+          Value<DateTime?> dedupReviewedAt = const Value.absent(),
+          Value<DateTime?> supersededAt = const Value.absent(),
+          Value<String?> supersededById = const Value.absent(),
+          DateTime? updatedAt,
+          DateTime? cachedAt}) =>
+      RemoteNewFeaturesCacheData(
+        id: id ?? this.id,
+        assignmentId: assignmentId ?? this.assignmentId,
+        featureType: featureType ?? this.featureType,
+        geometryGeojson: geometryGeojson ?? this.geometryGeojson,
+        centroidLat: centroidLat ?? this.centroidLat,
+        centroidLng: centroidLng ?? this.centroidLng,
+        submittedBy: submittedBy.present ? submittedBy.value : this.submittedBy,
+        submittedAt: submittedAt ?? this.submittedAt,
+        possibleDuplicateOf: possibleDuplicateOf.present
+            ? possibleDuplicateOf.value
+            : this.possibleDuplicateOf,
+        dedupReviewedAt: dedupReviewedAt.present
+            ? dedupReviewedAt.value
+            : this.dedupReviewedAt,
+        supersededAt:
+            supersededAt.present ? supersededAt.value : this.supersededAt,
+        supersededById:
+            supersededById.present ? supersededById.value : this.supersededById,
+        updatedAt: updatedAt ?? this.updatedAt,
+        cachedAt: cachedAt ?? this.cachedAt,
+      );
+  RemoteNewFeaturesCacheData copyWithCompanion(
+      RemoteNewFeaturesCacheCompanion data) {
+    return RemoteNewFeaturesCacheData(
+      id: data.id.present ? data.id.value : this.id,
+      assignmentId: data.assignmentId.present
+          ? data.assignmentId.value
+          : this.assignmentId,
+      featureType:
+          data.featureType.present ? data.featureType.value : this.featureType,
+      geometryGeojson: data.geometryGeojson.present
+          ? data.geometryGeojson.value
+          : this.geometryGeojson,
+      centroidLat:
+          data.centroidLat.present ? data.centroidLat.value : this.centroidLat,
+      centroidLng:
+          data.centroidLng.present ? data.centroidLng.value : this.centroidLng,
+      submittedBy:
+          data.submittedBy.present ? data.submittedBy.value : this.submittedBy,
+      submittedAt:
+          data.submittedAt.present ? data.submittedAt.value : this.submittedAt,
+      possibleDuplicateOf: data.possibleDuplicateOf.present
+          ? data.possibleDuplicateOf.value
+          : this.possibleDuplicateOf,
+      dedupReviewedAt: data.dedupReviewedAt.present
+          ? data.dedupReviewedAt.value
+          : this.dedupReviewedAt,
+      supersededAt: data.supersededAt.present
+          ? data.supersededAt.value
+          : this.supersededAt,
+      supersededById: data.supersededById.present
+          ? data.supersededById.value
+          : this.supersededById,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      cachedAt: data.cachedAt.present ? data.cachedAt.value : this.cachedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RemoteNewFeaturesCacheData(')
+          ..write('id: $id, ')
+          ..write('assignmentId: $assignmentId, ')
+          ..write('featureType: $featureType, ')
+          ..write('geometryGeojson: $geometryGeojson, ')
+          ..write('centroidLat: $centroidLat, ')
+          ..write('centroidLng: $centroidLng, ')
+          ..write('submittedBy: $submittedBy, ')
+          ..write('submittedAt: $submittedAt, ')
+          ..write('possibleDuplicateOf: $possibleDuplicateOf, ')
+          ..write('dedupReviewedAt: $dedupReviewedAt, ')
+          ..write('supersededAt: $supersededAt, ')
+          ..write('supersededById: $supersededById, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cachedAt: $cachedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      assignmentId,
+      featureType,
+      geometryGeojson,
+      centroidLat,
+      centroidLng,
+      submittedBy,
+      submittedAt,
+      possibleDuplicateOf,
+      dedupReviewedAt,
+      supersededAt,
+      supersededById,
+      updatedAt,
+      cachedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RemoteNewFeaturesCacheData &&
+          other.id == this.id &&
+          other.assignmentId == this.assignmentId &&
+          other.featureType == this.featureType &&
+          other.geometryGeojson == this.geometryGeojson &&
+          other.centroidLat == this.centroidLat &&
+          other.centroidLng == this.centroidLng &&
+          other.submittedBy == this.submittedBy &&
+          other.submittedAt == this.submittedAt &&
+          other.possibleDuplicateOf == this.possibleDuplicateOf &&
+          other.dedupReviewedAt == this.dedupReviewedAt &&
+          other.supersededAt == this.supersededAt &&
+          other.supersededById == this.supersededById &&
+          other.updatedAt == this.updatedAt &&
+          other.cachedAt == this.cachedAt);
+}
+
+class RemoteNewFeaturesCacheCompanion
+    extends UpdateCompanion<RemoteNewFeaturesCacheData> {
+  final Value<String> id;
+  final Value<String> assignmentId;
+  final Value<String> featureType;
+  final Value<String> geometryGeojson;
+  final Value<double> centroidLat;
+  final Value<double> centroidLng;
+  final Value<String?> submittedBy;
+  final Value<DateTime> submittedAt;
+  final Value<String?> possibleDuplicateOf;
+  final Value<DateTime?> dedupReviewedAt;
+  final Value<DateTime?> supersededAt;
+  final Value<String?> supersededById;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime> cachedAt;
+  final Value<int> rowid;
+  const RemoteNewFeaturesCacheCompanion({
+    this.id = const Value.absent(),
+    this.assignmentId = const Value.absent(),
+    this.featureType = const Value.absent(),
+    this.geometryGeojson = const Value.absent(),
+    this.centroidLat = const Value.absent(),
+    this.centroidLng = const Value.absent(),
+    this.submittedBy = const Value.absent(),
+    this.submittedAt = const Value.absent(),
+    this.possibleDuplicateOf = const Value.absent(),
+    this.dedupReviewedAt = const Value.absent(),
+    this.supersededAt = const Value.absent(),
+    this.supersededById = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.cachedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  RemoteNewFeaturesCacheCompanion.insert({
+    required String id,
+    required String assignmentId,
+    required String featureType,
+    required String geometryGeojson,
+    required double centroidLat,
+    required double centroidLng,
+    this.submittedBy = const Value.absent(),
+    required DateTime submittedAt,
+    this.possibleDuplicateOf = const Value.absent(),
+    this.dedupReviewedAt = const Value.absent(),
+    this.supersededAt = const Value.absent(),
+    this.supersededById = const Value.absent(),
+    required DateTime updatedAt,
+    required DateTime cachedAt,
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        assignmentId = Value(assignmentId),
+        featureType = Value(featureType),
+        geometryGeojson = Value(geometryGeojson),
+        centroidLat = Value(centroidLat),
+        centroidLng = Value(centroidLng),
+        submittedAt = Value(submittedAt),
+        updatedAt = Value(updatedAt),
+        cachedAt = Value(cachedAt);
+  static Insertable<RemoteNewFeaturesCacheData> custom({
+    Expression<String>? id,
+    Expression<String>? assignmentId,
+    Expression<String>? featureType,
+    Expression<String>? geometryGeojson,
+    Expression<double>? centroidLat,
+    Expression<double>? centroidLng,
+    Expression<String>? submittedBy,
+    Expression<DateTime>? submittedAt,
+    Expression<String>? possibleDuplicateOf,
+    Expression<DateTime>? dedupReviewedAt,
+    Expression<DateTime>? supersededAt,
+    Expression<String>? supersededById,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? cachedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (assignmentId != null) 'assignment_id': assignmentId,
+      if (featureType != null) 'feature_type': featureType,
+      if (geometryGeojson != null) 'geometry_geojson': geometryGeojson,
+      if (centroidLat != null) 'centroid_lat': centroidLat,
+      if (centroidLng != null) 'centroid_lng': centroidLng,
+      if (submittedBy != null) 'submitted_by': submittedBy,
+      if (submittedAt != null) 'submitted_at': submittedAt,
+      if (possibleDuplicateOf != null)
+        'possible_duplicate_of': possibleDuplicateOf,
+      if (dedupReviewedAt != null) 'dedup_reviewed_at': dedupReviewedAt,
+      if (supersededAt != null) 'superseded_at': supersededAt,
+      if (supersededById != null) 'superseded_by_id': supersededById,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (cachedAt != null) 'cached_at': cachedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  RemoteNewFeaturesCacheCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? assignmentId,
+      Value<String>? featureType,
+      Value<String>? geometryGeojson,
+      Value<double>? centroidLat,
+      Value<double>? centroidLng,
+      Value<String?>? submittedBy,
+      Value<DateTime>? submittedAt,
+      Value<String?>? possibleDuplicateOf,
+      Value<DateTime?>? dedupReviewedAt,
+      Value<DateTime?>? supersededAt,
+      Value<String?>? supersededById,
+      Value<DateTime>? updatedAt,
+      Value<DateTime>? cachedAt,
+      Value<int>? rowid}) {
+    return RemoteNewFeaturesCacheCompanion(
+      id: id ?? this.id,
+      assignmentId: assignmentId ?? this.assignmentId,
+      featureType: featureType ?? this.featureType,
+      geometryGeojson: geometryGeojson ?? this.geometryGeojson,
+      centroidLat: centroidLat ?? this.centroidLat,
+      centroidLng: centroidLng ?? this.centroidLng,
+      submittedBy: submittedBy ?? this.submittedBy,
+      submittedAt: submittedAt ?? this.submittedAt,
+      possibleDuplicateOf: possibleDuplicateOf ?? this.possibleDuplicateOf,
+      dedupReviewedAt: dedupReviewedAt ?? this.dedupReviewedAt,
+      supersededAt: supersededAt ?? this.supersededAt,
+      supersededById: supersededById ?? this.supersededById,
+      updatedAt: updatedAt ?? this.updatedAt,
+      cachedAt: cachedAt ?? this.cachedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (assignmentId.present) {
+      map['assignment_id'] = Variable<String>(assignmentId.value);
+    }
+    if (featureType.present) {
+      map['feature_type'] = Variable<String>(featureType.value);
+    }
+    if (geometryGeojson.present) {
+      map['geometry_geojson'] = Variable<String>(geometryGeojson.value);
+    }
+    if (centroidLat.present) {
+      map['centroid_lat'] = Variable<double>(centroidLat.value);
+    }
+    if (centroidLng.present) {
+      map['centroid_lng'] = Variable<double>(centroidLng.value);
+    }
+    if (submittedBy.present) {
+      map['submitted_by'] = Variable<String>(submittedBy.value);
+    }
+    if (submittedAt.present) {
+      map['submitted_at'] = Variable<DateTime>(submittedAt.value);
+    }
+    if (possibleDuplicateOf.present) {
+      map['possible_duplicate_of'] =
+          Variable<String>(possibleDuplicateOf.value);
+    }
+    if (dedupReviewedAt.present) {
+      map['dedup_reviewed_at'] = Variable<DateTime>(dedupReviewedAt.value);
+    }
+    if (supersededAt.present) {
+      map['superseded_at'] = Variable<DateTime>(supersededAt.value);
+    }
+    if (supersededById.present) {
+      map['superseded_by_id'] = Variable<String>(supersededById.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (cachedAt.present) {
+      map['cached_at'] = Variable<DateTime>(cachedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RemoteNewFeaturesCacheCompanion(')
+          ..write('id: $id, ')
+          ..write('assignmentId: $assignmentId, ')
+          ..write('featureType: $featureType, ')
+          ..write('geometryGeojson: $geometryGeojson, ')
+          ..write('centroidLat: $centroidLat, ')
+          ..write('centroidLng: $centroidLng, ')
+          ..write('submittedBy: $submittedBy, ')
+          ..write('submittedAt: $submittedAt, ')
+          ..write('possibleDuplicateOf: $possibleDuplicateOf, ')
+          ..write('dedupReviewedAt: $dedupReviewedAt, ')
+          ..write('supersededAt: $supersededAt, ')
+          ..write('supersededById: $supersededById, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('cachedAt: $cachedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $AssignmentSyncCursorsTable extends AssignmentSyncCursors
+    with TableInfo<$AssignmentSyncCursorsTable, AssignmentSyncCursor> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AssignmentSyncCursorsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _assignmentIdMeta =
+      const VerificationMeta('assignmentId');
+  @override
+  late final GeneratedColumn<String> assignmentId = GeneratedColumn<String>(
+      'assignment_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _attributionsLastSyncAtMeta =
+      const VerificationMeta('attributionsLastSyncAt');
+  @override
+  late final GeneratedColumn<DateTime> attributionsLastSyncAt =
+      GeneratedColumn<DateTime>('attributions_last_sync_at', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _newFeaturesLastSyncAtMeta =
+      const VerificationMeta('newFeaturesLastSyncAt');
+  @override
+  late final GeneratedColumn<DateTime> newFeaturesLastSyncAt =
+      GeneratedColumn<DateTime>('new_features_last_sync_at', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [assignmentId, attributionsLastSyncAt, newFeaturesLastSyncAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'assignment_sync_cursors';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<AssignmentSyncCursor> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('assignment_id')) {
+      context.handle(
+          _assignmentIdMeta,
+          assignmentId.isAcceptableOrUnknown(
+              data['assignment_id']!, _assignmentIdMeta));
+    } else if (isInserting) {
+      context.missing(_assignmentIdMeta);
+    }
+    if (data.containsKey('attributions_last_sync_at')) {
+      context.handle(
+          _attributionsLastSyncAtMeta,
+          attributionsLastSyncAt.isAcceptableOrUnknown(
+              data['attributions_last_sync_at']!, _attributionsLastSyncAtMeta));
+    }
+    if (data.containsKey('new_features_last_sync_at')) {
+      context.handle(
+          _newFeaturesLastSyncAtMeta,
+          newFeaturesLastSyncAt.isAcceptableOrUnknown(
+              data['new_features_last_sync_at']!, _newFeaturesLastSyncAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {assignmentId};
+  @override
+  AssignmentSyncCursor map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AssignmentSyncCursor(
+      assignmentId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}assignment_id'])!,
+      attributionsLastSyncAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime,
+          data['${effectivePrefix}attributions_last_sync_at']),
+      newFeaturesLastSyncAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime,
+          data['${effectivePrefix}new_features_last_sync_at']),
+    );
+  }
+
+  @override
+  $AssignmentSyncCursorsTable createAlias(String alias) {
+    return $AssignmentSyncCursorsTable(attachedDatabase, alias);
+  }
+}
+
+class AssignmentSyncCursor extends DataClass
+    implements Insertable<AssignmentSyncCursor> {
+  final String assignmentId;
+  final DateTime? attributionsLastSyncAt;
+  final DateTime? newFeaturesLastSyncAt;
+  const AssignmentSyncCursor(
+      {required this.assignmentId,
+      this.attributionsLastSyncAt,
+      this.newFeaturesLastSyncAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['assignment_id'] = Variable<String>(assignmentId);
+    if (!nullToAbsent || attributionsLastSyncAt != null) {
+      map['attributions_last_sync_at'] =
+          Variable<DateTime>(attributionsLastSyncAt);
+    }
+    if (!nullToAbsent || newFeaturesLastSyncAt != null) {
+      map['new_features_last_sync_at'] =
+          Variable<DateTime>(newFeaturesLastSyncAt);
+    }
+    return map;
+  }
+
+  AssignmentSyncCursorsCompanion toCompanion(bool nullToAbsent) {
+    return AssignmentSyncCursorsCompanion(
+      assignmentId: Value(assignmentId),
+      attributionsLastSyncAt: attributionsLastSyncAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(attributionsLastSyncAt),
+      newFeaturesLastSyncAt: newFeaturesLastSyncAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(newFeaturesLastSyncAt),
+    );
+  }
+
+  factory AssignmentSyncCursor.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AssignmentSyncCursor(
+      assignmentId: serializer.fromJson<String>(json['assignmentId']),
+      attributionsLastSyncAt:
+          serializer.fromJson<DateTime?>(json['attributionsLastSyncAt']),
+      newFeaturesLastSyncAt:
+          serializer.fromJson<DateTime?>(json['newFeaturesLastSyncAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'assignmentId': serializer.toJson<String>(assignmentId),
+      'attributionsLastSyncAt':
+          serializer.toJson<DateTime?>(attributionsLastSyncAt),
+      'newFeaturesLastSyncAt':
+          serializer.toJson<DateTime?>(newFeaturesLastSyncAt),
+    };
+  }
+
+  AssignmentSyncCursor copyWith(
+          {String? assignmentId,
+          Value<DateTime?> attributionsLastSyncAt = const Value.absent(),
+          Value<DateTime?> newFeaturesLastSyncAt = const Value.absent()}) =>
+      AssignmentSyncCursor(
+        assignmentId: assignmentId ?? this.assignmentId,
+        attributionsLastSyncAt: attributionsLastSyncAt.present
+            ? attributionsLastSyncAt.value
+            : this.attributionsLastSyncAt,
+        newFeaturesLastSyncAt: newFeaturesLastSyncAt.present
+            ? newFeaturesLastSyncAt.value
+            : this.newFeaturesLastSyncAt,
+      );
+  AssignmentSyncCursor copyWithCompanion(AssignmentSyncCursorsCompanion data) {
+    return AssignmentSyncCursor(
+      assignmentId: data.assignmentId.present
+          ? data.assignmentId.value
+          : this.assignmentId,
+      attributionsLastSyncAt: data.attributionsLastSyncAt.present
+          ? data.attributionsLastSyncAt.value
+          : this.attributionsLastSyncAt,
+      newFeaturesLastSyncAt: data.newFeaturesLastSyncAt.present
+          ? data.newFeaturesLastSyncAt.value
+          : this.newFeaturesLastSyncAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AssignmentSyncCursor(')
+          ..write('assignmentId: $assignmentId, ')
+          ..write('attributionsLastSyncAt: $attributionsLastSyncAt, ')
+          ..write('newFeaturesLastSyncAt: $newFeaturesLastSyncAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(assignmentId, attributionsLastSyncAt, newFeaturesLastSyncAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AssignmentSyncCursor &&
+          other.assignmentId == this.assignmentId &&
+          other.attributionsLastSyncAt == this.attributionsLastSyncAt &&
+          other.newFeaturesLastSyncAt == this.newFeaturesLastSyncAt);
+}
+
+class AssignmentSyncCursorsCompanion
+    extends UpdateCompanion<AssignmentSyncCursor> {
+  final Value<String> assignmentId;
+  final Value<DateTime?> attributionsLastSyncAt;
+  final Value<DateTime?> newFeaturesLastSyncAt;
+  final Value<int> rowid;
+  const AssignmentSyncCursorsCompanion({
+    this.assignmentId = const Value.absent(),
+    this.attributionsLastSyncAt = const Value.absent(),
+    this.newFeaturesLastSyncAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AssignmentSyncCursorsCompanion.insert({
+    required String assignmentId,
+    this.attributionsLastSyncAt = const Value.absent(),
+    this.newFeaturesLastSyncAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : assignmentId = Value(assignmentId);
+  static Insertable<AssignmentSyncCursor> custom({
+    Expression<String>? assignmentId,
+    Expression<DateTime>? attributionsLastSyncAt,
+    Expression<DateTime>? newFeaturesLastSyncAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (assignmentId != null) 'assignment_id': assignmentId,
+      if (attributionsLastSyncAt != null)
+        'attributions_last_sync_at': attributionsLastSyncAt,
+      if (newFeaturesLastSyncAt != null)
+        'new_features_last_sync_at': newFeaturesLastSyncAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AssignmentSyncCursorsCompanion copyWith(
+      {Value<String>? assignmentId,
+      Value<DateTime?>? attributionsLastSyncAt,
+      Value<DateTime?>? newFeaturesLastSyncAt,
+      Value<int>? rowid}) {
+    return AssignmentSyncCursorsCompanion(
+      assignmentId: assignmentId ?? this.assignmentId,
+      attributionsLastSyncAt:
+          attributionsLastSyncAt ?? this.attributionsLastSyncAt,
+      newFeaturesLastSyncAt:
+          newFeaturesLastSyncAt ?? this.newFeaturesLastSyncAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (assignmentId.present) {
+      map['assignment_id'] = Variable<String>(assignmentId.value);
+    }
+    if (attributionsLastSyncAt.present) {
+      map['attributions_last_sync_at'] =
+          Variable<DateTime>(attributionsLastSyncAt.value);
+    }
+    if (newFeaturesLastSyncAt.present) {
+      map['new_features_last_sync_at'] =
+          Variable<DateTime>(newFeaturesLastSyncAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AssignmentSyncCursorsCompanion(')
+          ..write('assignmentId: $assignmentId, ')
+          ..write('attributionsLastSyncAt: $attributionsLastSyncAt, ')
+          ..write('newFeaturesLastSyncAt: $newFeaturesLastSyncAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -6313,6 +7906,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $OfflineTilePacksTable(this);
   late final $DriveUploadJobsTable driveUploadJobs =
       $DriveUploadJobsTable(this);
+  late final $RemoteAttributionsCacheTable remoteAttributionsCache =
+      $RemoteAttributionsCacheTable(this);
+  late final $RemoteNewFeaturesCacheTable remoteNewFeaturesCache =
+      $RemoteNewFeaturesCacheTable(this);
+  late final $AssignmentSyncCursorsTable assignmentSyncCursors =
+      $AssignmentSyncCursorsTable(this);
   late final Index featuresAssignmentIdIdx = Index('features_assignment_id_idx',
       'CREATE INDEX features_assignment_id_idx ON features (assignment_id)');
   late final Index fgrFeatureIdIdx = Index('fgr_feature_id_idx',
@@ -6334,6 +7933,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final Index driveUploadJobsAssignmentIdx = Index(
       'drive_upload_jobs_assignment_idx',
       'CREATE INDEX drive_upload_jobs_assignment_idx ON drive_upload_jobs (assignment_id)');
+  late final Index remoteAttributionsCacheFeatureIdx = Index(
+      'remote_attributions_cache_feature_idx',
+      'CREATE INDEX remote_attributions_cache_feature_idx ON remote_attributions_cache (assignment_id, feature_id)');
+  late final Index remoteAttributionsCacheUpdatedAtIdx = Index(
+      'remote_attributions_cache_updated_at_idx',
+      'CREATE INDEX remote_attributions_cache_updated_at_idx ON remote_attributions_cache (assignment_id, updated_at)');
+  late final Index remoteNewFeaturesCacheAssignmentIdx = Index(
+      'remote_new_features_cache_assignment_idx',
+      'CREATE INDEX remote_new_features_cache_assignment_idx ON remote_new_features_cache (assignment_id, updated_at)');
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -6352,6 +7960,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         syncJobs,
         offlineTilePacks,
         driveUploadJobs,
+        remoteAttributionsCache,
+        remoteNewFeaturesCache,
+        assignmentSyncCursors,
         featuresAssignmentIdIdx,
         fgrFeatureIdIdx,
         fgrSyncStatusIdx,
@@ -6360,7 +7971,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         photosSubmissionIdIdx,
         syncJobsStatusRetryIdx,
         driveUploadJobsStatusIdx,
-        driveUploadJobsAssignmentIdx
+        driveUploadJobsAssignmentIdx,
+        remoteAttributionsCacheFeatureIdx,
+        remoteAttributionsCacheUpdatedAtIdx,
+        remoteNewFeaturesCacheAssignmentIdx
       ];
 }
 
@@ -9361,6 +10975,762 @@ typedef $$DriveUploadJobsTableProcessedTableManager = ProcessedTableManager<
     ),
     DriveUploadJob,
     PrefetchHooks Function()>;
+typedef $$RemoteAttributionsCacheTableCreateCompanionBuilder
+    = RemoteAttributionsCacheCompanion Function({
+  required String id,
+  required String assignmentId,
+  required String featureId,
+  required String featureType,
+  required String attributeValuesJson,
+  Value<String?> submittedBy,
+  required DateTime submittedAt,
+  Value<DateTime?> supersededAt,
+  Value<String?> supersededById,
+  required DateTime updatedAt,
+  required DateTime cachedAt,
+  Value<int> rowid,
+});
+typedef $$RemoteAttributionsCacheTableUpdateCompanionBuilder
+    = RemoteAttributionsCacheCompanion Function({
+  Value<String> id,
+  Value<String> assignmentId,
+  Value<String> featureId,
+  Value<String> featureType,
+  Value<String> attributeValuesJson,
+  Value<String?> submittedBy,
+  Value<DateTime> submittedAt,
+  Value<DateTime?> supersededAt,
+  Value<String?> supersededById,
+  Value<DateTime> updatedAt,
+  Value<DateTime> cachedAt,
+  Value<int> rowid,
+});
+
+class $$RemoteAttributionsCacheTableFilterComposer
+    extends Composer<_$AppDatabase, $RemoteAttributionsCacheTable> {
+  $$RemoteAttributionsCacheTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get assignmentId => $composableBuilder(
+      column: $table.assignmentId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get featureId => $composableBuilder(
+      column: $table.featureId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get featureType => $composableBuilder(
+      column: $table.featureType, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get attributeValuesJson => $composableBuilder(
+      column: $table.attributeValuesJson,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get submittedBy => $composableBuilder(
+      column: $table.submittedBy, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get submittedAt => $composableBuilder(
+      column: $table.submittedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get supersededAt => $composableBuilder(
+      column: $table.supersededAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get supersededById => $composableBuilder(
+      column: $table.supersededById,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get cachedAt => $composableBuilder(
+      column: $table.cachedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$RemoteAttributionsCacheTableOrderingComposer
+    extends Composer<_$AppDatabase, $RemoteAttributionsCacheTable> {
+  $$RemoteAttributionsCacheTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get assignmentId => $composableBuilder(
+      column: $table.assignmentId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get featureId => $composableBuilder(
+      column: $table.featureId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get featureType => $composableBuilder(
+      column: $table.featureType, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get attributeValuesJson => $composableBuilder(
+      column: $table.attributeValuesJson,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get submittedBy => $composableBuilder(
+      column: $table.submittedBy, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get submittedAt => $composableBuilder(
+      column: $table.submittedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get supersededAt => $composableBuilder(
+      column: $table.supersededAt,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get supersededById => $composableBuilder(
+      column: $table.supersededById,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get cachedAt => $composableBuilder(
+      column: $table.cachedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$RemoteAttributionsCacheTableAnnotationComposer
+    extends Composer<_$AppDatabase, $RemoteAttributionsCacheTable> {
+  $$RemoteAttributionsCacheTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get assignmentId => $composableBuilder(
+      column: $table.assignmentId, builder: (column) => column);
+
+  GeneratedColumn<String> get featureId =>
+      $composableBuilder(column: $table.featureId, builder: (column) => column);
+
+  GeneratedColumn<String> get featureType => $composableBuilder(
+      column: $table.featureType, builder: (column) => column);
+
+  GeneratedColumn<String> get attributeValuesJson => $composableBuilder(
+      column: $table.attributeValuesJson, builder: (column) => column);
+
+  GeneratedColumn<String> get submittedBy => $composableBuilder(
+      column: $table.submittedBy, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get submittedAt => $composableBuilder(
+      column: $table.submittedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get supersededAt => $composableBuilder(
+      column: $table.supersededAt, builder: (column) => column);
+
+  GeneratedColumn<String> get supersededById => $composableBuilder(
+      column: $table.supersededById, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get cachedAt =>
+      $composableBuilder(column: $table.cachedAt, builder: (column) => column);
+}
+
+class $$RemoteAttributionsCacheTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $RemoteAttributionsCacheTable,
+    RemoteAttributionsCacheData,
+    $$RemoteAttributionsCacheTableFilterComposer,
+    $$RemoteAttributionsCacheTableOrderingComposer,
+    $$RemoteAttributionsCacheTableAnnotationComposer,
+    $$RemoteAttributionsCacheTableCreateCompanionBuilder,
+    $$RemoteAttributionsCacheTableUpdateCompanionBuilder,
+    (
+      RemoteAttributionsCacheData,
+      BaseReferences<_$AppDatabase, $RemoteAttributionsCacheTable,
+          RemoteAttributionsCacheData>
+    ),
+    RemoteAttributionsCacheData,
+    PrefetchHooks Function()> {
+  $$RemoteAttributionsCacheTableTableManager(
+      _$AppDatabase db, $RemoteAttributionsCacheTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$RemoteAttributionsCacheTableFilterComposer(
+                  $db: db, $table: table),
+          createOrderingComposer: () =>
+              $$RemoteAttributionsCacheTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$RemoteAttributionsCacheTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> assignmentId = const Value.absent(),
+            Value<String> featureId = const Value.absent(),
+            Value<String> featureType = const Value.absent(),
+            Value<String> attributeValuesJson = const Value.absent(),
+            Value<String?> submittedBy = const Value.absent(),
+            Value<DateTime> submittedAt = const Value.absent(),
+            Value<DateTime?> supersededAt = const Value.absent(),
+            Value<String?> supersededById = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<DateTime> cachedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              RemoteAttributionsCacheCompanion(
+            id: id,
+            assignmentId: assignmentId,
+            featureId: featureId,
+            featureType: featureType,
+            attributeValuesJson: attributeValuesJson,
+            submittedBy: submittedBy,
+            submittedAt: submittedAt,
+            supersededAt: supersededAt,
+            supersededById: supersededById,
+            updatedAt: updatedAt,
+            cachedAt: cachedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String assignmentId,
+            required String featureId,
+            required String featureType,
+            required String attributeValuesJson,
+            Value<String?> submittedBy = const Value.absent(),
+            required DateTime submittedAt,
+            Value<DateTime?> supersededAt = const Value.absent(),
+            Value<String?> supersededById = const Value.absent(),
+            required DateTime updatedAt,
+            required DateTime cachedAt,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              RemoteAttributionsCacheCompanion.insert(
+            id: id,
+            assignmentId: assignmentId,
+            featureId: featureId,
+            featureType: featureType,
+            attributeValuesJson: attributeValuesJson,
+            submittedBy: submittedBy,
+            submittedAt: submittedAt,
+            supersededAt: supersededAt,
+            supersededById: supersededById,
+            updatedAt: updatedAt,
+            cachedAt: cachedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$RemoteAttributionsCacheTableProcessedTableManager
+    = ProcessedTableManager<
+        _$AppDatabase,
+        $RemoteAttributionsCacheTable,
+        RemoteAttributionsCacheData,
+        $$RemoteAttributionsCacheTableFilterComposer,
+        $$RemoteAttributionsCacheTableOrderingComposer,
+        $$RemoteAttributionsCacheTableAnnotationComposer,
+        $$RemoteAttributionsCacheTableCreateCompanionBuilder,
+        $$RemoteAttributionsCacheTableUpdateCompanionBuilder,
+        (
+          RemoteAttributionsCacheData,
+          BaseReferences<_$AppDatabase, $RemoteAttributionsCacheTable,
+              RemoteAttributionsCacheData>
+        ),
+        RemoteAttributionsCacheData,
+        PrefetchHooks Function()>;
+typedef $$RemoteNewFeaturesCacheTableCreateCompanionBuilder
+    = RemoteNewFeaturesCacheCompanion Function({
+  required String id,
+  required String assignmentId,
+  required String featureType,
+  required String geometryGeojson,
+  required double centroidLat,
+  required double centroidLng,
+  Value<String?> submittedBy,
+  required DateTime submittedAt,
+  Value<String?> possibleDuplicateOf,
+  Value<DateTime?> dedupReviewedAt,
+  Value<DateTime?> supersededAt,
+  Value<String?> supersededById,
+  required DateTime updatedAt,
+  required DateTime cachedAt,
+  Value<int> rowid,
+});
+typedef $$RemoteNewFeaturesCacheTableUpdateCompanionBuilder
+    = RemoteNewFeaturesCacheCompanion Function({
+  Value<String> id,
+  Value<String> assignmentId,
+  Value<String> featureType,
+  Value<String> geometryGeojson,
+  Value<double> centroidLat,
+  Value<double> centroidLng,
+  Value<String?> submittedBy,
+  Value<DateTime> submittedAt,
+  Value<String?> possibleDuplicateOf,
+  Value<DateTime?> dedupReviewedAt,
+  Value<DateTime?> supersededAt,
+  Value<String?> supersededById,
+  Value<DateTime> updatedAt,
+  Value<DateTime> cachedAt,
+  Value<int> rowid,
+});
+
+class $$RemoteNewFeaturesCacheTableFilterComposer
+    extends Composer<_$AppDatabase, $RemoteNewFeaturesCacheTable> {
+  $$RemoteNewFeaturesCacheTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get assignmentId => $composableBuilder(
+      column: $table.assignmentId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get featureType => $composableBuilder(
+      column: $table.featureType, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get geometryGeojson => $composableBuilder(
+      column: $table.geometryGeojson,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get centroidLat => $composableBuilder(
+      column: $table.centroidLat, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get centroidLng => $composableBuilder(
+      column: $table.centroidLng, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get submittedBy => $composableBuilder(
+      column: $table.submittedBy, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get submittedAt => $composableBuilder(
+      column: $table.submittedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get possibleDuplicateOf => $composableBuilder(
+      column: $table.possibleDuplicateOf,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get dedupReviewedAt => $composableBuilder(
+      column: $table.dedupReviewedAt,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get supersededAt => $composableBuilder(
+      column: $table.supersededAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get supersededById => $composableBuilder(
+      column: $table.supersededById,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get cachedAt => $composableBuilder(
+      column: $table.cachedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$RemoteNewFeaturesCacheTableOrderingComposer
+    extends Composer<_$AppDatabase, $RemoteNewFeaturesCacheTable> {
+  $$RemoteNewFeaturesCacheTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get assignmentId => $composableBuilder(
+      column: $table.assignmentId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get featureType => $composableBuilder(
+      column: $table.featureType, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get geometryGeojson => $composableBuilder(
+      column: $table.geometryGeojson,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get centroidLat => $composableBuilder(
+      column: $table.centroidLat, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get centroidLng => $composableBuilder(
+      column: $table.centroidLng, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get submittedBy => $composableBuilder(
+      column: $table.submittedBy, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get submittedAt => $composableBuilder(
+      column: $table.submittedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get possibleDuplicateOf => $composableBuilder(
+      column: $table.possibleDuplicateOf,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get dedupReviewedAt => $composableBuilder(
+      column: $table.dedupReviewedAt,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get supersededAt => $composableBuilder(
+      column: $table.supersededAt,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get supersededById => $composableBuilder(
+      column: $table.supersededById,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get cachedAt => $composableBuilder(
+      column: $table.cachedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$RemoteNewFeaturesCacheTableAnnotationComposer
+    extends Composer<_$AppDatabase, $RemoteNewFeaturesCacheTable> {
+  $$RemoteNewFeaturesCacheTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get assignmentId => $composableBuilder(
+      column: $table.assignmentId, builder: (column) => column);
+
+  GeneratedColumn<String> get featureType => $composableBuilder(
+      column: $table.featureType, builder: (column) => column);
+
+  GeneratedColumn<String> get geometryGeojson => $composableBuilder(
+      column: $table.geometryGeojson, builder: (column) => column);
+
+  GeneratedColumn<double> get centroidLat => $composableBuilder(
+      column: $table.centroidLat, builder: (column) => column);
+
+  GeneratedColumn<double> get centroidLng => $composableBuilder(
+      column: $table.centroidLng, builder: (column) => column);
+
+  GeneratedColumn<String> get submittedBy => $composableBuilder(
+      column: $table.submittedBy, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get submittedAt => $composableBuilder(
+      column: $table.submittedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get possibleDuplicateOf => $composableBuilder(
+      column: $table.possibleDuplicateOf, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get dedupReviewedAt => $composableBuilder(
+      column: $table.dedupReviewedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get supersededAt => $composableBuilder(
+      column: $table.supersededAt, builder: (column) => column);
+
+  GeneratedColumn<String> get supersededById => $composableBuilder(
+      column: $table.supersededById, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get cachedAt =>
+      $composableBuilder(column: $table.cachedAt, builder: (column) => column);
+}
+
+class $$RemoteNewFeaturesCacheTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $RemoteNewFeaturesCacheTable,
+    RemoteNewFeaturesCacheData,
+    $$RemoteNewFeaturesCacheTableFilterComposer,
+    $$RemoteNewFeaturesCacheTableOrderingComposer,
+    $$RemoteNewFeaturesCacheTableAnnotationComposer,
+    $$RemoteNewFeaturesCacheTableCreateCompanionBuilder,
+    $$RemoteNewFeaturesCacheTableUpdateCompanionBuilder,
+    (
+      RemoteNewFeaturesCacheData,
+      BaseReferences<_$AppDatabase, $RemoteNewFeaturesCacheTable,
+          RemoteNewFeaturesCacheData>
+    ),
+    RemoteNewFeaturesCacheData,
+    PrefetchHooks Function()> {
+  $$RemoteNewFeaturesCacheTableTableManager(
+      _$AppDatabase db, $RemoteNewFeaturesCacheTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$RemoteNewFeaturesCacheTableFilterComposer(
+                  $db: db, $table: table),
+          createOrderingComposer: () =>
+              $$RemoteNewFeaturesCacheTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$RemoteNewFeaturesCacheTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> assignmentId = const Value.absent(),
+            Value<String> featureType = const Value.absent(),
+            Value<String> geometryGeojson = const Value.absent(),
+            Value<double> centroidLat = const Value.absent(),
+            Value<double> centroidLng = const Value.absent(),
+            Value<String?> submittedBy = const Value.absent(),
+            Value<DateTime> submittedAt = const Value.absent(),
+            Value<String?> possibleDuplicateOf = const Value.absent(),
+            Value<DateTime?> dedupReviewedAt = const Value.absent(),
+            Value<DateTime?> supersededAt = const Value.absent(),
+            Value<String?> supersededById = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<DateTime> cachedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              RemoteNewFeaturesCacheCompanion(
+            id: id,
+            assignmentId: assignmentId,
+            featureType: featureType,
+            geometryGeojson: geometryGeojson,
+            centroidLat: centroidLat,
+            centroidLng: centroidLng,
+            submittedBy: submittedBy,
+            submittedAt: submittedAt,
+            possibleDuplicateOf: possibleDuplicateOf,
+            dedupReviewedAt: dedupReviewedAt,
+            supersededAt: supersededAt,
+            supersededById: supersededById,
+            updatedAt: updatedAt,
+            cachedAt: cachedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String assignmentId,
+            required String featureType,
+            required String geometryGeojson,
+            required double centroidLat,
+            required double centroidLng,
+            Value<String?> submittedBy = const Value.absent(),
+            required DateTime submittedAt,
+            Value<String?> possibleDuplicateOf = const Value.absent(),
+            Value<DateTime?> dedupReviewedAt = const Value.absent(),
+            Value<DateTime?> supersededAt = const Value.absent(),
+            Value<String?> supersededById = const Value.absent(),
+            required DateTime updatedAt,
+            required DateTime cachedAt,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              RemoteNewFeaturesCacheCompanion.insert(
+            id: id,
+            assignmentId: assignmentId,
+            featureType: featureType,
+            geometryGeojson: geometryGeojson,
+            centroidLat: centroidLat,
+            centroidLng: centroidLng,
+            submittedBy: submittedBy,
+            submittedAt: submittedAt,
+            possibleDuplicateOf: possibleDuplicateOf,
+            dedupReviewedAt: dedupReviewedAt,
+            supersededAt: supersededAt,
+            supersededById: supersededById,
+            updatedAt: updatedAt,
+            cachedAt: cachedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$RemoteNewFeaturesCacheTableProcessedTableManager
+    = ProcessedTableManager<
+        _$AppDatabase,
+        $RemoteNewFeaturesCacheTable,
+        RemoteNewFeaturesCacheData,
+        $$RemoteNewFeaturesCacheTableFilterComposer,
+        $$RemoteNewFeaturesCacheTableOrderingComposer,
+        $$RemoteNewFeaturesCacheTableAnnotationComposer,
+        $$RemoteNewFeaturesCacheTableCreateCompanionBuilder,
+        $$RemoteNewFeaturesCacheTableUpdateCompanionBuilder,
+        (
+          RemoteNewFeaturesCacheData,
+          BaseReferences<_$AppDatabase, $RemoteNewFeaturesCacheTable,
+              RemoteNewFeaturesCacheData>
+        ),
+        RemoteNewFeaturesCacheData,
+        PrefetchHooks Function()>;
+typedef $$AssignmentSyncCursorsTableCreateCompanionBuilder
+    = AssignmentSyncCursorsCompanion Function({
+  required String assignmentId,
+  Value<DateTime?> attributionsLastSyncAt,
+  Value<DateTime?> newFeaturesLastSyncAt,
+  Value<int> rowid,
+});
+typedef $$AssignmentSyncCursorsTableUpdateCompanionBuilder
+    = AssignmentSyncCursorsCompanion Function({
+  Value<String> assignmentId,
+  Value<DateTime?> attributionsLastSyncAt,
+  Value<DateTime?> newFeaturesLastSyncAt,
+  Value<int> rowid,
+});
+
+class $$AssignmentSyncCursorsTableFilterComposer
+    extends Composer<_$AppDatabase, $AssignmentSyncCursorsTable> {
+  $$AssignmentSyncCursorsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get assignmentId => $composableBuilder(
+      column: $table.assignmentId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get attributionsLastSyncAt => $composableBuilder(
+      column: $table.attributionsLastSyncAt,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get newFeaturesLastSyncAt => $composableBuilder(
+      column: $table.newFeaturesLastSyncAt,
+      builder: (column) => ColumnFilters(column));
+}
+
+class $$AssignmentSyncCursorsTableOrderingComposer
+    extends Composer<_$AppDatabase, $AssignmentSyncCursorsTable> {
+  $$AssignmentSyncCursorsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get assignmentId => $composableBuilder(
+      column: $table.assignmentId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get attributionsLastSyncAt => $composableBuilder(
+      column: $table.attributionsLastSyncAt,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get newFeaturesLastSyncAt => $composableBuilder(
+      column: $table.newFeaturesLastSyncAt,
+      builder: (column) => ColumnOrderings(column));
+}
+
+class $$AssignmentSyncCursorsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AssignmentSyncCursorsTable> {
+  $$AssignmentSyncCursorsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get assignmentId => $composableBuilder(
+      column: $table.assignmentId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get attributionsLastSyncAt => $composableBuilder(
+      column: $table.attributionsLastSyncAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get newFeaturesLastSyncAt => $composableBuilder(
+      column: $table.newFeaturesLastSyncAt, builder: (column) => column);
+}
+
+class $$AssignmentSyncCursorsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $AssignmentSyncCursorsTable,
+    AssignmentSyncCursor,
+    $$AssignmentSyncCursorsTableFilterComposer,
+    $$AssignmentSyncCursorsTableOrderingComposer,
+    $$AssignmentSyncCursorsTableAnnotationComposer,
+    $$AssignmentSyncCursorsTableCreateCompanionBuilder,
+    $$AssignmentSyncCursorsTableUpdateCompanionBuilder,
+    (
+      AssignmentSyncCursor,
+      BaseReferences<_$AppDatabase, $AssignmentSyncCursorsTable,
+          AssignmentSyncCursor>
+    ),
+    AssignmentSyncCursor,
+    PrefetchHooks Function()> {
+  $$AssignmentSyncCursorsTableTableManager(
+      _$AppDatabase db, $AssignmentSyncCursorsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AssignmentSyncCursorsTableFilterComposer(
+                  $db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AssignmentSyncCursorsTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AssignmentSyncCursorsTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> assignmentId = const Value.absent(),
+            Value<DateTime?> attributionsLastSyncAt = const Value.absent(),
+            Value<DateTime?> newFeaturesLastSyncAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              AssignmentSyncCursorsCompanion(
+            assignmentId: assignmentId,
+            attributionsLastSyncAt: attributionsLastSyncAt,
+            newFeaturesLastSyncAt: newFeaturesLastSyncAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String assignmentId,
+            Value<DateTime?> attributionsLastSyncAt = const Value.absent(),
+            Value<DateTime?> newFeaturesLastSyncAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              AssignmentSyncCursorsCompanion.insert(
+            assignmentId: assignmentId,
+            attributionsLastSyncAt: attributionsLastSyncAt,
+            newFeaturesLastSyncAt: newFeaturesLastSyncAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$AssignmentSyncCursorsTableProcessedTableManager
+    = ProcessedTableManager<
+        _$AppDatabase,
+        $AssignmentSyncCursorsTable,
+        AssignmentSyncCursor,
+        $$AssignmentSyncCursorsTableFilterComposer,
+        $$AssignmentSyncCursorsTableOrderingComposer,
+        $$AssignmentSyncCursorsTableAnnotationComposer,
+        $$AssignmentSyncCursorsTableCreateCompanionBuilder,
+        $$AssignmentSyncCursorsTableUpdateCompanionBuilder,
+        (
+          AssignmentSyncCursor,
+          BaseReferences<_$AppDatabase, $AssignmentSyncCursorsTable,
+              AssignmentSyncCursor>
+        ),
+        AssignmentSyncCursor,
+        PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -9392,4 +11762,12 @@ class $AppDatabaseManager {
       $$OfflineTilePacksTableTableManager(_db, _db.offlineTilePacks);
   $$DriveUploadJobsTableTableManager get driveUploadJobs =>
       $$DriveUploadJobsTableTableManager(_db, _db.driveUploadJobs);
+  $$RemoteAttributionsCacheTableTableManager get remoteAttributionsCache =>
+      $$RemoteAttributionsCacheTableTableManager(
+          _db, _db.remoteAttributionsCache);
+  $$RemoteNewFeaturesCacheTableTableManager get remoteNewFeaturesCache =>
+      $$RemoteNewFeaturesCacheTableTableManager(
+          _db, _db.remoteNewFeaturesCache);
+  $$AssignmentSyncCursorsTableTableManager get assignmentSyncCursors =>
+      $$AssignmentSyncCursorsTableTableManager(_db, _db.assignmentSyncCursors);
 }
