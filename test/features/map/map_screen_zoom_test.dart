@@ -9,6 +9,7 @@ import 'package:firecheck/features/assignment/presentation/assignment_providers.
 import 'package:firecheck/features/map/presentation/camera_target.dart';
 import 'package:firecheck/features/map/presentation/map_providers.dart';
 import 'package:firecheck/features/map/presentation/map_renderer.dart';
+import 'package:firecheck/features/remote_activity/presentation/remote_activity_providers.dart';
 import 'package:firecheck/features/map/presentation/map_screen.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -44,6 +45,9 @@ Future<void> pumpMap(
       currentAssignmentProvider.overrideWith((_) => Stream.value(fakeAssignment())),
       assignmentLockStateProvider.overrideWith((_) => Stream.value(const Unlocked())),
       currentPositionProvider.overrideWith((_) => const Stream<Position>.empty()),
+      othersRemoteAttributionsProvider.overrideWith(
+        (_) => Stream.value(const []),
+      ),
     ],
     child: const MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,

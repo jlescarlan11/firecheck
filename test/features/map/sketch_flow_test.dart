@@ -12,6 +12,7 @@ import 'package:firecheck/features/map/geometry_editor/presentation/geometry_edi
 import 'package:firecheck/features/map/presentation/map_providers.dart';
 import 'package:firecheck/features/map/presentation/map_renderer.dart';
 import 'package:firecheck/features/map/presentation/map_screen.dart';
+import 'package:firecheck/features/remote_activity/presentation/remote_activity_providers.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -87,6 +88,9 @@ Future<({ProviderContainer container, AppDatabase db, GoRouter router})>
       // Avoid the real geolocator plugin (MissingPluginException in widget
       // tests). MapScreen subscribes to currentPositionProvider on mount.
       currentPositionProvider.overrideWith((_) => const Stream<Position>.empty()),
+      othersRemoteAttributionsProvider.overrideWith(
+        (_) => Stream.value(const []),
+      ),
     ],
   );
   addTearDown(container.dispose);

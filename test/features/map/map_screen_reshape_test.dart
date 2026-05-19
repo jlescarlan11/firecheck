@@ -13,6 +13,7 @@ import 'package:firecheck/features/map/presentation/map_providers.dart';
 import 'package:firecheck/features/map/presentation/map_renderer.dart';
 import 'package:firecheck/features/map/presentation/map_screen.dart';
 import 'package:firecheck/features/map/geometry_editor/presentation/geometry_editor_providers.dart';
+import 'package:firecheck/features/remote_activity/presentation/remote_activity_providers.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -85,6 +86,9 @@ Future<ProviderContainer> pumpMap(
       currentFeaturesProvider.overrideWith((_) => Stream.value(features)),
       currentAssignmentProvider.overrideWith((_) => Stream.value(fakeAssignment())),
       assignmentLockStateProvider.overrideWith((_) => Stream.value(const Unlocked())),
+      othersRemoteAttributionsProvider.overrideWith(
+        (_) => Stream.value(const []),
+      ),
       // For lock-blocker tests, route the synchronous bool through a
       // mutable ValueNotifier so the test can flip the lock mid-flight.
       if (lockNotifier != null)
