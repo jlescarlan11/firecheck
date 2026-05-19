@@ -181,6 +181,22 @@ void main() {
               created_at INTEGER NOT NULL
             )
           ''');
+          // sync_jobs: the v12→v13 step rewrites legacy entity_type
+          // values in this table, so it must exist in the seeded v7
+          // schema even though this test is scoped to v7→v8.
+          rawDb.execute('''
+            CREATE TABLE IF NOT EXISTS sync_jobs (
+              id TEXT NOT NULL PRIMARY KEY,
+              entity_type TEXT NOT NULL,
+              entity_id TEXT NOT NULL,
+              status TEXT NOT NULL DEFAULT 'pending',
+              blocks_on_submission_id TEXT,
+              attempts INTEGER NOT NULL DEFAULT 0,
+              last_error TEXT,
+              next_retry_at INTEGER,
+              created_at INTEGER NOT NULL
+            )
+          ''');
         },
       ),
     );

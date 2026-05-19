@@ -75,7 +75,11 @@ end $$;
 
 revoke all on function public.cleanup_orphan_photos() from public;
 revoke all on function public.cleanup_orphan_photos() from authenticated;
--- service_role keeps its implicit privilege; pg_cron runs as superuser.
+-- `security definer` only sets the *runtime* identity; callers still need
+-- their own EXECUTE grant. service_role does not inherit it from public,
+-- so the explicit grant below is what makes manual invocations work on
+-- environments without pg_cron. (pg_cron itself runs as superuser.)
+grant execute on function public.cleanup_orphan_photos() to service_role;
 
 -- Schedule nightly at 03:00 UTC if pg_cron is available. Safe to run
 -- on instances without pg_cron — the do-block silently skips.
