@@ -1,4 +1,3 @@
-import 'package:firecheck/core/sync/shapefile/export/export_validation_result.dart';
 import 'package:firecheck/core/sync/shapefile/export/shapefile_export_validator.dart';
 import 'package:firecheck/core/sync/shapefile/export/shapefile_exporter.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
