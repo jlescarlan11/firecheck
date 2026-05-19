@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:drift/drift.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/sync/data/realtime_subscriber.dart';
 import 'package:firecheck/core/sync/data/remote_attributions_pull_service.dart';
@@ -215,9 +216,13 @@ class RealtimeSyncController {
   }
 
   Future<String?> _currentAssignmentId() async {
-    final row =
-        await (_db.select(_db.assignments)..limit(1)).getSingleOrNull();
-    return row?.id;
+    // Newest assignment by createdAt — matches the rest of the codebase's
+    // notion of "current assignment" (AssignmentRepository.getCurrentAssignment).
+    final rows = await (_db.select(_db.assignments)
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])
+          ..limit(1))
+        .get();
+    return rows.firstOrNull?.id;
   }
 
   void _transitionTo(RealtimeConnectionState next) {

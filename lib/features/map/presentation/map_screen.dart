@@ -20,6 +20,7 @@ import 'package:firecheck/features/map/presentation/recenter_button_state.dart';
 import 'package:firecheck/features/map/presentation/zoom_button.dart';
 import 'package:firecheck/features/map/presentation/zoom_button_state.dart';
 import 'package:firecheck/features/map/presentation/zoom_direction.dart';
+import 'package:firecheck/features/remote_activity/presentation/remote_activity_chip.dart';
 import 'package:firecheck/features/map/geometry_editor/domain/geometry_editor_state.dart';
 import 'package:firecheck/features/map/geometry_editor/domain/reshape_op.dart';
 import 'package:firecheck/features/map/geometry_editor/presentation/reshape_action_sheet.dart';
@@ -158,6 +159,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 key: ValueKey('editor-overlay-$_projectionEpoch'),
                 projection: _reshapeProjection!,
               ),
+            ),
+          // Phase 4 — multi-user attribution sync: shows "👥 N edited by
+          // others" when the remote_attributions_cache has rows from other
+          // enumerators. Hidden when count is zero. Sits below the AppBar.
+          if (!reshapeActive && !sketchActive)
+            const Positioned(
+              left: 12,
+              top: 12,
+              child: RemoteActivityChip(),
             ),
           Positioned(
             right: 16,

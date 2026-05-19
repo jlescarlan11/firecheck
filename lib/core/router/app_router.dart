@@ -7,6 +7,8 @@ import 'package:firecheck/features/auth/presentation/auth_providers.dart';
 import 'package:firecheck/features/auth/presentation/sign_in_screen.dart';
 import 'package:firecheck/features/home/presentation/home_screen.dart';
 import 'package:firecheck/features/map/presentation/map_screen.dart';
+import 'package:firecheck/features/remote_activity/presentation/remote_activity_list_screen.dart';
+import 'package:firecheck/features/remote_activity/presentation/remote_attribution_detail_screen.dart';
 import 'package:firecheck/features/review/presentation/review_screen.dart';
 import 'package:firecheck/features/survey/building_form/presentation/submission_detail_screen.dart';
 import 'package:firecheck/features/survey/olp_survey/presentation/result/olp_result_screen.dart';
@@ -108,6 +110,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/uploads',
         builder: (context, state) => const UploadQueueScreen(),
+      ),
+      GoRoute(
+        path: '/remote-activity',
+        builder: (context, state) => const RemoteActivityListScreen(),
+      ),
+      GoRoute(
+        path: '/remote-activity/:featureId',
+        builder: (context, state) => RemoteAttributionDetailScreen(
+          featureId: Uri.decodeComponent(state.pathParameters['featureId']!),
+        ),
       ),
     ],
   );

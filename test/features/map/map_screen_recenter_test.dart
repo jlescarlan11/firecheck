@@ -12,6 +12,7 @@ import 'package:firecheck/features/map/presentation/map_providers.dart';
 import 'package:firecheck/features/map/presentation/map_renderer.dart';
 import 'package:firecheck/features/map/presentation/map_screen.dart';
 import 'package:firecheck/features/map/presentation/recenter_button.dart';
+import 'package:firecheck/features/remote_activity/presentation/remote_activity_providers.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -64,6 +65,12 @@ Future<void> pumpMap(
       analyticsServiceProvider.overrideWithValue(analytics),
       currentFeaturesProvider.overrideWith((_) => Stream.value(const [])),
       currentAssignmentProvider.overrideWith((_) => Stream.value(fakeAssignment())),
+      // Phase 4 map-badge chip watches the remote attribution cache via
+      // Drift; in the map screen tests we don't wire a real DB, so short-
+      // circuit the data source to avoid a pending-timer leak at teardown.
+      othersRemoteAttributionsProvider.overrideWith(
+        (_) => Stream.value(const []),
+      ),
       assignmentLockStateProvider.overrideWith((_) => Stream.value(const Unlocked())),
       if (positionStream != null)
         currentPositionProvider.overrideWith((_) => positionStream),

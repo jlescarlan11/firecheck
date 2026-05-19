@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/sync/data/realtime_subscriber.dart';
@@ -294,6 +294,35 @@ void main() {
 
     expect(controller.state, RealtimeConnectionState.offline);
     expect(sub.closed, isTrue);
+  });
+
+  test('with multiple assignments, picks the newest by createdAt',
+      () async {
+    // Insert an older sibling.
+    await db.into(db.assignments).insert(
+          AssignmentsCompanion.insert(
+            id: 'a0',
+            enumeratorId: 'me',
+            campaignId: 'c1',
+            boundaryPolygonGeojson: '{}',
+            createdAt: DateTime(2024),
+          ),
+        );
+
+    await controller.start();
+    await _pump();
+
+    expect(controller.state, RealtimeConnectionState.online);
+    // The pull service's RecordingApi was called with assignmentId='a1'
+    // (the newer one) — we infer that here from the fact that the test
+    // succeeded; explicit verification would require RecordingApi to
+    // remember the assignmentId. Mirror in the cache repository:
+    final cur = await cache.getCursor('a1');
+    expect(cur, isNotNull,
+        reason: 'pull should target newest assignment a1, not older a0');
+    final cur0 = await cache.getCursor('a0');
+    expect(cur0, isNull,
+        reason: 'older assignment must not be pulled');
   });
 
   test('start with no assignment stays offline (no subscribe)', () async {

@@ -12,6 +12,7 @@ import 'package:firecheck/features/home/presentation/home_providers.dart';
 import 'package:firecheck/features/map/presentation/map_providers.dart';
 import 'package:firecheck/features/map/presentation/map_renderer.dart';
 import 'package:firecheck/features/map/presentation/map_screen.dart';
+import 'package:firecheck/features/remote_activity/presentation/remote_activity_providers.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -67,6 +68,11 @@ Widget _buildSubject({
       assignmentLockStateProvider
           .overrideWith((_) => Stream.value(const Unlocked())),
       currentUserIdProvider.overrideWith((ref) => 'u1'),
+      // Phase 4 map-badge chip — short-circuit its Drift watch so pending
+      // timers don't leak across the test boundary.
+      othersRemoteAttributionsProvider.overrideWith(
+        (_) => Stream.value(const []),
+      ),
       // Emit a position exactly at the road midpoint so _resolvePosition
       // returns immediately (distance = 0 m → no override dialog, no
       // CircularProgressIndicator, no infinite animation for pumpAndSettle).
