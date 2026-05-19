@@ -13,8 +13,7 @@ import 'package:flutter/foundation.dart';
 ///                              disappear correctly.
 ///
 /// Both paths feed the same upsert in `RemoteAttributionsCacheRepository`, so
-/// merge semantics are identical (and identical to the realtime path added in
-/// phase 3).
+/// merge semantics are identical (and identical to the realtime path).
 ///
 /// Stale-cache rule: if the cursor is older than `staleAge` (default 24h) we
 /// force a full pull rather than a delta, matching the spec's "Cache

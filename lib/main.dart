@@ -184,12 +184,11 @@ class _SyncBootstrapState extends ConsumerState<_SyncBootstrap> {
     super.dispose();
   }
 
-  /// Phases 2 + 3 of multi-user attribution sync: cold-open full pull
-  /// (phase 2) plus realtime subscription with connection state machine
-  /// (phase 3). Must be (re)evaluated on every auth state change — the
-  /// common flow is app launch → sign-in screen → user signs in, so a
-  /// one-shot check at `initState` would never fire start() for that
-  /// session and the cache would stay empty until app restart.
+  /// Cold-open full pull plus realtime subscription with connection state
+  /// machine. Must be (re)evaluated on every auth state change — the common
+  /// flow is app launch → sign-in screen → user signs in, so a one-shot
+  /// check at `initState` would never fire start() for that session and the
+  /// cache would stay empty until app restart.
   void _wireRemoteSyncToAuth() {
     final client = Supabase.instance.client;
     if (client.auth.currentSession != null) {

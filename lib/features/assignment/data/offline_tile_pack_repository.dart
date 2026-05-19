@@ -51,8 +51,7 @@ class OfflineTilePackRepository {
   }
 
   Future<void> markError(String id, String message) {
-    // The current schema has no error-message column; log only for Phase 1.
-    // Phase 4 may add a column if surfaced to UI.
+    // The current schema has no error-message column; log only.
     return (_db.update(_db.offlineTilePacks)..where((t) => t.id.equals(id)))
         .write(const OfflineTilePacksCompanion(status: Value('error')));
   }

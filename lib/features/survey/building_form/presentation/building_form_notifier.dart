@@ -32,9 +32,9 @@ class BuildingFormNotifier extends StateNotifier<BuildingFormState> {
   final SubmissionRepository submissionRepo;
   final BuildingAttributesRepository attrsRepo;
   final FeatureRepository featureRepo;
-  // US-41: fields the active form variant hides for this user/assignment.
-  // Passed through to applyApplicability / remainingQuestionCount so the
-  // form behaves as if the hidden fields don't exist.
+  // Fields the active form variant hides for this user/assignment. Passed
+  // through to applyApplicability / remainingQuestionCount so the form
+  // behaves as if the hidden fields don't exist.
   final Set<BuildingFormField> hiddenFields;
 
   Timer? _debounce;
@@ -65,8 +65,8 @@ class BuildingFormNotifier extends StateNotifier<BuildingFormState> {
   void update(BuildingFormState Function(BuildingFormState) mutate) {
     // Sweep inapplicable fields after every mutation so a field that became
     // non-applicable (e.g. cost-range when the user just switched to exact)
-    // can't carry a stale value into the database (US-7). Visibility (US-6)
-    // and the remaining-questions count (US-8) read the same predicate.
+    // can't carry a stale value into the database. Visibility and the
+    // remaining-questions count read the same predicate.
     state = applyApplicability(
       mutate(state),
       hidden: hiddenFields,

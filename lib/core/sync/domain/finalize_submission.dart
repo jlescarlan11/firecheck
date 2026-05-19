@@ -29,13 +29,18 @@ class FinalizeSubmissionUseCase {
         updatedAt: Value(DateTime.now()),
       ),);
 
-      // 2. Submission sync_job (skip-if-exists)
-      final existingSub =
+      // 2. Submission sync_job (skip-if-exists). Routes through the
+      // conflict-aware RPC. A stale enqueue under the legacy
+      // `submission` type is also treated as "already queued" so we
+      // don't double-upload mid-rollout.
+      final existingNew =
+          await _findJob(SyncEntityType.attributionUpload, submissionId);
+      final existingLegacy =
           await _findJob(SyncEntityType.submission, submissionId);
-      if (existingSub == null) {
+      if (existingNew == null && existingLegacy == null) {
         await _db.into(_db.syncJobs).insert(SyncJobsCompanion.insert(
               id: _uuid.v4(),
-              entityType: SyncEntityType.submission,
+              entityType: SyncEntityType.attributionUpload,
               entityId: submissionId,
               createdAt: DateTime.now(),
             ),);
@@ -59,7 +64,8 @@ class FinalizeSubmissionUseCase {
         photoCount++;
       }
 
-      // 4. New-feature sync_job if applicable (skip-if-exists)
+      // 4. New-feature sync_job if applicable (skip-if-exists). Routes
+      // through the dedup-aware RPC; legacy entry tolerated.
       final submission = await (_db.select(_db.submissions)
             ..where((t) => t.id.equals(submissionId)))
           .getSingle();
@@ -68,12 +74,14 @@ class FinalizeSubmissionUseCase {
           .getSingle();
       var newFeatureQueued = false;
       if (feature.isNew) {
-        final existing =
+        final existingNew =
+            await _findJob(SyncEntityType.newFeatureUpload, feature.id);
+        final existingLegacy =
             await _findJob(SyncEntityType.newFeature, feature.id);
-        if (existing == null) {
+        if (existingNew == null && existingLegacy == null) {
           await _db.into(_db.syncJobs).insert(SyncJobsCompanion.insert(
                 id: _uuid.v4(),
-                entityType: SyncEntityType.newFeature,
+                entityType: SyncEntityType.newFeatureUpload,
                 entityId: feature.id,
                 createdAt: DateTime.now(),
               ),);

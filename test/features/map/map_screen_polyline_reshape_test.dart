@@ -43,7 +43,7 @@ void main() {
     await renderer.simulatePolygonLongPress(road);
     await tester.pumpAndSettle();
 
-    // Same action sheet polygons get — that's the user story.
+    // Same action sheet polygons get.
     expect(
       find.byKey(const Key('reshape.actionsheet.openForm')),
       findsOneWidget,
@@ -60,7 +60,7 @@ void main() {
     expect(state.isActive, isTrue);
     expect(state.originalFeature?.id, road.id);
     // Polyline reshape must NOT enable the closed-shape body-drag /
-    // self-intersection latches — that's what the user story is asking for.
+    // self-intersection latches.
     expect(state.isClosed, isFalse);
     expect(state.selfIntersects, isFalse);
   });

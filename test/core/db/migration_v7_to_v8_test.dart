@@ -154,6 +154,22 @@ void main() {
               drive_folder_id TEXT
             )
           ''');
+          // submissions: later migrations (v10→v11) `addColumn` to this
+          // table, so it must exist in the seeded v7 schema even though
+          // this test is scoped to v7→v8.
+          rawDb.execute('''
+            CREATE TABLE IF NOT EXISTS submissions (
+              id TEXT NOT NULL PRIMARY KEY,
+              feature_id TEXT NOT NULL,
+              submitted_by TEXT,
+              does_not_exist INTEGER NOT NULL DEFAULT 0,
+              remarks TEXT,
+              sync_status TEXT NOT NULL DEFAULT 'draft',
+              override_reason TEXT,
+              created_at INTEGER NOT NULL,
+              updated_at INTEGER NOT NULL
+            )
+          ''');
         },
       ),
     );

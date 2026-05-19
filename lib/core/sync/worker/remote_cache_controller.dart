@@ -7,15 +7,14 @@ import 'package:firecheck/core/sync/worker/connectivity_listener.dart';
 import 'package:firecheck/core/sync/worker/lifecycle_listener.dart';
 import 'package:flutter/foundation.dart';
 
-/// Phase 2 controller: drives the non-realtime pull paths for the remote
-/// attribution cache.
+/// Drives the non-realtime pull paths for the remote attribution cache.
 ///
 ///   - On `start()` (cold-open of an assignment): full pull.
 ///   - On connectivity restore: delta pull (falls back to full if stale).
 ///   - On app resume: delta pull.
 ///
-/// Phase 3 will add a `RemoteRealtimeController` alongside this; the two
-/// share the same cache so order doesn't matter — the upsert is idempotent.
+/// Runs alongside `RealtimeSyncController`; the two share the same cache
+/// so order doesn't matter — the upsert is idempotent.
 class RemoteCacheController {
   RemoteCacheController({
     required RemoteAttributionsPullService pullService,

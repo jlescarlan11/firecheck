@@ -59,7 +59,7 @@ void main() {
 
     final jobs = await db.select(db.syncJobs).get();
     expect(jobs, hasLength(1));
-    expect(jobs.first.entityType, SyncEntityType.submission);
+    expect(jobs.first.entityType, SyncEntityType.attributionUpload);
     expect(jobs.first.entityId, 's1');
     expect(jobs.first.status, SyncJobStatus.pending);
   });
@@ -99,7 +99,7 @@ void main() {
     final r = await useCase.execute('s1');
     expect(r.newFeatureQueued, isTrue);
     final job = await (db.select(db.syncJobs)
-          ..where((t) => t.entityType.equals(SyncEntityType.newFeature)))
+          ..where((t) => t.entityType.equals(SyncEntityType.newFeatureUpload)))
         .getSingle();
     expect(job.entityId, 'f1');
   });

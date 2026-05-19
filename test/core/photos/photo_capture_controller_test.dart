@@ -29,7 +29,7 @@ void main() {
     storage = InMemoryPhotoStorage(root: tempDir.path);
 
     // Seed the FK chain so photos.submission_id has a valid parent. With
-    // PRAGMA foreign_keys = ON (Phase 1), an orphan insert would fail.
+    // PRAGMA foreign_keys = ON, an orphan insert would fail.
     final now = DateTime.now();
     await db.into(db.features).insert(
           FeaturesCompanion.insert(

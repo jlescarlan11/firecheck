@@ -44,9 +44,9 @@ void main() {
       expect(db.schemaVersion, greaterThanOrEqualTo(3));
     });
 
-    test('the DB registers exactly the 16 expected tables', () {
+    test('the DB registers exactly the 17 expected tables', () {
       final names = db.allTables.map((t) => t.actualTableName).toSet();
-      expect(names, hasLength(16));
+      expect(names, hasLength(17));
       expect(
         names,
         equals({
@@ -63,10 +63,10 @@ void main() {
           'offline_tile_packs',
           'feature_geometry_revisions',
           'drive_upload_jobs',
-          // Multi-user attribution sync — phase 2:
           'remote_attributions_cache',
           'remote_new_features_cache',
           'assignment_sync_cursors',
+          'pending_resolutions',
         }),
       );
     });

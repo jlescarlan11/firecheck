@@ -39,9 +39,9 @@ class GeometryEditorOverlay extends ConsumerWidget {
 
     // For closed shapes (polygons), draw an invisible body-drag area covering
     // the outer ring's bounding rect. Pan on this area translates the entire
-    // shape (US-11). It's drawn FIRST so vertex/midpoint handles render on
-    // top — Flutter hit-tests in reverse z-order, so the smaller handle hit
-    // areas win, and only pans on empty interior fall through to the body.
+    // shape. It's drawn FIRST so vertex/midpoint handles render on top —
+    // Flutter hit-tests in reverse z-order, so the smaller handle hit areas
+    // win, and only pans on empty interior fall through to the body.
     if (state.isClosed && state.workingRings.isNotEmpty) {
       final outer = state.workingRings[0];
       if (outer.length >= 3) {

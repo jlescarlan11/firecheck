@@ -68,8 +68,8 @@ Widget _buildSubject({
       assignmentLockStateProvider
           .overrideWith((_) => Stream.value(const Unlocked())),
       currentUserIdProvider.overrideWith((ref) => 'u1'),
-      // Phase 4 map-badge chip — short-circuit its Drift watch so pending
-      // timers don't leak across the test boundary.
+      // Map-badge chip — short-circuit its Drift watch so pending timers
+      // don't leak across the test boundary.
       othersRemoteAttributionsProvider.overrideWith(
         (_) => Stream.value(const []),
       ),

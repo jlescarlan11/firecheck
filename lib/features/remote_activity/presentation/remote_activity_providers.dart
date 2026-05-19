@@ -40,8 +40,8 @@ final othersRemoteAttributionsProvider =
 });
 
 /// Convenience: the canonical remote attribution (if any) for a given
-/// feature, by anyone OTHER than the current user. Phase 5 will read
-/// this at upload time to compute base_version_id.
+/// feature, by anyone OTHER than the current user. Read at upload time
+/// to compute base_version_id.
 final remoteAttributionForFeatureProvider =
     StreamProvider.family<RemoteAttributionView?, String>(
   (ref, featureId) {

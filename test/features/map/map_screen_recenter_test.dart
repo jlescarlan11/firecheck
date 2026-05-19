@@ -65,9 +65,9 @@ Future<void> pumpMap(
       analyticsServiceProvider.overrideWithValue(analytics),
       currentFeaturesProvider.overrideWith((_) => Stream.value(const [])),
       currentAssignmentProvider.overrideWith((_) => Stream.value(fakeAssignment())),
-      // Phase 4 map-badge chip watches the remote attribution cache via
-      // Drift; in the map screen tests we don't wire a real DB, so short-
-      // circuit the data source to avoid a pending-timer leak at teardown.
+      // Map-badge chip watches the remote attribution cache via Drift; in
+      // the map screen tests we don't wire a real DB, so short-circuit the
+      // data source to avoid a pending-timer leak at teardown.
       othersRemoteAttributionsProvider.overrideWith(
         (_) => Stream.value(const []),
       ),

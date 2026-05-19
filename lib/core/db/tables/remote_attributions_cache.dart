@@ -2,8 +2,8 @@ import 'package:drift/drift.dart';
 
 /// Local mirror of remote `public.submissions` rows for assignments the
 /// current user is a member of. Populated by cold-open pull, on-reconnect
-/// delta pull, and realtime events (phase 3). Read-only from the UI's
-/// perspective — never blocks local edits.
+/// delta pull, and realtime events. Read-only from the UI's perspective —
+/// never blocks local edits.
 ///
 /// `attributeValuesJson` is the denormalized child-table data shaped as
 /// jsonb: `{ "building": {...}, "road": null, "household": null }`.

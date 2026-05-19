@@ -96,8 +96,7 @@ void main() {
     expect(a.submittedAt, isNotNull, reason: 'submitted_at should be stamped');
   }, skip: true,);
   // Marked skip: requires the SyncController triggerNow to be wired with
-  // its real worker — manual happy path on the emulator covers this in
-  // Task 25. The integration test stays in tree as a documentation
+  // its real worker. The integration test stays in tree as a documentation
   // anchor; flip skip:false once the SyncController gets a synchronous
-  // drain helper (Phase 5).
+  // drain helper.
 }

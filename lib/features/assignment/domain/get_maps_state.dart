@@ -30,7 +30,7 @@ class PickingAssignment extends GetMapsState {
 }
 
 /// Emitted immediately when the user taps "Download Selected", before any
-/// network calls, so the UI shows a spinner within one frame (US-20).
+/// network calls, so the UI shows a spinner within one frame.
 class PreparingDownload extends GetMapsState {
   const PreparingDownload();
   @override

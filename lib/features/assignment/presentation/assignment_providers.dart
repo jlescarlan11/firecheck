@@ -185,7 +185,7 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
     final s = state;
     if (s is! PickingAssignment) return;
 
-    // Show spinner immediately so the user sees feedback within one frame (US-20).
+    // Show spinner immediately so the user sees feedback within one frame.
     state = const PreparingDownload();
 
     final selected =

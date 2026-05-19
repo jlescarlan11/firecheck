@@ -48,7 +48,8 @@ void main() {
     addTearDown(() => tmp.deleteSync(recursive: true));
     await _seed(db);
     final lock = AssignmentLockRepository(db);
-    final api = FakeSyncApi()..enqueueSubmission(const AssignmentClosed('a1'));
+    final api = FakeSyncApi()
+      ..enqueueSubmitAttribution(outcome: const AssignmentClosed('a1'));
     final worker = SyncWorker(
       api: api,
       jobs: SyncJobsRepository(db),

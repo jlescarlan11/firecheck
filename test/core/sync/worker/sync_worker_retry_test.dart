@@ -42,7 +42,7 @@ void main() {
     final db = AppDatabase.forTesting(NativeDatabase.memory());
     addTearDown(db.close);
     await _seed(db);
-    final api = FakeSyncApi()..enqueueSubmission(const TransientFailure('500'));
+    final api = FakeSyncApi()..enqueueSubmitAttribution(outcome: const TransientFailure('500'));
     final worker = SyncWorker(
       api: api,
       jobs: SyncJobsRepository(db),
@@ -66,7 +66,7 @@ void main() {
     await (db.update(db.syncJobs)
           ..where((t) => t.id.equals(jobBefore.id)))
         .write(const SyncJobsCompanion(attempts: Value(4)));
-    final api = FakeSyncApi()..enqueueSubmission(const TransientFailure('500'));
+    final api = FakeSyncApi()..enqueueSubmitAttribution(outcome: const TransientFailure('500'));
     final worker = SyncWorker(
       api: api,
       jobs: SyncJobsRepository(db),
@@ -85,7 +85,7 @@ void main() {
     addTearDown(db.close);
     await _seed(db);
     final api = FakeSyncApi()
-      ..enqueueSubmission(const PermanentFailure('400 bad request'));
+      ..enqueueSubmitAttribution(outcome: const PermanentFailure('400 bad request'));
     final worker = SyncWorker(
       api: api,
       jobs: SyncJobsRepository(db),

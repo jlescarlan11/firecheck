@@ -4,6 +4,7 @@ import 'package:firecheck/core/sync/shapefile/export/export_validation_result.da
 import 'package:firecheck/features/assignment/presentation/assignment_lock_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_lock_state.dart';
 import 'package:firecheck/features/assignment/presentation/submitted_banner.dart';
+import 'package:firecheck/features/conflict_review/presentation/conflict_banner.dart';
 import 'package:firecheck/features/home/data/shapefile_export_notifier.dart';
 import 'package:firecheck/features/home/domain/export_state.dart';
 import 'package:firecheck/features/home/presentation/home_providers.dart';
@@ -49,6 +50,8 @@ class HomeScreen extends ConsumerWidget {
           child: Column(
             children: [
               const UploadBanner(),
+              const SizedBox(height: 8),
+              const ConflictBanner(),
               const SizedBox(height: 8),
               if (lock is Submitted)
                 SubmittedBanner(submittedAt: lock.submittedAt)

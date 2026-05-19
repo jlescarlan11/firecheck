@@ -7,13 +7,11 @@ import 'package:firecheck/core/sync/data/remote_attributions_pull_service.dart';
 import 'package:firecheck/core/sync/domain/realtime_connection_state.dart';
 import 'package:flutter/foundation.dart';
 
-/// Phase 3 of multi-user attribution sync.
-///
 /// Owns the `offline → reconnecting → online → backgrounded → offline`
 /// state machine and the realtime subscription that drives it. Realtime
 /// events trigger a debounced delta pull through [RemoteAttributionsPullService]
 /// so cache writes go through the same upsert path as cold-open and
-/// reconnect pulls (the spec's `cacheUpsertFromServerRows` invariant).
+/// reconnect pulls (the `cacheUpsertFromServerRows` invariant).
 ///
 /// The controller deliberately does **not** parse realtime payloads — the
 /// Supabase realtime row for `public.submissions` doesn't include the
@@ -24,8 +22,8 @@ import 'package:flutter/foundation.dart';
 /// hundred ms of latency for one well-tested code path.
 ///
 /// The controller does **not** itself run the cold-open full pull — that
-/// happens via the phase-2 `RemoteCacheController`. Phase 3 layers
-/// realtime on top of the existing pull infrastructure.
+/// happens via [RemoteCacheController]. This controller layers realtime
+/// on top of the existing pull infrastructure.
 class RealtimeSyncController {
   RealtimeSyncController({
     required RealtimeSubscriber subscriber,

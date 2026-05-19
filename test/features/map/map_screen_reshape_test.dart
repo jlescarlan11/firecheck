@@ -138,13 +138,13 @@ void main() {
       );
     });
 
-    // (Removed in plan Task 12: the old "add-mode on suppresses long-press"
-    // test. The sketch-mode equivalent — that tapping an existing feature
-    // while sketching is suppressed — is covered by sketch_flow_test.dart's
-    // gesture-suppression group.)
+    // The old "add-mode on suppresses long-press" test was removed; the
+    // sketch-mode equivalent — that tapping an existing feature while
+    // sketching is suppressed — is covered by sketch_flow_test.dart's
+    // gesture-suppression group.
   });
 
-  group('US-9 T19 distance gate + override-reason → enterReshape', () {
+  group('distance gate + override-reason → enterReshape', () {
     testWidgets('Reshape with GPS within 50m enters edit mode (no dialog)',
         (tester) async {
       final renderer = FakeMapRenderer();

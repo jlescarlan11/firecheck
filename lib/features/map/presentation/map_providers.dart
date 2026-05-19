@@ -15,7 +15,7 @@ final currentFeaturesProvider = StreamProvider<List<Feature>>((ref) {
 });
 
 /// Defaults to the fake renderer for widget tests / early-build safety.
-/// main.dart overrides this with MapboxMapRenderer (T19).
+/// main.dart overrides this with MapboxMapRenderer.
 final mapRendererProvider = Provider<MapRenderer>((ref) {
   return FakeMapRenderer();
 });

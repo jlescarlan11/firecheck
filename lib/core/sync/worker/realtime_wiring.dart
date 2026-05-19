@@ -7,7 +7,7 @@ import 'package:flutter/widgets.dart';
 /// Glue between platform inputs (connectivity, app lifecycle) and the
 /// [RealtimeSyncController]'s state-machine entry points.
 ///
-/// Phase 2's `ConnectivityListener` / `SyncLifecycleListener` fire only on
+/// The existing `ConnectivityListener` / `SyncLifecycleListener` fire only on
 /// the "good" transition (connect / resume). The realtime state machine
 /// also needs the inverse transitions (disconnect / background) so we
 /// can drop the channel correctly. Rather than widen the existing

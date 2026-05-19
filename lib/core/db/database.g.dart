@@ -1957,6 +1957,12 @@ class $SubmissionsTable extends Submissions
   late final GeneratedColumn<String> overrideReason = GeneratedColumn<String>(
       'override_reason', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _pendingTheirsIdMeta =
+      const VerificationMeta('pendingTheirsId');
+  @override
+  late final GeneratedColumn<String> pendingTheirsId = GeneratedColumn<String>(
+      'pending_theirs_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -1978,6 +1984,7 @@ class $SubmissionsTable extends Submissions
         remarks,
         syncStatus,
         overrideReason,
+        pendingTheirsId,
         createdAt,
         updatedAt
       ];
@@ -2030,6 +2037,12 @@ class $SubmissionsTable extends Submissions
           overrideReason.isAcceptableOrUnknown(
               data['override_reason']!, _overrideReasonMeta));
     }
+    if (data.containsKey('pending_theirs_id')) {
+      context.handle(
+          _pendingTheirsIdMeta,
+          pendingTheirsId.isAcceptableOrUnknown(
+              data['pending_theirs_id']!, _pendingTheirsIdMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -2065,6 +2078,8 @@ class $SubmissionsTable extends Submissions
           .read(DriftSqlType.string, data['${effectivePrefix}sync_status'])!,
       overrideReason: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}override_reason']),
+      pendingTheirsId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}pending_theirs_id']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       updatedAt: attachedDatabase.typeMapping
@@ -2086,6 +2101,7 @@ class Submission extends DataClass implements Insertable<Submission> {
   final String? remarks;
   final String syncStatus;
   final String? overrideReason;
+  final String? pendingTheirsId;
   final DateTime createdAt;
   final DateTime updatedAt;
   const Submission(
@@ -2096,6 +2112,7 @@ class Submission extends DataClass implements Insertable<Submission> {
       this.remarks,
       required this.syncStatus,
       this.overrideReason,
+      this.pendingTheirsId,
       required this.createdAt,
       required this.updatedAt});
   @override
@@ -2113,6 +2130,9 @@ class Submission extends DataClass implements Insertable<Submission> {
     map['sync_status'] = Variable<String>(syncStatus);
     if (!nullToAbsent || overrideReason != null) {
       map['override_reason'] = Variable<String>(overrideReason);
+    }
+    if (!nullToAbsent || pendingTheirsId != null) {
+      map['pending_theirs_id'] = Variable<String>(pendingTheirsId);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -2134,6 +2154,9 @@ class Submission extends DataClass implements Insertable<Submission> {
       overrideReason: overrideReason == null && nullToAbsent
           ? const Value.absent()
           : Value(overrideReason),
+      pendingTheirsId: pendingTheirsId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pendingTheirsId),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -2150,6 +2173,7 @@ class Submission extends DataClass implements Insertable<Submission> {
       remarks: serializer.fromJson<String?>(json['remarks']),
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
       overrideReason: serializer.fromJson<String?>(json['overrideReason']),
+      pendingTheirsId: serializer.fromJson<String?>(json['pendingTheirsId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -2165,6 +2189,7 @@ class Submission extends DataClass implements Insertable<Submission> {
       'remarks': serializer.toJson<String?>(remarks),
       'syncStatus': serializer.toJson<String>(syncStatus),
       'overrideReason': serializer.toJson<String?>(overrideReason),
+      'pendingTheirsId': serializer.toJson<String?>(pendingTheirsId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -2178,6 +2203,7 @@ class Submission extends DataClass implements Insertable<Submission> {
           Value<String?> remarks = const Value.absent(),
           String? syncStatus,
           Value<String?> overrideReason = const Value.absent(),
+          Value<String?> pendingTheirsId = const Value.absent(),
           DateTime? createdAt,
           DateTime? updatedAt}) =>
       Submission(
@@ -2189,6 +2215,9 @@ class Submission extends DataClass implements Insertable<Submission> {
         syncStatus: syncStatus ?? this.syncStatus,
         overrideReason:
             overrideReason.present ? overrideReason.value : this.overrideReason,
+        pendingTheirsId: pendingTheirsId.present
+            ? pendingTheirsId.value
+            : this.pendingTheirsId,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
       );
@@ -2207,6 +2236,9 @@ class Submission extends DataClass implements Insertable<Submission> {
       overrideReason: data.overrideReason.present
           ? data.overrideReason.value
           : this.overrideReason,
+      pendingTheirsId: data.pendingTheirsId.present
+          ? data.pendingTheirsId.value
+          : this.pendingTheirsId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -2222,6 +2254,7 @@ class Submission extends DataClass implements Insertable<Submission> {
           ..write('remarks: $remarks, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('overrideReason: $overrideReason, ')
+          ..write('pendingTheirsId: $pendingTheirsId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -2229,8 +2262,17 @@ class Submission extends DataClass implements Insertable<Submission> {
   }
 
   @override
-  int get hashCode => Object.hash(id, featureId, submittedBy, doesNotExist,
-      remarks, syncStatus, overrideReason, createdAt, updatedAt);
+  int get hashCode => Object.hash(
+      id,
+      featureId,
+      submittedBy,
+      doesNotExist,
+      remarks,
+      syncStatus,
+      overrideReason,
+      pendingTheirsId,
+      createdAt,
+      updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2242,6 +2284,7 @@ class Submission extends DataClass implements Insertable<Submission> {
           other.remarks == this.remarks &&
           other.syncStatus == this.syncStatus &&
           other.overrideReason == this.overrideReason &&
+          other.pendingTheirsId == this.pendingTheirsId &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -2254,6 +2297,7 @@ class SubmissionsCompanion extends UpdateCompanion<Submission> {
   final Value<String?> remarks;
   final Value<String> syncStatus;
   final Value<String?> overrideReason;
+  final Value<String?> pendingTheirsId;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -2265,6 +2309,7 @@ class SubmissionsCompanion extends UpdateCompanion<Submission> {
     this.remarks = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.overrideReason = const Value.absent(),
+    this.pendingTheirsId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -2277,6 +2322,7 @@ class SubmissionsCompanion extends UpdateCompanion<Submission> {
     this.remarks = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.overrideReason = const Value.absent(),
+    this.pendingTheirsId = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
@@ -2292,6 +2338,7 @@ class SubmissionsCompanion extends UpdateCompanion<Submission> {
     Expression<String>? remarks,
     Expression<String>? syncStatus,
     Expression<String>? overrideReason,
+    Expression<String>? pendingTheirsId,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -2304,6 +2351,7 @@ class SubmissionsCompanion extends UpdateCompanion<Submission> {
       if (remarks != null) 'remarks': remarks,
       if (syncStatus != null) 'sync_status': syncStatus,
       if (overrideReason != null) 'override_reason': overrideReason,
+      if (pendingTheirsId != null) 'pending_theirs_id': pendingTheirsId,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -2318,6 +2366,7 @@ class SubmissionsCompanion extends UpdateCompanion<Submission> {
       Value<String?>? remarks,
       Value<String>? syncStatus,
       Value<String?>? overrideReason,
+      Value<String?>? pendingTheirsId,
       Value<DateTime>? createdAt,
       Value<DateTime>? updatedAt,
       Value<int>? rowid}) {
@@ -2329,6 +2378,7 @@ class SubmissionsCompanion extends UpdateCompanion<Submission> {
       remarks: remarks ?? this.remarks,
       syncStatus: syncStatus ?? this.syncStatus,
       overrideReason: overrideReason ?? this.overrideReason,
+      pendingTheirsId: pendingTheirsId ?? this.pendingTheirsId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -2359,6 +2409,9 @@ class SubmissionsCompanion extends UpdateCompanion<Submission> {
     if (overrideReason.present) {
       map['override_reason'] = Variable<String>(overrideReason.value);
     }
+    if (pendingTheirsId.present) {
+      map['pending_theirs_id'] = Variable<String>(pendingTheirsId.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -2381,6 +2434,7 @@ class SubmissionsCompanion extends UpdateCompanion<Submission> {
           ..write('remarks: $remarks, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('overrideReason: $overrideReason, ')
+          ..write('pendingTheirsId: $pendingTheirsId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -7885,6 +7939,333 @@ class AssignmentSyncCursorsCompanion
   }
 }
 
+class $PendingResolutionsTable extends PendingResolutions
+    with TableInfo<$PendingResolutionsTable, PendingResolution> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PendingResolutionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _targetIdMeta =
+      const VerificationMeta('targetId');
+  @override
+  late final GeneratedColumn<String> targetId = GeneratedColumn<String>(
+      'target_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+      'kind', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _decisionMeta =
+      const VerificationMeta('decision');
+  @override
+  late final GeneratedColumn<String> decision = GeneratedColumn<String>(
+      'decision', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _resolutionNoteMeta =
+      const VerificationMeta('resolutionNote');
+  @override
+  late final GeneratedColumn<String> resolutionNote = GeneratedColumn<String>(
+      'resolution_note', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [targetId, kind, decision, resolutionNote, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'pending_resolutions';
+  @override
+  VerificationContext validateIntegrity(Insertable<PendingResolution> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('target_id')) {
+      context.handle(_targetIdMeta,
+          targetId.isAcceptableOrUnknown(data['target_id']!, _targetIdMeta));
+    } else if (isInserting) {
+      context.missing(_targetIdMeta);
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+          _kindMeta, kind.isAcceptableOrUnknown(data['kind']!, _kindMeta));
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('decision')) {
+      context.handle(_decisionMeta,
+          decision.isAcceptableOrUnknown(data['decision']!, _decisionMeta));
+    } else if (isInserting) {
+      context.missing(_decisionMeta);
+    }
+    if (data.containsKey('resolution_note')) {
+      context.handle(
+          _resolutionNoteMeta,
+          resolutionNote.isAcceptableOrUnknown(
+              data['resolution_note']!, _resolutionNoteMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {targetId, kind};
+  @override
+  PendingResolution map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PendingResolution(
+      targetId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}target_id'])!,
+      kind: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}kind'])!,
+      decision: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}decision'])!,
+      resolutionNote: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}resolution_note']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $PendingResolutionsTable createAlias(String alias) {
+    return $PendingResolutionsTable(attachedDatabase, alias);
+  }
+}
+
+class PendingResolution extends DataClass
+    implements Insertable<PendingResolution> {
+  /// The submission UUID (kind=attribution) or feature UUID
+  /// (kind=new_feature) being resolved.
+  final String targetId;
+
+  /// `attribution` | `new_feature`.
+  final String kind;
+
+  /// Wire-form decision: `keep_theirs`, `force_overwrite`, `keep_both`,
+  /// `replace_theirs`, `discard_mine`.
+  final String decision;
+
+  /// Optional free-text note attached to the audit log on the server.
+  final String? resolutionNote;
+  final DateTime createdAt;
+  const PendingResolution(
+      {required this.targetId,
+      required this.kind,
+      required this.decision,
+      this.resolutionNote,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['target_id'] = Variable<String>(targetId);
+    map['kind'] = Variable<String>(kind);
+    map['decision'] = Variable<String>(decision);
+    if (!nullToAbsent || resolutionNote != null) {
+      map['resolution_note'] = Variable<String>(resolutionNote);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  PendingResolutionsCompanion toCompanion(bool nullToAbsent) {
+    return PendingResolutionsCompanion(
+      targetId: Value(targetId),
+      kind: Value(kind),
+      decision: Value(decision),
+      resolutionNote: resolutionNote == null && nullToAbsent
+          ? const Value.absent()
+          : Value(resolutionNote),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory PendingResolution.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PendingResolution(
+      targetId: serializer.fromJson<String>(json['targetId']),
+      kind: serializer.fromJson<String>(json['kind']),
+      decision: serializer.fromJson<String>(json['decision']),
+      resolutionNote: serializer.fromJson<String?>(json['resolutionNote']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'targetId': serializer.toJson<String>(targetId),
+      'kind': serializer.toJson<String>(kind),
+      'decision': serializer.toJson<String>(decision),
+      'resolutionNote': serializer.toJson<String?>(resolutionNote),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  PendingResolution copyWith(
+          {String? targetId,
+          String? kind,
+          String? decision,
+          Value<String?> resolutionNote = const Value.absent(),
+          DateTime? createdAt}) =>
+      PendingResolution(
+        targetId: targetId ?? this.targetId,
+        kind: kind ?? this.kind,
+        decision: decision ?? this.decision,
+        resolutionNote:
+            resolutionNote.present ? resolutionNote.value : this.resolutionNote,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  PendingResolution copyWithCompanion(PendingResolutionsCompanion data) {
+    return PendingResolution(
+      targetId: data.targetId.present ? data.targetId.value : this.targetId,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      decision: data.decision.present ? data.decision.value : this.decision,
+      resolutionNote: data.resolutionNote.present
+          ? data.resolutionNote.value
+          : this.resolutionNote,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PendingResolution(')
+          ..write('targetId: $targetId, ')
+          ..write('kind: $kind, ')
+          ..write('decision: $decision, ')
+          ..write('resolutionNote: $resolutionNote, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(targetId, kind, decision, resolutionNote, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PendingResolution &&
+          other.targetId == this.targetId &&
+          other.kind == this.kind &&
+          other.decision == this.decision &&
+          other.resolutionNote == this.resolutionNote &&
+          other.createdAt == this.createdAt);
+}
+
+class PendingResolutionsCompanion extends UpdateCompanion<PendingResolution> {
+  final Value<String> targetId;
+  final Value<String> kind;
+  final Value<String> decision;
+  final Value<String?> resolutionNote;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const PendingResolutionsCompanion({
+    this.targetId = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.decision = const Value.absent(),
+    this.resolutionNote = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PendingResolutionsCompanion.insert({
+    required String targetId,
+    required String kind,
+    required String decision,
+    this.resolutionNote = const Value.absent(),
+    required DateTime createdAt,
+    this.rowid = const Value.absent(),
+  })  : targetId = Value(targetId),
+        kind = Value(kind),
+        decision = Value(decision),
+        createdAt = Value(createdAt);
+  static Insertable<PendingResolution> custom({
+    Expression<String>? targetId,
+    Expression<String>? kind,
+    Expression<String>? decision,
+    Expression<String>? resolutionNote,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (targetId != null) 'target_id': targetId,
+      if (kind != null) 'kind': kind,
+      if (decision != null) 'decision': decision,
+      if (resolutionNote != null) 'resolution_note': resolutionNote,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PendingResolutionsCompanion copyWith(
+      {Value<String>? targetId,
+      Value<String>? kind,
+      Value<String>? decision,
+      Value<String?>? resolutionNote,
+      Value<DateTime>? createdAt,
+      Value<int>? rowid}) {
+    return PendingResolutionsCompanion(
+      targetId: targetId ?? this.targetId,
+      kind: kind ?? this.kind,
+      decision: decision ?? this.decision,
+      resolutionNote: resolutionNote ?? this.resolutionNote,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (targetId.present) {
+      map['target_id'] = Variable<String>(targetId.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (decision.present) {
+      map['decision'] = Variable<String>(decision.value);
+    }
+    if (resolutionNote.present) {
+      map['resolution_note'] = Variable<String>(resolutionNote.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PendingResolutionsCompanion(')
+          ..write('targetId: $targetId, ')
+          ..write('kind: $kind, ')
+          ..write('decision: $decision, ')
+          ..write('resolutionNote: $resolutionNote, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -7912,6 +8293,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $RemoteNewFeaturesCacheTable(this);
   late final $AssignmentSyncCursorsTable assignmentSyncCursors =
       $AssignmentSyncCursorsTable(this);
+  late final $PendingResolutionsTable pendingResolutions =
+      $PendingResolutionsTable(this);
   late final Index featuresAssignmentIdIdx = Index('features_assignment_id_idx',
       'CREATE INDEX features_assignment_id_idx ON features (assignment_id)');
   late final Index fgrFeatureIdIdx = Index('fgr_feature_id_idx',
@@ -7963,6 +8346,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         remoteAttributionsCache,
         remoteNewFeaturesCache,
         assignmentSyncCursors,
+        pendingResolutions,
         featuresAssignmentIdIdx,
         fgrFeatureIdIdx,
         fgrSyncStatusIdx,
@@ -8896,6 +9280,7 @@ typedef $$SubmissionsTableCreateCompanionBuilder = SubmissionsCompanion
   Value<String?> remarks,
   Value<String> syncStatus,
   Value<String?> overrideReason,
+  Value<String?> pendingTheirsId,
   required DateTime createdAt,
   required DateTime updatedAt,
   Value<int> rowid,
@@ -8909,6 +9294,7 @@ typedef $$SubmissionsTableUpdateCompanionBuilder = SubmissionsCompanion
   Value<String?> remarks,
   Value<String> syncStatus,
   Value<String?> overrideReason,
+  Value<String?> pendingTheirsId,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
   Value<int> rowid,
@@ -8943,6 +9329,10 @@ class $$SubmissionsTableFilterComposer
 
   ColumnFilters<String> get overrideReason => $composableBuilder(
       column: $table.overrideReason,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get pendingTheirsId => $composableBuilder(
+      column: $table.pendingTheirsId,
       builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
@@ -8984,6 +9374,10 @@ class $$SubmissionsTableOrderingComposer
       column: $table.overrideReason,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get pendingTheirsId => $composableBuilder(
+      column: $table.pendingTheirsId,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 
@@ -9020,6 +9414,9 @@ class $$SubmissionsTableAnnotationComposer
 
   GeneratedColumn<String> get overrideReason => $composableBuilder(
       column: $table.overrideReason, builder: (column) => column);
+
+  GeneratedColumn<String> get pendingTheirsId => $composableBuilder(
+      column: $table.pendingTheirsId, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -9058,6 +9455,7 @@ class $$SubmissionsTableTableManager extends RootTableManager<
             Value<String?> remarks = const Value.absent(),
             Value<String> syncStatus = const Value.absent(),
             Value<String?> overrideReason = const Value.absent(),
+            Value<String?> pendingTheirsId = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
@@ -9070,6 +9468,7 @@ class $$SubmissionsTableTableManager extends RootTableManager<
             remarks: remarks,
             syncStatus: syncStatus,
             overrideReason: overrideReason,
+            pendingTheirsId: pendingTheirsId,
             createdAt: createdAt,
             updatedAt: updatedAt,
             rowid: rowid,
@@ -9082,6 +9481,7 @@ class $$SubmissionsTableTableManager extends RootTableManager<
             Value<String?> remarks = const Value.absent(),
             Value<String> syncStatus = const Value.absent(),
             Value<String?> overrideReason = const Value.absent(),
+            Value<String?> pendingTheirsId = const Value.absent(),
             required DateTime createdAt,
             required DateTime updatedAt,
             Value<int> rowid = const Value.absent(),
@@ -9094,6 +9494,7 @@ class $$SubmissionsTableTableManager extends RootTableManager<
             remarks: remarks,
             syncStatus: syncStatus,
             overrideReason: overrideReason,
+            pendingTheirsId: pendingTheirsId,
             createdAt: createdAt,
             updatedAt: updatedAt,
             rowid: rowid,
@@ -11731,6 +12132,183 @@ typedef $$AssignmentSyncCursorsTableProcessedTableManager
         ),
         AssignmentSyncCursor,
         PrefetchHooks Function()>;
+typedef $$PendingResolutionsTableCreateCompanionBuilder
+    = PendingResolutionsCompanion Function({
+  required String targetId,
+  required String kind,
+  required String decision,
+  Value<String?> resolutionNote,
+  required DateTime createdAt,
+  Value<int> rowid,
+});
+typedef $$PendingResolutionsTableUpdateCompanionBuilder
+    = PendingResolutionsCompanion Function({
+  Value<String> targetId,
+  Value<String> kind,
+  Value<String> decision,
+  Value<String?> resolutionNote,
+  Value<DateTime> createdAt,
+  Value<int> rowid,
+});
+
+class $$PendingResolutionsTableFilterComposer
+    extends Composer<_$AppDatabase, $PendingResolutionsTable> {
+  $$PendingResolutionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get targetId => $composableBuilder(
+      column: $table.targetId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get kind => $composableBuilder(
+      column: $table.kind, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get decision => $composableBuilder(
+      column: $table.decision, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get resolutionNote => $composableBuilder(
+      column: $table.resolutionNote,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$PendingResolutionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $PendingResolutionsTable> {
+  $$PendingResolutionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get targetId => $composableBuilder(
+      column: $table.targetId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+      column: $table.kind, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get decision => $composableBuilder(
+      column: $table.decision, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get resolutionNote => $composableBuilder(
+      column: $table.resolutionNote,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$PendingResolutionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PendingResolutionsTable> {
+  $$PendingResolutionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get targetId =>
+      $composableBuilder(column: $table.targetId, builder: (column) => column);
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<String> get decision =>
+      $composableBuilder(column: $table.decision, builder: (column) => column);
+
+  GeneratedColumn<String> get resolutionNote => $composableBuilder(
+      column: $table.resolutionNote, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$PendingResolutionsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $PendingResolutionsTable,
+    PendingResolution,
+    $$PendingResolutionsTableFilterComposer,
+    $$PendingResolutionsTableOrderingComposer,
+    $$PendingResolutionsTableAnnotationComposer,
+    $$PendingResolutionsTableCreateCompanionBuilder,
+    $$PendingResolutionsTableUpdateCompanionBuilder,
+    (
+      PendingResolution,
+      BaseReferences<_$AppDatabase, $PendingResolutionsTable, PendingResolution>
+    ),
+    PendingResolution,
+    PrefetchHooks Function()> {
+  $$PendingResolutionsTableTableManager(
+      _$AppDatabase db, $PendingResolutionsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PendingResolutionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PendingResolutionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PendingResolutionsTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> targetId = const Value.absent(),
+            Value<String> kind = const Value.absent(),
+            Value<String> decision = const Value.absent(),
+            Value<String?> resolutionNote = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              PendingResolutionsCompanion(
+            targetId: targetId,
+            kind: kind,
+            decision: decision,
+            resolutionNote: resolutionNote,
+            createdAt: createdAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String targetId,
+            required String kind,
+            required String decision,
+            Value<String?> resolutionNote = const Value.absent(),
+            required DateTime createdAt,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              PendingResolutionsCompanion.insert(
+            targetId: targetId,
+            kind: kind,
+            decision: decision,
+            resolutionNote: resolutionNote,
+            createdAt: createdAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$PendingResolutionsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $PendingResolutionsTable,
+    PendingResolution,
+    $$PendingResolutionsTableFilterComposer,
+    $$PendingResolutionsTableOrderingComposer,
+    $$PendingResolutionsTableAnnotationComposer,
+    $$PendingResolutionsTableCreateCompanionBuilder,
+    $$PendingResolutionsTableUpdateCompanionBuilder,
+    (
+      PendingResolution,
+      BaseReferences<_$AppDatabase, $PendingResolutionsTable, PendingResolution>
+    ),
+    PendingResolution,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -11770,4 +12348,6 @@ class $AppDatabaseManager {
           _db, _db.remoteNewFeaturesCache);
   $$AssignmentSyncCursorsTableTableManager get assignmentSyncCursors =>
       $$AssignmentSyncCursorsTableTableManager(_db, _db.assignmentSyncCursors);
+  $$PendingResolutionsTableTableManager get pendingResolutions =>
+      $$PendingResolutionsTableTableManager(_db, _db.pendingResolutions);
 }

@@ -1,10 +1,9 @@
-// lib/features/survey/road_form/domain/road_form_applicability.dart
-//
 // Same shape as the building variant: centralized applicability rules for
-// road-form fields, driving US-6 / US-7 / US-8.
+// road-form fields, driving field visibility, auto-clearing of skipped
+// answers, and the remaining-questions indicator.
 //
 // [geometry] is threaded through so geometry-dependent skip rules
-// re-evaluate when a road polyline is reshaped mid-survey (Issue #44).
+// re-evaluate when a road polyline is reshaped mid-survey.
 import 'package:firecheck/core/forms/field_requirements.dart';
 import 'package:firecheck/core/forms/geometry_signal.dart';
 import 'package:firecheck/features/survey/road_form/domain/road_form_state.dart';
@@ -16,9 +15,9 @@ enum RoadFormField {
   othersDescription,
 }
 
-/// [hidden] is the form variant's `hideRoadFields` set (US-41). When the
-/// variant hides a field, it is treated identically to a non-applicable
-/// field: not rendered, not counted.
+/// [hidden] is the form variant's `hideRoadFields` set. When the variant
+/// hides a field, it is treated identically to a non-applicable field:
+/// not rendered, not counted.
 bool isApplicable(
   RoadFormState s,
   RoadFormField f, {

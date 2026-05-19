@@ -69,8 +69,8 @@ void main() {
     await tester.pumpAndSettle();
 
     // 3. Drop vertices (simulated as long-press for Point-based add)
-    // simulateLongPress was removed in plan Task 8; this whole test is
-    // skipped and will be rewritten in plan Task 12 for the sketch flow.
+    // simulateLongPress was removed; this whole test is skipped and will
+    // be rewritten for the sketch flow.
     await renderer.simulateMapTap(10.31810, 123.88270);
     await tester.pumpAndSettle();
 
@@ -122,7 +122,7 @@ void main() {
     // 7. Back on map, verify feature status is complete (green)
     final updatedFeature = await (db.select(db.features)..where((t) => t.id.equals(featureId))).getSingle();
     expect(updatedFeature.status, 'complete');
-    // skip reason: rewritten in plan Task 12 for sketch flow
+    // skip reason: pending rewrite for sketch flow
   }, skip: true);
 }
 
