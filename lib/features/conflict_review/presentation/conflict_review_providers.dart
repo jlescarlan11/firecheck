@@ -16,15 +16,14 @@ final awaitingSubmissionsProvider = StreamProvider<List<Submission>>((ref) {
       .watchAwaitingSubmissions();
 });
 
-/// Stream of pending dedup decisions (kind=new_feature in
-/// pending_resolutions). Tracks the user-pickable dedup set for now;
-/// fuller "all features with possible_duplicate_of set" wiring will
-/// follow once the local features table mirrors the server's dedup cols.
-final pendingDedupProvider =
-    StreamProvider<List<PendingResolution>>((ref) {
+/// Stream of features awaiting dedup review — `pendingDedupOf` is set
+/// by the worker when `submit_new_feature_with_dedup_check` returns
+/// `dedup_pending`. Cleared when the matching `new_feature_resolve`
+/// job runs to completion.
+final pendingDedupProvider = StreamProvider<List<Feature>>((ref) {
   return ref
       .watch(conflictReviewRepositoryProvider)
-      .watchPendingDedupResolutions();
+      .watchPendingDedupFeatures();
 });
 
 /// Flattened local attribution for a given submission, refreshed when

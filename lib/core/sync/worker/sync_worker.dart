@@ -80,12 +80,8 @@ class SyncWorker {
   Future<SyncOutcome> _execute(SyncJob job) async {
     try {
       switch (job.entityType) {
-        case SyncEntityType.submission:
-          return await _executeSubmission(job.entityId);
         case SyncEntityType.photo:
           return await _executePhoto(job.entityId);
-        case SyncEntityType.newFeature:
-          return await _executeNewFeature(job.entityId);
         case SyncEntityType.featureGeometryUpdate:
           return await _executeFeatureGeometryUpdate(job.entityId);
         case SyncEntityType.attributionUpload:
@@ -102,17 +98,6 @@ class SyncWorker {
     } on Object catch (e) {
       return TransientFailure(e.toString());
     }
-  }
-
-  Future<SyncOutcome> _executeSubmission(String submissionId) async {
-    final json = await payload.build(submissionId);
-    final outcome = await api.uploadSubmission(json);
-    if (outcome is Success) {
-      await (db.update(db.submissions)
-            ..where((t) => t.id.equals(submissionId)))
-          .write(const SubmissionsCompanion(syncStatus: Value('uploaded')));
-    }
-    return outcome;
   }
 
   Future<SyncOutcome> _executePhoto(String photoId) async {
@@ -144,13 +129,6 @@ class SyncWorker {
       );
     }
     return mark;
-  }
-
-  Future<SyncOutcome> _executeNewFeature(String featureId) async {
-    final feature = await (db.select(db.features)
-          ..where((t) => t.id.equals(featureId)))
-        .getSingle();
-    return api.uploadNewFeature(feature);
   }
 
   Future<SyncOutcome> _executeFeatureGeometryUpdate(String revisionId) async {
@@ -242,7 +220,25 @@ class SyncWorker {
       'created_at': feature.createdAt.toIso8601String(),
     };
     final response = await api.submitNewFeatureWithDedup(payload);
-    return response.outcome;
+    if (response.outcome is! Success) return response.outcome;
+    final result = response.result!;
+    switch (result) {
+      case NewFeatureCommitted():
+        // Nothing to persist locally — the feature already exists in our
+        // table and is now canonical on the server too.
+        break;
+      case NewFeatureDedupPending(:final possibleDuplicateOf):
+        // Persist the duplicate pointer so the review list can surface
+        // the feature and the user can pick a resolution. Without this,
+        // a dedup_pending response looks identical to committed and the
+        // user never sees the prompt.
+        await (db.update(db.features)
+              ..where((t) => t.id.equals(featureId)))
+            .write(
+          FeaturesCompanion(pendingDedupOf: Value(possibleDuplicateOf)),
+        );
+    }
+    return const Success();
   }
 
   /// Reads the queued decision out of `pending_resolutions`, calls
@@ -308,10 +304,18 @@ class SyncWorker {
     );
     if (outcome is! Success) return outcome;
 
-    await (db.delete(db.pendingResolutions)
-          ..where((t) =>
-              t.targetId.equals(featureId) & t.kind.equals('new_feature'),))
-        .go();
+    await db.transaction(() async {
+      // Clear the local pendingDedupOf marker so the review list stops
+      // surfacing this feature. The server has now consolidated state
+      // via the audit log + supersede chain.
+      await (db.update(db.features)
+            ..where((t) => t.id.equals(featureId)))
+          .write(const FeaturesCompanion(pendingDedupOf: Value(null)));
+      await (db.delete(db.pendingResolutions)
+            ..where((t) =>
+                t.targetId.equals(featureId) & t.kind.equals('new_feature'),))
+          .go();
+    });
     return const Success();
   }
 

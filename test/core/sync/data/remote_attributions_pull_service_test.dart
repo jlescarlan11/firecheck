@@ -170,7 +170,13 @@ void main() {
     ];
     api.newFeatures = const [];
 
-    final svc = RemoteAttributionsPullService(api: api, cache: cache);
+    // Pin `now` so the cursor freshness check doesn't depend on wall-clock
+    // time at test execution (otherwise this test goes stale after 24h).
+    final svc = RemoteAttributionsPullService(
+      api: api,
+      cache: cache,
+      now: () => DateTime.utc(2026, 5, 18, 11),
+    );
     final result = await svc.pullDelta('a1');
 
     expect(result.kind, PullKind.delta);

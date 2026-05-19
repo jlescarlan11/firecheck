@@ -36,7 +36,7 @@ class ConflictReviewListScreen extends ConsumerWidget {
                 for (final s in subs) _SubmissionTile(submission: s),
                 if (dedup.isNotEmpty)
                   const _SectionHeader('New-feature dedup'),
-                for (final r in dedup) _DedupTile(resolution: r),
+                for (final f in dedup) _DedupTile(feature: f),
               ],
             );
           },
@@ -123,29 +123,33 @@ class _SubmissionTile extends StatelessWidget {
 }
 
 class _DedupTile extends StatelessWidget {
-  const _DedupTile({required this.resolution});
-  final PendingResolution resolution;
+  const _DedupTile({required this.feature});
+  final Feature feature;
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      key: Key('conflict-review.dedup.${resolution.targetId}'),
+      key: Key('conflict-review.dedup.${feature.id}'),
       leading: const CircleAvatar(
         backgroundColor: Color(0xFFFFCDD2),
         child: Icon(Icons.merge_type, color: Color(0xFFB71C1C)),
       ),
-      title: Text('New feature ${_short(resolution.targetId)}',
-          style: const TextStyle(fontWeight: FontWeight.w600)),
+      title: Text(
+        '${_capitalize(feature.featureType)} ${_short(feature.id)}',
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
       subtitle: Text(
-        'Pending: ${resolution.decision} '
-        '${resolution.resolutionNote == null ? '' : '— ${resolution.resolutionNote}'}',
+        'Possible duplicate of ${_short(feature.pendingDedupOf ?? '?')}',
       ),
       trailing: const Icon(Icons.chevron_right),
       onTap: () => context.push(
-        '/resolve/dedup/${Uri.encodeComponent(resolution.targetId)}',
+        '/resolve/dedup/${Uri.encodeComponent(feature.id)}',
       ),
     );
   }
 }
+
+String _capitalize(String s) =>
+    s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}';
 
 String _short(String s) => s.length <= 8 ? s : s.substring(0, 8);

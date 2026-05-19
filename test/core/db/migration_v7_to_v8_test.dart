@@ -154,9 +154,9 @@ void main() {
               drive_folder_id TEXT
             )
           ''');
-          // submissions: later migrations (v10→v11) `addColumn` to this
-          // table, so it must exist in the seeded v7 schema even though
-          // this test is scoped to v7→v8.
+          // submissions / features: later migrations (v10→v11, v11→v12)
+          // `addColumn` to these tables, so they must exist in the
+          // seeded v7 schema even though this test is scoped to v7→v8.
           rawDb.execute('''
             CREATE TABLE IF NOT EXISTS submissions (
               id TEXT NOT NULL PRIMARY KEY,
@@ -168,6 +168,17 @@ void main() {
               override_reason TEXT,
               created_at INTEGER NOT NULL,
               updated_at INTEGER NOT NULL
+            )
+          ''');
+          rawDb.execute('''
+            CREATE TABLE IF NOT EXISTS features (
+              id TEXT NOT NULL PRIMARY KEY,
+              assignment_id TEXT NOT NULL,
+              feature_type TEXT NOT NULL,
+              geometry_geojson TEXT NOT NULL,
+              is_new INTEGER NOT NULL DEFAULT 0,
+              status TEXT NOT NULL DEFAULT 'unfilled',
+              created_at INTEGER NOT NULL
             )
           ''');
         },

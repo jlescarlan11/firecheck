@@ -52,7 +52,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -127,6 +127,14 @@ class AppDatabase extends _$AppDatabase {
             // chosen decision while it awaits the resolve_* RPC call.
             await m.addColumn(submissions, submissions.pendingTheirsId);
             await m.createTable(pendingResolutions);
+          }
+          if (from < 12) {
+            // v11 → v12: features.pendingDedupOf tracks the candidate
+            // duplicate's UUID after a dedup-pending upload. Non-null =
+            // needs user review; cleared on resolve. Without this the
+            // review list can't surface dedup_pending uploads — they'd
+            // look like normal successes.
+            await m.addColumn(features, features.pendingDedupOf);
           }
         },
         beforeOpen: (details) async {

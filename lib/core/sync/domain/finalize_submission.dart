@@ -30,14 +30,10 @@ class FinalizeSubmissionUseCase {
       ),);
 
       // 2. Submission sync_job (skip-if-exists). Routes through the
-      // conflict-aware RPC. A stale enqueue under the legacy
-      // `submission` type is also treated as "already queued" so we
-      // don't double-upload mid-rollout.
-      final existingNew =
+      // conflict-aware RPC.
+      final existing =
           await _findJob(SyncEntityType.attributionUpload, submissionId);
-      final existingLegacy =
-          await _findJob(SyncEntityType.submission, submissionId);
-      if (existingNew == null && existingLegacy == null) {
+      if (existing == null) {
         await _db.into(_db.syncJobs).insert(SyncJobsCompanion.insert(
               id: _uuid.v4(),
               entityType: SyncEntityType.attributionUpload,
@@ -65,7 +61,7 @@ class FinalizeSubmissionUseCase {
       }
 
       // 4. New-feature sync_job if applicable (skip-if-exists). Routes
-      // through the dedup-aware RPC; legacy entry tolerated.
+      // through the dedup-aware RPC.
       final submission = await (_db.select(_db.submissions)
             ..where((t) => t.id.equals(submissionId)))
           .getSingle();
@@ -74,11 +70,9 @@ class FinalizeSubmissionUseCase {
           .getSingle();
       var newFeatureQueued = false;
       if (feature.isNew) {
-        final existingNew =
+        final existing =
             await _findJob(SyncEntityType.newFeatureUpload, feature.id);
-        final existingLegacy =
-            await _findJob(SyncEntityType.newFeature, feature.id);
-        if (existingNew == null && existingLegacy == null) {
+        if (existing == null) {
           await _db.into(_db.syncJobs).insert(SyncJobsCompanion.insert(
                 id: _uuid.v4(),
                 entityType: SyncEntityType.newFeatureUpload,

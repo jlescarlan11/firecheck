@@ -68,7 +68,7 @@ void main() {
 
   test('claimUpToN returns up to N pending jobs and marks them in_progress',
       () async {
-    await insertJob(id: 'j1', entityType: 'submission', entityId: 's1');
+    await insertJob(id: 'j1', entityType: 'attribution_upload', entityId: 's1');
     final claimed = await repo.claimUpToN(3, now: now);
     expect(claimed, hasLength(1));
     expect(claimed.first.id, 'j1');
@@ -82,7 +82,7 @@ void main() {
       () async {
     await insertJob(
       id: 'j1',
-      entityType: 'submission',
+      entityType: 'attribution_upload',
       entityId: 's1',
       nextRetry: now.add(const Duration(minutes: 5)),
     );
@@ -93,7 +93,7 @@ void main() {
   test('claimUpToN claims a job whose next_retry_at has elapsed', () async {
     await insertJob(
       id: 'j1',
-      entityType: 'submission',
+      entityType: 'attribution_upload',
       entityId: 's1',
       nextRetry: now.subtract(const Duration(minutes: 1)),
     );
@@ -101,13 +101,13 @@ void main() {
     expect(claimed, hasLength(1));
   });
 
-  test('claimUpToN orders submission jobs first, then by created_at',
+  test('claimUpToN orders attribution_upload jobs ahead of photos',
       () async {
     await insertJob(
         id: 'j-photo', entityType: 'photo', entityId: 'p1',);
     await insertJob(
         id: 'j-sub',
-        entityType: 'submission',
+        entityType: 'attribution_upload',
         entityId: 's1',
         createdAtOffset: const Duration(seconds: 1),);
     final claimed = await repo.claimUpToN(2, now: now);
@@ -154,7 +154,7 @@ void main() {
   });
 
   test('markSuccess transitions to success', () async {
-    await insertJob(id: 'j1', entityType: 'submission', entityId: 's1');
+    await insertJob(id: 'j1', entityType: 'attribution_upload', entityId: 's1');
     await repo.markSuccess('j1');
     final r = await (db.select(db.syncJobs)..where((t) => t.id.equals('j1')))
         .getSingle();
@@ -163,7 +163,7 @@ void main() {
 
   test('markPendingRetry advances attempts + sets next_retry_at + lastError',
       () async {
-    await insertJob(id: 'j1', entityType: 'submission', entityId: 's1');
+    await insertJob(id: 'j1', entityType: 'attribution_upload', entityId: 's1');
     final scheduled = now.add(const Duration(seconds: 30));
     await repo.markPendingRetry(
       'j1',
@@ -180,7 +180,7 @@ void main() {
   });
 
   test('markDead transitions to dead', () async {
-    await insertJob(id: 'j1', entityType: 'submission', entityId: 's1');
+    await insertJob(id: 'j1', entityType: 'attribution_upload', entityId: 's1');
     await repo.markDead('j1', error: '4xx', attempts: 5);
     final r = await (db.select(db.syncJobs)..where((t) => t.id.equals('j1')))
         .getSingle();
@@ -191,9 +191,9 @@ void main() {
 
   test('findByEntity returns existing job or null', () async {
     expect(
-        await repo.findByEntity(SyncEntityType.submission, 's1'), isNull,);
-    await insertJob(id: 'j1', entityType: 'submission', entityId: 's1');
-    final found = await repo.findByEntity(SyncEntityType.submission, 's1');
+        await repo.findByEntity(SyncEntityType.attributionUpload, 's1'), isNull,);
+    await insertJob(id: 'j1', entityType: 'attribution_upload', entityId: 's1');
+    final found = await repo.findByEntity(SyncEntityType.attributionUpload, 's1');
     expect(found, isNotNull);
     expect(found!.id, 'j1');
   });
