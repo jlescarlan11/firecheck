@@ -197,8 +197,8 @@ class GeometryEditorController extends Notifier<GeometryEditorState> {
     final rings = state.workingRings
         .map(
           (r) => r
-              .map(
-                (v) => (lng: v.lng + dLng, lat: v.lat + dLat) as LngLat,
+              .map<LngLat>(
+                (v) => (lng: v.lng + dLng, lat: v.lat + dLat),
               )
               .toList(),
         )
@@ -228,8 +228,8 @@ class GeometryEditorController extends Notifier<GeometryEditorState> {
       case Translate():
         for (var r = 0; r < rings.length; r++) {
           rings[r] = rings[r]
-              .map(
-                (v) => (lng: v.lng - top.dLng, lat: v.lat - top.dLat) as LngLat,
+              .map<LngLat>(
+                (v) => (lng: v.lng - top.dLng, lat: v.lat - top.dLat),
               )
               .toList();
         }
@@ -320,8 +320,8 @@ List<LngLat> _parseRing(dynamic ring) {
   return list;
 }
 
-List<LngLat> _parseLine(List coords) => coords.map<LngLat>((p) {
-      final pair = p as List;
+List<LngLat> _parseLine(List<dynamic> coords) => coords.map<LngLat>((p) {
+      final pair = p as List<dynamic>;
       return (
         lng: (pair[0] as num).toDouble(),
         lat: (pair[1] as num).toDouble(),

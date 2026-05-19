@@ -318,7 +318,18 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
         message: fatal.userMessage,
         fileChecksum: fatal.computedChecksum,
       ));
-      // Log only — attempt import anyway with whatever files are available.
+      if (!mounted) return;
+      // Fatal rules indicate corrupt / incomplete shapefiles — surface as
+      // a non-retryable error instead of attempting an import that would
+      // almost certainly fail downstream with a less actionable message.
+      state = GetMapsError(
+        ShapefileValidationFailure(
+          fatal.userMessage,
+          ruleName: fatal.ruleName,
+        ),
+        isRetryable: false,
+      );
+      return;
     }
 
     if (!report.hasFatals && report.hasWarnings) {
