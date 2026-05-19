@@ -26,7 +26,7 @@ abstract class MapRenderer {
     void Function(double lat, double lng)? onMapTap,
     CameraTarget? cameraTarget,
     CameraTarget? initialCameraTarget,
-    // US-9 reshape additions:
+    // Reshape additions:
     void Function(Feature)? onPolygonLongPress,
     String? reshapeWorkingPolygonGeojson,
     String? reshapeInvalidEdgeGeojson,
@@ -166,8 +166,8 @@ class _IdentityProjection implements MapProjection {
 }
 
 // MapboxMapRenderer is exercised via FakeMapRenderer in widget tests and via
-// the manual happy path in plan Task 18. The Mapbox plugin does not render
-// in flutter_tester.
+// the manual happy path on device. The Mapbox plugin does not render in
+// flutter_tester.
 
 /// Real renderer backed by `mapbox_maps_flutter` 2.22. Renders an actual map
 /// with polygon annotation managers for features + boundary, a point
@@ -281,17 +281,16 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
 
   String _fingerprintOf(Feature f) => '${f.geometryGeojson}|${f.status}';
 
-  // US-9: working-polygon overlay rendered while reshape mode is active.
+  // Working-polygon overlay rendered while reshape mode is active.
   PolygonAnnotation? _reshapeWorkingAnnotation;
 
-  // US-9: lat/lng <-> screen-px projection state. Refreshed on camera change
-  // so GeometryEditorOverlay can read it synchronously during finger drags.
+  // lat/lng <-> screen-px projection state. Refreshed on camera change so
+  // GeometryEditorOverlay can read it synchronously during finger drags.
   _MapboxProjection? _projection;
   Size? _viewportSize;
 
-  // US-9 T13: set to true when _onMapCreated runs before the first
-  // LayoutBuilder pass so we can defer projection init until the viewport
-  // size is known.
+  // Set to true when _onMapCreated runs before the first LayoutBuilder pass
+  // so we can defer projection init until the viewport size is known.
   bool _projectionReadyPending = false;
 
   @override
@@ -328,7 +327,7 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
             zoom: initial?.zoom ?? 15,
           ),
           // Without an explicit styleUri the map renders a black background
-          // because no style is loaded. Streets v12 is the Phase 1 spec choice.
+          // because no style is loaded.
           styleUri: 'mapbox://styles/mapbox/streets-v12',
           onMapCreated: _onMapCreated,
           // mapbox_maps_flutter 2.22 exposes a single-tap callback via
@@ -481,7 +480,7 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
 
     // Guarantee the screen has at least one zoom/center sample by the time
     // the user can interact. Without this, zoom-button taps in the first
-    // few frames bail out (no _displayZoom yet) — see US-13 spec §5.
+    // few frames bail out (no _displayZoom yet).
     final initialState = await map.getCameraState();
     widget.onCameraChanged?.call(
       initialState.zoom,
@@ -489,8 +488,8 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
       initialState.center.coordinates.lng.toDouble(),
     );
 
-    // US-9: instantiate the projection now that the map is alive and run
-    // an initial refresh so GeometryEditorOverlay has correct screen-px math
+    // Instantiate the projection now that the map is alive and run an
+    // initial refresh so GeometryEditorOverlay has correct screen-px math
     // before the user's first drag.
     final projection = _MapboxProjection(map);
     _projection = projection;

@@ -11,6 +11,7 @@ import 'package:firecheck/core/db/tables/feature_geometry_revisions.dart';
 import 'package:firecheck/core/db/tables/features.dart';
 import 'package:firecheck/core/db/tables/household_surveys.dart';
 import 'package:firecheck/core/db/tables/offline_tile_packs.dart';
+import 'package:firecheck/core/db/tables/pending_resolutions.dart';
 import 'package:firecheck/core/db/tables/photos.dart';
 import 'package:firecheck/core/db/tables/ra_9514_types.dart';
 import 'package:firecheck/core/db/tables/remote_attributions_cache.dart';
@@ -41,6 +42,7 @@ part 'database.g.dart';
     RemoteAttributionsCache,
     RemoteNewFeaturesCache,
     AssignmentSyncCursors,
+    PendingResolutions,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -50,7 +52,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -84,41 +86,47 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(assignments, assignments.closedRemotely);
           }
           if (from < 6) {
-            // v5 → v6: feature_geometry_revisions table for US-9 reshape.
+            // v5 → v6: feature_geometry_revisions table for polygon reshape.
             await m.createTable(featureGeometryRevisions);
             await m.createIndex(fgrFeatureIdIdx);
             await m.createIndex(fgrSyncStatusIdx);
           }
           if (from < 7) {
-            // v6 → v7: drive_modified_time and drive_folder_id for US-17 Get Maps.
+            // v6 → v7: drive_modified_time and drive_folder_id for Get Maps.
             await m.addColumn(assignments, assignments.driveModifiedTime);
             await m.addColumn(assignments, assignments.driveFolderId);
           }
           if (from < 8) {
-            // v7 → v8: drive_upload_jobs table for US-29 upload to Drive.
+            // v7 → v8: drive_upload_jobs table for upload to Drive.
             await m.createTable(driveUploadJobs);
             await m.createIndex(driveUploadJobsStatusIdx);
             await m.createIndex(driveUploadJobsAssignmentIdx);
           }
           if (from < 9) {
-            // v8 → v9: Drive upload confirmation columns for US-30.
+            // v8 → v9: Drive upload confirmation columns.
             await m.addColumn(assignments, assignments.driveFolderPath);
             await m.addColumn(assignments, assignments.driveFolderUrl);
             await m.addColumn(assignments, assignments.driveUploadConfirmedAt);
           }
           if (from < 10) {
-            // v9 → v10: Phase 2 of multi-user attribution sync.
-            // Local read-only cache of remote canonical state, plus per-
+            // v9 → v10: local mirror of remote canonical state + per-
             // assignment cursors for delta pulls. The cache is populated by
-            // cold-open / reconnect pulls (and by realtime in phase 3); the
-            // user's own submissions stay in `submissions` — the cache
-            // never touches them.
+            // cold-open / reconnect pulls and by realtime; the user's own
+            // submissions stay in `submissions` — the cache never touches them.
             await m.createTable(remoteAttributionsCache);
             await m.createIndex(remoteAttributionsCacheFeatureIdx);
             await m.createIndex(remoteAttributionsCacheUpdatedAtIdx);
             await m.createTable(remoteNewFeaturesCache);
             await m.createIndex(remoteNewFeaturesCacheAssignmentIdx);
             await m.createTable(assignmentSyncCursors);
+          }
+          if (from < 11) {
+            // v10 → v11: pendingTheirsId tracks the conflicting canonical
+            // on a parked submission so the review UI can render side-by-
+            // side without re-querying. pending_resolutions stores the
+            // chosen decision while it awaits the resolve_* RPC call.
+            await m.addColumn(submissions, submissions.pendingTheirsId);
+            await m.createTable(pendingResolutions);
           }
         },
         beforeOpen: (details) async {

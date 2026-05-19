@@ -27,10 +27,10 @@ void callbackDispatcher() {
       // Background isolate uses the same on-disk Drift DB.
       final db = AppDatabase.forTesting(NativeDatabase.memory());
       // NOTE: in production, WorkManager isolate should open the same
-      // sqlite file the main isolate uses. For Phase 4a we ship with the
-      // simpler path — the periodic tick isn't load-bearing for correctness
-      // (connectivity + foreground triggers are). Production-grade isolate
-      // sharing lands as Phase 5 polish.
+      // sqlite file the main isolate uses. We ship with the simpler path —
+      // the periodic tick isn't load-bearing for correctness (connectivity
+      // + foreground triggers are). Production-grade isolate sharing is
+      // deferred polish.
       final api = SupabaseSyncApi(Supabase.instance.client);
       final worker = SyncWorker(
         api: api,

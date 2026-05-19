@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/sync/data/sync_api.dart';
+import 'package:firecheck/core/sync/domain/resolution_decision.dart';
+import 'package:firecheck/core/sync/domain/submit_attribution_result.dart';
 import 'package:firecheck/core/sync/domain/sync_outcome.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 
@@ -158,5 +160,151 @@ class SupabaseSyncApi implements SyncApi {
     if (code == '401') return const AuthExpired();
     if (code.startsWith('4')) return PermanentFailure('$code ${e.message}');
     return TransientFailure('$code ${e.message}');
+  }
+
+  // -------- Conflict-aware upload + resolution -------------------------
+
+  @override
+  Future<({SyncOutcome outcome, SubmitAttributionResult? result})>
+      submitAttribution({
+    required Map<String, dynamic> payload,
+    String? baseVersionId,
+  }) async {
+    // The RPC expects base_version_id INSIDE the payload jsonb; tucking it
+    // in here keeps the existing payload-builder unaware of conflict
+    // semantics.
+    final wrapped = Map<String, dynamic>.from(payload);
+    if (baseVersionId != null) {
+      wrapped['base_version_id'] = baseVersionId;
+    }
+    try {
+      final raw = await _client.rpc<dynamic>(
+        'submit_attribution_with_conflict_check',
+        params: {'payload': wrapped},
+      );
+      final result = _parseAttributionResult(raw);
+      if (result == null) {
+        return (
+          outcome: PermanentFailure('unexpected_response: $raw'),
+          result: null,
+        );
+      }
+      return (outcome: const Success(), result: result);
+    } on PostgrestException catch (e) {
+      return (outcome: _mapPostgrestException(e, payload), result: null);
+    } on AuthException {
+      return (outcome: const AuthExpired(), result: null);
+    } on Object catch (e) {
+      return (outcome: TransientFailure(e.toString()), result: null);
+    }
+  }
+
+  @override
+  Future<({SyncOutcome outcome, SubmitNewFeatureResult? result})>
+      submitNewFeatureWithDedup(Map<String, dynamic> payload) async {
+    try {
+      final raw = await _client.rpc<dynamic>(
+        'submit_new_feature_with_dedup_check',
+        params: {'payload': payload},
+      );
+      final result = _parseNewFeatureResult(raw);
+      if (result == null) {
+        return (
+          outcome: PermanentFailure('unexpected_response: $raw'),
+          result: null,
+        );
+      }
+      return (outcome: const Success(), result: result);
+    } on PostgrestException catch (e) {
+      return (outcome: _mapPostgrestException(e, null), result: null);
+    } on AuthException {
+      return (outcome: const AuthExpired(), result: null);
+    } on Object catch (e) {
+      return (outcome: TransientFailure(e.toString()), result: null);
+    }
+  }
+
+  @override
+  Future<SyncOutcome> resolveAttribution({
+    required String pendingId,
+    required AttributionDecision decision,
+    String? resolutionNote,
+  }) async {
+    try {
+      await _client.rpc<dynamic>(
+        'resolve_attribution',
+        params: {
+          'pending_id': pendingId,
+          'decision': decision.wire,
+          'resolution_note': resolutionNote,
+        },
+      );
+      return const Success();
+    } on PostgrestException catch (e) {
+      return _mapPostgrestException(e, null);
+    } on AuthException {
+      return const AuthExpired();
+    } on Object catch (e) {
+      return TransientFailure(e.toString());
+    }
+  }
+
+  @override
+  Future<SyncOutcome> resolveNewFeature({
+    required String pendingId,
+    required DedupDecision decision,
+    String? resolutionNote,
+  }) async {
+    try {
+      await _client.rpc<dynamic>(
+        'resolve_new_feature',
+        params: {
+          'pending_id': pendingId,
+          'decision': decision.wire,
+          'resolution_note': resolutionNote,
+        },
+      );
+      return const Success();
+    } on PostgrestException catch (e) {
+      return _mapPostgrestException(e, null);
+    } on AuthException {
+      return const AuthExpired();
+    } on Object catch (e) {
+      return TransientFailure(e.toString());
+    }
+  }
+
+  SubmitAttributionResult? _parseAttributionResult(Object? raw) {
+    if (raw is! Map) return null;
+    final status = raw['status'];
+    switch (status) {
+      case 'committed':
+        return AttributionCommitted(raw['submission_id'] as String);
+      case 'agreed_skip':
+        return AttributionAgreedSkip(raw['submission_id'] as String);
+      case 'conflict':
+        return AttributionConflict(
+          pendingId: raw['pending_id'] as String,
+          theirSubmissionId: raw['their_submission_id'] as String,
+        );
+      default:
+        return null;
+    }
+  }
+
+  SubmitNewFeatureResult? _parseNewFeatureResult(Object? raw) {
+    if (raw is! Map) return null;
+    final status = raw['status'];
+    switch (status) {
+      case 'committed':
+        return NewFeatureCommitted(raw['feature_id'] as String);
+      case 'dedup_pending':
+        return NewFeatureDedupPending(
+          pendingId: raw['pending_id'] as String,
+          possibleDuplicateOf: raw['possible_duplicate_of'] as String,
+        );
+      default:
+        return null;
+    }
   }
 }

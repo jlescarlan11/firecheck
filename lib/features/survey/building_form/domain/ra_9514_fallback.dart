@@ -1,6 +1,6 @@
 /// Hardcoded fallback list of the 10 RA 9514 occupancy groups. Used when
-/// the local Drift `ra_9514_types` table is empty (which is the case until
-/// Phase 3's seed populates it).
+/// the local Drift `ra_9514_types` table is empty (before the seed
+/// populates it).
 class Ra9514Entry {
   const Ra9514Entry({required this.code, required this.labelKey});
   final String code;

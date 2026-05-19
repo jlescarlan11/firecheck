@@ -1,15 +1,13 @@
-// lib/features/survey/building_form/domain/building_form_applicability.dart
-//
 // Centralized model of which building-form fields are applicable to the
 // current path through the form, and which of those still need an answer.
-// Drives field-level visibility (US-6), automatic clearing of skipped
-// answers (US-7) and the remaining-questions indicator (US-8).
+// Drives field-level visibility, automatic clearing of skipped answers,
+// and the remaining-questions indicator.
 //
 // [geometry] flows through every applicability call so skip-logic that
 // depends on the feature's shape — area thresholds, vertex counts — can
-// re-evaluate the moment a reshape commits (Issue #44). Current rules
-// don't consume the signal yet; the parameter exists so adding a
-// geometry-dependent rule is a one-line change.
+// re-evaluate the moment a reshape commits. Current rules don't consume
+// the signal yet; the parameter exists so adding a geometry-dependent
+// rule is a one-line change.
 import 'package:firecheck/core/forms/field_requirements.dart';
 import 'package:firecheck/core/forms/geometry_signal.dart';
 import 'package:firecheck/features/survey/building_form/domain/building_form_state.dart';
@@ -30,8 +28,8 @@ enum BuildingFormField {
 /// state. Fields that are not applicable have their stored value cleared
 /// by [applyApplicability] so a stale answer cannot survive a path change.
 ///
-/// [hidden] is the form variant's `hideBuildingFields` set (US-41). When
-/// the variant hides a field it is treated identically to a non-applicable
+/// [hidden] is the form variant's `hideBuildingFields` set. When the
+/// variant hides a field it is treated identically to a non-applicable
 /// field: the input is not rendered, the value is auto-cleared, and the
 /// remaining-questions chip skips it.
 bool isApplicable(

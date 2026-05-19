@@ -6,6 +6,9 @@ import 'package:firecheck/features/assignment/presentation/get_maps_screen.dart'
 import 'package:firecheck/features/auth/presentation/auth_providers.dart';
 import 'package:firecheck/features/auth/presentation/sign_in_screen.dart';
 import 'package:firecheck/features/home/presentation/home_screen.dart';
+import 'package:firecheck/features/conflict_review/presentation/attribution_conflict_screen.dart';
+import 'package:firecheck/features/conflict_review/presentation/conflict_review_list_screen.dart';
+import 'package:firecheck/features/conflict_review/presentation/dedup_review_screen.dart';
 import 'package:firecheck/features/map/presentation/map_screen.dart';
 import 'package:firecheck/features/remote_activity/presentation/remote_activity_list_screen.dart';
 import 'package:firecheck/features/remote_activity/presentation/remote_attribution_detail_screen.dart';
@@ -118,6 +121,23 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/remote-activity/:featureId',
         builder: (context, state) => RemoteAttributionDetailScreen(
+          featureId: Uri.decodeComponent(state.pathParameters['featureId']!),
+        ),
+      ),
+      GoRoute(
+        path: '/resolve',
+        builder: (context, state) => const ConflictReviewListScreen(),
+      ),
+      GoRoute(
+        path: '/resolve/attribution/:submissionId',
+        builder: (context, state) => AttributionConflictScreen(
+          submissionId:
+              Uri.decodeComponent(state.pathParameters['submissionId']!),
+        ),
+      ),
+      GoRoute(
+        path: '/resolve/dedup/:featureId',
+        builder: (context, state) => DedupReviewScreen(
           featureId: Uri.decodeComponent(state.pathParameters['featureId']!),
         ),
       ),

@@ -12,6 +12,11 @@ class Submissions extends Table {
   TextColumn get remarks => text().nullable()();
   TextColumn get syncStatus => text().withDefault(const Constant('draft'))();
   TextColumn get overrideReason => text().nullable()();
+  // When the server returns status=conflict, we store the conflicting
+  // canonical's UUID here so the review UI can render side-by-side
+  // comparison without re-querying. Null for non-conflict submissions;
+  // cleared on resolve.
+  TextColumn get pendingTheirsId => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
 

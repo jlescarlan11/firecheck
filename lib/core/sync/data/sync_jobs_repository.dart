@@ -1,6 +1,5 @@
 import 'package:drift/drift.dart';
 import 'package:firecheck/core/db/database.dart';
-import 'package:firecheck/core/sync/domain/sync_entity_type.dart';
 import 'package:firecheck/core/sync/domain/sync_job_status.dart';
 
 class SyncJobsRepository {
@@ -15,6 +14,18 @@ class SyncJobsRepository {
   Future<List<SyncJob>> claimUpToN(int n, {DateTime? now}) async {
     final cutoff = now ?? DateTime.now();
     return _db.transaction(() async {
+      // Gate two interlocking conditions:
+      //   1. Photo jobs that block on a submission wait for the local
+      //      submission row to reach sync_status='uploaded' — that's the
+      //      same terminal state for both the legacy `submission` path
+      //      and the new `attribution_upload` path, so this gate is
+      //      type-agnostic.
+      //   2. Attribution upload jobs whose feature is new wait for the
+      //      corresponding new-feature upload job to reach `success`.
+      //      Otherwise the submission's feature_id FK fails on the
+      //      server. Both legacy (`submission` / `new_feature`) and new
+      //      (`attribution_upload` / `new_feature_upload`) variants are
+      //      accepted on either side.
       final raw = await _db.customSelect(
         '''
         SELECT j.* FROM sync_jobs j
@@ -27,11 +38,8 @@ class SyncJobsRepository {
               WHERE s.id = j.blocks_on_submission_id AND s.sync_status = 'uploaded'
             )
           )
-          -- Gate: a submission job whose feature is_new=true must wait for the
-          -- corresponding new_feature job to reach success. Otherwise the
-          -- submission's feature_id FK fails on the server.
           AND NOT (
-            j.entity_type = 'submission'
+            j.entity_type IN ('submission','attribution_upload')
             AND EXISTS (
               SELECT 1 FROM submissions s2
               JOIN features f2 ON f2.id = s2.feature_id
@@ -39,7 +47,7 @@ class SyncJobsRepository {
                 AND f2.is_new = 1
                 AND NOT EXISTS (
                   SELECT 1 FROM sync_jobs nf
-                  WHERE nf.entity_type = 'new_feature'
+                  WHERE nf.entity_type IN ('new_feature','new_feature_upload')
                     AND nf.entity_id = f2.id
                     AND nf.status = 'success'
                 )
@@ -47,9 +55,11 @@ class SyncJobsRepository {
           )
         ORDER BY (
           CASE j.entity_type
-            WHEN 'new_feature' THEN 0
-            WHEN ?           THEN 1
-            ELSE                  2
+            WHEN 'new_feature'         THEN 0
+            WHEN 'new_feature_upload'  THEN 0
+            WHEN 'submission'          THEN 1
+            WHEN 'attribution_upload'  THEN 1
+            ELSE                            2
           END
         ), j.created_at
         LIMIT ?
@@ -57,7 +67,6 @@ class SyncJobsRepository {
         variables: [
           Variable.withString(SyncJobStatus.pending),
           Variable.withDateTime(cutoff),
-          Variable.withString(SyncEntityType.submission),
           Variable.withInt(n),
         ],
         readsFrom: {_db.syncJobs, _db.submissions, _db.features},

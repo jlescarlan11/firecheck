@@ -45,7 +45,7 @@ abstract class OfflinePackAdapter {
 
 /// Real adapter backed by Mapbox [TileStore].
 ///
-/// Notes for Phase 1 T19 (MapboxMapRenderer) wiring:
+/// Notes on MapboxMapRenderer wiring:
 /// - Mapbox 2.22 `TileStore.loadTileRegion` takes the region `id`, a
 ///   [TileRegionLoadOptions], and an optional progress listener. It returns
 ///   a `Future<TileRegion>` that completes on success or throws on failure.

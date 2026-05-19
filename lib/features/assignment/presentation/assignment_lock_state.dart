@@ -4,9 +4,8 @@ import 'package:flutter/foundation.dart';
 
 /// User-facing lock state for the current assignment.
 ///
-/// Closed-remotely overrides Submitted. (Phase 4b accepts that the
-/// closed_remotely flag may flip after a successful submit; the user is
-/// blocked regardless.)
+/// Closed-remotely overrides Submitted: the closed_remotely flag may flip
+/// after a successful submit, but the user is blocked regardless.
 sealed class AssignmentLockState {
   const AssignmentLockState();
 }

@@ -5,9 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// Read-only view of another enumerator's attribution for a feature.
-/// Phase 5 will reuse the underlying widgets in the side-by-side compare
-/// during conflict review.
+/// Read-only view of another enumerator's attribution for a feature. The
+/// underlying widgets are reused in the side-by-side compare during
+/// conflict review.
 class RemoteAttributionDetailScreen extends ConsumerWidget {
   const RemoteAttributionDetailScreen({required this.featureId, super.key});
   final String featureId;
@@ -43,10 +43,8 @@ class RemoteAttributionDetailScreen extends ConsumerWidget {
                 child: AttributeKvTable(values: values),
               ),
               const SizedBox(height: 12),
-              // Phase-5 hook: open form for local edit / "compare with mine".
-              // For phase 4 we surface a "Open feature" CTA that drops the
-              // user back into the standard feature form, where any local
-              // submission can be inspected.
+              // "Open feature" CTA that drops the user back into the standard
+              // feature form, where any local submission can be inspected.
               Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

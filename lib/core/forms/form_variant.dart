@@ -1,8 +1,6 @@
-// lib/core/forms/form_variant.dart
-//
-// Form-variant model used by US-41 to let a form designer push pilot or
-// region-specific survey variations without changing app code. Variants
-// live in assets/form_variants.json and are loaded once at startup.
+// Form-variant model that lets a form designer push pilot or region-specific
+// survey variations without changing app code. Variants live in
+// assets/form_variants.json and are loaded once at startup.
 import 'package:firecheck/features/survey/building_form/domain/building_form_applicability.dart';
 import 'package:firecheck/features/survey/road_form/domain/road_form_applicability.dart';
 

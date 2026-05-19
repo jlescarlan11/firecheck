@@ -71,13 +71,18 @@ void main() {
         .getSingle();
     expect(sub.syncStatus, 'uploaded');
 
-    expect(api.uploadSubmissionCalls, hasLength(1));
+    // FinalizeSubmissionUseCase now enqueues `attribution_upload`, which
+    // routes through the conflict-aware RPC. The legacy `uploadSubmission`
+    // surface stays for any in-flight legacy jobs from before the
+    // rollout but is not exercised here.
+    expect(api.submitAttributionCalls, hasLength(1));
+    expect(api.uploadSubmissionCalls, isEmpty);
   });
 
   test('drain() de-dupes overlapping calls', () async {
     final f1 = worker.drain();
     final f2 = worker.drain();
     await Future.wait([f1, f2]);
-    expect(api.uploadSubmissionCalls, hasLength(1));
+    expect(api.submitAttributionCalls, hasLength(1));
   });
 }

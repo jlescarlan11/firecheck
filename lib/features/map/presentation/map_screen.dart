@@ -78,7 +78,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     // Subscribe so the GPS stream is hot from mount, not first tap.
     ref.watch(currentPositionProvider);
 
-    // T22: lock-while-reshape — if the assignment locks while the user is
+    // Lock-while-reshape — if the assignment locks while the user is
     // mid-reshape, dirty edits are blocked behind a non-dismissable dialog
     // (Exit discards), and a clean session exits silently.
     final isLocked = ref.watch(isAssignmentLockedProvider);
@@ -160,9 +160,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 projection: _reshapeProjection!,
               ),
             ),
-          // Phase 4 — multi-user attribution sync: shows "👥 N edited by
-          // others" when the remote_attributions_cache has rows from other
-          // enumerators. Hidden when count is zero. Sits below the AppBar.
+          // Shows "👥 N edited by others" when the remote_attributions_cache
+          // has rows from other enumerators. Hidden when count is zero. Sits
+          // below the AppBar.
           if (!reshapeActive && !sketchActive)
             const Positioned(
               left: 12,
@@ -315,8 +315,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     if (s.originalFeature == null || assignment == null) return;
 
     // validateBuildingPolygon enforces polygon rules (closure, orientation,
-    // self-intersection). Polyline reshape (US-10) doesn't have those rules;
-    // skip the check when the working geometry is open.
+    // self-intersection). Polyline reshape doesn't have those rules; skip
+    // the check when the working geometry is open.
     //
     // Boundary handling: when the user provided an override reason at
     // reshape entry (e.g. they're editing a building from far away), also

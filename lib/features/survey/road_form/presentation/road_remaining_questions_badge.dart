@@ -1,6 +1,4 @@
-// lib/features/survey/road_form/presentation/road_remaining_questions_badge.dart
-//
-// US-8 (road variant): shows applicable-but-unanswered count for the road
+// Road-form variant: shows applicable-but-unanswered count for the road
 // form. Shares the chip widget with the building variant for visual parity.
 import 'package:firecheck/core/forms/field_requirements_providers.dart';
 import 'package:firecheck/core/forms/form_variant_providers.dart';

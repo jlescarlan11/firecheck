@@ -21,12 +21,12 @@ class RoadFormNotifier extends StateNotifier<RoadFormState> {
   final String featureId;
   final RoadAttributesRepository attrsRepo;
   final SubmissionRepository submissionRepo;
-  // US-41: fields the active form variant hides for this user/assignment.
+  // Fields the active form variant hides for this user/assignment.
   final Set<RoadFormField> hiddenFields;
 
   /// Latest geometry-derived signal for the feature this form is filling.
   /// Updated by [onGeometryChanged] whenever a reshape commit lands so
-  /// skip-logic re-evaluates automatically (Issue #44).
+  /// skip-logic re-evaluates automatically.
   GeometrySignal? _geometrySignal;
   GeometrySignal? get geometrySignal => _geometrySignal;
 
@@ -34,8 +34,8 @@ class RoadFormNotifier extends StateNotifier<RoadFormState> {
   static const _window = Duration(milliseconds: 500);
 
   void update(RoadFormState Function(RoadFormState) mutate) {
-    // Apply field applicability after the mutation — US-6/US-7 share this
-    // hook with the remaining-questions count (US-8).
+    // Apply field applicability after the mutation — field visibility and
+    // auto-clear share this hook with the remaining-questions count.
     state = applyApplicability(
       mutate(state),
       hidden: hiddenFields,

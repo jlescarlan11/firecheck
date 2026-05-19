@@ -43,8 +43,8 @@ void main() {
     addTearDown(db.close);
     await _seed(db);
     final api = FakeSyncApi()
-      ..enqueueSubmission(const AuthExpired())
-      ..enqueueSubmission(const Success());
+      ..enqueueSubmitAttribution(outcome: const AuthExpired())
+      ..enqueueSubmitAttribution();
     var refreshCalls = 0;
     final worker = SyncWorker(
       api: api,
@@ -67,7 +67,8 @@ void main() {
     final db = AppDatabase.forTesting(NativeDatabase.memory());
     addTearDown(db.close);
     await _seed(db);
-    final api = FakeSyncApi()..enqueueSubmission(const AuthExpired());
+    final api = FakeSyncApi()
+      ..enqueueSubmitAttribution(outcome: const AuthExpired());
     final worker = SyncWorker(
       api: api,
       jobs: SyncJobsRepository(db),
@@ -89,8 +90,8 @@ void main() {
     addTearDown(db.close);
     await _seed(db);
     final api = FakeSyncApi()
-      ..enqueueSubmission(const AuthExpired())
-      ..enqueueSubmission(const AuthExpired());
+      ..enqueueSubmitAttribution(outcome: const AuthExpired())
+      ..enqueueSubmitAttribution(outcome: const AuthExpired());
     final worker = SyncWorker(
       api: api,
       jobs: SyncJobsRepository(db),

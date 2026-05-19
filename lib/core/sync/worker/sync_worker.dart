@@ -5,7 +5,10 @@ import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/sync/data/submission_payload_builder.dart';
 import 'package:firecheck/core/sync/data/sync_api.dart';
 import 'package:firecheck/core/sync/data/sync_jobs_repository.dart';
+import 'package:firecheck/core/sync/domain/resolution_decision.dart';
 import 'package:firecheck/core/sync/domain/retry_schedule.dart';
+import 'package:firecheck/core/sync/domain/submission_sync_status.dart';
+import 'package:firecheck/core/sync/domain/submit_attribution_result.dart';
 import 'package:firecheck/core/sync/domain/sync_entity_type.dart';
 import 'package:firecheck/core/sync/domain/sync_outcome.dart';
 import 'package:firecheck/core/sync/failure/assignment_lock_repository.dart';
@@ -85,6 +88,14 @@ class SyncWorker {
           return await _executeNewFeature(job.entityId);
         case SyncEntityType.featureGeometryUpdate:
           return await _executeFeatureGeometryUpdate(job.entityId);
+        case SyncEntityType.attributionUpload:
+          return await _executeAttributionUpload(job.entityId);
+        case SyncEntityType.attributionResolve:
+          return await _executeAttributionResolve(job.entityId);
+        case SyncEntityType.newFeatureUpload:
+          return await _executeNewFeatureUpload(job.entityId);
+        case SyncEntityType.newFeatureResolve:
+          return await _executeNewFeatureResolve(job.entityId);
         default:
           return PermanentFailure('unknown entity_type: ${job.entityType}');
       }
@@ -155,6 +166,167 @@ class SyncWorker {
       await repo.markFailed(rev.id);
     }
     return outcome;
+  }
+
+  /// Calls `submit_attribution_with_conflict_check`. Routes the three
+  /// possible structured results to local state transitions:
+  ///   - committed     → submission marked uploaded (same as legacy path)
+  ///   - agreed_skip   → server already has identical canonical; local
+  ///                     row is effectively withdrawn (orphan cleanup
+  ///                     handled separately)
+  ///   - conflict      → submission parked in awaiting_user_resolution
+  ///                     with pendingTheirsId set; review UI takes over
+  Future<SyncOutcome> _executeAttributionUpload(String submissionId) async {
+    final sub = await (db.select(db.submissions)
+          ..where((t) => t.id.equals(submissionId)))
+        .getSingleOrNull();
+    if (sub == null) {
+      return const PermanentFailure('submission missing');
+    }
+    final json = await payload.build(submissionId);
+    final response = await api.submitAttribution(payload: json);
+    if (response.outcome is! Success) {
+      return response.outcome;
+    }
+    final result = response.result!;
+    switch (result) {
+      case AttributionCommitted():
+        await (db.update(db.submissions)
+              ..where((t) => t.id.equals(submissionId)))
+            .write(
+          const SubmissionsCompanion(
+            syncStatus: Value(SubmissionSyncStatus.uploaded),
+            pendingTheirsId: Value(null),
+          ),
+        );
+      case AttributionAgreedSkip():
+        // Server's canonical wins identical values; our row is a duplicate.
+        await (db.update(db.submissions)
+              ..where((t) => t.id.equals(submissionId)))
+            .write(
+          const SubmissionsCompanion(
+            syncStatus: Value(SubmissionSyncStatus.withdrawn),
+            pendingTheirsId: Value(null),
+          ),
+        );
+      case AttributionConflict(:final theirSubmissionId):
+        await (db.update(db.submissions)
+              ..where((t) => t.id.equals(submissionId)))
+            .write(
+          SubmissionsCompanion(
+            syncStatus: const Value(SubmissionSyncStatus.awaitingUserResolution),
+            pendingTheirsId: Value(theirSubmissionId),
+          ),
+        );
+    }
+    return const Success();
+  }
+
+  /// Calls `submit_new_feature_with_dedup_check`. dedup_pending leaves the
+  /// row visible (the proximity trigger has already inserted it) and the
+  /// review UI surfaces it; review then dispatches a
+  /// `newFeatureResolve` job.
+  Future<SyncOutcome> _executeNewFeatureUpload(String featureId) async {
+    final feature = await (db.select(db.features)
+          ..where((t) => t.id.equals(featureId)))
+        .getSingleOrNull();
+    if (feature == null) {
+      return const PermanentFailure('feature missing');
+    }
+    final payload = <String, dynamic>{
+      'id': feature.id,
+      'assignment_id': feature.assignmentId,
+      'feature_type': feature.featureType,
+      'geometry_geojson': feature.geometryGeojson,
+      'is_new': feature.isNew,
+      'created_at': feature.createdAt.toIso8601String(),
+    };
+    final response = await api.submitNewFeatureWithDedup(payload);
+    return response.outcome;
+  }
+
+  /// Reads the queued decision out of `pending_resolutions`, calls
+  /// `resolve_attribution`, then updates local sync_status + clears the
+  /// queued row.
+  Future<SyncOutcome> _executeAttributionResolve(String submissionId) async {
+    final res = await (db.select(db.pendingResolutions)
+          ..where((t) =>
+              t.targetId.equals(submissionId) & t.kind.equals('attribution'),))
+        .getSingleOrNull();
+    if (res == null) {
+      return const PermanentFailure('no queued resolution');
+    }
+    final decision = _attributionDecisionFromWire(res.decision);
+    if (decision == null) {
+      return PermanentFailure('invalid_decision: ${res.decision}');
+    }
+    final outcome = await api.resolveAttribution(
+      pendingId: submissionId,
+      decision: decision,
+      resolutionNote: res.resolutionNote,
+    );
+    if (outcome is! Success) return outcome;
+
+    await db.transaction(() async {
+      await (db.update(db.submissions)
+            ..where((t) => t.id.equals(submissionId)))
+          .write(
+        SubmissionsCompanion(
+          syncStatus: Value(
+            decision == AttributionDecision.forceOverwrite
+                ? SubmissionSyncStatus.uploaded
+                : SubmissionSyncStatus.withdrawn,
+          ),
+          pendingTheirsId: const Value(null),
+        ),
+      );
+      await (db.delete(db.pendingResolutions)
+            ..where((t) =>
+                t.targetId.equals(submissionId) &
+                t.kind.equals('attribution'),))
+          .go();
+    });
+    return const Success();
+  }
+
+  Future<SyncOutcome> _executeNewFeatureResolve(String featureId) async {
+    final res = await (db.select(db.pendingResolutions)
+          ..where((t) =>
+              t.targetId.equals(featureId) & t.kind.equals('new_feature'),))
+        .getSingleOrNull();
+    if (res == null) {
+      return const PermanentFailure('no queued resolution');
+    }
+    final decision = _dedupDecisionFromWire(res.decision);
+    if (decision == null) {
+      return PermanentFailure('invalid_decision: ${res.decision}');
+    }
+    final outcome = await api.resolveNewFeature(
+      pendingId: featureId,
+      decision: decision,
+      resolutionNote: res.resolutionNote,
+    );
+    if (outcome is! Success) return outcome;
+
+    await (db.delete(db.pendingResolutions)
+          ..where((t) =>
+              t.targetId.equals(featureId) & t.kind.equals('new_feature'),))
+        .go();
+    return const Success();
+  }
+
+  AttributionDecision? _attributionDecisionFromWire(String wire) {
+    for (final d in AttributionDecision.values) {
+      if (d.wire == wire) return d;
+    }
+    return null;
+  }
+
+  DedupDecision? _dedupDecisionFromWire(String wire) {
+    for (final d in DedupDecision.values) {
+      if (d.wire == wire) return d;
+    }
+    return null;
   }
 
   Future<void> _applyOutcome(SyncJob job, SyncOutcome outcome) async {
@@ -228,7 +400,7 @@ class SyncWorker {
       try {
         await bundle!.exportFor(assignmentId);
       } on Object {
-        // Bundle errors don't block lock state; surfaced in Phase 4b UI.
+        // Bundle errors don't block lock state; surfaced in the UI separately.
       }
     }
     // Job goes back to pending so a future drain (after lock clears) can retry.

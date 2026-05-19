@@ -48,7 +48,7 @@ LatLng polygonCentroid(List<List<double>> ring) {
 
 /// Best-effort GeoJSON decode. Returns the first (outer) ring of a Polygon
 /// as a list of `[lng, lat]` pairs, or null if the input isn't a parseable
-/// Polygon. Holes are ignored (Phase 2 doesn't model them).
+/// Polygon. Holes are ignored.
 List<List<double>>? decodePolygonGeojson(String geojson) {
   if (geojson.isEmpty) return null;
   try {
