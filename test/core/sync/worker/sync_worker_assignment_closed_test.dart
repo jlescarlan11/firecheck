@@ -77,6 +77,6 @@ void main() {
       db: db,
     );
     await worker.drain();
-    expect(api.uploadSubmissionCalls, isEmpty);
+    expect(api.submitAttributionCalls, isEmpty);
   });
 }

@@ -1063,6 +1063,12 @@ class $FeaturesTable extends Features with TableInfo<$FeaturesTable, Feature> {
       type: DriftSqlType.string,
       requiredDuringInsert: false,
       defaultValue: const Constant('unfilled'));
+  static const VerificationMeta _pendingDedupOfMeta =
+      const VerificationMeta('pendingDedupOf');
+  @override
+  late final GeneratedColumn<String> pendingDedupOf = GeneratedColumn<String>(
+      'pending_dedup_of', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -1077,6 +1083,7 @@ class $FeaturesTable extends Features with TableInfo<$FeaturesTable, Feature> {
         geometryGeojson,
         isNew,
         status,
+        pendingDedupOf,
         createdAt
       ];
   @override
@@ -1126,6 +1133,12 @@ class $FeaturesTable extends Features with TableInfo<$FeaturesTable, Feature> {
       context.handle(_statusMeta,
           status.isAcceptableOrUnknown(data['status']!, _statusMeta));
     }
+    if (data.containsKey('pending_dedup_of')) {
+      context.handle(
+          _pendingDedupOfMeta,
+          pendingDedupOf.isAcceptableOrUnknown(
+              data['pending_dedup_of']!, _pendingDedupOfMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -1153,6 +1166,8 @@ class $FeaturesTable extends Features with TableInfo<$FeaturesTable, Feature> {
           .read(DriftSqlType.bool, data['${effectivePrefix}is_new'])!,
       status: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
+      pendingDedupOf: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}pending_dedup_of']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
     );
@@ -1171,6 +1186,7 @@ class Feature extends DataClass implements Insertable<Feature> {
   final String geometryGeojson;
   final bool isNew;
   final String status;
+  final String? pendingDedupOf;
   final DateTime createdAt;
   const Feature(
       {required this.id,
@@ -1179,6 +1195,7 @@ class Feature extends DataClass implements Insertable<Feature> {
       required this.geometryGeojson,
       required this.isNew,
       required this.status,
+      this.pendingDedupOf,
       required this.createdAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1189,6 +1206,9 @@ class Feature extends DataClass implements Insertable<Feature> {
     map['geometry_geojson'] = Variable<String>(geometryGeojson);
     map['is_new'] = Variable<bool>(isNew);
     map['status'] = Variable<String>(status);
+    if (!nullToAbsent || pendingDedupOf != null) {
+      map['pending_dedup_of'] = Variable<String>(pendingDedupOf);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -1201,6 +1221,9 @@ class Feature extends DataClass implements Insertable<Feature> {
       geometryGeojson: Value(geometryGeojson),
       isNew: Value(isNew),
       status: Value(status),
+      pendingDedupOf: pendingDedupOf == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pendingDedupOf),
       createdAt: Value(createdAt),
     );
   }
@@ -1215,6 +1238,7 @@ class Feature extends DataClass implements Insertable<Feature> {
       geometryGeojson: serializer.fromJson<String>(json['geometryGeojson']),
       isNew: serializer.fromJson<bool>(json['isNew']),
       status: serializer.fromJson<String>(json['status']),
+      pendingDedupOf: serializer.fromJson<String?>(json['pendingDedupOf']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -1228,6 +1252,7 @@ class Feature extends DataClass implements Insertable<Feature> {
       'geometryGeojson': serializer.toJson<String>(geometryGeojson),
       'isNew': serializer.toJson<bool>(isNew),
       'status': serializer.toJson<String>(status),
+      'pendingDedupOf': serializer.toJson<String?>(pendingDedupOf),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -1239,6 +1264,7 @@ class Feature extends DataClass implements Insertable<Feature> {
           String? geometryGeojson,
           bool? isNew,
           String? status,
+          Value<String?> pendingDedupOf = const Value.absent(),
           DateTime? createdAt}) =>
       Feature(
         id: id ?? this.id,
@@ -1247,6 +1273,8 @@ class Feature extends DataClass implements Insertable<Feature> {
         geometryGeojson: geometryGeojson ?? this.geometryGeojson,
         isNew: isNew ?? this.isNew,
         status: status ?? this.status,
+        pendingDedupOf:
+            pendingDedupOf.present ? pendingDedupOf.value : this.pendingDedupOf,
         createdAt: createdAt ?? this.createdAt,
       );
   Feature copyWithCompanion(FeaturesCompanion data) {
@@ -1262,6 +1290,9 @@ class Feature extends DataClass implements Insertable<Feature> {
           : this.geometryGeojson,
       isNew: data.isNew.present ? data.isNew.value : this.isNew,
       status: data.status.present ? data.status.value : this.status,
+      pendingDedupOf: data.pendingDedupOf.present
+          ? data.pendingDedupOf.value
+          : this.pendingDedupOf,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -1275,14 +1306,15 @@ class Feature extends DataClass implements Insertable<Feature> {
           ..write('geometryGeojson: $geometryGeojson, ')
           ..write('isNew: $isNew, ')
           ..write('status: $status, ')
+          ..write('pendingDedupOf: $pendingDedupOf, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
-      id, assignmentId, featureType, geometryGeojson, isNew, status, createdAt);
+  int get hashCode => Object.hash(id, assignmentId, featureType,
+      geometryGeojson, isNew, status, pendingDedupOf, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1293,6 +1325,7 @@ class Feature extends DataClass implements Insertable<Feature> {
           other.geometryGeojson == this.geometryGeojson &&
           other.isNew == this.isNew &&
           other.status == this.status &&
+          other.pendingDedupOf == this.pendingDedupOf &&
           other.createdAt == this.createdAt);
 }
 
@@ -1303,6 +1336,7 @@ class FeaturesCompanion extends UpdateCompanion<Feature> {
   final Value<String> geometryGeojson;
   final Value<bool> isNew;
   final Value<String> status;
+  final Value<String?> pendingDedupOf;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const FeaturesCompanion({
@@ -1312,6 +1346,7 @@ class FeaturesCompanion extends UpdateCompanion<Feature> {
     this.geometryGeojson = const Value.absent(),
     this.isNew = const Value.absent(),
     this.status = const Value.absent(),
+    this.pendingDedupOf = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -1322,6 +1357,7 @@ class FeaturesCompanion extends UpdateCompanion<Feature> {
     required String geometryGeojson,
     this.isNew = const Value.absent(),
     this.status = const Value.absent(),
+    this.pendingDedupOf = const Value.absent(),
     required DateTime createdAt,
     this.rowid = const Value.absent(),
   })  : id = Value(id),
@@ -1336,6 +1372,7 @@ class FeaturesCompanion extends UpdateCompanion<Feature> {
     Expression<String>? geometryGeojson,
     Expression<bool>? isNew,
     Expression<String>? status,
+    Expression<String>? pendingDedupOf,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -1346,6 +1383,7 @@ class FeaturesCompanion extends UpdateCompanion<Feature> {
       if (geometryGeojson != null) 'geometry_geojson': geometryGeojson,
       if (isNew != null) 'is_new': isNew,
       if (status != null) 'status': status,
+      if (pendingDedupOf != null) 'pending_dedup_of': pendingDedupOf,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -1358,6 +1396,7 @@ class FeaturesCompanion extends UpdateCompanion<Feature> {
       Value<String>? geometryGeojson,
       Value<bool>? isNew,
       Value<String>? status,
+      Value<String?>? pendingDedupOf,
       Value<DateTime>? createdAt,
       Value<int>? rowid}) {
     return FeaturesCompanion(
@@ -1367,6 +1406,7 @@ class FeaturesCompanion extends UpdateCompanion<Feature> {
       geometryGeojson: geometryGeojson ?? this.geometryGeojson,
       isNew: isNew ?? this.isNew,
       status: status ?? this.status,
+      pendingDedupOf: pendingDedupOf ?? this.pendingDedupOf,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -1393,6 +1433,9 @@ class FeaturesCompanion extends UpdateCompanion<Feature> {
     if (status.present) {
       map['status'] = Variable<String>(status.value);
     }
+    if (pendingDedupOf.present) {
+      map['pending_dedup_of'] = Variable<String>(pendingDedupOf.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -1411,6 +1454,7 @@ class FeaturesCompanion extends UpdateCompanion<Feature> {
           ..write('geometryGeojson: $geometryGeojson, ')
           ..write('isNew: $isNew, ')
           ..write('status: $status, ')
+          ..write('pendingDedupOf: $pendingDedupOf, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -8838,6 +8882,7 @@ typedef $$FeaturesTableCreateCompanionBuilder = FeaturesCompanion Function({
   required String geometryGeojson,
   Value<bool> isNew,
   Value<String> status,
+  Value<String?> pendingDedupOf,
   required DateTime createdAt,
   Value<int> rowid,
 });
@@ -8848,6 +8893,7 @@ typedef $$FeaturesTableUpdateCompanionBuilder = FeaturesCompanion Function({
   Value<String> geometryGeojson,
   Value<bool> isNew,
   Value<String> status,
+  Value<String?> pendingDedupOf,
   Value<DateTime> createdAt,
   Value<int> rowid,
 });
@@ -8879,6 +8925,10 @@ class $$FeaturesTableFilterComposer
 
   ColumnFilters<String> get status => $composableBuilder(
       column: $table.status, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get pendingDedupOf => $composableBuilder(
+      column: $table.pendingDedupOf,
+      builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -8913,6 +8963,10 @@ class $$FeaturesTableOrderingComposer
   ColumnOrderings<String> get status => $composableBuilder(
       column: $table.status, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get pendingDedupOf => $composableBuilder(
+      column: $table.pendingDedupOf,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 }
@@ -8943,6 +8997,9 @@ class $$FeaturesTableAnnotationComposer
 
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get pendingDedupOf => $composableBuilder(
+      column: $table.pendingDedupOf, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -8977,6 +9034,7 @@ class $$FeaturesTableTableManager extends RootTableManager<
             Value<String> geometryGeojson = const Value.absent(),
             Value<bool> isNew = const Value.absent(),
             Value<String> status = const Value.absent(),
+            Value<String?> pendingDedupOf = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -8987,6 +9045,7 @@ class $$FeaturesTableTableManager extends RootTableManager<
             geometryGeojson: geometryGeojson,
             isNew: isNew,
             status: status,
+            pendingDedupOf: pendingDedupOf,
             createdAt: createdAt,
             rowid: rowid,
           ),
@@ -8997,6 +9056,7 @@ class $$FeaturesTableTableManager extends RootTableManager<
             required String geometryGeojson,
             Value<bool> isNew = const Value.absent(),
             Value<String> status = const Value.absent(),
+            Value<String?> pendingDedupOf = const Value.absent(),
             required DateTime createdAt,
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -9007,6 +9067,7 @@ class $$FeaturesTableTableManager extends RootTableManager<
             geometryGeojson: geometryGeojson,
             isNew: isNew,
             status: status,
+            pendingDedupOf: pendingDedupOf,
             createdAt: createdAt,
             rowid: rowid,
           ),

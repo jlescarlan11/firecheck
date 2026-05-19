@@ -71,12 +71,9 @@ void main() {
         .getSingle();
     expect(sub.syncStatus, 'uploaded');
 
-    // FinalizeSubmissionUseCase now enqueues `attribution_upload`, which
-    // routes through the conflict-aware RPC. The legacy `uploadSubmission`
-    // surface stays for any in-flight legacy jobs from before the
-    // rollout but is not exercised here.
+    // FinalizeSubmissionUseCase enqueues `attribution_upload` and the
+    // worker routes through the conflict-aware RPC.
     expect(api.submitAttributionCalls, hasLength(1));
-    expect(api.uploadSubmissionCalls, isEmpty);
   });
 
   test('drain() de-dupes overlapping calls', () async {

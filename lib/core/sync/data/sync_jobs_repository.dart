@@ -16,16 +16,11 @@ class SyncJobsRepository {
     return _db.transaction(() async {
       // Gate two interlocking conditions:
       //   1. Photo jobs that block on a submission wait for the local
-      //      submission row to reach sync_status='uploaded' — that's the
-      //      same terminal state for both the legacy `submission` path
-      //      and the new `attribution_upload` path, so this gate is
-      //      type-agnostic.
+      //      submission row to reach sync_status='uploaded'.
       //   2. Attribution upload jobs whose feature is new wait for the
       //      corresponding new-feature upload job to reach `success`.
       //      Otherwise the submission's feature_id FK fails on the
-      //      server. Both legacy (`submission` / `new_feature`) and new
-      //      (`attribution_upload` / `new_feature_upload`) variants are
-      //      accepted on either side.
+      //      server.
       final raw = await _db.customSelect(
         '''
         SELECT j.* FROM sync_jobs j
@@ -39,7 +34,7 @@ class SyncJobsRepository {
             )
           )
           AND NOT (
-            j.entity_type IN ('submission','attribution_upload')
+            j.entity_type = 'attribution_upload'
             AND EXISTS (
               SELECT 1 FROM submissions s2
               JOIN features f2 ON f2.id = s2.feature_id
@@ -47,7 +42,7 @@ class SyncJobsRepository {
                 AND f2.is_new = 1
                 AND NOT EXISTS (
                   SELECT 1 FROM sync_jobs nf
-                  WHERE nf.entity_type IN ('new_feature','new_feature_upload')
+                  WHERE nf.entity_type = 'new_feature_upload'
                     AND nf.entity_id = f2.id
                     AND nf.status = 'success'
                 )
@@ -55,9 +50,7 @@ class SyncJobsRepository {
           )
         ORDER BY (
           CASE j.entity_type
-            WHEN 'new_feature'         THEN 0
             WHEN 'new_feature_upload'  THEN 0
-            WHEN 'submission'          THEN 1
             WHEN 'attribution_upload'  THEN 1
             ELSE                            2
           END

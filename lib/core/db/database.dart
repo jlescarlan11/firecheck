@@ -52,7 +52,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -127,6 +127,31 @@ class AppDatabase extends _$AppDatabase {
             // chosen decision while it awaits the resolve_* RPC call.
             await m.addColumn(submissions, submissions.pendingTheirsId);
             await m.createTable(pendingResolutions);
+          }
+          if (from < 12) {
+            // v11 → v12: features.pendingDedupOf tracks the candidate
+            // duplicate's UUID after a dedup-pending upload. Non-null =
+            // needs user review; cleared on resolve. Without this the
+            // review list can't surface dedup_pending uploads — they'd
+            // look like normal successes.
+            await m.addColumn(features, features.pendingDedupOf);
+          }
+          if (from < 13) {
+            // v12 → v13: rewrite any queued sync_jobs that still carry
+            // the legacy `submission` / `new_feature` entity_type. The
+            // matching worker handlers were removed in this release,
+            // so without this update an offline queue from a prior
+            // install would dead-letter as "unknown entity_type" on
+            // first drain. Idempotent — already-rewritten rows are
+            // skipped by the WHERE clause.
+            await customStatement(
+              "UPDATE sync_jobs SET entity_type = 'attribution_upload' "
+              "WHERE entity_type = 'submission'",
+            );
+            await customStatement(
+              "UPDATE sync_jobs SET entity_type = 'new_feature_upload' "
+              "WHERE entity_type = 'new_feature'",
+            );
           }
         },
         beforeOpen: (details) async {

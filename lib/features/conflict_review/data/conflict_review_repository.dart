@@ -29,22 +29,13 @@ class ConflictReviewRepository {
         .watch();
   }
 
-  /// Streams local features parked in dedup review — i.e. the feature
-  /// row is `is_new = true` and the proximity trigger flagged a
-  /// possible duplicate, and the user hasn't reviewed yet.
-  ///
-  /// The local features table doesn't carry possible_duplicate_of /
-  /// dedup_reviewed_at (those are server columns). Instead we surface
-  /// pending dedup reviews via the queued sync_jobs:
-  /// `new_feature_upload` jobs in `failed`/`dead` status, OR via the
-  /// pending_resolutions queue if the user already picked.
-  ///
-  /// For phase 5 we expose the simpler "features that have a queued
-  /// `pending_resolutions` row of kind=new_feature" — that's the user-
-  /// pickable set.
-  Stream<List<PendingResolution>> watchPendingDedupResolutions() {
-    return (_db.select(_db.pendingResolutions)
-          ..where((t) => t.kind.equals('new_feature'))
+  /// Streams local features parked in dedup review — i.e. the
+  /// dedup-aware upload returned `dedup_pending` and the local row was
+  /// flagged via `pendingDedupOf`. Cleared when the worker drains the
+  /// matching `new_feature_resolve` sync_job.
+  Stream<List<Feature>> watchPendingDedupFeatures() {
+    return (_db.select(_db.features)
+          ..where((t) => t.pendingDedupOf.isNotNull())
           ..orderBy([
             (t) => OrderingTerm(
                   expression: t.createdAt,

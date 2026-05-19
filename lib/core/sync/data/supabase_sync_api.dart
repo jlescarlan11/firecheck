@@ -13,23 +13,6 @@ class SupabaseSyncApi implements SyncApi {
   static const _photosBucket = 'photos';
 
   @override
-  Future<SyncOutcome> uploadSubmission(Map<String, dynamic> payload) async {
-    try {
-      await _client.rpc<dynamic>(
-        'upload_submission_bundle',
-        params: {'payload': payload},
-      );
-      return const Success();
-    } on PostgrestException catch (e) {
-      return _mapPostgrestException(e, payload);
-    } on AuthException {
-      return const AuthExpired();
-    } on Object catch (e) {
-      return TransientFailure(e.toString());
-    }
-  }
-
-  @override
   Future<({SyncOutcome outcome, String? storagePath})> uploadPhotoFile({
     required String submissionId,
     required String photoId,
@@ -64,35 +47,6 @@ class SupabaseSyncApi implements SyncApi {
       await _client.from('photos').update({
         'storage_path': storagePath,
       }).eq('id', photoId);
-      return const Success();
-    } on PostgrestException catch (e) {
-      return _mapPostgrestException(e, null);
-    } on AuthException {
-      return const AuthExpired();
-    } on Object catch (e) {
-      return TransientFailure(e.toString());
-    }
-  }
-
-  @override
-  Future<SyncOutcome> uploadNewFeature(Feature feature) async {
-    try {
-      // Goes through upload_new_feature RPC because features.geometry is
-      // PostGIS — PostgREST can't auto-convert raw GeoJSON. The RPC uses
-      // ST_GeomFromGeoJSON server-side.
-      await _client.rpc<dynamic>(
-        'upload_new_feature',
-        params: {
-          'payload': {
-            'id': feature.id,
-            'assignment_id': feature.assignmentId,
-            'feature_type': feature.featureType,
-            'geometry_geojson': feature.geometryGeojson,
-            'is_new': feature.isNew,
-            'created_at': feature.createdAt.toIso8601String(),
-          },
-        },
-      );
       return const Success();
     } on PostgrestException catch (e) {
       return _mapPostgrestException(e, null);
