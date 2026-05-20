@@ -2,7 +2,6 @@
 import 'dart:async';
 
 import 'package:firecheck/core/errors/failure.dart';
-import 'package:firecheck/features/auth/data/google_access_token_cache.dart';
 import 'package:firecheck/features/auth/data/google_auth_repository.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
@@ -18,10 +17,8 @@ class GoogleSignInAuthRepository implements GoogleAuthRepository {
   GoogleSignInAuthRepository({
     required GoTrueClient auth,
     required GoogleSignIn googleSignIn,
-    GoogleAccessTokenCache? tokenCache,
   })  : _auth = auth,
-        _googleSignIn = googleSignIn,
-        _tokenCache = tokenCache {
+        _googleSignIn = googleSignIn {
     _eventSub = _googleSignIn.authenticationEvents.listen(
       _onAuthEvent,
       onError: (_) {},
@@ -30,16 +27,11 @@ class GoogleSignInAuthRepository implements GoogleAuthRepository {
 
   final GoTrueClient _auth;
   final GoogleSignIn _googleSignIn;
-  final GoogleAccessTokenCache? _tokenCache;
   late final StreamSubscription<GoogleSignInAuthenticationEvent> _eventSub;
 
-  // Google OAuth access tokens default to a 1-hour lifetime. google_sign_in
-  // does not expose the expiry, so use a conservative assumption for caching.
-  static const _accessTokenTtl = Duration(minutes: 55);
-
   static const List<String> _driveScopes = <String>[
-    GoogleAuthRepository.driveReadonlyScope,
-    GoogleAuthRepository.driveFileScope,
+    GoogleTokenSource.driveReadonlyScope,
+    GoogleTokenSource.driveFileScope,
   ];
 
   GoogleSignInAccount? _currentAccount;
@@ -59,20 +51,16 @@ class GoogleSignInAuthRepository implements GoogleAuthRepository {
 
   @override
   Future<void> signIn() async {
-    final account = await _googleSignIn.authenticate(scopeHint: _driveScopes);
+    final account = await _googleSignIn.authenticate();
     final idToken = account.authentication.idToken;
     if (idToken == null) {
       throw const AuthFailure('Google sign-in did not return an id_token');
     }
-    final authz =
-        await account.authorizationClient.authorizeScopes(_driveScopes);
     await _auth.signInWithIdToken(
       provider: OAuthProvider.google,
       idToken: idToken,
-      accessToken: authz.accessToken,
     );
     _currentAccount = account;
-    await _persistAccessToken(authz.accessToken);
   }
 
   @override
@@ -80,7 +68,6 @@ class GoogleSignInAuthRepository implements GoogleAuthRepository {
     await _googleSignIn.signOut();
     await _auth.signOut();
     _currentAccount = null;
-    await _tokenCache?.clear();
   }
 
   @override
@@ -95,7 +82,6 @@ class GoogleSignInAuthRepository implements GoogleAuthRepository {
     final account = await _ensureAccount();
     final authz =
         await account.authorizationClient.authorizeScopes(_driveScopes);
-    await _persistAccessToken(authz.accessToken);
     return authz.accessToken.isNotEmpty;
   }
 
@@ -106,17 +92,7 @@ class GoogleSignInAuthRepository implements GoogleAuthRepository {
         await account.authorizationClient.authorizationForScopes(_driveScopes);
     authz ??=
         await account.authorizationClient.authorizeScopes(_driveScopes);
-    await _persistAccessToken(authz.accessToken);
     return authz.accessToken;
-  }
-
-  Future<void> _persistAccessToken(String token) async {
-    final cache = _tokenCache;
-    if (cache == null || token.isEmpty) return;
-    await cache.save(
-      token,
-      DateTime.now().toUtc().add(_accessTokenTtl),
-    );
   }
 
   Future<GoogleSignInAccount> _ensureAccount() async {

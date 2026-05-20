@@ -13,6 +13,9 @@ class Assignments extends Table {
   DateTimeColumn get createdAt => dateTime()();
   TextColumn get driveModifiedTime => text().nullable()();
   TextColumn get driveFolderId => text().nullable()();
+  // Human-readable Drive folder name (e.g. "cebu"). Distinct from id
+  // which is always a UUID. Null for assignments predating this column.
+  TextColumn get name => text().nullable()();
   // Drive upload confirmation
   TextColumn get driveFolderPath => text().nullable()();
   TextColumn get driveFolderUrl => text().nullable()();

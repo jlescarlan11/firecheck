@@ -8,6 +8,7 @@ import 'package:firecheck/core/sync/shapefile/dbf_parser.dart';
 import 'package:firecheck/core/sync/shapefile/reprojector.dart';
 import 'package:firecheck/core/sync/shapefile/shp_parser.dart';
 import 'package:flutter/foundation.dart';
+import 'package:uuid/uuid.dart';
 
 @immutable
 class ImportResult {
@@ -59,13 +60,25 @@ class ShapefileImporter {
     return preferred;
   }
 
+  static const _uuid = Uuid();
+  static final _uuidPattern = RegExp(
+    r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+    caseSensitive: false,
+  );
+
+  static String _toFeatureId(String assignmentId, String rawFeatId) {
+    if (_uuidPattern.hasMatch(rawFeatId)) return rawFeatId;
+    return _uuid.v5(Namespace.url.value, '$assignmentId/$rawFeatId');
+  }
+
   Future<ImportResult> importShapefiles(
     Map<String, Uint8List> files,
     String assignmentId,
     String driveModifiedTime,
     String driveFolderId,
-    String enumeratorId,
-  ) async {
+    String enumeratorId, {
+    String? assignmentDisplayName,
+  }) async {
     // Locate .shp files by preferred name, falling back to any .shp in the zip.
     final buildingShpKey = _shpKeyFor(files, 'buildings.shp');
     final buildingShp = _findFile(files, 'buildings.shp', '.shp');
@@ -106,13 +119,19 @@ class ShapefileImporter {
     // Capture a single timestamp for all rows written in this import
     final now = DateTime.now();
 
-    // Write everything in a single Drift transaction
+    debugPrint(
+      '[ShapefileImporter] writing assignment id="$assignmentId" '
+      'name="${assignmentDisplayName ?? assignmentId}" '
+      'buildings=${buildingGeoms.length} roads=${roadGeoms.length}',
+    );
+
     await db.transaction(() async {
       await db.into(db.assignments).insertOnConflictUpdate(
             AssignmentsCompanion(
               id: Value(assignmentId),
               enumeratorId: Value(enumeratorId),
               campaignId: Value(assignmentId),
+              name: Value(assignmentDisplayName),
               boundaryPolygonGeojson: Value(boundaryGeojsonStr),
               downloadedAt: Value(now),
               driveModifiedTime: Value(driveModifiedTime),
@@ -122,16 +141,21 @@ class ShapefileImporter {
           );
 
       for (var i = 0; i < buildingGeoms.length; i++) {
-        final featId = i < buildingRecords.length
-            ? (buildingRecords[i]['feat_id'] ?? 'bld-$i')
+        final rawFeatId = i < buildingRecords.length
+            ? (buildingRecords[i]['feat_id']?.toString() ?? 'bld-$i')
             : 'bld-$i';
+        final featId = _toFeatureId(assignmentId, rawFeatId);
+        debugPrint(
+          '[ShapefileImporter] building[$i] rawFeatId="$rawFeatId" → id="$featId"',
+        );
         await db.into(db.features).insertOnConflictUpdate(
               FeaturesCompanion.insert(
-                id: '$assignmentId/$featId',
+                id: featId,
                 assignmentId: assignmentId,
                 featureType: 'building',
                 geometryGeojson: jsonEncode(_reprojectGeom(buildingGeoms[i])),
                 isNew: const Value(false),
+                externalCode: Value(rawFeatId),
                 createdAt: now,
               ),
             );
@@ -139,14 +163,19 @@ class ShapefileImporter {
 
       for (var i = 0; i < roadRecords.length; i++) {
         if (i >= roadGeoms.length) break;
-        final featId = roadRecords[i]['feat_id'] ?? 'rd-$i';
+        final rawFeatId = roadRecords[i]['feat_id']?.toString() ?? 'rd-$i';
+        final featId = _toFeatureId(assignmentId, rawFeatId);
+        debugPrint(
+          '[ShapefileImporter] road[$i] rawFeatId="$rawFeatId" → id="$featId"',
+        );
         await db.into(db.features).insertOnConflictUpdate(
               FeaturesCompanion.insert(
-                id: '$assignmentId/$featId',
+                id: featId,
                 assignmentId: assignmentId,
                 featureType: 'road',
                 geometryGeojson: jsonEncode(_reprojectGeom(roadGeoms[i])),
                 isNew: const Value(false),
+                externalCode: Value(rawFeatId),
                 createdAt: now,
               ),
             );

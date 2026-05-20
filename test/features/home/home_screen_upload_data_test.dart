@@ -21,8 +21,10 @@ class _FakeBiometric extends BiometricGate {
 }
 
 void main() {
-  testWidgets('SubmittedBanner replaces progress card when locked',
+  testWidgets('Submitted shows the banner but keeps Upload Data available',
       (tester) async {
+    // Submitted is informational, not a hard lock — enumerators may
+    // re-export and re-upload after a submit.
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -33,6 +35,7 @@ void main() {
             (ref) =>
                 Stream.value(Submitted(submittedAt: DateTime(2026, 4, 27))),
           ),
+          biometricGateProvider.overrideWithValue(_FakeBiometric()),
           driveUploadNotifierProvider.overrideWith(
             (_) => DriveUploadNotifier.seeded(const DriveUploadState(jobs: [])),
           ),
@@ -46,7 +49,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.textContaining('Submitted'), findsAtLeastNWidgets(1));
-    expect(find.text('Upload Data'), findsNothing);
+    expect(find.text('Upload Data'), findsOneWidget);
   });
 
   testWidgets('Upload Data tile shown when unlocked', (tester) async {
@@ -73,5 +76,30 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('Upload Data'), findsOneWidget);
+  });
+
+  testWidgets('Upload Data tile hidden when ClosedRemotely', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          progressProvider.overrideWith(
+            (ref) => Stream.value(ProgressSnapshot.empty),
+          ),
+          assignmentLockStateProvider.overrideWith(
+            (ref) => Stream.value(const ClosedRemotely(bundleFile: null)),
+          ),
+          driveUploadNotifierProvider.overrideWith(
+            (_) => DriveUploadNotifier.seeded(const DriveUploadState(jobs: [])),
+          ),
+        ],
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: HomeScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Upload Data'), findsNothing);
   });
 }

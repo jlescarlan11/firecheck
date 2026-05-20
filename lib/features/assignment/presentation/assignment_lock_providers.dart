@@ -35,7 +35,13 @@ final assignmentLockStateProvider =
 
 /// Convenience: synchronous bool that consumers can watch to gate
 /// edit-affordances. True means edits should be blocked.
+///
+/// Submitted is no longer a hard lock — enumerators submit progressively
+/// (partial batches), and the existing supersede flow on the server
+/// (submit_attribution_with_conflict_check) handles re-submission of an
+/// already-submitted feature cleanly. Only ClosedRemotely (admin closed
+/// the assignment) actually blocks edits.
 final isAssignmentLockedProvider = Provider<bool>((ref) {
   final state = ref.watch(assignmentLockStateProvider).value;
-  return state is Submitted || state is ClosedRemotely;
+  return state is ClosedRemotely;
 });

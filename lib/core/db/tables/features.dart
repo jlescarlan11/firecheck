@@ -14,6 +14,9 @@ class Features extends Table {
   // Non-null = "needs user review"; cleared once the user resolves.
   // Mirrors the server's `features.possible_duplicate_of` column.
   TextColumn get pendingDedupOf => text().nullable()();
+  // Original feat_id attribute from the shapefile DBF (e.g. "BLD-003").
+  // Null for user-added features and for features predating this column.
+  TextColumn get externalCode => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
 
   @override

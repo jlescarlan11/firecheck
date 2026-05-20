@@ -88,7 +88,7 @@ void main() {
     expect(state.canStartUpload, isFalse);
   });
 
-  test('feature with no submission → blocker feature_has_no_finalized_submission', () {
+  test('feature with no submission → warning feature_has_no_finalized_submission', () {
     final state = buildReviewState(
       ReviewSourceData(
         features: [_building('f-1')],
@@ -101,8 +101,12 @@ void main() {
       ),
     );
     expect(
-      state.blockers.map((b) => b.code),
+      state.warnings.map((w) => w.code),
       contains('feature_has_no_finalized_submission'),
+    );
+    expect(
+      state.blockers.map((b) => b.code),
+      isNot(contains('feature_has_no_finalized_submission')),
     );
   });
 

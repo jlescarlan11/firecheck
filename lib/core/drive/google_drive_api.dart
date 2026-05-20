@@ -1,4 +1,5 @@
 // lib/core/drive/google_drive_api.dart
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:firecheck/core/drive/drive_api.dart';
@@ -6,15 +7,27 @@ import 'package:firecheck/core/drive/drive_assignment.dart';
 import 'package:firecheck/core/drive/drive_download_event.dart';
 import 'package:firecheck/core/errors/failure.dart';
 import 'package:firecheck/features/auth/data/google_auth_repository.dart';
+import 'package:flutter/foundation.dart';
 import 'package:googleapis/drive/v3.dart' as gdrive;
 import 'package:googleapis_auth/googleapis_auth.dart';
 import 'package:http/http.dart' as http;
+import 'package:uuid/uuid.dart';
 
 class GoogleDriveApi implements DriveApi {
-  GoogleDriveApi({required GoogleAuthRepository googleAuthRepo})
+  GoogleDriveApi({required GoogleTokenSource googleAuthRepo})
       : _googleAuthRepo = googleAuthRepo;
 
-  final GoogleAuthRepository _googleAuthRepo;
+  final GoogleTokenSource _googleAuthRepo;
+  static const _uuid = Uuid();
+  static final _uuidPattern = RegExp(
+    r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+    caseSensitive: false,
+  );
+
+  static String _toLocalId(String folderName) {
+    if (_uuidPattern.hasMatch(folderName)) return folderName;
+    return _uuid.v5(Namespace.url.value, folderName);
+  }
 
   // assignmentId → { filename → fileId }
   final _fileCache = <String, Map<String, String>>{};
@@ -27,6 +40,11 @@ class GoogleDriveApi implements DriveApi {
   // form-field validation without a rebuild (Issue #43). Matched by exact
   // filename, case-insensitive.
   static const _configFilename = 'field_requirements.txt';
+  // Optional sidecar that pins the canonical Supabase UUID for this assignment.
+  // When present its content overrides the UUID-v5 derivation from the folder
+  // name, so a human-readable folder like "cebu" can map to the exact UUID the
+  // admin created in Supabase (e.g. 00000000-0000-0000-0000-000000000a01).
+  static const _assignmentIdFilename = 'assignment_id.txt';
 
   Future<gdrive.DriveApi> _api() async {
     final token = await _googleAuthRepo.getAccessToken();
@@ -37,7 +55,7 @@ class GoogleDriveApi implements DriveApi {
         DateTime.now().toUtc().add(const Duration(hours: 1)),
       ),
       null,
-      [GoogleAuthRepository.driveReadonlyScope, GoogleAuthRepository.driveFileScope],
+      [GoogleTokenSource.driveReadonlyScope, GoogleTokenSource.driveFileScope],
     );
     return gdrive.DriveApi(authenticatedClient(http.Client(), credentials));
   }
@@ -56,13 +74,25 @@ class GoogleDriveApi implements DriveApi {
     final firecheckId = firecheckResult.files?.firstOrNull?.id;
     if (firecheckId == null) return [];
 
-    // Assignments live directly inside /firecheck/<assignment_id>/.
-    // (Previously /firecheck/inbox/<assignment_id>/ — the inbox layer was
-    // dropped in favour of a single shared assignment folder that holds
-    // both the base map and any per-user uploads.)
+    // Locate the input/ subfolder where admin-uploaded base maps live.
+    // Drive layout:
+    //   firecheck/input/<assignment>/<base-map files>      ← downloads read here
+    //   firecheck/output/<assignment>/<enumerator files>   ← uploads write here
+    // The split keeps the enumerator-written subtree (which the app owns
+    // under drive.file scope) cleanly separate from the admin's base map.
+    final inputResult = await api.files.list(
+      q: "name = 'input' and mimeType = 'application/vnd.google-apps.folder'"
+          " and '$firecheckId' in parents and trashed = false",
+      spaces: 'drive',
+      $fields: 'files(id)',
+    );
+    final inputId = inputResult.files?.firstOrNull?.id;
+    if (inputId == null) return [];
+
+    // Assignments live directly inside firecheck/input/<assignment>/.
     final foldersResult = await api.files.list(
       q: "mimeType = 'application/vnd.google-apps.folder'"
-          " and '$firecheckId' in parents and trashed = false",
+          " and '$inputId' in parents and trashed = false",
       spaces: 'drive',
       $fields: 'files(id,name,modifiedTime)',
     );
@@ -83,27 +113,54 @@ class GoogleDriveApi implements DriveApi {
       final shapefiles = <String, String>{};
       final md5s = <String, String>{};
       final sizes = <String, int>{};
+      String? assignmentIdFileId;
       for (final f in filesResult.files ?? <gdrive.File>[]) {
         final name = f.name!;
+        final lowerName = name.toLowerCase();
         final dot = name.lastIndexOf('.');
         final ext = dot >= 0 ? name.substring(dot).toLowerCase() : '';
         final isShapefile = _shapefileExts.contains(ext);
-        final isConfig = name.toLowerCase() == _configFilename;
+        final isConfig = lowerName == _configFilename;
         if (isShapefile || isConfig) {
           shapefiles[name] = f.id!;
           if (f.md5Checksum != null) md5s[name] = f.md5Checksum!;
           sizes[name] = int.tryParse(f.size ?? '0') ?? 0;
+        } else if (lowerName == _assignmentIdFilename) {
+          assignmentIdFileId = f.id!;
         }
       }
       if (shapefiles.isEmpty) continue;
+
+      // Read the canonical Supabase UUID from assignment_id.txt if present.
+      String? pinnedLocalId;
+      if (assignmentIdFileId != null) {
+        try {
+          final media = await api.files.get(
+            assignmentIdFileId,
+            downloadOptions: gdrive.DownloadOptions.fullMedia,
+          ) as gdrive.Media;
+          final bytes = <int>[];
+          await for (final chunk in media.stream) {
+            bytes.addAll(chunk);
+          }
+          final raw = utf8.decode(bytes).trim().toLowerCase();
+          if (_uuidPattern.hasMatch(raw)) pinnedLocalId = raw;
+        } catch (_) {}
+      }
 
       _fileCache[folderName] = shapefiles;
       _md5Cache[folderName] = md5s;
       _sizeCache[folderName] = sizes;
 
+      final localId = pinnedLocalId ?? _toLocalId(folderName);
+      debugPrint(
+        '[DriveApi] folder "$folderName" → localAssignmentId=$localId'
+        '${pinnedLocalId != null ? " (pinned from assignment_id.txt)" : localId != folderName ? " (v5 derived)" : ""}',
+      );
       assignments.add(
         DriveAssignment(
           assignmentId: folderName,
+          localAssignmentId: localId,
           inputZipModifiedTime: folderModTime,
           driveFolderId: folderId,
         ),
@@ -181,9 +238,11 @@ class GoogleDriveApi implements DriveApi {
   }) async {
     final api = await _api();
 
-    // Target: /firecheck/<assignment_id>/<file>. Same folder downloads
-    // read from; conflict safety is handled at the database layer via
-    // submit_attribution_with_conflict_check + resolve_attribution.
+    // Target: firecheck/output/<assignment_id>/<file>. Mirrors the
+    // worker's queue-based layout so both Drive upload paths land in the
+    // same subtree, distinct from the admin's read-only firecheck/input/
+    // base-map tree. Conflict safety is handled at the database layer
+    // via submit_attribution_with_conflict_check + resolve_attribution.
     // Files with the same name overwrite the prior version (latest
     // upload wins); photos use unique filenames so they accumulate.
     // enumeratorId is preserved on the signature for callers but is
@@ -195,8 +254,9 @@ class GoogleDriveApi implements DriveApi {
     // shared-with-me or a shared drive). Otherwise downloads and
     // uploads would diverge to different folder trees.
     final firecheckId = await _findOrCreateFirecheckRoot(api);
+    final outputId = await _findOrCreateFolder(api, firecheckId, 'output');
     final assignmentFolderId =
-        await _findOrCreateFolder(api, firecheckId, assignmentId);
+        await _findOrCreateFolder(api, outputId, assignmentId);
 
     for (final file in files) {
       final media = gdrive.Media(
@@ -232,7 +292,7 @@ class GoogleDriveApi implements DriveApi {
     }
 
     return (
-      folderPath: 'firecheck/$assignmentId/',
+      folderPath: 'firecheck/output/$assignmentId/',
       folderUrl:
           'https://drive.google.com/drive/folders/$assignmentFolderId',
     );

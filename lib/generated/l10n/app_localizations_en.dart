@@ -89,6 +89,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notDownloadedBadge => 'Not downloaded';
 
   @override
+  String get noAssignmentsTitle => 'No assignments found';
+
+  @override
+  String get noAssignmentsBody =>
+      'Ask your supervisor to place an assignment folder under firecheck/input/ on Google Drive, then try again.';
+
+  @override
   String get fetchingFeatures => 'Fetching features…';
 
   @override
@@ -899,7 +906,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'Exact cost selected but amount is empty';
 
   @override
-  String get issueFeatureNoSubmission => 'Feature has no finalized submission';
+  String get issueFeatureNoSubmission =>
+      'Not yet surveyed — will be skipped if you upload now';
 
   @override
   String get startUploadButton => 'Start Upload';

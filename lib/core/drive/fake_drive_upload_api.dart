@@ -4,14 +4,22 @@ class FakeDriveUploadApi implements DriveUploadApi {
   FakeDriveUploadApi({
     this.throwOnUpload = false,
     this.throwOnFolder = false,
+    this.firecheckRootId = 'firecheck-root',
   });
 
   final bool throwOnUpload;
   final bool throwOnFolder;
+  final String firecheckRootId;
 
   final List<String> uploadedPaths = [];
   final Map<String, String> _folderIds = {};
   int _fileCounter = 0;
+
+  @override
+  Future<String> findOrCreateFirecheckRoot() async {
+    if (throwOnFolder) throw Exception('folder creation failed');
+    return firecheckRootId;
+  }
 
   @override
   Future<String> createOrGetFolder(String name, String parentId) async {

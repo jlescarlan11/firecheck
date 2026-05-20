@@ -22,7 +22,11 @@ class HomeScreen extends ConsumerWidget {
     final l = AppLocalizations.of(context)!;
     final asyncSnap = ref.watch(progressProvider);
     final lock = ref.watch(assignmentLockStateProvider).value;
-    final isLocked = lock is Submitted || lock is ClosedRemotely;
+    // Only ClosedRemotely blocks edits/uploads. Submitted is informational
+    // (banner only) — enumerators may re-export and re-upload after a
+    // submit; conflict resolution is handled server-side via
+    // submit_attribution_with_conflict_check.
+    final isLocked = lock is ClosedRemotely;
     final exportState = ref.watch(shapefileExportNotifierProvider);
     final isBusy =
         exportState is ExportValidating || exportState is ExportExporting;

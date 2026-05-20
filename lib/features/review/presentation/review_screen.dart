@@ -1,10 +1,11 @@
-import 'package:firecheck/core/drive/drive_upload_job_status.dart';
-import 'package:firecheck/core/drive/drive_upload_providers.dart'
-    hide driveUploadNotifierProvider;
-import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
+import 'package:firecheck/core/auth/current_user_provider.dart';
+import 'package:firecheck/core/drive/drive_upload_audit_repository.dart';
 import 'package:firecheck/features/review/domain/drive_upload_state.dart';
 import 'package:firecheck/features/review/domain/review_state.dart';
+import 'package:firecheck/features/review/domain/upload_confirmer.dart';
+import 'package:firecheck/features/review/domain/upload_flow_outcome.dart';
 import 'package:firecheck/features/review/domain/upload_progress.dart';
+import 'package:firecheck/features/review/presentation/drive_upload_notifier.dart';
 import 'package:firecheck/features/review/presentation/review_providers.dart';
 import 'package:firecheck/features/review/presentation/sections/drive_upload_confirmation_card.dart';
 import 'package:firecheck/features/review/presentation/sections/failed_jobs_section.dart';
@@ -17,11 +18,30 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class ReviewScreen extends ConsumerWidget {
+class ReviewScreen extends ConsumerStatefulWidget {
   const ReviewScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ReviewScreen> createState() => _ReviewScreenState();
+}
+
+class _ReviewScreenState extends ConsumerState<ReviewScreen> {
+  @override
+  void deactivate() {
+    // Clear lingering Completed state so re-entering the screen shows the
+    // normal review, not a stale success card. InProgress is preserved so
+    // a user who leaves mid-upload can return and keep watching progress.
+    // Runs in deactivate (not dispose) because ref.read is invalid once
+    // the ConsumerStatefulElement is disposed.
+    final progress = ref.read(uploadProgressControllerProvider);
+    if (progress is Completed) {
+      ref.read(uploadProgressControllerProvider.notifier).reset();
+    }
+    super.deactivate();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     final stateAsync = ref.watch(reviewStateProvider);
     final driveUpload = ref.watch(driveUploadNotifierProvider);
@@ -59,37 +79,25 @@ class ReviewScreen extends ConsumerWidget {
                   issues: state.blockers,
                   severity: ReviewSeverity.blocker,
                   onGoToFeature: (id) =>
-                      context.go('/feature/${Uri.encodeComponent(id)}'),
+                      context.push('/feature/${Uri.encodeComponent(id)}'),
                 ),
                 const SizedBox(height: 8),
                 ValidationSection(
                   issues: state.warnings,
                   severity: ReviewSeverity.warning,
                   onGoToFeature: (id) =>
-                      context.go('/feature/${Uri.encodeComponent(id)}'),
+                      context.push('/feature/${Uri.encodeComponent(id)}'),
                 ),
                 const SizedBox(height: 16),
                 StartUploadButton(
-                  enabled: state.canStartUpload,
-                  onPressed: () => _startSupabaseUpload(context, ref),
+                  enabled: state.canStartUpload &&
+                      driveUpload is! DriveUploadInProgress,
+                  onPressed: () => _runUpload(context, ref, state),
                 ),
                 const SizedBox(height: 8),
-                if (driveUpload is! DriveUploadSuccess) ...[
-                  FilledButton.icon(
-                    onPressed: driveUpload is DriveUploadInProgress
-                        ? null
-                        : () => _startDriveUpload(ref),
-                    icon: const Icon(Icons.cloud_upload_outlined),
-                    label: const Text('Upload to Google Drive'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF1A73E8),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                ],
                 DriveUploadConfirmationCard(
                   state: driveUpload,
-                  onRetry: () => _startDriveUpload(ref),
+                  onRetry: () => _runUpload(context, ref, state),
                 ),
               ],
             ],
@@ -99,122 +107,195 @@ class ReviewScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _startSupabaseUpload(BuildContext context, WidgetRef ref) async {
-    debugPrint('[StartUpload] beginning upload');
-    ref.read(uploadProgressControllerProvider.notifier).beginUpload();
-    try {
-      final useCase = ref.read(startUploadUseCaseProvider);
-      final repo = ref.read(assignmentRepositoryProvider);
-      final assignment = await repo.getCurrentAssignment();
-      if (assignment == null) {
-        debugPrint('[StartUpload] no current assignment — aborting');
-        ref.read(uploadProgressControllerProvider.notifier).reset();
-        return;
-      }
-      debugPrint('[StartUpload] executing for assignment ${assignment.id}');
-      final result = await useCase.execute(assignment.id);
-      debugPrint(
-        '[StartUpload] finalized ${result.finalizedCount} submission(s); '
-        'sync worker triggered',
-      );
-      if (result.finalizedCount == 0) {
-        ref.read(uploadProgressControllerProvider.notifier).reset();
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content:
-                  Text('Nothing new to upload — all items already synced.'),
-            ),
-          );
-        }
-        return;
-      }
-    } catch (e, st) {
-      debugPrint('[StartUpload] failed: $e\n$st');
-      ref.read(uploadProgressControllerProvider.notifier).reset();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+  Future<void> _runUpload(
+    BuildContext context,
+    WidgetRef ref,
+    ReviewState state,
+  ) async {
+    final useCase = ref.read(executeAssignmentUploadUseCaseProvider);
+    final notifier = ref.read(driveUploadNotifierProvider.notifier);
+    final currentUserId = ref.read(currentUserIdProvider);
+    final messenger = ScaffoldMessenger.of(context);
+
+    final outcome = await useCase.execute(
+      state: state,
+      currentUserId: currentUserId,
+      confirmer: _DialogUploadConfirmer(context),
+    );
+
+    if (!context.mounted) {
+      _applyOutcomeToNotifier(notifier, outcome);
+      return;
+    }
+    switch (outcome) {
+      case UploadFlowNoAssignment():
+      case UploadFlowCancelled():
+        // No-op: progress controller already reset / never started.
+        break;
+      case UploadFlowSupabaseFailed():
+        messenger.showSnackBar(
           const SnackBar(content: Text('Upload failed. Please try again.')),
         );
-      }
+      case UploadFlowEmpty():
+      case UploadFlowIncomplete():
+      case UploadFlowSucceeded():
+        _applyOutcomeToNotifier(notifier, outcome);
     }
   }
 
-  Future<void> _startDriveUpload(WidgetRef ref) async {
-    debugPrint('[DriveUpload] enqueue started');
-    final assignment = await ref
-        .read(assignmentRepositoryProvider)
-        .getCurrentAssignment();
-    if (assignment == null) {
-      debugPrint('[DriveUpload] no current assignment');
-      return;
+  void _applyOutcomeToNotifier(
+    DriveUploadNotifier notifier,
+    UploadFlowOutcome outcome,
+  ) {
+    switch (outcome) {
+      case UploadFlowSucceeded(:final folderPath, :final confirmedAt):
+        notifier.applyQueueSuccess(
+          folderPath: folderPath,
+          confirmedAt: confirmedAt,
+        );
+      case UploadFlowIncomplete(:final completedCount, :final failedCount):
+        notifier.applyQueueFailure(
+          completedCount > 0
+              ? '$completedCount uploaded, $failedCount failed. '
+                  'Tap retry to re-upload failed files.'
+              : 'Upload failed — $failedCount file(s) could not be sent. '
+                  'Check your connection and try again.',
+        );
+      case UploadFlowEmpty():
+        notifier.applyQueueFailure(
+          'No files found to upload. Complete your field data first.',
+          canRetry: false,
+        );
+      case UploadFlowNoAssignment():
+      case UploadFlowCancelled():
+      case UploadFlowSupabaseFailed():
+        break;
     }
+  }
+}
 
-    final driveRepo = ref.read(driveUploadRepoProvider);
-    final enqueued = await ref
-        .read(enqueueAssignmentUseCaseProvider)
-        .execute(assignmentId: assignment.id);
-    debugPrint('[DriveUpload] enqueued $enqueued new job(s)');
+class _DialogUploadConfirmer implements UploadConfirmer {
+  _DialogUploadConfirmer(this._context);
+  final BuildContext _context;
 
-    final allJobs = await driveRepo.getJobsForAssignment(assignment.id);
-    debugPrint(
-      '[DriveUpload][debug] queue for ${assignment.id}: '
-      '${allJobs.length} total · '
-      '${allJobs.where((j) => j.status == DriveUploadJobStatus.pending).length} pending · '
-      '${allJobs.where((j) => j.status == DriveUploadJobStatus.completed).length} completed · '
-      '${allJobs.where((j) => j.status == DriveUploadJobStatus.failed).length} failed · '
-      '${allJobs.where((j) => j.status == DriveUploadJobStatus.dead).length} dead',
+  @override
+  Future<bool> confirmPartial({
+    required int unsurveyedCount,
+    required int totalFeatures,
+  }) async {
+    if (!_context.mounted) return false;
+    final surveyed = totalFeatures - unsurveyedCount;
+    final ok = await showDialog<bool>(
+      context: _context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Upload partial data?'),
+        content: Text(
+          '$surveyed of $totalFeatures features surveyed. '
+          'The remaining $unsurveyedCount unsurveyed feature(s) will be '
+          'skipped and can be uploaded later.\n\nContinue?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Upload partial'),
+          ),
+        ],
+      ),
     );
+    return ok ?? false;
+  }
 
-    if (allJobs.isEmpty) {
-      debugPrint('[DriveUpload] nothing to upload');
-      ref.read(driveUploadNotifierProvider.notifier).applyQueueFailure(
-            'No files found to upload. Complete your field data first.',
-            canRetry: false,
-          );
-      return;
-    }
+  @override
+  Future<bool> confirmOverwrite({
+    required List<DriveUploadAudit> priorUploads,
+    required String? currentUserId,
+  }) async {
+    if (!_context.mounted) return false;
+    final latest = priorUploads.first;
+    final fromOther = priorUploads
+        .where((u) => u.uploadedBy != currentUserId)
+        .toList(growable: false);
+    final byOther = fromOther.isNotEmpty;
+    final shown = byOther ? fromOther.first : latest;
 
-    await ref.read(driveUploadWorkerProvider).drain();
+    final who = byOther
+        ? (shown.uploaderDisplayName?.trim().isNotEmpty ?? false
+            ? shown.uploaderDisplayName!
+            : 'another enumerator')
+        : 'You';
+    final when = _formatTimestamp(shown.uploadedAt);
+    final files = shown.fileCount > 0 ? ' (${shown.fileCount} file(s))' : '';
 
-    final finalJobs = await driveRepo.getJobsForAssignment(assignment.id);
-    final completed = finalJobs
-        .where((j) => j.status == DriveUploadJobStatus.completed)
-        .length;
-    final failed = finalJobs
-        .where((j) =>
-            j.status == DriveUploadJobStatus.failed ||
-            j.status == DriveUploadJobStatus.dead,)
-        .length;
-    debugPrint(
-      '[DriveUpload][debug] after drain: $completed completed, $failed failed',
+    final ok = await showDialog<bool>(
+      context: _context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          byOther ? 'Already uploaded by someone else' : 'Already uploaded',
+        ),
+        content: Text(
+          byOther
+              ? '$who uploaded this assignment $when$files. '
+                  'Uploading again will add a new copy to your Drive folder '
+                  'and may overwrite shared data downstream.\n\n'
+                  'Continue anyway?'
+              : 'You uploaded this assignment $when$files. '
+                  'Re-upload to send the latest changes?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(byOther ? 'Upload anyway' : 'Re-upload'),
+          ),
+        ],
+      ),
     );
+    return ok ?? false;
+  }
 
-    if (completed > 0 && failed == 0) {
-      final now = DateTime.now();
-      final dateKey =
-          '${now.year}-${now.month.toString().padLeft(2, '0')}-'
-          '${now.day.toString().padLeft(2, '0')}';
-      final folderPath = '${assignment.enumeratorId}/$dateKey/';
-      await ref.read(assignmentRepositoryProvider).setDriveUploadResult(
-            assignmentId: assignment.id,
-            driveFolderPath: folderPath,
-            driveFolderUrl: '',
-            driveUploadConfirmedAt: now,
-          );
-      ref.read(driveUploadNotifierProvider.notifier).applyQueueSuccess(
-            folderPath: folderPath,
-            confirmedAt: now,
-            assignmentId: assignment.id,
-          );
-    } else {
-      ref.read(driveUploadNotifierProvider.notifier).applyQueueFailure(
-            completed > 0
-                ? '$completed uploaded, $failed failed. '
-                    'Tap retry to re-upload failed files.'
-                : 'Upload failed — $failed file(s) could not be sent. '
-                    'Check your connection and try again.',
-          );
-    }
+  @override
+  Future<bool> confirmUnverified() async {
+    if (!_context.mounted) return false;
+    final ok = await showDialog<bool>(
+      context: _context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Couldn't verify prior uploads"),
+        content: const Text(
+          "We couldn't reach the server to check whether this assignment "
+          'was uploaded before. Uploading anyway may overwrite a copy '
+          'someone else has already sent.\n\nContinue?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Upload anyway'),
+          ),
+        ],
+      ),
+    );
+    return ok ?? false;
+  }
+
+  String _formatTimestamp(DateTime ts) {
+    final now = DateTime.now();
+    final diff = now.difference(ts);
+    if (diff.inMinutes < 1) return 'just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
+    if (diff.inHours < 24) return '${diff.inHours} hr ago';
+    if (diff.inDays < 7) return '${diff.inDays} day(s) ago';
+    final m = ts.month.toString().padLeft(2, '0');
+    final d = ts.day.toString().padLeft(2, '0');
+    return 'on ${ts.year}-$m-$d';
   }
 }

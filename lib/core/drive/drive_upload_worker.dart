@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/drive/drive_upload_api.dart';
-import 'package:firecheck/core/drive/drive_upload_job_status.dart';
 import 'package:firecheck/core/drive/drive_upload_repository.dart';
 
 class DriveUploadWorker {
@@ -9,13 +8,17 @@ class DriveUploadWorker {
     required this.api,
     required this.repo,
     required this.db,
-    required this.rootFolderId,
+    required this.enumeratorIdentifier,
   });
 
   final DriveUploadApi api;
   final DriveUploadRepository repo;
   final AppDatabase db;
-  final String rootFolderId;
+  /// Resolves the per-enumerator Drive folder name. Typically the user's
+  /// email so multi-user uploads stay segregated in the shared output/
+  /// tree. Sync so each `_processOne` can read it without an extra await.
+  /// Returning null falls back to a generic 'unknown-enumerator' folder.
+  final String? Function() enumeratorIdentifier;
 
   static const _maxConcurrent = 3;
   // NOTE: This guard is not isolate-safe. Background WorkManager isolates
@@ -25,6 +28,10 @@ class DriveUploadWorker {
 
   // Session-scoped folder ID cache; not persisted across app restarts.
   final _folderCache = <String, Future<String>>{};
+  // The shared firecheck root is resolved once per session via a
+  // parent-agnostic name lookup — same discovery the download path uses —
+  // so uploads always land in the folder downloads read from.
+  Future<String>? _firecheckRootFuture;
 
   Future<void> drain() async {
     if (_running) return;
@@ -76,18 +83,37 @@ class DriveUploadWorker {
   }
 
   Future<String> _resolveParentFolder(DriveUploadJob job) async {
-    // Unified Drive layout per assignment:
-    //   <rootFolderId>/<assignmentId>/                  ← shapefile zips overwrite here
-    //   <rootFolderId>/<assignmentId>/photos/           ← photos (unique filenames, no overwrite)
-    // Conflict safety for shapefile overwrites is handled at the DB
-    // layer via submit_attribution_with_conflict_check; Drive is the
-    // file mirror, not the source of truth for attributions.
-    final isPhoto = job.fileType == DriveFileType.photo;
-    final cacheKey = isPhoto ? '${job.assignmentId}/photos' : job.assignmentId;
+    // Drive layout for enumerator-produced shapefile components:
+    //   firecheck/output/<enumerator>/<folderName>/  ← buildings.{shp,dbf,shx,prj}, roads.*
+    //
+    // The `output/` subtree is created entirely by this app, which keeps
+    // every file under it within reach of the `drive.file` OAuth scope
+    // (writes restricted to app-created files). The base map sitting at
+    // firecheck/input/<folderName>/ remains untouched — it was uploaded
+    // by the admin's Drive client and not owned by enumerators.
+    //
+    // The per-enumerator layer prevents two enumerators uploading the
+    // same assignment from creating files with identical names in the
+    // same parent folder — both would be visible to the admin via the
+    // Drive UI, but the drive.file scope blocks one app instance from
+    // touching another instance's files. Per-enumerator subfolders make
+    // each submission addressable.
+    //
+    // folderName is the human-readable Drive folder ("cebu"), not the
+    // canonical Supabase UUID — keeps the output hierarchy aligned with
+    // how downloads name the assignment.
+    final cacheKey = job.assignmentId;
     if (_folderCache.containsKey(cacheKey)) return _folderCache[cacheKey]!;
-    // Store only successful results; remove on failure so retries hit Drive again.
-    _folderCache[cacheKey] = _createFolderHierarchy(job.assignmentId, isPhoto)
-        .then(
+    // Set the cache entry synchronously — before any await — so concurrent
+    // jobs in the same drain pass share one folder-resolution Future
+    // instead of each independently creating duplicate output/ and
+    // <assignment>/ folders in Drive (the bug that left three "output"
+    // folders behind on the first attempt).
+    final future = Future<String>(() async {
+      final folderName = await _resolveDriveFolderName(job.assignmentId);
+      return _createFolderHierarchy(folderName);
+    });
+    _folderCache[cacheKey] = future.then(
       (id) => id,
       onError: (Object e, StackTrace s) {
         _folderCache.remove(cacheKey);
@@ -97,14 +123,40 @@ class DriveUploadWorker {
     return _folderCache[cacheKey]!;
   }
 
-  Future<String> _createFolderHierarchy(
-    String assignmentId,
-    bool isPhoto,
-  ) async {
-    final assignmentFolderId =
-        await api.createOrGetFolder(assignmentId, rootFolderId);
-    if (!isPhoto) return assignmentFolderId;
-    return api.createOrGetFolder('photos', assignmentFolderId);
+  Future<String> _resolveDriveFolderName(String assignmentId) async {
+    final row = await (db.select(db.assignments)
+          ..where((t) => t.id.equals(assignmentId)))
+        .getSingleOrNull();
+    return row?.name ?? assignmentId;
+  }
+
+  Future<String> _resolveFirecheckRoot() {
+    return _firecheckRootFuture ??= api.findOrCreateFirecheckRoot().then(
+      (id) => id,
+      onError: (Object e, StackTrace s) {
+        _firecheckRootFuture = null;
+        return Future<String>.error(e, s);
+      },
+    );
+  }
+
+  Future<String> _createFolderHierarchy(String assignmentFolderName) async {
+    final firecheckRootId = await _resolveFirecheckRoot();
+    final outputId = await api.createOrGetFolder('output', firecheckRootId);
+    final enumeratorFolderName =
+        _sanitizeFolderName(enumeratorIdentifier()) ?? 'unknown-enumerator';
+    final enumeratorId =
+        await api.createOrGetFolder(enumeratorFolderName, outputId);
+    return api.createOrGetFolder(assignmentFolderName, enumeratorId);
+  }
+
+  /// Replaces characters that aren't safe in Drive folder names (mainly the
+  /// slash) with `_`. Returns null on empty/null input so callers can apply
+  /// their own fallback.
+  String? _sanitizeFolderName(String? raw) {
+    if (raw == null) return null;
+    final cleaned = raw.replaceAll(RegExp(r'[\\/]'), '_').trim();
+    return cleaned.isEmpty ? null : cleaned;
   }
 
   DateTime? _nextRetryAt(int attempts) {

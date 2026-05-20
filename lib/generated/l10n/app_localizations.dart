@@ -242,6 +242,18 @@ abstract class AppLocalizations {
   /// **'Not downloaded'**
   String get notDownloadedBadge;
 
+  /// No description provided for @noAssignmentsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No assignments found'**
+  String get noAssignmentsTitle;
+
+  /// No description provided for @noAssignmentsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask your supervisor to place an assignment folder under firecheck/input/ on Google Drive, then try again.'**
+  String get noAssignmentsBody;
+
   /// No description provided for @fetchingFeatures.
   ///
   /// In en, this message translates to:
@@ -1751,7 +1763,7 @@ abstract class AppLocalizations {
   /// No description provided for @issueFeatureNoSubmission.
   ///
   /// In en, this message translates to:
-  /// **'Feature has no finalized submission'**
+  /// **'Not yet surveyed — will be skipped if you upload now'**
   String get issueFeatureNoSubmission;
 
   /// No description provided for @startUploadButton.

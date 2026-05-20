@@ -136,17 +136,65 @@ void main() {
       expect(await repo.jobExistsForFilePath('/other.jpg'), isFalse);
     });
 
-    test('shapefileJobExistsForAssignment returns true when job is completed', () async {
+    test('shapefileJobExistsForAssignment returns true while a job is in flight', () async {
       final db = _db();
       addTearDown(db.close);
       final repo = DriveUploadRepository(db);
 
-      await repo.insertJob(id: 'j1', assignmentId: 'a1', filePath: '/a1.zip',
-          fileType: DriveFileType.shapefile, fileName: 'a1.zip',
+      await repo.insertJob(id: 'j1', assignmentId: 'a1', filePath: '/buildings.shp',
+          fileType: DriveFileType.shapefile, fileName: 'buildings.shp',
+          fileSizeBytes: 1000, capturedAt: DateTime(2026));
+
+      // Pending → still in flight.
+      expect(await repo.shapefileJobExistsForAssignment('a1'), isTrue);
+    });
+
+    test('shapefileJobExistsForAssignment returns false once the job is completed', () async {
+      // Once the upload finishes, the enumerator may re-export and re-upload —
+      // server-side supersede handles attribution conflicts. So a completed
+      // job must NOT block a fresh enqueue.
+      final db = _db();
+      addTearDown(db.close);
+      final repo = DriveUploadRepository(db);
+
+      await repo.insertJob(id: 'j1', assignmentId: 'a1', filePath: '/buildings.shp',
+          fileType: DriveFileType.shapefile, fileName: 'buildings.shp',
           fileSizeBytes: 1000, capturedAt: DateTime(2026));
       await repo.markCompleted('j1', driveFileId: 'drive-1');
 
-      expect(await repo.shapefileJobExistsForAssignment('a1'), isTrue);
+      expect(await repo.shapefileJobExistsForAssignment('a1'), isFalse);
+    });
+
+    test('shapefileJobExistsForAssignment returns false when the job is failed (re-enqueue should not be blocked)', () async {
+      // Failed jobs are retried by the worker, but every fresh enqueue
+      // writes new files in a timestamped subdir — blocking on a stale
+      // failed job would force the user to wait for retries against
+      // file paths that no longer exist.
+      final db = _db();
+      addTearDown(db.close);
+      final repo = DriveUploadRepository(db);
+
+      await repo.insertJob(id: 'j1', assignmentId: 'a1', filePath: '/buildings.shp',
+          fileType: DriveFileType.shapefile, fileName: 'buildings.shp',
+          fileSizeBytes: 1000, capturedAt: DateTime(2026));
+      await repo.markFailed('j1',
+          reason: '403', retryCount: 1,
+          nextRetryAt: DateTime(2026, 5, 20, 11, 30));
+
+      expect(await repo.shapefileJobExistsForAssignment('a1'), isFalse);
+    });
+
+    test('shapefileJobExistsForAssignment returns false once the job is dead', () async {
+      final db = _db();
+      addTearDown(db.close);
+      final repo = DriveUploadRepository(db);
+
+      await repo.insertJob(id: 'j1', assignmentId: 'a1', filePath: '/buildings.shp',
+          fileType: DriveFileType.shapefile, fileName: 'buildings.shp',
+          fileSizeBytes: 1000, capturedAt: DateTime(2026));
+      await repo.markDead('j1', reason: 'gave up');
+
+      expect(await repo.shapefileJobExistsForAssignment('a1'), isFalse);
     });
 
     test('markCompleted clears resumableUri', () async {

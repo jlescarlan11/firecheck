@@ -152,7 +152,7 @@ class FakeShapefileImporter implements ShapefileImporter {
   @override
   get reprojector => throw UnimplementedError();
   @override
-  Future<ImportResult> importShapefiles(Map<String, Uint8List> files, String assignmentId, String driveModifiedTime, String driveFolderId, String enumeratorId) async {
+  Future<ImportResult> importShapefiles(Map<String, Uint8List> files, String assignmentId, String driveModifiedTime, String driveFolderId, String enumeratorId, {String? assignmentDisplayName}) async {
     return const ImportResult(buildingCount: 0, roadCount: 0, boundaryGeojson: '{}');
   }
 }

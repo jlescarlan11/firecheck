@@ -353,6 +353,11 @@ class $AssignmentsTable extends Assignments
   late final GeneratedColumn<String> driveFolderId = GeneratedColumn<String>(
       'drive_folder_id', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _driveFolderPathMeta =
       const VerificationMeta('driveFolderPath');
   @override
@@ -384,6 +389,7 @@ class $AssignmentsTable extends Assignments
         createdAt,
         driveModifiedTime,
         driveFolderId,
+        name,
         driveFolderPath,
         driveFolderUrl,
         driveUploadConfirmedAt
@@ -467,6 +473,10 @@ class $AssignmentsTable extends Assignments
           driveFolderId.isAcceptableOrUnknown(
               data['drive_folder_id']!, _driveFolderIdMeta));
     }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    }
     if (data.containsKey('drive_folder_path')) {
       context.handle(
           _driveFolderPathMeta,
@@ -517,6 +527,8 @@ class $AssignmentsTable extends Assignments
           DriftSqlType.string, data['${effectivePrefix}drive_modified_time']),
       driveFolderId: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}drive_folder_id']),
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name']),
       driveFolderPath: attachedDatabase.typeMapping.read(
           DriftSqlType.string, data['${effectivePrefix}drive_folder_path']),
       driveFolderUrl: attachedDatabase.typeMapping.read(
@@ -545,6 +557,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
   final DateTime createdAt;
   final String? driveModifiedTime;
   final String? driveFolderId;
+  final String? name;
   final String? driveFolderPath;
   final String? driveFolderUrl;
   final DateTime? driveUploadConfirmedAt;
@@ -560,6 +573,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
       required this.createdAt,
       this.driveModifiedTime,
       this.driveFolderId,
+      this.name,
       this.driveFolderPath,
       this.driveFolderUrl,
       this.driveUploadConfirmedAt});
@@ -584,6 +598,9 @@ class Assignment extends DataClass implements Insertable<Assignment> {
     }
     if (!nullToAbsent || driveFolderId != null) {
       map['drive_folder_id'] = Variable<String>(driveFolderId);
+    }
+    if (!nullToAbsent || name != null) {
+      map['name'] = Variable<String>(name);
     }
     if (!nullToAbsent || driveFolderPath != null) {
       map['drive_folder_path'] = Variable<String>(driveFolderPath);
@@ -619,6 +636,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
       driveFolderId: driveFolderId == null && nullToAbsent
           ? const Value.absent()
           : Value(driveFolderId),
+      name: name == null && nullToAbsent ? const Value.absent() : Value(name),
       driveFolderPath: driveFolderPath == null && nullToAbsent
           ? const Value.absent()
           : Value(driveFolderPath),
@@ -648,6 +666,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
       driveModifiedTime:
           serializer.fromJson<String?>(json['driveModifiedTime']),
       driveFolderId: serializer.fromJson<String?>(json['driveFolderId']),
+      name: serializer.fromJson<String?>(json['name']),
       driveFolderPath: serializer.fromJson<String?>(json['driveFolderPath']),
       driveFolderUrl: serializer.fromJson<String?>(json['driveFolderUrl']),
       driveUploadConfirmedAt:
@@ -670,6 +689,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'driveModifiedTime': serializer.toJson<String?>(driveModifiedTime),
       'driveFolderId': serializer.toJson<String?>(driveFolderId),
+      'name': serializer.toJson<String?>(name),
       'driveFolderPath': serializer.toJson<String?>(driveFolderPath),
       'driveFolderUrl': serializer.toJson<String?>(driveFolderUrl),
       'driveUploadConfirmedAt':
@@ -689,6 +709,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
           DateTime? createdAt,
           Value<String?> driveModifiedTime = const Value.absent(),
           Value<String?> driveFolderId = const Value.absent(),
+          Value<String?> name = const Value.absent(),
           Value<String?> driveFolderPath = const Value.absent(),
           Value<String?> driveFolderUrl = const Value.absent(),
           Value<DateTime?> driveUploadConfirmedAt = const Value.absent()}) =>
@@ -709,6 +730,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
             : this.driveModifiedTime,
         driveFolderId:
             driveFolderId.present ? driveFolderId.value : this.driveFolderId,
+        name: name.present ? name.value : this.name,
         driveFolderPath: driveFolderPath.present
             ? driveFolderPath.value
             : this.driveFolderPath,
@@ -745,6 +767,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
       driveFolderId: data.driveFolderId.present
           ? data.driveFolderId.value
           : this.driveFolderId,
+      name: data.name.present ? data.name.value : this.name,
       driveFolderPath: data.driveFolderPath.present
           ? data.driveFolderPath.value
           : this.driveFolderPath,
@@ -771,6 +794,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
           ..write('createdAt: $createdAt, ')
           ..write('driveModifiedTime: $driveModifiedTime, ')
           ..write('driveFolderId: $driveFolderId, ')
+          ..write('name: $name, ')
           ..write('driveFolderPath: $driveFolderPath, ')
           ..write('driveFolderUrl: $driveFolderUrl, ')
           ..write('driveUploadConfirmedAt: $driveUploadConfirmedAt')
@@ -791,6 +815,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
       createdAt,
       driveModifiedTime,
       driveFolderId,
+      name,
       driveFolderPath,
       driveFolderUrl,
       driveUploadConfirmedAt);
@@ -809,6 +834,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
           other.createdAt == this.createdAt &&
           other.driveModifiedTime == this.driveModifiedTime &&
           other.driveFolderId == this.driveFolderId &&
+          other.name == this.name &&
           other.driveFolderPath == this.driveFolderPath &&
           other.driveFolderUrl == this.driveFolderUrl &&
           other.driveUploadConfirmedAt == this.driveUploadConfirmedAt);
@@ -826,6 +852,7 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
   final Value<DateTime> createdAt;
   final Value<String?> driveModifiedTime;
   final Value<String?> driveFolderId;
+  final Value<String?> name;
   final Value<String?> driveFolderPath;
   final Value<String?> driveFolderUrl;
   final Value<DateTime?> driveUploadConfirmedAt;
@@ -842,6 +869,7 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
     this.createdAt = const Value.absent(),
     this.driveModifiedTime = const Value.absent(),
     this.driveFolderId = const Value.absent(),
+    this.name = const Value.absent(),
     this.driveFolderPath = const Value.absent(),
     this.driveFolderUrl = const Value.absent(),
     this.driveUploadConfirmedAt = const Value.absent(),
@@ -859,6 +887,7 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
     required DateTime createdAt,
     this.driveModifiedTime = const Value.absent(),
     this.driveFolderId = const Value.absent(),
+    this.name = const Value.absent(),
     this.driveFolderPath = const Value.absent(),
     this.driveFolderUrl = const Value.absent(),
     this.driveUploadConfirmedAt = const Value.absent(),
@@ -880,6 +909,7 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
     Expression<DateTime>? createdAt,
     Expression<String>? driveModifiedTime,
     Expression<String>? driveFolderId,
+    Expression<String>? name,
     Expression<String>? driveFolderPath,
     Expression<String>? driveFolderUrl,
     Expression<DateTime>? driveUploadConfirmedAt,
@@ -898,6 +928,7 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
       if (createdAt != null) 'created_at': createdAt,
       if (driveModifiedTime != null) 'drive_modified_time': driveModifiedTime,
       if (driveFolderId != null) 'drive_folder_id': driveFolderId,
+      if (name != null) 'name': name,
       if (driveFolderPath != null) 'drive_folder_path': driveFolderPath,
       if (driveFolderUrl != null) 'drive_folder_url': driveFolderUrl,
       if (driveUploadConfirmedAt != null)
@@ -918,6 +949,7 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
       Value<DateTime>? createdAt,
       Value<String?>? driveModifiedTime,
       Value<String?>? driveFolderId,
+      Value<String?>? name,
       Value<String?>? driveFolderPath,
       Value<String?>? driveFolderUrl,
       Value<DateTime?>? driveUploadConfirmedAt,
@@ -935,6 +967,7 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
       createdAt: createdAt ?? this.createdAt,
       driveModifiedTime: driveModifiedTime ?? this.driveModifiedTime,
       driveFolderId: driveFolderId ?? this.driveFolderId,
+      name: name ?? this.name,
       driveFolderPath: driveFolderPath ?? this.driveFolderPath,
       driveFolderUrl: driveFolderUrl ?? this.driveFolderUrl,
       driveUploadConfirmedAt:
@@ -980,6 +1013,9 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
     if (driveFolderId.present) {
       map['drive_folder_id'] = Variable<String>(driveFolderId.value);
     }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
     if (driveFolderPath.present) {
       map['drive_folder_path'] = Variable<String>(driveFolderPath.value);
     }
@@ -1010,6 +1046,7 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
           ..write('createdAt: $createdAt, ')
           ..write('driveModifiedTime: $driveModifiedTime, ')
           ..write('driveFolderId: $driveFolderId, ')
+          ..write('name: $name, ')
           ..write('driveFolderPath: $driveFolderPath, ')
           ..write('driveFolderUrl: $driveFolderUrl, ')
           ..write('driveUploadConfirmedAt: $driveUploadConfirmedAt, ')
@@ -1069,6 +1106,12 @@ class $FeaturesTable extends Features with TableInfo<$FeaturesTable, Feature> {
   late final GeneratedColumn<String> pendingDedupOf = GeneratedColumn<String>(
       'pending_dedup_of', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _externalCodeMeta =
+      const VerificationMeta('externalCode');
+  @override
+  late final GeneratedColumn<String> externalCode = GeneratedColumn<String>(
+      'external_code', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -1084,6 +1127,7 @@ class $FeaturesTable extends Features with TableInfo<$FeaturesTable, Feature> {
         isNew,
         status,
         pendingDedupOf,
+        externalCode,
         createdAt
       ];
   @override
@@ -1139,6 +1183,12 @@ class $FeaturesTable extends Features with TableInfo<$FeaturesTable, Feature> {
           pendingDedupOf.isAcceptableOrUnknown(
               data['pending_dedup_of']!, _pendingDedupOfMeta));
     }
+    if (data.containsKey('external_code')) {
+      context.handle(
+          _externalCodeMeta,
+          externalCode.isAcceptableOrUnknown(
+              data['external_code']!, _externalCodeMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -1168,6 +1218,8 @@ class $FeaturesTable extends Features with TableInfo<$FeaturesTable, Feature> {
           .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
       pendingDedupOf: attachedDatabase.typeMapping.read(
           DriftSqlType.string, data['${effectivePrefix}pending_dedup_of']),
+      externalCode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}external_code']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
     );
@@ -1187,6 +1239,7 @@ class Feature extends DataClass implements Insertable<Feature> {
   final bool isNew;
   final String status;
   final String? pendingDedupOf;
+  final String? externalCode;
   final DateTime createdAt;
   const Feature(
       {required this.id,
@@ -1196,6 +1249,7 @@ class Feature extends DataClass implements Insertable<Feature> {
       required this.isNew,
       required this.status,
       this.pendingDedupOf,
+      this.externalCode,
       required this.createdAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1208,6 +1262,9 @@ class Feature extends DataClass implements Insertable<Feature> {
     map['status'] = Variable<String>(status);
     if (!nullToAbsent || pendingDedupOf != null) {
       map['pending_dedup_of'] = Variable<String>(pendingDedupOf);
+    }
+    if (!nullToAbsent || externalCode != null) {
+      map['external_code'] = Variable<String>(externalCode);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
@@ -1224,6 +1281,9 @@ class Feature extends DataClass implements Insertable<Feature> {
       pendingDedupOf: pendingDedupOf == null && nullToAbsent
           ? const Value.absent()
           : Value(pendingDedupOf),
+      externalCode: externalCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(externalCode),
       createdAt: Value(createdAt),
     );
   }
@@ -1239,6 +1299,7 @@ class Feature extends DataClass implements Insertable<Feature> {
       isNew: serializer.fromJson<bool>(json['isNew']),
       status: serializer.fromJson<String>(json['status']),
       pendingDedupOf: serializer.fromJson<String?>(json['pendingDedupOf']),
+      externalCode: serializer.fromJson<String?>(json['externalCode']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -1253,6 +1314,7 @@ class Feature extends DataClass implements Insertable<Feature> {
       'isNew': serializer.toJson<bool>(isNew),
       'status': serializer.toJson<String>(status),
       'pendingDedupOf': serializer.toJson<String?>(pendingDedupOf),
+      'externalCode': serializer.toJson<String?>(externalCode),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -1265,6 +1327,7 @@ class Feature extends DataClass implements Insertable<Feature> {
           bool? isNew,
           String? status,
           Value<String?> pendingDedupOf = const Value.absent(),
+          Value<String?> externalCode = const Value.absent(),
           DateTime? createdAt}) =>
       Feature(
         id: id ?? this.id,
@@ -1275,6 +1338,8 @@ class Feature extends DataClass implements Insertable<Feature> {
         status: status ?? this.status,
         pendingDedupOf:
             pendingDedupOf.present ? pendingDedupOf.value : this.pendingDedupOf,
+        externalCode:
+            externalCode.present ? externalCode.value : this.externalCode,
         createdAt: createdAt ?? this.createdAt,
       );
   Feature copyWithCompanion(FeaturesCompanion data) {
@@ -1293,6 +1358,9 @@ class Feature extends DataClass implements Insertable<Feature> {
       pendingDedupOf: data.pendingDedupOf.present
           ? data.pendingDedupOf.value
           : this.pendingDedupOf,
+      externalCode: data.externalCode.present
+          ? data.externalCode.value
+          : this.externalCode,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -1307,6 +1375,7 @@ class Feature extends DataClass implements Insertable<Feature> {
           ..write('isNew: $isNew, ')
           ..write('status: $status, ')
           ..write('pendingDedupOf: $pendingDedupOf, ')
+          ..write('externalCode: $externalCode, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -1314,7 +1383,7 @@ class Feature extends DataClass implements Insertable<Feature> {
 
   @override
   int get hashCode => Object.hash(id, assignmentId, featureType,
-      geometryGeojson, isNew, status, pendingDedupOf, createdAt);
+      geometryGeojson, isNew, status, pendingDedupOf, externalCode, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1326,6 +1395,7 @@ class Feature extends DataClass implements Insertable<Feature> {
           other.isNew == this.isNew &&
           other.status == this.status &&
           other.pendingDedupOf == this.pendingDedupOf &&
+          other.externalCode == this.externalCode &&
           other.createdAt == this.createdAt);
 }
 
@@ -1337,6 +1407,7 @@ class FeaturesCompanion extends UpdateCompanion<Feature> {
   final Value<bool> isNew;
   final Value<String> status;
   final Value<String?> pendingDedupOf;
+  final Value<String?> externalCode;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const FeaturesCompanion({
@@ -1347,6 +1418,7 @@ class FeaturesCompanion extends UpdateCompanion<Feature> {
     this.isNew = const Value.absent(),
     this.status = const Value.absent(),
     this.pendingDedupOf = const Value.absent(),
+    this.externalCode = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -1358,6 +1430,7 @@ class FeaturesCompanion extends UpdateCompanion<Feature> {
     this.isNew = const Value.absent(),
     this.status = const Value.absent(),
     this.pendingDedupOf = const Value.absent(),
+    this.externalCode = const Value.absent(),
     required DateTime createdAt,
     this.rowid = const Value.absent(),
   })  : id = Value(id),
@@ -1373,6 +1446,7 @@ class FeaturesCompanion extends UpdateCompanion<Feature> {
     Expression<bool>? isNew,
     Expression<String>? status,
     Expression<String>? pendingDedupOf,
+    Expression<String>? externalCode,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -1384,6 +1458,7 @@ class FeaturesCompanion extends UpdateCompanion<Feature> {
       if (isNew != null) 'is_new': isNew,
       if (status != null) 'status': status,
       if (pendingDedupOf != null) 'pending_dedup_of': pendingDedupOf,
+      if (externalCode != null) 'external_code': externalCode,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -1397,6 +1472,7 @@ class FeaturesCompanion extends UpdateCompanion<Feature> {
       Value<bool>? isNew,
       Value<String>? status,
       Value<String?>? pendingDedupOf,
+      Value<String?>? externalCode,
       Value<DateTime>? createdAt,
       Value<int>? rowid}) {
     return FeaturesCompanion(
@@ -1407,6 +1483,7 @@ class FeaturesCompanion extends UpdateCompanion<Feature> {
       isNew: isNew ?? this.isNew,
       status: status ?? this.status,
       pendingDedupOf: pendingDedupOf ?? this.pendingDedupOf,
+      externalCode: externalCode ?? this.externalCode,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -1436,6 +1513,9 @@ class FeaturesCompanion extends UpdateCompanion<Feature> {
     if (pendingDedupOf.present) {
       map['pending_dedup_of'] = Variable<String>(pendingDedupOf.value);
     }
+    if (externalCode.present) {
+      map['external_code'] = Variable<String>(externalCode.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -1455,6 +1535,7 @@ class FeaturesCompanion extends UpdateCompanion<Feature> {
           ..write('isNew: $isNew, ')
           ..write('status: $status, ')
           ..write('pendingDedupOf: $pendingDedupOf, ')
+          ..write('externalCode: $externalCode, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -8571,6 +8652,7 @@ typedef $$AssignmentsTableCreateCompanionBuilder = AssignmentsCompanion
   required DateTime createdAt,
   Value<String?> driveModifiedTime,
   Value<String?> driveFolderId,
+  Value<String?> name,
   Value<String?> driveFolderPath,
   Value<String?> driveFolderUrl,
   Value<DateTime?> driveUploadConfirmedAt,
@@ -8589,6 +8671,7 @@ typedef $$AssignmentsTableUpdateCompanionBuilder = AssignmentsCompanion
   Value<DateTime> createdAt,
   Value<String?> driveModifiedTime,
   Value<String?> driveFolderId,
+  Value<String?> name,
   Value<String?> driveFolderPath,
   Value<String?> driveFolderUrl,
   Value<DateTime?> driveUploadConfirmedAt,
@@ -8639,6 +8722,9 @@ class $$AssignmentsTableFilterComposer
 
   ColumnFilters<String> get driveFolderId => $composableBuilder(
       column: $table.driveFolderId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get driveFolderPath => $composableBuilder(
       column: $table.driveFolderPath,
@@ -8701,6 +8787,9 @@ class $$AssignmentsTableOrderingComposer
       column: $table.driveFolderId,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get driveFolderPath => $composableBuilder(
       column: $table.driveFolderPath,
       builder: (column) => ColumnOrderings(column));
@@ -8756,6 +8845,9 @@ class $$AssignmentsTableAnnotationComposer
   GeneratedColumn<String> get driveFolderId => $composableBuilder(
       column: $table.driveFolderId, builder: (column) => column);
 
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
   GeneratedColumn<String> get driveFolderPath => $composableBuilder(
       column: $table.driveFolderPath, builder: (column) => column);
 
@@ -8800,6 +8892,7 @@ class $$AssignmentsTableTableManager extends RootTableManager<
             Value<DateTime> createdAt = const Value.absent(),
             Value<String?> driveModifiedTime = const Value.absent(),
             Value<String?> driveFolderId = const Value.absent(),
+            Value<String?> name = const Value.absent(),
             Value<String?> driveFolderPath = const Value.absent(),
             Value<String?> driveFolderUrl = const Value.absent(),
             Value<DateTime?> driveUploadConfirmedAt = const Value.absent(),
@@ -8817,6 +8910,7 @@ class $$AssignmentsTableTableManager extends RootTableManager<
             createdAt: createdAt,
             driveModifiedTime: driveModifiedTime,
             driveFolderId: driveFolderId,
+            name: name,
             driveFolderPath: driveFolderPath,
             driveFolderUrl: driveFolderUrl,
             driveUploadConfirmedAt: driveUploadConfirmedAt,
@@ -8834,6 +8928,7 @@ class $$AssignmentsTableTableManager extends RootTableManager<
             required DateTime createdAt,
             Value<String?> driveModifiedTime = const Value.absent(),
             Value<String?> driveFolderId = const Value.absent(),
+            Value<String?> name = const Value.absent(),
             Value<String?> driveFolderPath = const Value.absent(),
             Value<String?> driveFolderUrl = const Value.absent(),
             Value<DateTime?> driveUploadConfirmedAt = const Value.absent(),
@@ -8851,6 +8946,7 @@ class $$AssignmentsTableTableManager extends RootTableManager<
             createdAt: createdAt,
             driveModifiedTime: driveModifiedTime,
             driveFolderId: driveFolderId,
+            name: name,
             driveFolderPath: driveFolderPath,
             driveFolderUrl: driveFolderUrl,
             driveUploadConfirmedAt: driveUploadConfirmedAt,
@@ -8883,6 +8979,7 @@ typedef $$FeaturesTableCreateCompanionBuilder = FeaturesCompanion Function({
   Value<bool> isNew,
   Value<String> status,
   Value<String?> pendingDedupOf,
+  Value<String?> externalCode,
   required DateTime createdAt,
   Value<int> rowid,
 });
@@ -8894,6 +8991,7 @@ typedef $$FeaturesTableUpdateCompanionBuilder = FeaturesCompanion Function({
   Value<bool> isNew,
   Value<String> status,
   Value<String?> pendingDedupOf,
+  Value<String?> externalCode,
   Value<DateTime> createdAt,
   Value<int> rowid,
 });
@@ -8929,6 +9027,9 @@ class $$FeaturesTableFilterComposer
   ColumnFilters<String> get pendingDedupOf => $composableBuilder(
       column: $table.pendingDedupOf,
       builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get externalCode => $composableBuilder(
+      column: $table.externalCode, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -8967,6 +9068,10 @@ class $$FeaturesTableOrderingComposer
       column: $table.pendingDedupOf,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get externalCode => $composableBuilder(
+      column: $table.externalCode,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 }
@@ -9000,6 +9105,9 @@ class $$FeaturesTableAnnotationComposer
 
   GeneratedColumn<String> get pendingDedupOf => $composableBuilder(
       column: $table.pendingDedupOf, builder: (column) => column);
+
+  GeneratedColumn<String> get externalCode => $composableBuilder(
+      column: $table.externalCode, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -9035,6 +9143,7 @@ class $$FeaturesTableTableManager extends RootTableManager<
             Value<bool> isNew = const Value.absent(),
             Value<String> status = const Value.absent(),
             Value<String?> pendingDedupOf = const Value.absent(),
+            Value<String?> externalCode = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -9046,6 +9155,7 @@ class $$FeaturesTableTableManager extends RootTableManager<
             isNew: isNew,
             status: status,
             pendingDedupOf: pendingDedupOf,
+            externalCode: externalCode,
             createdAt: createdAt,
             rowid: rowid,
           ),
@@ -9057,6 +9167,7 @@ class $$FeaturesTableTableManager extends RootTableManager<
             Value<bool> isNew = const Value.absent(),
             Value<String> status = const Value.absent(),
             Value<String?> pendingDedupOf = const Value.absent(),
+            Value<String?> externalCode = const Value.absent(),
             required DateTime createdAt,
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -9068,6 +9179,7 @@ class $$FeaturesTableTableManager extends RootTableManager<
             isNew: isNew,
             status: status,
             pendingDedupOf: pendingDedupOf,
+            externalCode: externalCode,
             createdAt: createdAt,
             rowid: rowid,
           ),
