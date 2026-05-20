@@ -31,11 +31,15 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     // Clear lingering Completed state so re-entering the screen shows the
     // normal review, not a stale success card. InProgress is preserved so
     // a user who leaves mid-upload can return and keep watching progress.
-    // Runs in deactivate (not dispose) because ref.read is invalid once
-    // the ConsumerStatefulElement is disposed.
+    // The reset is scheduled as a microtask: modifying a provider directly
+    // inside deactivate throws because the widget tree is still building.
+    // We capture the notifier synchronously (ref.read is invalid after the
+    // element is disposed) and the non-autoDispose provider guarantees it
+    // outlives the deferred call.
     final progress = ref.read(uploadProgressControllerProvider);
     if (progress is Completed) {
-      ref.read(uploadProgressControllerProvider.notifier).reset();
+      final controller = ref.read(uploadProgressControllerProvider.notifier);
+      Future.microtask(controller.reset);
     }
     super.deactivate();
   }
