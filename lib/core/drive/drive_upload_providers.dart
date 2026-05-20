@@ -13,6 +13,7 @@ import 'package:firecheck/features/assignment/presentation/assignment_providers.
 import 'package:firecheck/features/auth/presentation/auth_providers.dart';
 import 'package:firecheck/features/home/presentation/home_providers.dart';
 import 'package:firecheck/features/upload/presentation/upload_queue_notifier.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -61,7 +62,10 @@ final enqueueAssignmentUseCaseProvider =
   return EnqueueAssignmentUseCase(
     db: db,
     repo: ref.watch(driveUploadRepoProvider),
-    exporter: ShapefileExporter(db: db),
+    exporter: ShapefileExporter(
+      db: db,
+      supabaseUrl: dotenv.env['SUPABASE_URL'],
+    ),
   );
 });
 

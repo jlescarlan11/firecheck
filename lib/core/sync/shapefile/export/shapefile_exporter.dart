@@ -53,7 +53,7 @@ class _BuildingRow {
     required this.costEstimateRange,
     required this.fireFightingFacilitiesJson,
     required this.fireLoadJson,
-    required this.photoStoragePaths,
+    required this.photoUrls,
   });
   final String featureId;
   final bool doesNotExist;
@@ -68,10 +68,11 @@ class _BuildingRow {
   final String? costEstimateRange;
   final String fireFightingFacilitiesJson;
   final String fireLoadJson;
-  // Supabase Storage paths under the `photos` bucket, e.g.
-  // `<submissionId>/<photoId>.jpg`. Consumers (QGIS users) join with the
-  // bucket name and generate signed URLs via the Supabase client.
-  final List<String> photoStoragePaths;
+  // Public URLs to objects in the Supabase `photos` bucket, ready for a
+  // QGIS user to copy out of the DBF and paste into a browser. When the
+  // exporter has no Supabase URL configured (e.g. tests), falls back to
+  // raw storage paths.
+  final List<String> photoUrls;
 }
 
 class _RoadRow {
@@ -84,7 +85,7 @@ class _RoadRow {
     required this.widthMeters,
     required this.roadFeaturesJson,
     required this.othersDescription,
-    required this.photoStoragePaths,
+    required this.photoUrls,
   });
   final String featureId;
   final bool doesNotExist;
@@ -94,7 +95,7 @@ class _RoadRow {
   final double? widthMeters;
   final String roadFeaturesJson;
   final String? othersDescription;
-  final List<String> photoStoragePaths;
+  final List<String> photoUrls;
 }
 
 class _LayerInput {
@@ -325,9 +326,10 @@ List<DbfFieldDef> _buildingFields() => const [
       DbfFieldDef(name: 'FIRE_LOAD', type: 'C', width: 254),
       DbfFieldDef(name: 'NOT_EXIST', type: 'L', width: 1),
       DbfFieldDef(name: 'REMARKS', type: 'C', width: 254),
-      // Pipe-joined Supabase Storage paths (bucket: `photos`). Truncated
-      // at the last full entry that fits 254 chars — extra photos are
-      // dropped to stay within the DBF C-field cap.
+      // Pipe-joined public URLs to objects in the Supabase `photos`
+      // bucket. Truncated at the last full entry that fits 254 chars —
+      // extra photos are dropped to stay within the DBF C-field cap.
+      // QGIS users copy a URL from this column and paste into a browser.
       DbfFieldDef(name: 'PHOTOS', type: 'C', width: 254),
     ];
 
@@ -372,7 +374,7 @@ Map<String, String?> _buildingRecord(_BuildingRow r, String featureId) => {
       'FIRE_LOAD': _jsonArrayToPipe(r.fireLoadJson),
       'NOT_EXIST': r.doesNotExist ? 'T' : 'F',
       'REMARKS': r.remarks,
-      'PHOTOS': _photosToPipe(r.photoStoragePaths),
+      'PHOTOS': _photosToPipe(r.photoUrls),
     };
 
 Map<String, String?> _roadRecord(_RoadRow r, String featureId) => {
@@ -384,21 +386,21 @@ Map<String, String?> _roadRecord(_RoadRow r, String featureId) => {
       'OTHER_DESC': r.othersDescription,
       'NOT_EXIST': r.doesNotExist ? 'T' : 'F',
       'REMARKS': r.remarks,
-      'PHOTOS': _photosToPipe(r.photoStoragePaths),
+      'PHOTOS': _photosToPipe(r.photoUrls),
     };
 
-/// Pipe-joins storage paths, dropping any path that would push the total
-/// past the 254-char DBF C-field cap. Returns null when the list is empty
-/// so QGIS sees the field as NULL rather than an empty string.
-String? _photosToPipe(List<String> paths) {
-  if (paths.isEmpty) return null;
+/// Pipe-joins photo URLs, dropping any URL that would push the total past
+/// the 254-char DBF C-field cap. Returns null when the list is empty so
+/// QGIS sees the field as NULL rather than an empty string.
+String? _photosToPipe(List<String> urls) {
+  if (urls.isEmpty) return null;
   const cap = 254;
   final buf = StringBuffer();
-  for (final path in paths) {
-    final prospective = buf.isEmpty ? path : '${buf.toString()}|$path';
+  for (final url in urls) {
+    final prospective = buf.isEmpty ? url : '${buf.toString()}|$url';
     if (prospective.length > cap) break;
     if (buf.isNotEmpty) buf.write('|');
-    buf.write(path);
+    buf.write(url);
   }
   final out = buf.toString();
   return out.isEmpty ? null : out;
@@ -414,11 +416,19 @@ class ShapefileExporter {
     this.shareFile,
     this.tempDirOverride,
     this.targetEpsg = 4326,
+    this.supabaseUrl,
   }) : _targetCrs = requirePhCrs(targetEpsg);
 
   final AppDatabase db;
   final Future<void> Function(String path)? shareFile;
   final Directory? tempDirOverride;
+
+  /// Base Supabase project URL (e.g. `https://abc.supabase.co`). When
+  /// non-null, raw `photos`-bucket storage paths are rewritten into full
+  /// public URLs (`<supabaseUrl>/storage/v1/object/public/photos/<path>`)
+  /// in the exported DBF's PHOTOS column. When null (tests, or env not
+  /// configured), the raw storage path is written instead.
+  final String? supabaseUrl;
 
   /// EPSG code for the output coordinates. Defaults to 4326 (WGS 84
   /// lng/lat), matching how geometries are stored in the database — in
@@ -672,7 +682,7 @@ class ShapefileExporter {
           costEstimateRange: attr.costEstimateRange,
           fireFightingFacilitiesJson: attr.fireFightingFacilitiesJson,
           fireLoadJson: attr.fireLoadJson,
-          photoStoragePaths: photosBySubmission[submission.id] ?? const [],
+          photoUrls: photosBySubmission[submission.id] ?? const [],
         ),
       );
     }).toList();
@@ -717,15 +727,18 @@ class ShapefileExporter {
           widthMeters: attr.widthMeters,
           roadFeaturesJson: attr.roadFeaturesJson,
           othersDescription: attr.othersDescription,
-          photoStoragePaths: photosBySubmission[submission.id] ?? const [],
+          photoUrls: photosBySubmission[submission.id] ?? const [],
         ),
       );
     }).toList();
   }
 
-  /// Returns submissionId → list of Supabase Storage paths under the
-  /// `photos` bucket. Photos without a storage_path (still pending the
-  /// Supabase upload) are skipped — they have no URL to surface yet.
+  /// Returns submissionId → list of viewer-ready photo references. When
+  /// [supabaseUrl] is configured, paths are rewritten into public URLs
+  /// resolvable by any browser; otherwise the raw `photos`-bucket storage
+  /// path is returned (used by tests and environments without Supabase).
+  /// Photos without a storage_path (still pending the Supabase upload)
+  /// are skipped — they have no URL to surface yet.
   Future<Map<String, List<String>>> _photoStoragePathsBySubmission(
     List<String> submissionIds,
   ) async {
@@ -739,9 +752,16 @@ class ShapefileExporter {
     for (final p in photos) {
       final path = p.storagePath;
       if (path == null) continue;
-      (map[p.submissionId] ??= <String>[]).add(path);
+      (map[p.submissionId] ??= <String>[]).add(_photoUrlFor(path));
     }
     return map;
+  }
+
+  String _photoUrlFor(String storagePath) {
+    final base = supabaseUrl;
+    if (base == null || base.isEmpty) return storagePath;
+    final trimmed = base.endsWith('/') ? base.substring(0, base.length - 1) : base;
+    return '$trimmed/storage/v1/object/public/photos/$storagePath';
   }
 }
 
