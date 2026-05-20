@@ -3,6 +3,7 @@ import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/drive/drive_upload_audit_repository.dart';
 import 'package:firecheck/core/drive/drive_upload_job_status.dart';
 import 'package:firecheck/core/drive/drive_upload_repository.dart';
+import 'package:firecheck/core/drive/drive_upload_worker.dart' show sanitizeDriveFolderName;
 import 'package:firecheck/features/assignment/data/assignment_repository.dart';
 
 /// Result of finalizing the post-drain bookkeeping for an assignment's
@@ -51,17 +52,26 @@ class FinalizeAssignmentUploadUseCase {
     required AssignmentRepository assignmentRepo,
     required DriveUploadAuditRepository auditRepo,
     DateTime Function() now = DateTime.now,
+    String? Function()? enumeratorIdentifier,
   })  : _db = db,
         _repo = repo,
         _assignmentRepo = assignmentRepo,
         _auditRepo = auditRepo,
-        _now = now;
+        _now = now,
+        _enumeratorIdentifier = enumeratorIdentifier;
 
   final AppDatabase _db;
   final DriveUploadRepository _repo;
   final AssignmentRepository _assignmentRepo;
   final DriveUploadAuditRepository _auditRepo;
   final DateTime Function() _now;
+
+  /// Resolves the same per-enumerator Drive subfolder name the worker uses
+  /// when uploading. When non-null, the persisted [folderPath] mirrors the
+  /// worker's `firecheck/output/<enumerator>/<assignmentFolderName>/`
+  /// layout. When null (tests, environments without auth), the legacy
+  /// `firecheck/<assignmentFolderName>/` shape is written.
+  final String? Function()? _enumeratorIdentifier;
 
   /// Inspects the job queue for [assignmentId], persists the upload result
   /// on the assignment row, and records an audit entry when every job has
@@ -98,11 +108,12 @@ class FinalizeAssignmentUploadUseCase {
 
     final folderName = await _resolveFolderName(assignmentId);
     if (folderName == null) {
+      // The assignment row itself is missing — nothing to confirm against.
       return DriveUploadEmpty(assignmentId: assignmentId);
     }
 
     final confirmedAt = _now();
-    final folderPath = 'firecheck/$folderName/';
+    final folderPath = _buildFolderPath(folderName);
 
     await _assignmentRepo.setDriveUploadResult(
       assignmentId: assignmentId,
@@ -153,11 +164,24 @@ class FinalizeAssignmentUploadUseCase {
     return outcomes;
   }
 
+  /// Returns the assignment-scoped folder name used in the Drive path. Falls
+  /// back to the assignment id when `assignments.name` is null — UUID-named
+  /// and legacy assignments are valid runtime cases (the worker uses the
+  /// same fallback), and missing the fallback used to misreport successful
+  /// uploads as Empty.
   Future<String?> _resolveFolderName(String assignmentId) async {
     final row = await (_db.select(_db.assignments)
           ..where((t) => t.id.equals(assignmentId)))
         .getSingleOrNull();
     if (row == null) return null;
-    return row.name;
+    return row.name ?? row.id;
+  }
+
+  String _buildFolderPath(String folderName) {
+    final resolver = _enumeratorIdentifier;
+    if (resolver == null) return 'firecheck/$folderName/';
+    final enumerator =
+        sanitizeDriveFolderName(resolver()) ?? 'unknown-enumerator';
+    return 'firecheck/output/$enumerator/$folderName/';
   }
 }

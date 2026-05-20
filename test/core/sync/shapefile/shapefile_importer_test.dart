@@ -1,6 +1,7 @@
 // test/core/sync/shapefile/shapefile_importer_test.dart
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/sync/shapefile/dbf_parser.dart';
@@ -192,6 +193,66 @@ void main() {
     expect(features, hasLength(2));
     expect(features.where((f) => f.featureType == 'building'), hasLength(1));
     expect(features.where((f) => f.featureType == 'road'), hasLength(1));
+  });
+
+  test('re-import migrates legacy "<assignment>/<rawFeatId>" feature ids and rewires submissions', () async {
+    // Simulate an app that imported the shapefile before the UUID-v5 id
+    // switch: assignment + a feature with the old prefixed id + a
+    // submission referencing it.
+    const assignmentId = 'brgy-001';
+    const legacyFeatureId = '$assignmentId/BLD-001';
+    final now = DateTime(2026, 5, 19);
+
+    await db.into(db.assignments).insert(
+          AssignmentsCompanion.insert(
+            id: assignmentId,
+            enumeratorId: 'test-enumerator',
+            campaignId: assignmentId,
+            boundaryPolygonGeojson: '{"type":"Polygon","coordinates":[]}',
+            createdAt: now,
+          ),
+        );
+    await db.into(db.features).insert(
+          FeaturesCompanion.insert(
+            id: legacyFeatureId,
+            assignmentId: assignmentId,
+            featureType: 'building',
+            geometryGeojson: '{"type":"Point","coordinates":[0,0]}',
+            externalCode: const Value('BLD-001'),
+            createdAt: now,
+          ),
+        );
+    await db.into(db.submissions).insert(
+          SubmissionsCompanion.insert(
+            id: 'sub-1',
+            featureId: legacyFeatureId,
+            doesNotExist: const Value(false),
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+
+    await importer.importShapefiles(
+      _makeValidFiles(),
+      assignmentId,
+      '2026-04-28T10:00:00Z',
+      'folder-abc',
+      'test-enumerator',
+    );
+
+    // The legacy feature row should be gone; the new UUID-v5 row should
+    // exist; the submission should now point at the new id.
+    final remaining = await (db.select(db.features)
+          ..where((t) => t.assignmentId.equals(assignmentId)))
+        .get();
+    expect(remaining.where((f) => f.id == legacyFeatureId), isEmpty);
+    expect(remaining.where((f) => f.featureType == 'building'), hasLength(1));
+
+    final newBuilding = remaining.firstWhere((f) => f.featureType == 'building');
+    final updatedSub = await (db.select(db.submissions)
+          ..where((t) => t.id.equals('sub-1')))
+        .getSingle();
+    expect(updatedSub.featureId, newBuilding.id);
   });
 
 }

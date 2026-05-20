@@ -75,6 +75,10 @@ void driveUploadCallbackDispatcher() {
         repo: repo,
         assignmentRepo: AssignmentRepository(db: db),
         auditRepo: DriveUploadAuditRepository(Supabase.instance.client),
+        // Match the per-enumerator subfolder the worker just uploaded into.
+        enumeratorIdentifier: () =>
+            Supabase.instance.client.auth.currentUser?.email ??
+            Supabase.instance.client.auth.currentUser?.id,
       );
       await finalizeUseCase.executePending(
         uploaderId: session.user.id,

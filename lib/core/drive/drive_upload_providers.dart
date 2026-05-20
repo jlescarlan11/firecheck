@@ -76,10 +76,15 @@ final driveUploadAuditRepositoryProvider =
 
 final finalizeAssignmentUploadUseCaseProvider =
     Provider<FinalizeAssignmentUploadUseCase>((ref) {
+  final client = ref.watch(supabaseClientProvider);
   return FinalizeAssignmentUploadUseCase(
     db: ref.watch(appDatabaseProvider),
     repo: ref.watch(driveUploadRepoProvider),
     assignmentRepo: ref.watch(assignmentRepositoryProvider),
     auditRepo: ref.watch(driveUploadAuditRepositoryProvider),
+    // Mirror the worker's per-enumerator subfolder so the path persisted on
+    // the assignment row matches where files actually landed in Drive.
+    enumeratorIdentifier: () =>
+        client.auth.currentUser?.email ?? client.auth.currentUser?.id,
   );
 });

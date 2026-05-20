@@ -140,6 +140,15 @@ class ShapefileImporter {
             ),
           );
 
+      // One-time migration: feature ids used to be stored as
+      // "<assignmentId>/<rawFeatId>"; they're now deterministic UUID-v5s
+      // derived from the same inputs. On a re-import after upgrade, rewrite
+      // any legacy-format rows in place so submissions / geometry revisions
+      // keep pointing at the same feature. Without this, the upsert below
+      // would silently create a parallel set of feature rows under the new
+      // ids and orphan all prior user work.
+      await _migrateLegacyFeatureIds(assignmentId);
+
       for (var i = 0; i < buildingGeoms.length; i++) {
         final rawFeatId = i < buildingRecords.length
             ? (buildingRecords[i]['feat_id']?.toString() ?? 'bld-$i')
@@ -187,6 +196,55 @@ class ShapefileImporter {
       roadCount: roadRecords.length,
       boundaryGeojson: boundaryGeojsonStr,
     );
+  }
+
+  /// Rewrites any feature rows for [assignmentId] whose id matches the legacy
+  /// "<assignmentId>/<rawFeatId>" format into the current UUID-v5 derived id,
+  /// updating all FK-referencing rows (submissions and geometry revisions —
+  /// neither table declares a CASCADE constraint, so the rewrite is manual).
+  /// A no-op when no legacy rows exist.
+  Future<void> _migrateLegacyFeatureIds(String assignmentId) async {
+    final prefix = '$assignmentId/';
+    final legacy = await (db.select(db.features)
+          ..where(
+            (t) =>
+                t.assignmentId.equals(assignmentId) & t.id.like('$prefix%'),
+          ))
+        .get();
+    if (legacy.isEmpty) return;
+
+    for (final old in legacy) {
+      final rawFeatId = old.id.substring(prefix.length);
+      final newId = _toFeatureId(assignmentId, rawFeatId);
+      if (newId == old.id) continue;
+
+      await (db.update(db.submissions)
+            ..where((t) => t.featureId.equals(old.id)))
+          .write(SubmissionsCompanion(featureId: Value(newId)));
+      await (db.update(db.featureGeometryRevisions)
+            ..where((t) => t.featureId.equals(old.id)))
+          .write(FeatureGeometryRevisionsCompanion(featureId: Value(newId)));
+
+      // Insert the new feature row carrying over the prior fields, then drop
+      // the legacy row. Doing it in this order avoids a moment where any FK
+      // referent is missing.
+      await db.into(db.features).insertOnConflictUpdate(
+            FeaturesCompanion.insert(
+              id: newId,
+              assignmentId: old.assignmentId,
+              featureType: old.featureType,
+              geometryGeojson: old.geometryGeojson,
+              isNew: Value(old.isNew),
+              externalCode: Value(old.externalCode ?? rawFeatId),
+              createdAt: old.createdAt,
+            ),
+          );
+      await (db.delete(db.features)..where((t) => t.id.equals(old.id))).go();
+
+      debugPrint(
+        '[ShapefileImporter] migrated legacy featureId "${old.id}" → "$newId"',
+      );
+    }
   }
 
   Map<String, dynamic> _bboxFromGeoms(List<ShpGeometry> geoms) {

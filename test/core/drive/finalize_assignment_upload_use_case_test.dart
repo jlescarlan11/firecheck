@@ -44,7 +44,7 @@ class _RecordingAuditRepo extends DriveUploadAuditRepository {
 
 AppDatabase _db() => AppDatabase.forTesting(NativeDatabase.memory());
 
-Future<void> _seedAssignment(AppDatabase db, {required String id, required String name}) async {
+Future<void> _seedAssignment(AppDatabase db, {required String id, String? name}) async {
   await db.into(db.assignments).insert(
         AssignmentsCompanion.insert(
           id: id,
@@ -192,6 +192,85 @@ void main() {
 
       expect(outcome, isA<DriveUploadSucceeded>());
       expect(audit.recordCalls, isEmpty);
+    });
+
+    test('falls back to assignment id when name is null', () async {
+      final db = _db();
+      addTearDown(db.close);
+      final repo = DriveUploadRepository(db);
+      final assignmentRepo = AssignmentRepository(db: db);
+      final audit = _RecordingAuditRepo();
+      final useCase = FinalizeAssignmentUploadUseCase(
+        db: db,
+        repo: repo,
+        assignmentRepo: assignmentRepo,
+        auditRepo: audit,
+        now: () => DateTime.utc(2026, 5, 20, 10),
+      );
+      // UUID-named / legacy assignment: name column is null.
+      await _seedAssignment(db, id: 'a-uuid');
+      await _seedJob(repo, id: 'j1', assignmentId: 'a-uuid', status: DriveUploadJobStatus.completed);
+
+      final outcome = await useCase.execute(assignmentId: 'a-uuid', uploaderId: 'user-1');
+
+      expect(outcome, isA<DriveUploadSucceeded>());
+      expect((outcome as DriveUploadSucceeded).folderPath, 'firecheck/a-uuid/');
+      expect(audit.recordCalls.single['driveFolderPath'], 'firecheck/a-uuid/');
+    });
+
+    test('persists worker-shaped path when enumeratorIdentifier is provided', () async {
+      final db = _db();
+      addTearDown(db.close);
+      final repo = DriveUploadRepository(db);
+      final assignmentRepo = AssignmentRepository(db: db);
+      final audit = _RecordingAuditRepo();
+      final useCase = FinalizeAssignmentUploadUseCase(
+        db: db,
+        repo: repo,
+        assignmentRepo: assignmentRepo,
+        auditRepo: audit,
+        now: () => DateTime.utc(2026, 5, 20, 10),
+        enumeratorIdentifier: () => 'alice@example.com',
+      );
+      await _seedAssignment(db, id: 'a-1', name: 'cebu');
+      await _seedJob(repo, id: 'j1', assignmentId: 'a-1', status: DriveUploadJobStatus.completed);
+
+      final outcome = await useCase.execute(assignmentId: 'a-1', uploaderId: 'user-1');
+
+      expect(outcome, isA<DriveUploadSucceeded>());
+      expect(
+        (outcome as DriveUploadSucceeded).folderPath,
+        'firecheck/output/alice@example.com/cebu/',
+      );
+      expect(
+        audit.recordCalls.single['driveFolderPath'],
+        'firecheck/output/alice@example.com/cebu/',
+      );
+    });
+
+    test('falls back to unknown-enumerator when identifier returns null', () async {
+      final db = _db();
+      addTearDown(db.close);
+      final repo = DriveUploadRepository(db);
+      final assignmentRepo = AssignmentRepository(db: db);
+      final audit = _RecordingAuditRepo();
+      final useCase = FinalizeAssignmentUploadUseCase(
+        db: db,
+        repo: repo,
+        assignmentRepo: assignmentRepo,
+        auditRepo: audit,
+        now: () => DateTime.utc(2026, 5, 20, 10),
+        enumeratorIdentifier: () => null,
+      );
+      await _seedAssignment(db, id: 'a-1', name: 'cebu');
+      await _seedJob(repo, id: 'j1', assignmentId: 'a-1', status: DriveUploadJobStatus.completed);
+
+      final outcome = await useCase.execute(assignmentId: 'a-1');
+
+      expect(
+        (outcome as DriveUploadSucceeded).folderPath,
+        'firecheck/output/unknown-enumerator/cebu/',
+      );
     });
 
     test('executePending finalizes only assignments without confirmation', () async {

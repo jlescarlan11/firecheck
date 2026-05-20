@@ -153,11 +153,7 @@ class DriveUploadWorker {
   /// Replaces characters that aren't safe in Drive folder names (mainly the
   /// slash) with `_`. Returns null on empty/null input so callers can apply
   /// their own fallback.
-  String? _sanitizeFolderName(String? raw) {
-    if (raw == null) return null;
-    final cleaned = raw.replaceAll(RegExp(r'[\\/]'), '_').trim();
-    return cleaned.isEmpty ? null : cleaned;
-  }
+  String? _sanitizeFolderName(String? raw) => sanitizeDriveFolderName(raw);
 
   DateTime? _nextRetryAt(int attempts) {
     final base = DateTime.now();
@@ -168,4 +164,15 @@ class DriveUploadWorker {
       _ => null,
     };
   }
+}
+
+/// Replaces characters that aren't safe in Drive folder names (mainly the
+/// slash) with `_`. Returns null on empty/null input so callers can apply
+/// their own fallback. Shared with FinalizeAssignmentUploadUseCase so the
+/// path persisted on the assignment row matches the path the worker
+/// actually writes to.
+String? sanitizeDriveFolderName(String? raw) {
+  if (raw == null) return null;
+  final cleaned = raw.replaceAll(RegExp(r'[\\/]'), '_').trim();
+  return cleaned.isEmpty ? null : cleaned;
 }
