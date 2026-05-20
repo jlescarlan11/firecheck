@@ -44,7 +44,12 @@ class UploadProgressController extends StateNotifier<UploadProgress> {
         ? allJobs
         : allJobs.where((j) => !j.createdAt.isBefore(sessionStart)).toList();
     if (jobs.isEmpty) {
-      state = const Completed(failedCount: 0);
+      // No session jobs yet — beginUpload() fired but the worker hasn't
+      // enqueued rows. Hold InProgress; collapsing to Completed here would
+      // flash a stale success card whenever a second upload begins while
+      // the previous attempt's success rows are still in sync_jobs (they
+      // get filtered out by sessionStart, leaving the filtered list empty).
+      state = const InProgress(done: 0, total: 0);
       return;
     }
     final done = jobs.where((j) => j.status == 'success').length;

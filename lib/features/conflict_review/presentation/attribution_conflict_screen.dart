@@ -65,16 +65,32 @@ class _AttributionConflictScreenState
               error: (e, _) => Center(child: Text('Error: $e')),
               data: (theirsView) {
                 if (theirsView == null) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(24),
-                      child: Text(
+                  return ListView(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 24,),
+                    children: [
+                      const Text(
                         "Theirs is no longer available — the other "
                         'enumerator may have withdrawn it. Tap "Use mine" '
                         'to commit your version as-is.',
                         textAlign: TextAlign.center,
                       ),
-                    ),
+                      const SizedBox(height: 24),
+                      FilledButton(
+                        key: const Key('conflict-review.use-mine'),
+                        onPressed: _busy
+                            ? null
+                            : () =>
+                                _resolve(AttributionDecision.forceOverwrite),
+                        child: const Text('Use mine'),
+                      ),
+                      const SizedBox(height: 8),
+                      TextButton(
+                        key: const Key('conflict-review.skip'),
+                        onPressed: _busy ? null : () => context.pop(),
+                        child: const Text('Skip — decide later'),
+                      ),
+                    ],
                   );
                 }
                 final theirs =
