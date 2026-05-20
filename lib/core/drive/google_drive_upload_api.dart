@@ -9,10 +9,10 @@ import 'package:googleapis_auth/googleapis_auth.dart' as gauth;
 import 'package:http/http.dart' as http;
 
 class GoogleDriveUploadApi implements DriveUploadApi {
-  GoogleDriveUploadApi({required GoogleAuthRepository googleAuthRepo})
+  GoogleDriveUploadApi({required GoogleTokenSource googleAuthRepo})
       : _googleAuthRepo = googleAuthRepo;
 
-  final GoogleAuthRepository _googleAuthRepo;
+  final GoogleTokenSource _googleAuthRepo;
 
   Future<gdrive.DriveApi> _api() async {
     final token = await _googleAuthRepo.getAccessToken();
@@ -23,9 +23,40 @@ class GoogleDriveUploadApi implements DriveUploadApi {
         DateTime.now().toUtc().add(const Duration(hours: 1)),
       ),
       null,
-      [GoogleAuthRepository.driveFileScope],
+      [GoogleTokenSource.driveFileScope],
     );
     return gdrive.DriveApi(gauth.authenticatedClient(http.Client(), credentials));
+  }
+
+  @override
+  Future<String> findOrCreateFirecheckRoot() async {
+    // Parent-agnostic lookup mirrors GoogleDriveApi.listAssignments so the
+    // upload path lands in the same folder downloads read from — including
+    // shared-with-me and shared-drive layouts where the folder lives
+    // outside the user's My Drive root. Only creates a new folder in
+    // My Drive if none is visible to the user anywhere.
+    final api = await _api();
+    final result = await api.files.list(
+      q: "name = 'firecheck'"
+          " and mimeType = 'application/vnd.google-apps.folder'"
+          ' and trashed = false',
+      spaces: 'drive',
+      $fields: 'files(id)',
+    );
+    final existingId = result.files?.firstOrNull?.id;
+    if (existingId != null) return existingId;
+
+    final folder = await api.files.create(
+      gdrive.File()
+        ..name = 'firecheck'
+        ..mimeType = 'application/vnd.google-apps.folder',
+      $fields: 'id',
+    );
+    final folderId = folder.id;
+    if (folderId == null) {
+      throw NetworkFailure('Drive did not return id for created firecheck root');
+    }
+    return folderId;
   }
 
   @override
@@ -78,7 +109,7 @@ class GoogleDriveUploadApi implements DriveUploadApi {
         ? 'image/jpeg'
         : lower.endsWith('.png')
             ? 'image/png'
-            : 'application/zip';
+            : 'application/octet-stream';
 
     final media = gdrive.Media(
       file.openRead(),
@@ -86,12 +117,12 @@ class GoogleDriveUploadApi implements DriveUploadApi {
       contentType: mimeType,
     );
 
-    // Overwrite-in-place: shapefile exports for the same assignment land
-    // at the same path (/firecheck/<assignmentId>/<assignmentId>.zip), so
-    // a plain files.create would accumulate duplicate siblings and break
-    // the documented "last upload wins" contract on [DriveApi]. Photos
-    // are expected to use unique filenames, so the lookup is a no-op for
-    // them in practice.
+    // Overwrite-in-place: shapefile components for the same assignment land
+    // at stable paths (/firecheck/<assignmentId>/buildings.shp, etc.), so a
+    // plain files.create would accumulate duplicate siblings and break the
+    // documented "last upload wins" contract on [DriveApi]. Photos are
+    // expected to use unique filenames, so the lookup is a no-op for them
+    // in practice.
     final escapedName =
         fileName.replaceAll(r'\', r'\\').replaceAll("'", r"\'");
     final escapedParent =

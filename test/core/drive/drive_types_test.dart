@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   const base = DriveAssignment(
     assignmentId: 'brgy-001',
+    localAssignmentId: 'brgy-001',
     inputZipModifiedTime: '2026-04-28T10:00:00Z',
     driveFolderId: 'folder-abc',
   );
@@ -25,6 +26,7 @@ void main() {
     test('equality: same fields are equal', () {
       const other = DriveAssignment(
         assignmentId: 'brgy-001',
+        localAssignmentId: 'brgy-001',
         inputZipModifiedTime: '2026-04-28T10:00:00Z',
         driveFolderId: 'folder-abc',
       );

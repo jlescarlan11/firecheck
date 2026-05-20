@@ -160,45 +160,36 @@ class _SubmissionDetailScreenState
                 },
                 child: Column(
                 children: [
-                  // Read-only banner when the assignment is locked. Renders
-                  // above SubmissionTabs so it's the first thing the user
-                  // sees on a previously-submitted feature. Bug 15 follow-up.
+                  // Read-only banner when the assignment is closed remotely.
+                  // Submitted is no longer a hard lock — enumerators may
+                  // re-edit and re-submit after the first submission.
                   Consumer(
                     builder: (context, ref2, _) {
                       final lock = ref2.watch(assignmentLockStateProvider).value;
-                      if (lock is! Submitted && lock is! ClosedRemotely) {
+                      if (lock is! ClosedRemotely) {
                         return const SizedBox.shrink();
                       }
-                      final isClosed = lock is ClosedRemotely;
                       return Container(
                         width: double.infinity,
-                        color: isClosed
-                            ? const Color(0xFFFEE2E2)
-                            : const Color(0xFFFEF3C7),
+                        color: const Color(0xFFFEE2E2),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 8,
                         ),
                         child: Row(
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.lock_outline,
                               size: 16,
-                              color: isClosed
-                                  ? const Color(0xFFC53030)
-                                  : const Color(0xFFB7791F),
+                              color: Color(0xFFC53030),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                isClosed
-                                    ? l.readOnlyBannerClosed
-                                    : l.readOnlyBanner,
-                                style: TextStyle(
+                                l.readOnlyBannerClosed,
+                                style: const TextStyle(
                                   fontSize: 12,
-                                  color: isClosed
-                                      ? const Color(0xFFC53030)
-                                      : const Color(0xFFB7791F),
+                                  color: Color(0xFFC53030),
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),

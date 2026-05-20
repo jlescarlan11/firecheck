@@ -48,7 +48,7 @@ void main() {
       api: api,
       repo: repo,
       db: db,
-      rootFolderId: 'root-folder',
+      enumeratorIdentifier: () => 'test@example.com',
     );
     await worker.drain();
 
@@ -70,7 +70,7 @@ void main() {
       api: api,
       repo: repo,
       db: db,
-      rootFolderId: 'root-folder',
+      enumeratorIdentifier: () => 'test@example.com',
     );
     await worker.drain();
 
@@ -92,7 +92,7 @@ void main() {
       api: api,
       repo: repo,
       db: db,
-      rootFolderId: 'root-folder',
+      enumeratorIdentifier: () => 'test@example.com',
     );
 
     // Drain 4× with retry time set to past each time
@@ -126,7 +126,7 @@ void main() {
       api: api,
       repo: repo,
       db: db,
-      rootFolderId: 'root-folder',
+      enumeratorIdentifier: () => 'test@example.com',
     );
     await worker.drain();
 

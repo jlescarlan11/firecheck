@@ -90,6 +90,13 @@ class AppLocalizationsTl extends AppLocalizations {
   String get notDownloadedBadge => 'Hindi pa na-download';
 
   @override
+  String get noAssignmentsTitle => 'Walang nahanap na takdang-aralin';
+
+  @override
+  String get noAssignmentsBody =>
+      'Hilingin sa iyong supervisor na maglagay ng folder sa firecheck/input/ sa Google Drive, pagkatapos ay subukan muli.';
+
+  @override
   String get fetchingFeatures => 'Kine-kuha ang mga feature…';
 
   @override
@@ -925,7 +932,7 @@ class AppLocalizationsTl extends AppLocalizations {
 
   @override
   String get issueFeatureNoSubmission =>
-      'Walang natapos na submission para sa feature na ito';
+      'Hindi pa na-survey — laktawan kapag nag-upload ngayon';
 
   @override
   String get startUploadButton => 'Simulan ang Pag-upload';

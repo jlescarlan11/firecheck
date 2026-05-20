@@ -52,7 +52,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -152,6 +152,25 @@ class AppDatabase extends _$AppDatabase {
               "UPDATE sync_jobs SET entity_type = 'new_feature_upload' "
               "WHERE entity_type = 'new_feature'",
             );
+          }
+          if (from < 14) {
+            // v13 → v14: store the Drive folder name as a human-readable
+            // display label separate from the UUID assignment id.
+            // Also adds features.external_code for the original DBF feat_id.
+            // Guard against partial-schema migration tests that seed only
+            // a subset of tables.
+            final existing = (await customSelect(
+              "SELECT name FROM sqlite_master "
+              "WHERE type='table' AND name IN ('assignments', 'features')",
+            ).get())
+                .map((r) => r.read<String>('name'))
+                .toSet();
+            if (existing.contains('assignments')) {
+              await m.addColumn(assignments, assignments.name);
+            }
+            if (existing.contains('features')) {
+              await m.addColumn(features, features.externalCode);
+            }
           }
         },
         beforeOpen: (details) async {

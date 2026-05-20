@@ -3,6 +3,7 @@ import 'package:firecheck/core/sync/shapefile/export/shapefile_exporter.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
 import 'package:firecheck/features/home/domain/export_state.dart';
 import 'package:firecheck/features/home/presentation/home_providers.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -57,6 +58,7 @@ final shapefileExportNotifierProvider =
     assignmentId: assignmentId,
     exporter: ShapefileExporter(
       db: db,
+      supabaseUrl: dotenv.env['SUPABASE_URL'],
       shareFile: (path) async {
         await SharePlus.instance.share(ShareParams(files: [XFile(path)]));
       },

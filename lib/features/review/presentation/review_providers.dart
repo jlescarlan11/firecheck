@@ -2,10 +2,13 @@ import 'dart:async';
 
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:firecheck/core/db/database.dart';
+import 'package:firecheck/core/drive/drive_upload_providers.dart'
+    hide driveUploadNotifierProvider;
 import 'package:firecheck/core/sync/domain/finalize_submission.dart';
 import 'package:firecheck/core/sync/presentation/sync_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
 import 'package:firecheck/features/review/domain/drive_upload_state.dart';
+import 'package:firecheck/features/review/domain/execute_assignment_upload_use_case.dart';
 import 'package:firecheck/features/review/presentation/drive_upload_notifier.dart';
 import 'package:firecheck/features/home/presentation/home_providers.dart';
 import 'package:firecheck/features/review/data/review_repository.dart';
@@ -130,7 +133,6 @@ final startUploadUseCaseProvider = Provider<StartUploadUseCase>((ref) {
 final driveUploadNotifierProvider =
     StateNotifierProvider<DriveUploadNotifier, DriveUploadState>((ref) {
   final notifier = DriveUploadNotifier(
-    driveApi: ref.watch(driveApiProvider),
     assignmentRepository: ref.watch(assignmentRepositoryProvider),
   );
   ref
@@ -138,8 +140,23 @@ final driveUploadNotifierProvider =
       .getCurrentAssignment()
       .then((assignment) {
     if (assignment != null) {
-      notifier.initFromDb(assignment.id, assignment.enumeratorId);
+      notifier.initFromDb(assignment.id);
     }
   });
   return notifier;
+});
+
+final executeAssignmentUploadUseCaseProvider =
+    Provider<ExecuteAssignmentUploadUseCase>((ref) {
+  return ExecuteAssignmentUploadUseCase(
+    assignmentRepository: ref.watch(assignmentRepositoryProvider),
+    auditRepository: ref.watch(driveUploadAuditRepositoryProvider),
+    startUploadUseCase: ref.watch(startUploadUseCaseProvider),
+    enqueueAssignmentUseCase: ref.watch(enqueueAssignmentUseCaseProvider),
+    driveUploadRepository: ref.watch(driveUploadRepoProvider),
+    driveUploadWorker: ref.watch(driveUploadWorkerProvider),
+    finalizeAssignmentUploadUseCase:
+        ref.watch(finalizeAssignmentUploadUseCaseProvider),
+    progressController: ref.watch(uploadProgressControllerProvider.notifier),
+  );
 });

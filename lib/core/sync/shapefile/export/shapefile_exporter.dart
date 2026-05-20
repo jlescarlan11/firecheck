@@ -16,6 +16,16 @@ import 'package:path_provider/path_provider.dart';
 import 'package:proj4dart/proj4dart.dart' as proj4;
 
 // ---------------------------------------------------------------------------
+// Public types
+// ---------------------------------------------------------------------------
+
+class ShapefileComponentFile {
+  const ShapefileComponentFile({required this.filename, required this.path});
+  final String filename;
+  final String path;
+}
+
+// ---------------------------------------------------------------------------
 // Serializable structs passed to compute()
 // ---------------------------------------------------------------------------
 
@@ -43,6 +53,7 @@ class _BuildingRow {
     required this.costEstimateRange,
     required this.fireFightingFacilitiesJson,
     required this.fireLoadJson,
+    required this.photoUrls,
   });
   final String featureId;
   final bool doesNotExist;
@@ -57,6 +68,11 @@ class _BuildingRow {
   final String? costEstimateRange;
   final String fireFightingFacilitiesJson;
   final String fireLoadJson;
+  // Public URLs to objects in the Supabase `photos` bucket, ready for a
+  // QGIS user to copy out of the DBF and paste into a browser. When the
+  // exporter has no Supabase URL configured (e.g. tests), falls back to
+  // raw storage paths.
+  final List<String> photoUrls;
 }
 
 class _RoadRow {
@@ -69,6 +85,7 @@ class _RoadRow {
     required this.widthMeters,
     required this.roadFeaturesJson,
     required this.othersDescription,
+    required this.photoUrls,
   });
   final String featureId;
   final bool doesNotExist;
@@ -78,6 +95,7 @@ class _RoadRow {
   final double? widthMeters;
   final String roadFeaturesJson;
   final String? othersDescription;
+  final List<String> photoUrls;
 }
 
 class _LayerInput {
@@ -308,6 +326,11 @@ List<DbfFieldDef> _buildingFields() => const [
       DbfFieldDef(name: 'FIRE_LOAD', type: 'C', width: 254),
       DbfFieldDef(name: 'NOT_EXIST', type: 'L', width: 1),
       DbfFieldDef(name: 'REMARKS', type: 'C', width: 254),
+      // Pipe-joined public URLs to objects in the Supabase `photos`
+      // bucket. Truncated at the last full entry that fits 254 chars —
+      // extra photos are dropped to stay within the DBF C-field cap.
+      // QGIS users copy a URL from this column and paste into a browser.
+      DbfFieldDef(name: 'PHOTOS', type: 'C', width: 254),
     ];
 
 List<DbfFieldDef> _roadFields() => const [
@@ -319,6 +342,7 @@ List<DbfFieldDef> _roadFields() => const [
       DbfFieldDef(name: 'OTHER_DESC', type: 'C', width: 254),
       DbfFieldDef(name: 'NOT_EXIST', type: 'L', width: 1),
       DbfFieldDef(name: 'REMARKS', type: 'C', width: 254),
+      DbfFieldDef(name: 'PHOTOS', type: 'C', width: 254),
     ];
 
 // ---------------------------------------------------------------------------
@@ -350,6 +374,7 @@ Map<String, String?> _buildingRecord(_BuildingRow r, String featureId) => {
       'FIRE_LOAD': _jsonArrayToPipe(r.fireLoadJson),
       'NOT_EXIST': r.doesNotExist ? 'T' : 'F',
       'REMARKS': r.remarks,
+      'PHOTOS': _photosToPipe(r.photoUrls),
     };
 
 Map<String, String?> _roadRecord(_RoadRow r, String featureId) => {
@@ -361,7 +386,25 @@ Map<String, String?> _roadRecord(_RoadRow r, String featureId) => {
       'OTHER_DESC': r.othersDescription,
       'NOT_EXIST': r.doesNotExist ? 'T' : 'F',
       'REMARKS': r.remarks,
+      'PHOTOS': _photosToPipe(r.photoUrls),
     };
+
+/// Pipe-joins photo URLs, dropping any URL that would push the total past
+/// the 254-char DBF C-field cap. Returns null when the list is empty so
+/// QGIS sees the field as NULL rather than an empty string.
+String? _photosToPipe(List<String> urls) {
+  if (urls.isEmpty) return null;
+  const cap = 254;
+  final buf = StringBuffer();
+  for (final url in urls) {
+    final prospective = buf.isEmpty ? url : '${buf.toString()}|$url';
+    if (prospective.length > cap) break;
+    if (buf.isNotEmpty) buf.write('|');
+    buf.write(url);
+  }
+  final out = buf.toString();
+  return out.isEmpty ? null : out;
+}
 
 // ---------------------------------------------------------------------------
 // ShapefileExporter
@@ -373,11 +416,19 @@ class ShapefileExporter {
     this.shareFile,
     this.tempDirOverride,
     this.targetEpsg = 4326,
+    this.supabaseUrl,
   }) : _targetCrs = requirePhCrs(targetEpsg);
 
   final AppDatabase db;
   final Future<void> Function(String path)? shareFile;
   final Directory? tempDirOverride;
+
+  /// Base Supabase project URL (e.g. `https://abc.supabase.co`). When
+  /// non-null, raw `photos`-bucket storage paths are rewritten into full
+  /// public URLs (`<supabaseUrl>/storage/v1/object/public/photos/<path>`)
+  /// in the exported DBF's PHOTOS column. When null (tests, or env not
+  /// configured), the raw storage path is written instead.
+  final String? supabaseUrl;
 
   /// EPSG code for the output coordinates. Defaults to 4326 (WGS 84
   /// lng/lat), matching how geometries are stored in the database — in
@@ -405,21 +456,21 @@ class ShapefileExporter {
     return null;
   }
 
-  /// Exports to a stable path for upload. Returns the zip path on success.
-  /// Callers must not delete the file until upload confirms.
-  Future<(ExportFailure?, String?)> exportToFile({
+  /// Exports loose shapefile components (.shp/.shx/.dbf/.prj) for each layer
+  /// to a stable directory. Returns the list of component files on success.
+  /// Callers must not delete the files until uploads confirm.
+  Future<(ExportFailure?, List<ShapefileComponentFile>?)> exportToFile({
     required String assignmentId,
   }) async {
     final destDir = tempDirOverride ?? await getApplicationDocumentsDirectory();
-    return _buildAndWriteZip(
+    return _buildAndWriteComponents(
       assignmentId: assignmentId,
       destDir: destDir,
     );
   }
 
-  Future<(ExportFailure?, String?)> _buildAndWriteZip({
+  Future<(ExportFailure?, List<_LayerOutput>?)> _buildLayerOutputs({
     required String assignmentId,
-    required Directory destDir,
   }) async {
     // Query all completed features with their submissions and attributes.
     final buildingRows = await _queryBuildings(assignmentId);
@@ -496,7 +547,17 @@ class ShapefileExporter {
       }
     }
 
-    // Build ZIP archive
+    return (null, outputs);
+  }
+
+  Future<(ExportFailure?, String?)> _buildAndWriteZip({
+    required String assignmentId,
+    required Directory destDir,
+  }) async {
+    final (failure, outputs) =
+        await _buildLayerOutputs(assignmentId: assignmentId);
+    if (failure != null || outputs == null) return (failure, null);
+
     final archive = Archive();
     final prjContent = _targetCrs.wkt;
     final prjBytes = utf8.encode(prjContent);
@@ -516,7 +577,6 @@ class ShapefileExporter {
         );
     }
 
-    // Write ZIP to destination directory
     final zipBytes = ZipEncoder().encode(archive);
     if (zipBytes == null) return (const WriteError('ZIP encoding produced no output'), null);
     final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
@@ -530,6 +590,46 @@ class ShapefileExporter {
     }
 
     return (null, zipPath);
+  }
+
+  Future<(ExportFailure?, List<ShapefileComponentFile>?)>
+      _buildAndWriteComponents({
+    required String assignmentId,
+    required Directory destDir,
+  }) async {
+    final (failure, outputs) =
+        await _buildLayerOutputs(assignmentId: assignmentId);
+    if (failure != null || outputs == null) return (failure, null);
+
+    // Per-export subdirectory so concurrent or repeat exports never clobber
+    // a file an upload worker is currently streaming.
+    final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+    final exportDirPath =
+        p.join(destDir.path, 'firecheck_${assignmentId}_$timestamp');
+    await Directory(exportDirPath).create(recursive: true);
+
+    final prjBytes = utf8.encode(_targetCrs.wkt);
+    final components = <ShapefileComponentFile>[];
+    try {
+      for (final out in outputs) {
+        final layer = out.layerName;
+        for (final (ext, bytes) in <(String, List<int>)>[
+          ('shp', out.shp),
+          ('shx', out.shx),
+          ('dbf', out.dbf),
+          ('prj', prjBytes),
+        ]) {
+          final filename = '$layer.$ext';
+          final path = p.join(exportDirPath, filename);
+          await File(path).writeAsBytes(bytes);
+          components.add(ShapefileComponentFile(filename: filename, path: path));
+        }
+      }
+    } catch (e) {
+      return (WriteError(e.toString()), null);
+    }
+
+    return (null, components);
   }
 
   // -------------------------------------------------------------------------
@@ -556,6 +656,11 @@ class ShapefileExporter {
       );
 
     final rows = await query.get();
+    final submissionIds =
+        rows.map((r) => r.readTable(db.submissions).id).toList();
+    final photosBySubmission =
+        await _photoStoragePathsBySubmission(submissionIds);
+
     return rows.map((row) {
       final feature = row.readTable(db.features);
       final submission = row.readTable(db.submissions);
@@ -577,6 +682,7 @@ class ShapefileExporter {
           costEstimateRange: attr.costEstimateRange,
           fireFightingFacilitiesJson: attr.fireFightingFacilitiesJson,
           fireLoadJson: attr.fireLoadJson,
+          photoUrls: photosBySubmission[submission.id] ?? const [],
         ),
       );
     }).toList();
@@ -600,6 +706,11 @@ class ShapefileExporter {
       );
 
     final rows = await query.get();
+    final submissionIds =
+        rows.map((r) => r.readTable(db.submissions).id).toList();
+    final photosBySubmission =
+        await _photoStoragePathsBySubmission(submissionIds);
+
     return rows.map((row) {
       final feature = row.readTable(db.features);
       final submission = row.readTable(db.submissions);
@@ -616,9 +727,41 @@ class ShapefileExporter {
           widthMeters: attr.widthMeters,
           roadFeaturesJson: attr.roadFeaturesJson,
           othersDescription: attr.othersDescription,
+          photoUrls: photosBySubmission[submission.id] ?? const [],
         ),
       );
     }).toList();
+  }
+
+  /// Returns submissionId → list of viewer-ready photo references. When
+  /// [supabaseUrl] is configured, paths are rewritten into public URLs
+  /// resolvable by any browser; otherwise the raw `photos`-bucket storage
+  /// path is returned (used by tests and environments without Supabase).
+  /// Photos without a storage_path (still pending the Supabase upload)
+  /// are skipped — they have no URL to surface yet.
+  Future<Map<String, List<String>>> _photoStoragePathsBySubmission(
+    List<String> submissionIds,
+  ) async {
+    if (submissionIds.isEmpty) return const {};
+    final photos = await (db.select(db.photos)
+          ..where((t) =>
+              t.submissionId.isIn(submissionIds) & t.storagePath.isNotNull())
+          ..orderBy([(t) => OrderingTerm.asc(t.capturedAt)]))
+        .get();
+    final map = <String, List<String>>{};
+    for (final p in photos) {
+      final path = p.storagePath;
+      if (path == null) continue;
+      (map[p.submissionId] ??= <String>[]).add(_photoUrlFor(path));
+    }
+    return map;
+  }
+
+  String _photoUrlFor(String storagePath) {
+    final base = supabaseUrl;
+    if (base == null || base.isEmpty) return storagePath;
+    final trimmed = base.endsWith('/') ? base.substring(0, base.length - 1) : base;
+    return '$trimmed/storage/v1/object/public/photos/$storagePath';
   }
 }
 

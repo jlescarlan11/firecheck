@@ -38,11 +38,11 @@ ReviewState buildReviewState(ReviewSourceData data) {
     final finalized = subs.where(isFinalized).toList();
     if (finalized.isEmpty) {
       incompleteFeatures++;
-      blockers.add(
+      warnings.add(
         ReviewIssue(
           featureId: f.id,
           featureLabel: _featureLabel(f),
-          severity: ReviewSeverity.blocker,
+          severity: ReviewSeverity.warning,
           code: 'feature_has_no_finalized_submission',
           messageKey: 'issueFeatureNoSubmission',
         ),

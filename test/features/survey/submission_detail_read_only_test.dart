@@ -12,7 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('hides Done button when assignment is Submitted',
+  testWidgets('hides Done button when assignment is ClosedRemotely',
       (tester) async {
     final db = AppDatabase.forTesting(NativeDatabase.memory());
     // Do NOT use addTearDown(db.close) here — we close manually before
@@ -55,7 +55,7 @@ void main() {
           appDatabaseProvider.overrideWithValue(db),
           currentUserIdProvider.overrideWithValue('e-1'),
           assignmentLockStateProvider.overrideWith(
-            (_) => Stream.value(Submitted(submittedAt: DateTime(2026, 4, 27))),
+            (_) => Stream.value(const ClosedRemotely(bundleFile: null)),
           ),
         ],
         child: const MaterialApp(

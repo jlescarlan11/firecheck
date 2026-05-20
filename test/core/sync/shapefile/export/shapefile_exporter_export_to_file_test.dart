@@ -6,7 +6,6 @@ import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/sync/shapefile/export/export_failure.dart';
 import 'package:firecheck/core/sync/shapefile/export/shapefile_exporter.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:path/path.dart' as p;
 
 void main() {
   late Directory tempDir;
@@ -33,13 +32,13 @@ void main() {
     ));
 
     final exporter = ShapefileExporter(db: db, tempDirOverride: tempDir);
-    final (failure, path) = await exporter.exportToFile(assignmentId: 'a1');
+    final (failure, components) = await exporter.exportToFile(assignmentId: 'a1');
 
     expect(failure, isA<NoCompletedFeatures>());
-    expect(path, isNull);
+    expect(components, isNull);
   });
 
-  test('exportToFile writes ZIP to tempDirOverride and returns path', () async {
+  test('exportToFile writes loose .shp/.shx/.dbf/.prj components to tempDirOverride', () async {
     final db = AppDatabase.forTesting(NativeDatabase.memory());
     addTearDown(db.close);
 
@@ -65,12 +64,18 @@ void main() {
     ));
 
     final exporter = ShapefileExporter(db: db, tempDirOverride: tempDir);
-    final (failure, path) = await exporter.exportToFile(assignmentId: 'a1');
+    final (failure, components) = await exporter.exportToFile(assignmentId: 'a1');
 
     expect(failure, isNull);
-    expect(path, isNotNull);
-    expect(p.extension(path!), '.zip');
-    expect(File(path).existsSync(), isTrue);
+    expect(components, isNotNull);
+    expect(
+      components!.map((c) => c.filename).toSet(),
+      equals({'buildings.shp', 'buildings.shx', 'buildings.dbf', 'buildings.prj'}),
+    );
+    for (final c in components) {
+      expect(File(c.path).existsSync(), isTrue,
+          reason: '${c.filename} should exist on disk');
+    }
   });
 
   test('exportToFile never invokes shareFile even when one is provided', () async {

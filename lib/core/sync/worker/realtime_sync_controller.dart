@@ -160,8 +160,13 @@ class RealtimeSyncController {
     // realtime events could land before the cache catches up.
     try {
       await _pullService.pullDelta(assignmentId);
+      _lastPullError = null;
     } on Object catch (e) {
-      debugPrint('[Realtime] pre-subscribe delta pull failed: $e');
+      final msg = e.toString();
+      if (msg != _lastPullError) {
+        _lastPullError = msg;
+        debugPrint('[Realtime] pre-subscribe delta pull failed: $e');
+      }
       // Keep going — events on the live channel will trigger their own pulls.
     }
 
@@ -207,11 +212,21 @@ class RealtimeSyncController {
     if (assignmentId == null) return;
     try {
       await _pullService.pullDelta(assignmentId);
+      _lastPullError = null;
       if (!_onPullCtl.isClosed) _onPullCtl.add(null);
     } on Object catch (e) {
-      debugPrint('[Realtime] delta pull failed: $e');
+      final msg = e.toString();
+      if (msg != _lastPullError) {
+        _lastPullError = msg;
+        debugPrint('[Realtime] delta pull failed: $e');
+      }
     }
   }
+
+  // Dedupes consecutive identical pull errors (e.g. PGRST202 during a
+  // stale postgrest schema cache). Reset to null after any successful
+  // pull so a later, different failure does get logged.
+  String? _lastPullError;
 
   Future<String?> _currentAssignmentId() async {
     // Newest assignment by createdAt — matches the rest of the codebase's

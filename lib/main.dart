@@ -13,9 +13,12 @@ import 'package:firecheck/core/sync/shapefile/reprojector.dart';
 import 'package:firecheck/core/sync/shapefile/shapefile_importer.dart';
 import 'package:firecheck/core/sync/worker/workmanager_dispatcher.dart';
 import 'package:firecheck/core/validation/supabase_validation_failure_reporter.dart';
+import 'package:firecheck/features/assignment/data/assignment_name_resolver.dart';
+import 'package:firecheck/features/assignment/data/canonical_feature_publisher.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_lock_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_lock_state.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
+import 'package:firecheck/features/auth/data/caching_google_auth_repository.dart';
 import 'package:firecheck/features/auth/data/google_access_token_cache.dart';
 import 'package:firecheck/features/auth/data/google_sign_in_auth_repository.dart';
 import 'package:firecheck/features/auth/presentation/auth_providers.dart';
@@ -79,10 +82,12 @@ Future<void> main() async {
     ProviderScope(
       overrides: [
         googleAuthRepositoryProvider.overrideWith(
-          (ref) => GoogleSignInAuthRepository(
-            auth: Supabase.instance.client.auth,
-            googleSignIn: GoogleSignIn.instance,
-            tokenCache: SecureStorageGoogleAccessTokenCache(
+          (ref) => CachingGoogleAuthRepository(
+            inner: GoogleSignInAuthRepository(
+              auth: Supabase.instance.client.auth,
+              googleSignIn: GoogleSignIn.instance,
+            ),
+            cache: SecureStorageGoogleAccessTokenCache(
               ref.watch(secureStorageProvider),
             ),
           ),
@@ -108,6 +113,15 @@ Future<void> main() async {
         validationFailureReporterProvider.overrideWithValue(
           SupabaseValidationFailureReporter(
             supabase: Supabase.instance.client,
+          ),
+        ),
+        assignmentNameResolverProvider.overrideWithValue(
+          SupabaseAssignmentNameResolver(Supabase.instance.client),
+        ),
+        canonicalFeaturePublisherProvider.overrideWith(
+          (ref) => SupabaseCanonicalFeaturePublisher(
+            client: Supabase.instance.client,
+            db: ref.watch(appDatabaseProvider),
           ),
         ),
       ],

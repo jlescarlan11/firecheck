@@ -42,8 +42,9 @@ class _NoopImporter extends ShapefileImporter {
     String assignmentId,
     String driveModifiedTime,
     String driveFolderId,
-    String enumeratorId,
-  ) async {
+    String enumeratorId, {
+    String? assignmentDisplayName,
+  }) async {
     callCount++;
     await db.into(db.assignments).insertOnConflictUpdate(
           AssignmentsCompanion(
@@ -71,6 +72,7 @@ class _SpyRule extends ShapefileValidationRule {
 
 const _brgy001 = DriveAssignment(
   assignmentId: 'brgy-001',
+  localAssignmentId: 'brgy-001',
   inputZipModifiedTime: '2026-04-28T10:00:00Z',
   driveFolderId: 'folder-1',
 );
@@ -132,6 +134,7 @@ void main() {
   test('selectAssignment updates selectedId', () async {
     const a2 = DriveAssignment(
       assignmentId: 'brgy-002',
+      localAssignmentId: 'brgy-002',
       inputZipModifiedTime: '2026-04-28T11:00:00Z',
       driveFolderId: 'folder-2',
     );

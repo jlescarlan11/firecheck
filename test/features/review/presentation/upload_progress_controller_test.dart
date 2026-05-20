@@ -11,7 +11,10 @@ SyncJob _job(String id, String status) => SyncJob(
       entityId: 'e-$id',
       status: status,
       attempts: 0,
-      createdAt: DateTime(2026, 4, 27),
+      // Use "now" so jobs are not filtered out by the controller's
+      // session-start cutoff (which excludes stale jobs from prior
+      // upload attempts).
+      createdAt: DateTime.now(),
     );
 
 void main() {

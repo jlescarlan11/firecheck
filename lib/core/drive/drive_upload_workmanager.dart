@@ -2,12 +2,15 @@ import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firecheck/core/db/database.dart';
+import 'package:firecheck/core/drive/drive_upload_audit_repository.dart';
 import 'package:firecheck/core/drive/drive_upload_repository.dart';
 import 'package:firecheck/core/drive/drive_upload_worker.dart';
+import 'package:firecheck/core/drive/finalize_assignment_upload_use_case.dart';
 import 'package:firecheck/core/drive/google_drive_upload_api.dart';
 import 'package:firecheck/core/errors/failure.dart';
 import 'package:firecheck/core/security/secure_storage.dart';
-import 'package:firecheck/features/auth/data/cached_google_auth_repository.dart';
+import 'package:firecheck/features/assignment/data/assignment_repository.dart';
+import 'package:firecheck/features/auth/data/cached_token_source.dart';
 import 'package:firecheck/features/auth/data/google_access_token_cache.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -24,8 +27,6 @@ void driveUploadCallbackDispatcher() {
       if (connectivity != ConnectivityResult.wifi) return true;
 
       await dotenv.load();
-      final rootFolderId = dotenv.env['DRIVE_UPLOAD_FOLDER_ID'] ?? '';
-      if (rootFolderId.isEmpty) return false;
 
       // Initialize Supabase in this background isolate.
       await Supabase.initialize(
@@ -41,19 +42,21 @@ void driveUploadCallbackDispatcher() {
       final session = Supabase.instance.client.auth.currentSession;
       if (session == null) return true;
 
-      final googleAuthRepo = CachedGoogleAuthRepository(
+      final tokenSource = CachedTokenSource(
         auth: Supabase.instance.client.auth,
         cache: SecureStorageGoogleAccessTokenCache(
           FlutterSecureStorageAdapter(),
         ),
       );
-      final uploadApi = GoogleDriveUploadApi(googleAuthRepo: googleAuthRepo);
+      final uploadApi = GoogleDriveUploadApi(googleAuthRepo: tokenSource);
       final repo = DriveUploadRepository(db);
       final worker = DriveUploadWorker(
         api: uploadApi,
         repo: repo,
         db: db,
-        rootFolderId: rootFolderId,
+        enumeratorIdentifier: () =>
+            Supabase.instance.client.auth.currentUser?.email ??
+            Supabase.instance.client.auth.currentUser?.id,
       );
       try {
         await worker.drain();
@@ -63,6 +66,24 @@ void driveUploadCallbackDispatcher() {
         await db.close();
         return true;
       }
+
+      // Mirror the foreground post-drain bookkeeping (assignment row +
+      // audit row) so background-completed uploads aren't invisible to
+      // the rest of the app.
+      final finalizeUseCase = FinalizeAssignmentUploadUseCase(
+        db: db,
+        repo: repo,
+        assignmentRepo: AssignmentRepository(db: db),
+        auditRepo: DriveUploadAuditRepository(Supabase.instance.client),
+        // Match the per-enumerator subfolder the worker just uploaded into.
+        enumeratorIdentifier: () =>
+            Supabase.instance.client.auth.currentUser?.email ??
+            Supabase.instance.client.auth.currentUser?.id,
+      );
+      await finalizeUseCase.executePending(
+        uploaderId: session.user.id,
+      );
+
       await db.close();
       return true;
     } on Object {

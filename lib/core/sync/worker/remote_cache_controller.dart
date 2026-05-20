@@ -73,13 +73,22 @@ class RemoteCacheController {
       final result = full
           ? await _pullService.pullAll(assignment.id)
           : await _pullService.pullDelta(assignment.id);
+      _lastErrorMessage = null;
       debugPrint(
         '[RemoteCacheController] pull (full=$full) '
         'a=${result.attributionsCount} f=${result.newFeaturesCount}',
       );
     } on Object catch (e) {
       // Pull failures are non-fatal — next reconnect / resume retries.
-      debugPrint('[RemoteCacheController] pull failed: $e');
+      // Dedupe identical messages so a persistent postgrest schema-cache
+      // miss (PGRST202) doesn't spam the log on every reconnect.
+      final msg = e.toString();
+      if (msg != _lastErrorMessage) {
+        _lastErrorMessage = msg;
+        debugPrint('[RemoteCacheController] pull failed: $e');
+      }
     }
   }
+
+  String? _lastErrorMessage;
 }

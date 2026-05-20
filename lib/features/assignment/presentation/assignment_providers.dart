@@ -1,25 +1,27 @@
 // lib/features/assignment/presentation/assignment_providers.dart
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/drive/drive_assignment.dart';
 import 'package:firecheck/core/device/storage_checker.dart';
 import 'package:firecheck/core/drive/drive_api.dart';
-import 'package:firecheck/core/drive/drive_download_event.dart';
 import 'package:firecheck/core/drive/ftp_credentials.dart';
-import 'package:firecheck/core/drive/ftp_map_source_api.dart';
 import 'package:firecheck/core/drive/transport_source.dart';
+import 'package:firecheck/core/drive/transport_source_factory.dart';
 import 'package:firecheck/core/forms/field_requirements_providers.dart';
-import 'package:firecheck/core/forms/field_requirements_store.dart';
 import 'package:firecheck/core/errors/failure.dart';
 import 'package:firecheck/core/mapbox/offline_pack_adapter.dart';
 import 'package:firecheck/core/sync/shapefile/shapefile_importer.dart';
 import 'package:firecheck/core/sync/shapefile/shapefile_validator.dart';
 import 'package:firecheck/core/validation/validation_failure_reporter.dart';
+import 'package:firecheck/features/assignment/data/assignment_name_resolver.dart';
 import 'package:firecheck/features/assignment/data/assignment_repository.dart';
+import 'package:firecheck/features/assignment/data/canonical_feature_publisher.dart';
+import 'package:firecheck/features/assignment/data/feature_submission_status.dart';
+import 'package:firecheck/core/auth/current_user_provider.dart';
 import 'package:firecheck/features/assignment/data/offline_tile_pack_repository.dart';
 import 'package:firecheck/features/assignment/domain/get_maps_state.dart';
+import 'package:firecheck/features/assignment/domain/shapefile_acquisition_use_case.dart';
 import 'package:firecheck/features/auth/data/google_auth_repository.dart';
 import 'package:firecheck/features/auth/presentation/auth_providers.dart';
 import 'package:firecheck/features/home/presentation/home_providers.dart';
@@ -71,12 +73,27 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
     required this.featureRepo,
     required this.driveApi,
     required this.googleAuthRepo,
-    required this.shapefileImporter,
+    required ShapefileImporter shapefileImporter,
     required this.storageChecker,
-    required this.validator,
-    required this.reporter,
+    required ShapefileValidator validator,
+    required ValidationFailureReporter reporter,
     this.onRequirementsUpdated,
-  }) : super(const Idle());
+    AssignmentNameResolver? assignmentNameResolver,
+    CanonicalFeaturePublisher? canonicalFeaturePublisher,
+    TransportSourceFactory? transportFactory,
+    ShapefileAcquisitionUseCase? acquisitionUseCase,
+  })  : _transportFactory =
+            transportFactory ?? TransportSourceFactory(driveApi: driveApi),
+        _useCase = acquisitionUseCase ??
+            ShapefileAcquisitionUseCase(
+              shapefileImporter: shapefileImporter,
+              validator: validator,
+              reporter: reporter,
+              assignmentNameResolver: assignmentNameResolver,
+              canonicalFeaturePublisher: canonicalFeaturePublisher,
+              onRequirementsUpdated: onRequirementsUpdated,
+            ),
+        super(const Idle());
 
   /// Invoked after a freshly downloaded `field_requirements.txt` is
   /// written to local storage so the form layer re-reads it. Optional so
@@ -88,15 +105,16 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
   final OfflinePackAdapter packAdapter;
   final FeatureRepository featureRepo;
   final DriveApi driveApi;
-  final GoogleAuthRepository googleAuthRepo;
-  final ShapefileImporter shapefileImporter;
+  final GoogleTokenSource googleAuthRepo;
   final StorageChecker storageChecker;
-  final ShapefileValidator validator;
-  final ValidationFailureReporter reporter;
+
+  final TransportSourceFactory _transportFactory;
+  final ShapefileAcquisitionUseCase _useCase;
 
   /// Active map-source transport (Issue #45). Defaults to Google Drive
-  /// (which uses the injected [driveApi]). When set to FTP the notifier
-  /// builds an [FtpMapSourceApi] on the fly from the supplied credentials.
+  /// (which uses the injected [driveApi]). When FTP is selected the
+  /// factory builds an FTP source on the fly from the supplied
+  /// credentials.
   TransportSource _transport = TransportSource.googleDrive;
   FtpCredentials? _ftpCredentials;
 
@@ -105,22 +123,8 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
     _ftpCredentials = ftp;
   }
 
-  /// Resolves the [DriveApi] for the currently selected transport.
-  DriveApi get _activeSource {
-    switch (_transport) {
-      case TransportSource.googleDrive:
-        return driveApi;
-      case TransportSource.ftp:
-        final c = _ftpCredentials;
-        if (c == null || !c.isComplete) {
-          throw StateError(
-            'FTP transport selected but credentials are missing — fill in '
-            'the host/user/password fields before starting.',
-          );
-        }
-        return FtpMapSourceApi(c);
-    }
-  }
+  DriveApi get _activeSource =>
+      _transportFactory.resolve(_transport, ftp: _ftpCredentials);
 
   static const _styleUri = 'mapbox://styles/mapbox/streets-v12';
   static const _minZoom = 12;
@@ -192,6 +196,18 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
         s.assignments.firstWhere((a) => a.assignmentId == s.selectedId);
     _selectedAssignment = selected;
 
+    // Resolve the transport once. The factory throws if FTP credentials
+    // are incomplete — route to a retryable error so the user can fix the
+    // form and try again.
+    final DriveApi source;
+    try {
+      source = _activeSource;
+    } catch (e) {
+      if (!mounted) return;
+      state = GetMapsError(NetworkFailure(e.toString()), isRetryable: true);
+      return;
+    }
+
     // Delta skip — already imported, go straight to tile download.
     // Still refresh the field_requirements.txt sidecar: Drive doesn't
     // reliably bump folder.modifiedTime when only a small sidecar is
@@ -200,7 +216,10 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
     if (selected.alreadyDownloaded) {
       _enumeratorId = await googleAuthRepo.getEnumeratorId();
       if (!mounted) return;
-      await _refreshFieldRequirementsSidecar(selected.assignmentId);
+      await _useCase.refreshSidecar(
+        source: source,
+        assignmentId: selected.assignmentId,
+      );
       if (!mounted) return;
       await _startTileDownload();
       return;
@@ -212,7 +231,7 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
     // PreparingDownload.
     final int needed;
     try {
-      needed = await _activeSource.getTotalSize(selected.assignmentId);
+      needed = await source.getTotalSize(selected.assignmentId);
     } catch (e) {
       if (!mounted) return;
       state = GetMapsError(NetworkFailure(e.toString()), isRetryable: true);
@@ -226,7 +245,7 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
     }
 
     _enumeratorId = await googleAuthRepo.getEnumeratorId();
-    await _downloadAndValidate(selected, needed);
+    await _runAcquisition(source: source, selected: selected, totalBytes: needed);
   }
 
   Future<void> acknowledgeWarning() async {
@@ -234,7 +253,13 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
     if (s is! ShapefileWarning) return;
     final selected = _selectedAssignment;
     if (selected == null) return;
-    await _doImport(selected, s.pendingFiles);
+    await _consume(
+      _useCase.importPending(
+        assignment: selected,
+        enumeratorId: _enumeratorId ?? '',
+        files: s.pendingFiles,
+      ),
+    );
   }
 
   Future<void> retryDownload() async {
@@ -242,149 +267,78 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
     if (s is! GetMapsError || !s.isRetryable) return;
     final selected = _selectedAssignment;
     if (selected == null) return;
+    final DriveApi source;
+    try {
+      source = _activeSource;
+    } catch (e) {
+      if (!mounted) return;
+      state = GetMapsError(NetworkFailure(e.toString()), isRetryable: true);
+      return;
+    }
     final int needed;
     try {
-      needed = await _activeSource.getTotalSize(selected.assignmentId);
+      needed = await source.getTotalSize(selected.assignmentId);
     } catch (e) {
       if (!mounted) return;
       state = GetMapsError(NetworkFailure(e.toString()), isRetryable: true);
       return;
     }
-    await _downloadAndValidate(selected, needed);
+    await _runAcquisition(source: source, selected: selected, totalBytes: needed);
   }
 
-  Future<void> _downloadAndValidate(
-    DriveAssignment selected,
-    int totalBytes,
-  ) async {
-    state = DownloadingShapefiles(downloaded: 0, total: totalBytes);
-    Map<String, Uint8List>? shapefiles;
-    Map<String, String> shapeMd5s = {};
-
-    try {
-      await for (final event
-          in _activeSource.downloadShapefiles(selected.assignmentId)) {
-        if (_cancelled || !mounted) return;
-        switch (event) {
-          case DriveDownloadProgress(:final downloaded, :final total):
-            state = DownloadingShapefiles(downloaded: downloaded, total: total);
-          case DriveDownloadComplete(:final files, :final expectedMd5s):
-            shapefiles = files;
-            shapeMd5s = expectedMd5s;
-        }
-      }
-    } catch (e) {
-      if (!mounted) return;
-      state = GetMapsError(NetworkFailure(e.toString()), isRetryable: true);
-      return;
-    }
-
-    if (_cancelled || !mounted) return;
-    if (shapefiles == null) {
-      state = GetMapsError(
-        const NetworkFailure('Download completed with no data'),
-        isRetryable: true,
-      );
-      return;
-    }
-
-    // Issue #43 (post-review): if a `field_requirements.txt` rode along
-    // with the shapefile, persist it locally and refresh the form-layer
-    // cache. Done before validation so the .txt never feeds into the
-    // shapefile rules (FileSetRule would otherwise flag it as extra).
-    final configKey = shapefiles.keys.firstWhere(
-      (k) => k.toLowerCase() == fieldRequirementsFilename,
-      orElse: () => '',
-    );
-    if (configKey.isNotEmpty) {
-      final bytes = shapefiles.remove(configKey);
-      shapeMd5s.remove(configKey);
-      if (bytes != null) await _persistFieldRequirements(bytes);
-    }
-
-    state = const ValidatingShapefiles();
-    final report = validator.validate(
-      shapefiles,
-      shapeMd5s,
-      relaxedMode: unrestricted,
-    );
-
-    if (report.hasFatals) {
-      final fatal = report.fatal!;
-      unawaited(reporter.report(
-        assignmentId: selected.assignmentId,
-        enumeratorId: _enumeratorId ?? '',
-        failedRule: fatal.ruleName,
-        message: fatal.userMessage,
-        fileChecksum: fatal.computedChecksum,
-      ));
-      if (!mounted) return;
-      // Fatal rules indicate corrupt / incomplete shapefiles — surface as
-      // a non-retryable error instead of attempting an import that would
-      // almost certainly fail downstream with a less actionable message.
-      state = GetMapsError(
-        ShapefileValidationFailure(
-          fatal.userMessage,
-          ruleName: fatal.ruleName,
+  Future<void> _runAcquisition({
+    required DriveApi source,
+    required DriveAssignment selected,
+    required int totalBytes,
+  }) =>
+      _consume(
+        _useCase.acquire(
+          source: source,
+          assignment: selected,
+          enumeratorId: _enumeratorId ?? '',
+          totalBytes: totalBytes,
+          unrestricted: unrestricted,
         ),
-        isRetryable: false,
       );
-      return;
-    }
 
-    if (!report.hasFatals && report.hasWarnings) {
-      if (!mounted) return;
-      state = ShapefileWarning(
-        warnings: report.warnings.map((w) => w.userMessage).toList(),
-        pendingFiles: shapefiles,
-        expectedMd5s: shapeMd5s,
-      );
-      return;
+  /// Maps [ShapefileAcquisitionEvent]s emitted by the use case onto
+  /// [GetMapsState]. Terminal events ([AcquisitionImported],
+  /// [AcquisitionImportFailed], [AcquisitionFailed], [AcquisitionWarning])
+  /// end the consumption loop.
+  Future<void> _consume(Stream<ShapefileAcquisitionEvent> stream) async {
+    await for (final event in stream) {
+      if (!mounted || _cancelled) return;
+      switch (event) {
+        case AcquisitionProgress(:final downloaded, :final total):
+          state = DownloadingShapefiles(downloaded: downloaded, total: total);
+        case AcquisitionValidating():
+          state = const ValidatingShapefiles();
+        case AcquisitionWarning(
+            :final warnings,
+            :final pendingFiles,
+            :final expectedMd5s,
+          ):
+          state = ShapefileWarning(
+            warnings: warnings,
+            pendingFiles: pendingFiles,
+            expectedMd5s: expectedMd5s,
+          );
+          return;
+        case AcquisitionImporting():
+          state = const ImportingShapefiles();
+        case AcquisitionImported():
+          if (!mounted) return;
+          await _startTileDownload();
+          return;
+        case AcquisitionImportFailed():
+          // Non-fatal — let the user open the map even if import failed.
+          state = const Ready(featureCount: 0, totalBytes: 0);
+          return;
+        case AcquisitionFailed(:final failure, :final isRetryable):
+          state = GetMapsError(failure, isRetryable: isRetryable);
+          return;
+      }
     }
-
-    await _doImport(selected, shapefiles);
-  }
-
-  Future<void> _persistFieldRequirements(Uint8List bytes) async {
-    try {
-      await writeFieldRequirements(bytes);
-      onRequirementsUpdated?.call();
-    } catch (_) {
-      // Non-fatal — the form falls back to the bundled asset.
-    }
-  }
-
-  Future<void> _refreshFieldRequirementsSidecar(String assignmentId) async {
-    try {
-      final bytes = await _activeSource.fetchFieldRequirementsSidecar(assignmentId);
-      if (bytes != null) await _persistFieldRequirements(bytes);
-    } catch (_) {
-      // Non-fatal — keep moving to the tile download.
-    }
-  }
-
-  Future<void> _doImport(
-    DriveAssignment selected,
-    Map<String, Uint8List> files,
-  ) async {
-    if (!mounted) return;
-    state = const ImportingShapefiles();
-    try {
-      await shapefileImporter.importShapefiles(
-        files,
-        selected.assignmentId,
-        selected.inputZipModifiedTime,
-        selected.driveFolderId,
-        _enumeratorId ?? '',
-      );
-    } catch (e) {
-      if (!mounted) return;
-      // Non-fatal — let the user open the map even if import failed.
-      state = const Ready(featureCount: 0, totalBytes: 0);
-      return;
-    }
-    if (!mounted) return;
-    await _startTileDownload();
   }
 
   Future<void> _startTileDownload() async {
@@ -480,6 +434,35 @@ final validationFailureReporterProvider =
       'Override validationFailureReporterProvider in main.dart');
 });
 
+/// Overridden in main.dart with SupabaseAssignmentNameResolver.
+final assignmentNameResolverProvider = Provider<AssignmentNameResolver>((ref) {
+  return const NoopAssignmentNameResolver();
+});
+
+/// Overridden in main.dart with SupabaseCanonicalFeaturePublisher.
+final canonicalFeaturePublisherProvider =
+    Provider<CanonicalFeaturePublisher>((ref) {
+  return const NoopCanonicalFeaturePublisher();
+});
+
+final transportSourceFactoryProvider =
+    Provider<TransportSourceFactory>((ref) {
+  return TransportSourceFactory(driveApi: ref.watch(driveApiProvider));
+});
+
+final shapefileAcquisitionUseCaseProvider =
+    Provider<ShapefileAcquisitionUseCase>((ref) {
+  return ShapefileAcquisitionUseCase(
+    shapefileImporter: ref.watch(shapefileImporterProvider),
+    validator: ref.watch(shapefileValidatorProvider),
+    reporter: ref.watch(validationFailureReporterProvider),
+    assignmentNameResolver: ref.watch(assignmentNameResolverProvider),
+    canonicalFeaturePublisher: ref.watch(canonicalFeaturePublisherProvider),
+    onRequirementsUpdated: () =>
+        ref.read(fieldRequirementsRevisionProvider.notifier).state++,
+  );
+});
+
 final getMapsNotifierProvider =
     StateNotifierProvider<GetMapsNotifier, GetMapsState>((ref) {
   return GetMapsNotifier(
@@ -493,11 +476,33 @@ final getMapsNotifierProvider =
     storageChecker: ref.watch(storageCheckerProvider),
     validator: ref.watch(shapefileValidatorProvider),
     reporter: ref.watch(validationFailureReporterProvider),
-    onRequirementsUpdated: () =>
-        ref.read(fieldRequirementsRevisionProvider.notifier).state++,
+    transportFactory: ref.watch(transportSourceFactoryProvider),
+    acquisitionUseCase: ref.watch(shapefileAcquisitionUseCaseProvider),
   );
 });
 
 final currentAssignmentProvider = StreamProvider<Assignment?>((ref) {
   return ref.watch(assignmentRepositoryProvider).watchCurrentAssignment();
+});
+
+final featureSubmissionStatusResolverProvider =
+    Provider<FeatureSubmissionStatusResolver>((ref) {
+  return FeatureSubmissionStatusResolver(ref.watch(appDatabaseProvider));
+});
+
+/// Per-feature submission status for the current assignment. UI consumes
+/// this to badge feature list entries / map markers as
+/// unsurveyed / draft / pendingUpload / submittedByMe / submittedByOther
+/// / needsResolution. Empty map while the assignment is loading.
+final featureSubmissionStatusProvider =
+    StreamProvider<Map<String, FeatureSubmissionStatus>>((ref) {
+  final assignment = ref.watch(currentAssignmentProvider).value;
+  if (assignment == null) {
+    return Stream.value(const <String, FeatureSubmissionStatus>{});
+  }
+  final userId = ref.watch(currentUserIdProvider);
+  return ref.watch(featureSubmissionStatusResolverProvider).watchByAssignment(
+        assignmentId: assignment.id,
+        currentUserId: userId,
+      );
 });

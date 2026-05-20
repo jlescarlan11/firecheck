@@ -28,7 +28,7 @@ void main() {
           api: FakeDriveUploadApi(),
           repo: repo,
           db: db,
-          rootFolderId: 'root',
+          enumeratorIdentifier: () => 'test@example.com',
         ),
       ),
     ]);

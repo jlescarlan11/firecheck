@@ -44,6 +44,7 @@ class _FakeNotifier extends StateNotifier<GetMapsState>
 
 const _brgy = DriveAssignment(
   assignmentId: 'brgy-001',
+  localAssignmentId: 'brgy-001',
   inputZipModifiedTime: '2026-04-28T10:00:00Z',
   driveFolderId: 'fd',
 );

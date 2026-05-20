@@ -1,7 +1,7 @@
-// test/features/auth/cached_google_auth_repository_test.dart
+// test/features/auth/cached_token_source_test.dart
 import 'package:firecheck/core/errors/failure.dart';
 import 'package:firecheck/core/security/secure_storage.dart';
-import 'package:firecheck/features/auth/data/cached_google_auth_repository.dart';
+import 'package:firecheck/features/auth/data/cached_token_source.dart';
 import 'package:firecheck/features/auth/data/google_access_token_cache.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -24,25 +24,25 @@ void main() {
 
   test('isSignedIn reflects Supabase session presence', () async {
     when(() => auth.currentSession).thenReturn(_MockSession());
-    final repo = CachedGoogleAuthRepository(auth: auth, cache: cache);
-    expect(await repo.isSignedIn(), isTrue);
+    final source = CachedTokenSource(auth: auth, cache: cache);
+    expect(await source.isSignedIn(), isTrue);
 
     when(() => auth.currentSession).thenReturn(null);
-    expect(await repo.isSignedIn(), isFalse);
+    expect(await source.isSignedIn(), isFalse);
   });
 
   test('getEnumeratorId returns Supabase user id', () async {
     final user = _MockUser();
     when(() => auth.currentUser).thenReturn(user);
     when(() => user.id).thenReturn('uuid-123');
-    final repo = CachedGoogleAuthRepository(auth: auth, cache: cache);
-    expect(await repo.getEnumeratorId(), 'uuid-123');
+    final source = CachedTokenSource(auth: auth, cache: cache);
+    expect(await source.getEnumeratorId(), 'uuid-123');
   });
 
   test('getEnumeratorId throws AuthFailure when no Supabase user', () async {
     when(() => auth.currentUser).thenReturn(null);
-    final repo = CachedGoogleAuthRepository(auth: auth, cache: cache);
-    expect(repo.getEnumeratorId(), throwsA(isA<AuthFailure>()));
+    final source = CachedTokenSource(auth: auth, cache: cache);
+    expect(source.getEnumeratorId(), throwsA(isA<AuthFailure>()));
   });
 
   test('getAccessToken returns cached token when valid', () async {
@@ -50,13 +50,13 @@ void main() {
       'cached-tok',
       DateTime.now().toUtc().add(const Duration(hours: 1)),
     );
-    final repo = CachedGoogleAuthRepository(auth: auth, cache: cache);
-    expect(await repo.getAccessToken(), 'cached-tok');
+    final source = CachedTokenSource(auth: auth, cache: cache);
+    expect(await source.getAccessToken(), 'cached-tok');
   });
 
   test('getAccessToken throws AuthFailure when cache is empty', () async {
-    final repo = CachedGoogleAuthRepository(auth: auth, cache: cache);
-    expect(repo.getAccessToken(), throwsA(isA<AuthFailure>()));
+    final source = CachedTokenSource(auth: auth, cache: cache);
+    expect(source.getAccessToken(), throwsA(isA<AuthFailure>()));
   });
 
   test('getAccessToken throws AuthFailure when cached token is stale',
@@ -65,17 +65,7 @@ void main() {
       'expired-tok',
       DateTime.now().toUtc().subtract(const Duration(minutes: 5)),
     );
-    final repo = CachedGoogleAuthRepository(auth: auth, cache: cache);
-    expect(repo.getAccessToken(), throwsA(isA<AuthFailure>()));
-  });
-
-  test('mutating methods throw UnsupportedError', () async {
-    final repo = CachedGoogleAuthRepository(auth: auth, cache: cache);
-    expect(() => repo.signIn(), throwsA(isA<UnsupportedError>()));
-    expect(() => repo.signOut(), throwsA(isA<UnsupportedError>()));
-    expect(
-      () => repo.requestDriveUploadScope(),
-      throwsA(isA<UnsupportedError>()),
-    );
+    final source = CachedTokenSource(auth: auth, cache: cache);
+    expect(source.getAccessToken(), throwsA(isA<AuthFailure>()));
   });
 }

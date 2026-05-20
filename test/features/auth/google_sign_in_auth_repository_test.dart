@@ -1,7 +1,5 @@
 // test/features/auth/google_sign_in_auth_repository_test.dart
 import 'package:firecheck/core/errors/failure.dart';
-import 'package:firecheck/core/security/secure_storage.dart';
-import 'package:firecheck/features/auth/data/google_access_token_cache.dart';
 import 'package:firecheck/features/auth/data/google_sign_in_auth_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -27,12 +25,10 @@ class _MockClientAuthorization extends Mock
 void main() {
   late _MockGoTrueClient auth;
   late _MockGoogleSignIn gsi;
-  late SecureStorageGoogleAccessTokenCache cache;
 
   setUp(() {
     auth = _MockGoTrueClient();
     gsi = _MockGoogleSignIn();
-    cache = SecureStorageGoogleAccessTokenCache(InMemorySecureStorage());
     when(() => gsi.authenticationEvents).thenAnswer(
       (_) => const Stream<GoogleSignInAuthenticationEvent>.empty(),
     );
@@ -41,7 +37,6 @@ void main() {
   GoogleSignInAuthRepository buildRepo() => GoogleSignInAuthRepository(
         auth: auth,
         googleSignIn: gsi,
-        tokenCache: cache,
       );
 
   group('isSignedIn', () {
@@ -69,12 +64,7 @@ void main() {
   });
 
   group('signOut', () {
-    test('clears Google Sign-In, Supabase session, and token cache',
-        () async {
-      await cache.save(
-        'tok',
-        DateTime.now().toUtc().add(const Duration(hours: 1)),
-      );
+    test('clears Google Sign-In and Supabase session', () async {
       when(() => gsi.signOut()).thenAnswer((_) async {});
       when(() => auth.signOut()).thenAnswer((_) async {});
 
@@ -82,13 +72,11 @@ void main() {
 
       verify(() => gsi.signOut()).called(1);
       verify(() => auth.signOut()).called(1);
-      expect(await cache.read(), isNull);
     });
   });
 
   group('getAccessToken', () {
-    test('returns access token from lightweight-restored account and caches it',
-        () async {
+    test('returns access token from lightweight-restored account', () async {
       final account = _MockGoogleSignInAccount();
       final authzClient = _MockAuthorizationClient();
       final authz = _MockClientAuthorization();
@@ -100,9 +88,7 @@ void main() {
           .thenAnswer((_) async => authz);
       when(() => authz.accessToken).thenReturn('fresh-token');
 
-      final token = await buildRepo().getAccessToken();
-      expect(token, 'fresh-token');
-      expect(await cache.read(), 'fresh-token');
+      expect(await buildRepo().getAccessToken(), 'fresh-token');
     });
 
     test('falls back to interactive authorizeScopes when silent returns null',

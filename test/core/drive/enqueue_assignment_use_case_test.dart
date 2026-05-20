@@ -19,7 +19,7 @@ void main() {
     if (tempDir.existsSync()) await tempDir.delete(recursive: true);
   });
 
-  Future<AppDatabase> _seedDb() async {
+  Future<AppDatabase> seedDb() async {
     final db = AppDatabase.forTesting(NativeDatabase.memory());
     await db.into(db.assignments).insert(AssignmentsCompanion.insert(
       id: 'a1', enumeratorId: 'e1', campaignId: 'c1',
@@ -39,18 +39,19 @@ void main() {
       fireLoadJson: const Value('[]'),
       costIsExact: const Value(false),
     ));
+    // Photo seeded but not expected to enqueue — photos ship to Supabase
+    // Storage only; Drive uploads are shapefile-components-only.
     await db.into(db.photos).insert(PhotosCompanion.insert(
       id: 'ph1', submissionId: 's1',
       localPath: '${tempDir.path}/photo1.jpg',
       capturedAt: DateTime(2026), createdAt: DateTime(2026),
     ));
-    // Create the photo file so File.length() succeeds
     await File('${tempDir.path}/photo1.jpg').writeAsBytes([0xFF, 0xD8]);
     return db;
   }
 
-  test('enqueue creates shapefile job + photo job', () async {
-    final db = await _seedDb();
+  test('enqueue creates one job per shapefile component (no photos)', () async {
+    final db = await seedDb();
     addTearDown(db.close);
     final repo = DriveUploadRepository(db);
     final exporter = ShapefileExporter(db: db, tempDirOverride: tempDir);
@@ -62,21 +63,27 @@ void main() {
 
     final count = await useCase.execute(assignmentId: 'a1');
 
-    expect(count, 2); // 1 shapefile + 1 photo
+    // 4 shapefile components for the buildings layer (.shp/.shx/.dbf/.prj).
+    // Photos are NOT enqueued for Drive uploads anymore.
+    expect(count, 4);
     final jobs = await repo.getPendingJobs();
-    expect(jobs.length, 2);
+    expect(jobs.length, 4);
     expect(
-      jobs.firstWhere((j) => j.fileType == DriveFileType.photo).fileName,
-      equals('a1_photo1.jpg'),
+      jobs.where((j) => j.fileType == DriveFileType.photo),
+      isEmpty,
     );
+    final shapefileNames = jobs
+        .where((j) => j.fileType == DriveFileType.shapefile)
+        .map((j) => j.fileName)
+        .toSet();
     expect(
-      jobs.firstWhere((j) => j.fileType == DriveFileType.shapefile).fileName,
-      equals('a1.zip'),
+      shapefileNames,
+      equals({'buildings.shp', 'buildings.shx', 'buildings.dbf', 'buildings.prj'}),
     );
   });
 
   test('enqueue is idempotent — second call adds no new jobs', () async {
-    final db = await _seedDb();
+    final db = await seedDb();
     addTearDown(db.close);
     final repo = DriveUploadRepository(db);
     final exporter = ShapefileExporter(db: db, tempDirOverride: tempDir);
@@ -87,6 +94,6 @@ void main() {
 
     expect(secondCount, 0);
     final jobs = await db.select(db.driveUploadJobs).get();
-    expect(jobs.length, 2); // still 2, no duplicates
+    expect(jobs.length, 4);
   });
 }

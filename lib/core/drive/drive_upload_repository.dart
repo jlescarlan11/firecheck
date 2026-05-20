@@ -142,11 +142,28 @@ class DriveUploadRepository {
     return row != null;
   }
 
+  /// True when there's a shapefile upload job actively in flight for
+  /// [assignmentId] — pending or uploading.
+  ///
+  /// Completed and dead jobs do not block re-enqueue: after a successful
+  /// upload the enumerator may re-export and re-upload; server-side
+  /// supersede handles attribution conflicts.
+  ///
+  /// Failed jobs are also NOT counted as in-flight: every fresh enqueue
+  /// produces new files in a timestamped subdir, so blocking on stale
+  /// failed jobs would force the user to wait for retries that will keep
+  /// hitting "file missing" against paths that no longer exist. Worker
+  /// retries on the legacy failed jobs continue independently; they're
+  /// harmless once they exhaust attempts.
   Future<bool> shapefileJobExistsForAssignment(String assignmentId) async {
     final row = await (_db.select(_db.driveUploadJobs)
           ..where((t) =>
               t.assignmentId.equals(assignmentId) &
-              t.fileType.equals(DriveFileType.shapefile))
+              t.fileType.equals(DriveFileType.shapefile) &
+              t.status.isIn(const [
+                DriveUploadJobStatus.pending,
+                DriveUploadJobStatus.uploading,
+              ]))
           ..limit(1))
         .getSingleOrNull();
     return row != null;

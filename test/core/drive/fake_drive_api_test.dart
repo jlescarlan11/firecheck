@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 const _brgy001 = DriveAssignment(
   assignmentId: 'brgy-001',
+  localAssignmentId: 'brgy-001',
   inputZipModifiedTime: '2026-04-28T10:00:00Z',
   driveFolderId: 'folder-1',
 );
