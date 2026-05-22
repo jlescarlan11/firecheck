@@ -52,11 +52,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get uploadDataSubtitle => 'Send completed work';
 
   @override
-  String comingInPhase(String phase) {
-    return 'Coming in $phase';
-  }
-
-  @override
   String get getMapsTitle => 'Get Maps';
 
   @override
@@ -177,9 +172,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get continueAnyway => 'Continue anyway';
-
-  @override
   String metersAway(int distance) {
     return '$distance m away';
   }
@@ -190,18 +182,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get close => 'Close';
-
-  @override
-  String get statusUnfilled => 'Unfilled';
-
-  @override
-  String get statusInProgress => 'In progress';
-
-  @override
-  String get statusComplete => 'Complete';
-
-  @override
-  String get statusNew => 'New';
 
   @override
   String get featureTypeBuilding => 'Building';
@@ -216,22 +196,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get submissionDetailTitleRoad => 'Road';
 
   @override
-  String tabStructure(int n) {
-    return 'Structure $n';
-  }
-
-  @override
   String get tabSoftCapTooltip => 'This polygon already has 5 structures';
-
-  @override
-  String savedAgo(int seconds, String connectivity) {
-    return '✓ Saved $seconds seconds ago · $connectivity';
-  }
-
-  @override
-  String savedJustNow(String connectivity) {
-    return '✓ Saved just now · $connectivity';
-  }
 
   @override
   String get photosLabel => 'Photos';
@@ -443,9 +408,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enable camera permission to take photos';
 
   @override
-  String get savedFailedSnackbar => 'Couldn\'t save. Retrying…';
-
-  @override
   String get gpsWaitingSnackbar => 'Waiting for GPS fix…';
 
   @override
@@ -483,10 +445,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get roadFeatureOthersDescription => 'Describe other features';
-
-  @override
-  String get addModeBannerHint =>
-      'Long-press the map to add a building or road. Tap the pill again to cancel.';
 
   @override
   String get addModePillActiveLabel => 'Tap & hold to drop pin';
@@ -871,9 +829,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get retryButton => 'Retry';
-
-  @override
   String get retryAllButton => 'Retry all';
 
   @override
@@ -919,9 +874,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String uploadProgressLabel(int done, int total) {
     return 'Uploading $done of $total items…';
   }
-
-  @override
-  String get uploadProgressShowDetails => 'Show details';
 
   @override
   String uploadCompleteSuccess(int n) {

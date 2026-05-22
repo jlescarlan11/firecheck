@@ -176,12 +176,6 @@ abstract class AppLocalizations {
   /// **'Send completed work'**
   String get uploadDataSubtitle;
 
-  /// No description provided for @comingInPhase.
-  ///
-  /// In en, this message translates to:
-  /// **'Coming in {phase}'**
-  String comingInPhase(String phase);
-
   /// No description provided for @getMapsTitle.
   ///
   /// In en, this message translates to:
@@ -404,12 +398,6 @@ abstract class AppLocalizations {
   /// **'You\'re {distance}m away. Map policy requires ≤50m.'**
   String featureTooFarBody(int distance);
 
-  /// No description provided for @continueAnyway.
-  ///
-  /// In en, this message translates to:
-  /// **'Continue anyway'**
-  String get continueAnyway;
-
   /// No description provided for @metersAway.
   ///
   /// In en, this message translates to:
@@ -427,30 +415,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Close'**
   String get close;
-
-  /// No description provided for @statusUnfilled.
-  ///
-  /// In en, this message translates to:
-  /// **'Unfilled'**
-  String get statusUnfilled;
-
-  /// No description provided for @statusInProgress.
-  ///
-  /// In en, this message translates to:
-  /// **'In progress'**
-  String get statusInProgress;
-
-  /// No description provided for @statusComplete.
-  ///
-  /// In en, this message translates to:
-  /// **'Complete'**
-  String get statusComplete;
-
-  /// No description provided for @statusNew.
-  ///
-  /// In en, this message translates to:
-  /// **'New'**
-  String get statusNew;
 
   /// No description provided for @featureTypeBuilding.
   ///
@@ -476,29 +440,11 @@ abstract class AppLocalizations {
   /// **'Road'**
   String get submissionDetailTitleRoad;
 
-  /// No description provided for @tabStructure.
-  ///
-  /// In en, this message translates to:
-  /// **'Structure {n}'**
-  String tabStructure(int n);
-
   /// No description provided for @tabSoftCapTooltip.
   ///
   /// In en, this message translates to:
   /// **'This polygon already has 5 structures'**
   String get tabSoftCapTooltip;
-
-  /// No description provided for @savedAgo.
-  ///
-  /// In en, this message translates to:
-  /// **'✓ Saved {seconds} seconds ago · {connectivity}'**
-  String savedAgo(int seconds, String connectivity);
-
-  /// No description provided for @savedJustNow.
-  ///
-  /// In en, this message translates to:
-  /// **'✓ Saved just now · {connectivity}'**
-  String savedJustNow(String connectivity);
 
   /// No description provided for @photosLabel.
   ///
@@ -908,12 +854,6 @@ abstract class AppLocalizations {
   /// **'Enable camera permission to take photos'**
   String get cameraPermissionSnackbar;
 
-  /// No description provided for @savedFailedSnackbar.
-  ///
-  /// In en, this message translates to:
-  /// **'Couldn\'t save. Retrying…'**
-  String get savedFailedSnackbar;
-
   /// No description provided for @gpsWaitingSnackbar.
   ///
   /// In en, this message translates to:
@@ -991,12 +931,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Describe other features'**
   String get roadFeatureOthersDescription;
-
-  /// No description provided for @addModeBannerHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Long-press the map to add a building or road. Tap the pill again to cancel.'**
-  String get addModeBannerHint;
 
   /// No description provided for @addModePillActiveLabel.
   ///
@@ -1700,12 +1634,6 @@ abstract class AppLocalizations {
   /// **'Failed ({n})'**
   String failedJobsTitle(int n);
 
-  /// No description provided for @retryButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Retry'**
-  String get retryButton;
-
   /// No description provided for @retryAllButton.
   ///
   /// In en, this message translates to:
@@ -1783,12 +1711,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Uploading {done} of {total} items…'**
   String uploadProgressLabel(int done, int total);
-
-  /// No description provided for @uploadProgressShowDetails.
-  ///
-  /// In en, this message translates to:
-  /// **'Show details'**
-  String get uploadProgressShowDetails;
 
   /// No description provided for @uploadCompleteSuccess.
   ///

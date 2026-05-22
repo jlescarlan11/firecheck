@@ -1,6 +1,5 @@
 // test/features/assignment/get_maps_screen_us17_test.dart
 import 'package:firecheck/core/drive/drive_assignment.dart';
-import 'package:firecheck/core/errors/failure.dart';
 import 'package:firecheck/features/assignment/domain/get_maps_state.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
 import 'package:firecheck/features/assignment/presentation/get_maps_screen.dart';

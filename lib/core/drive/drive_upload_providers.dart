@@ -15,7 +15,6 @@ import 'package:firecheck/features/home/presentation/home_providers.dart';
 import 'package:firecheck/features/upload/presentation/upload_queue_notifier.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 final driveUploadRepoProvider = Provider<DriveUploadRepository>((ref) {
   return DriveUploadRepository(ref.watch(appDatabaseProvider));

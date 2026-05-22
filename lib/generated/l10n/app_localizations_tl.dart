@@ -52,11 +52,6 @@ class AppLocalizationsTl extends AppLocalizations {
   String get uploadDataSubtitle => 'Ipadala ang tapos na gawa';
 
   @override
-  String comingInPhase(String phase) {
-    return 'Darating sa $phase';
-  }
-
-  @override
   String get getMapsTitle => 'Kumuha ng Mapa';
 
   @override
@@ -179,9 +174,6 @@ class AppLocalizationsTl extends AppLocalizations {
   }
 
   @override
-  String get continueAnyway => 'Ituloy pa rin';
-
-  @override
   String metersAway(int distance) {
     return '$distance m ang layo';
   }
@@ -192,18 +184,6 @@ class AppLocalizationsTl extends AppLocalizations {
 
   @override
   String get close => 'Isara';
-
-  @override
-  String get statusUnfilled => 'Wala pa';
-
-  @override
-  String get statusInProgress => 'Ginagawa pa';
-
-  @override
-  String get statusComplete => 'Tapos na';
-
-  @override
-  String get statusNew => 'Bago';
 
   @override
   String get featureTypeBuilding => 'Gusali';
@@ -218,22 +198,7 @@ class AppLocalizationsTl extends AppLocalizations {
   String get submissionDetailTitleRoad => 'Daan';
 
   @override
-  String tabStructure(int n) {
-    return 'Istruktura $n';
-  }
-
-  @override
   String get tabSoftCapTooltip => 'May 5 nang istruktura ang polygon na ito';
-
-  @override
-  String savedAgo(int seconds, String connectivity) {
-    return '✓ Naka-save ${seconds}s ang nakalipas · $connectivity';
-  }
-
-  @override
-  String savedJustNow(String connectivity) {
-    return '✓ Naka-save kanina · $connectivity';
-  }
 
   @override
   String get photosLabel => 'Mga larawan';
@@ -444,9 +409,6 @@ class AppLocalizationsTl extends AppLocalizations {
       'Buksan ang permiso sa kamera para makakuha ng larawan';
 
   @override
-  String get savedFailedSnackbar => 'Hindi nai-save. Susubukan ulit…';
-
-  @override
   String get gpsWaitingSnackbar => 'Naghulat og GPS signal…';
 
   @override
@@ -484,10 +446,6 @@ class AppLocalizationsTl extends AppLocalizations {
 
   @override
   String get roadFeatureOthersDescription => 'Ilarawan ang iba pang katangian';
-
-  @override
-  String get addModeBannerHint =>
-      'Pindutin nang matagal ang mapa upang magdagdag ng gusali o kalye. Pindutin muli ang pill para kanselahin.';
 
   @override
   String get addModePillActiveLabel => 'Pindutin nang matagal para magdagdag';
@@ -895,9 +853,6 @@ class AppLocalizationsTl extends AppLocalizations {
   }
 
   @override
-  String get retryButton => 'Subukan muli';
-
-  @override
   String get retryAllButton => 'Subukan lahat';
 
   @override
@@ -945,9 +900,6 @@ class AppLocalizationsTl extends AppLocalizations {
   String uploadProgressLabel(int done, int total) {
     return 'Ina-upload ang $done sa $total items…';
   }
-
-  @override
-  String get uploadProgressShowDetails => 'Ipakita ang detalye';
 
   @override
   String uploadCompleteSuccess(int n) {

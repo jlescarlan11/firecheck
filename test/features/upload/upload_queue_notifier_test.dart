@@ -6,7 +6,6 @@ import 'package:firecheck/core/drive/drive_upload_repository.dart';
 import 'package:firecheck/core/drive/drive_upload_worker.dart';
 import 'package:firecheck/core/drive/fake_drive_upload_api.dart';
 import 'package:firecheck/core/drive/drive_upload_providers.dart';
-import 'package:firecheck/features/upload/presentation/upload_queue_notifier.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
