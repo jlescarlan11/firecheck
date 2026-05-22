@@ -345,5 +345,15 @@
     }
   },
   "sketchBannerTitle": "{count} vertice · {type}",
-  "sketchBannerFinish": "Tapusin"
+  "sketchBannerFinish": "Tapusin",
+  "navHome": "Home",
+  "navAccount": "Account",
+  "accountTitle": "Account",
+  "accountSignOut": "Mag-sign out",
+  "accountSignOutConfirmTitle": "Mag-sign out?",
+  "accountSignOutConfirmBody": "Kakailanganin mong mag-sign in ulit para magpatuloy.",
+  "accountSignOutCancel": "Kanselahin",
+  "accountSignOutError": "Hindi nakapag-sign out. Subukang muli.",
+  "appTitle": "FireCheck",
+  "homeErrorPrefix": "Error: {error}"
 }

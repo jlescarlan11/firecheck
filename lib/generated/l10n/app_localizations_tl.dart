@@ -1208,4 +1208,34 @@ class AppLocalizationsTl extends AppLocalizations {
 
   @override
   String get sketchBannerFinish => 'Tapusin';
+
+  @override
+  String get navHome => 'Home';
+
+  @override
+  String get navAccount => 'Account';
+
+  @override
+  String get accountTitle => 'Account';
+
+  @override
+  String get accountSignOut => 'Mag-sign out';
+
+  @override
+  String get accountSignOutConfirmTitle => 'Mag-sign out?';
+
+  @override
+  String get accountSignOutConfirmBody =>
+      'Kakailanganin mong mag-sign in ulit para magpatuloy.';
+
+  @override
+  String get accountSignOutCancel => 'Kanselahin';
+
+  @override
+  String get accountSignOutError => 'Hindi nakapag-sign out. Subukang muli.';
+
+  @override
+  String homeErrorPrefix(String error) {
+    return 'Error: $error';
+  }
 }

@@ -1,0 +1,17 @@
+# Copy this file to `key.properties` and fill in your values.
+# Never commit `key.properties` — it is gitignored.
+#
+# Generate a release keystore (one-time, keep the .jks safe and backed up):
+#
+#   keytool -genkey -v \
+#     -keystore ~/firecheck-release.jks \
+#     -keyalg RSA -keysize 2048 -validity 10000 \
+#     -alias firecheck
+#
+# Then fill in the values below. `storeFile` may be an absolute path,
+# or relative to the `android/` directory.
+
+storePassword=
+keyPassword=
+keyAlias=firecheck
+storeFile=

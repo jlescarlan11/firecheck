@@ -2215,6 +2215,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Finish'**
   String get sketchBannerFinish;
+
+  /// No description provided for @navHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get navHome;
+
+  /// No description provided for @navAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get navAccount;
+
+  /// No description provided for @accountTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get accountTitle;
+
+  /// No description provided for @accountSignOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get accountSignOut;
+
+  /// No description provided for @accountSignOutConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out?'**
+  String get accountSignOutConfirmTitle;
+
+  /// No description provided for @accountSignOutConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ll need to sign in again to continue.'**
+  String get accountSignOutConfirmBody;
+
+  /// No description provided for @accountSignOutCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get accountSignOutCancel;
+
+  /// No description provided for @accountSignOutError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t sign out. Try again.'**
+  String get accountSignOutError;
+
+  /// No description provided for @homeErrorPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Error: {error}'**
+  String homeErrorPrefix(String error);
 }
 
 class _AppLocalizationsDelegate

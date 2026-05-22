@@ -1182,4 +1182,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sketchBannerFinish => 'Finish';
+
+  @override
+  String get navHome => 'Home';
+
+  @override
+  String get navAccount => 'Account';
+
+  @override
+  String get accountTitle => 'Account';
+
+  @override
+  String get accountSignOut => 'Sign out';
+
+  @override
+  String get accountSignOutConfirmTitle => 'Sign out?';
+
+  @override
+  String get accountSignOutConfirmBody =>
+      'You\'ll need to sign in again to continue.';
+
+  @override
+  String get accountSignOutCancel => 'Cancel';
+
+  @override
+  String get accountSignOutError => 'Couldn\'t sign out. Try again.';
+
+  @override
+  String homeErrorPrefix(String error) {
+    return 'Error: $error';
+  }
 }

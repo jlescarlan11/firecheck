@@ -433,5 +433,20 @@
       "type": {"type": "String"}
     }
   },
-  "sketchBannerFinish": "Finish"
+  "sketchBannerFinish": "Finish",
+  "navHome": "Home",
+  "navAccount": "Account",
+  "accountTitle": "Account",
+  "accountSignOut": "Sign out",
+  "accountSignOutConfirmTitle": "Sign out?",
+  "accountSignOutConfirmBody": "You'll need to sign in again to continue.",
+  "accountSignOutCancel": "Cancel",
+  "accountSignOutError": "Couldn't sign out. Try again.",
+  "appTitle": "FireCheck",
+  "homeErrorPrefix": "Error: {error}",
+  "@homeErrorPrefix": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  }
 }

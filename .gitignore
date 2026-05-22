@@ -75,3 +75,4 @@ skills-lock.json
 
 # Per-session Claude Code local config and skill symlinks
 .claude/
+.icon_venv/
