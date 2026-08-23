@@ -1,9 +1,13 @@
 // lib/features/assignment/presentation/get_maps_screen.dart
+import 'dart:async';
+
 import 'package:firecheck/core/drive/ftp_credentials.dart';
 import 'package:firecheck/core/drive/transport_source.dart';
 import 'package:firecheck/core/errors/failure.dart';
+import 'package:firecheck/features/assignment/data/map_import_preferences.dart';
 import 'package:firecheck/features/assignment/domain/get_maps_state.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
+import 'package:firecheck/features/auth/presentation/auth_providers.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -88,7 +92,33 @@ class _IdleViewState extends ConsumerState<_IdleView> {
   TransportSource _source = TransportSource.googleDrive;
   // Issue #46: when on, the validator demotes fatals to warnings so the
   // importer accepts any geospatial data the team happens to have.
-  bool _unrestricted = false;
+  bool _unrestricted = true;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_restoreUnrestrictedPreference());
+  }
+
+  Future<void> _restoreUnrestrictedPreference() async {
+    try {
+      final value =
+          await ref.read(mapImportPreferencesProvider).isUnrestricted();
+      if (mounted) setState(() => _unrestricted = value);
+    } on Object {
+      // Keep the safe product default when preference storage is unavailable.
+    }
+  }
+
+  Future<void> _saveUnrestrictedPreference(bool value) async {
+    try {
+      await ref
+          .read(mapImportPreferencesProvider)
+          .setUnrestricted(value: value);
+    } on Object {
+      // The in-memory choice remains usable for this import attempt.
+    }
+  }
 
   // Issue #45 — credentials are kept in-memory only for the current
   // download. Persisting them would require secure storage and a
@@ -176,11 +206,14 @@ class _IdleViewState extends ConsumerState<_IdleView> {
           SwitchListTile(
             title: const Text('Allow any map data (no restrictions)'),
             subtitle: const Text(
-              'Bypass shapefile validation — every file is imported as-is. '
-              'Use only when you trust the source.',
+              'Import every readable SHP layer. Missing optional layers show '
+              'a warning; unreadable data still stops the import.',
             ),
             value: _unrestricted,
-            onChanged: (v) => setState(() => _unrestricted = v),
+            onChanged: (value) {
+              setState(() => _unrestricted = value);
+              unawaited(_saveUnrestrictedPreference(value));
+            },
           ),
           const SizedBox(height: 16),
           FilledButton(
@@ -209,6 +242,10 @@ class _IdleViewState extends ConsumerState<_IdleView> {
     );
   }
 }
+
+final mapImportPreferencesProvider = Provider<MapImportPreferences>((ref) {
+  return MapImportPreferences(ref.watch(secureStorageProvider));
+});
 
 class _DiscoveringView extends StatelessWidget {
   const _DiscoveringView();

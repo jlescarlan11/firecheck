@@ -935,7 +935,7 @@ abstract class AppLocalizations {
   /// No description provided for @addModePillActiveLabel.
   ///
   /// In en, this message translates to:
-  /// **'Tap & hold to drop pin'**
+  /// **'Tap the map to add a vertex'**
   String get addModePillActiveLabel;
 
   /// No description provided for @outsideBoundarySnackbar.

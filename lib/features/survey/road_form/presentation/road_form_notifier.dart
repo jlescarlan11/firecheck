@@ -16,7 +16,9 @@ class RoadFormNotifier extends StateNotifier<RoadFormState> {
     required this.attrsRepo,
     required this.submissionRepo,
     this.hiddenFields = const {},
-  }) : super(RoadFormState(submissionId: submissionId));
+  }) : super(RoadFormState(submissionId: submissionId)) {
+    _initialLoad = _loadInitial();
+  }
 
   final String featureId;
   final RoadAttributesRepository attrsRepo;
@@ -32,6 +34,40 @@ class RoadFormNotifier extends StateNotifier<RoadFormState> {
 
   Timer? _debounce;
   static const _window = Duration(milliseconds: 500);
+  late final Future<void> _initialLoad;
+
+  Future<void> _loadInitial() async {
+    final submissionId = state.submissionId;
+    final attrs = await attrsRepo.findBySubmission(submissionId);
+    final submission = await submissionRepo.findById(submissionId);
+    if (!mounted) return;
+
+    // Preserve any edit made during the short async hydration window while
+    // filling untouched fields from the durable row. This also prevents a
+    // later flush from replacing persisted values with the notifier's blank
+    // constructor defaults.
+    final current = state;
+    final hydrated = RoadFormState(
+      submissionId: current.submissionId,
+      isBridge: current.isBridge || (attrs?.isBridge ?? false),
+      roadName: current.roadName ?? attrs?.roadName,
+      widthMeters: current.widthMeters ?? attrs?.widthMeters,
+      roadFeatures: current.roadFeatures.isNotEmpty
+          ? current.roadFeatures
+          : attrs == null
+              ? const []
+              : RoadAttributesRepository.decodeStringList(
+                  attrs.roadFeaturesJson,
+                ),
+      othersDescription: current.othersDescription ?? attrs?.othersDescription,
+      doesNotExist: current.doesNotExist || (submission?.doesNotExist ?? false),
+    );
+    state = applyApplicability(
+      hydrated,
+      hidden: hiddenFields,
+      geometry: _geometrySignal,
+    );
+  }
 
   void update(RoadFormState Function(RoadFormState) mutate) {
     // Apply field applicability after the mutation — field visibility and
@@ -61,8 +97,10 @@ class RoadFormNotifier extends StateNotifier<RoadFormState> {
   }
 
   Future<void> _flush() async {
-    final s = state;
     try {
+      await _initialLoad;
+      if (!mounted) return;
+      final s = state;
       await submissionRepo.updateDoesNotExist(
         s.submissionId,
         doesNotExist: s.doesNotExist,

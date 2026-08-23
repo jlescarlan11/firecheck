@@ -449,5 +449,35 @@ void main() {
       // Still in sketch mode — banner present.
       expect(find.text('0 vertices · building'), findsOneWidget);
     });
+
+    testWidgets('long-pressing an existing feature does not open actions',
+        (tester) async {
+      final existing = Feature(
+        id: 'existing-1',
+        assignmentId: 'a1',
+        featureType: 'building',
+        geometryGeojson: '{"type":"Polygon","coordinates":[[[1,1],[2,1],'
+            '[2,2],[1,2],[1,1]]]}',
+        isNew: false,
+        status: 'unfilled',
+        createdAt: DateTime.utc(2026),
+      );
+      final renderer = FakeMapRenderer();
+      await _pumpSketchHarness(
+        tester,
+        renderer: renderer,
+        features: [existing],
+      );
+      await _enterSketchViaPill(tester, 'building');
+
+      await renderer.simulatePolygonLongPress(existing);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('reshape.actionsheet.openForm')),
+        findsNothing,
+      );
+      expect(find.text('0 vertices · building'), findsOneWidget);
+    });
   });
 }

@@ -266,7 +266,7 @@ void main() {
         assignments: [_brgy001],
         validator: fatalValidator,
         reporter: fakeReporter,
-      );
+      )..setUnrestricted(value: false);
       final states = <GetMapsState>[];
       notifier.addListener(states.add);
 

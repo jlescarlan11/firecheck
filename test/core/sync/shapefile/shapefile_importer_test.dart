@@ -195,6 +195,24 @@ void main() {
     expect(features.where((f) => f.featureType == 'road'), hasLength(1));
   });
 
+  test('readable buildings import without an optional boundary layer',
+      () async {
+    final files = _makeValidFiles()
+      ..removeWhere((name, _) => name.startsWith('boundary.'));
+
+    final result = await importer.importShapefiles(
+      files,
+      'brgy-without-boundary',
+      '2026-04-28T10:00:00Z',
+      'folder-abc',
+      'test-enumerator',
+    );
+
+    expect(result.buildingCount, 1);
+    expect(result.boundaryGeojson, isNotEmpty);
+    expect(jsonDecode(result.boundaryGeojson), containsPair('type', 'Polygon'));
+  });
+
   test('re-import migrates legacy "<assignment>/<rawFeatId>" feature ids and rewires submissions', () async {
     // Simulate an app that imported the shapefile before the UUID-v5 id
     // switch: assignment + a feature with the old prefixed id + a
@@ -254,5 +272,4 @@ void main() {
         .getSingle();
     expect(updatedSub.featureId, newBuilding.id);
   });
-
 }

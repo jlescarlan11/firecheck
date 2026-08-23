@@ -173,7 +173,7 @@
   "roadFeatureParking": "Parking",
   "roadFeatureOthers": "Others",
   "roadFeatureOthersDescription": "Describe other features",
-  "addModePillActiveLabel": "Tap & hold to drop pin",
+  "addModePillActiveLabel": "Tap the map to add a vertex",
   "outsideBoundarySnackbar": "Long-press is outside your assignment area",
   "pickFeatureTypeTitle": "What did you find?",
   "pickFeatureTypeBuilding": "Building",

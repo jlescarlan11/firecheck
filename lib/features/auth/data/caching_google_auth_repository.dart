@@ -40,8 +40,7 @@ class CachingGoogleAuthRepository implements GoogleAuthRepository {
   Future<void> signIn() => _inner.signIn();
 
   @override
-  Future<bool> requestDriveUploadScope() =>
-      _inner.requestDriveUploadScope();
+  Future<bool> requestDriveUploadScope() => _inner.requestDriveUploadScope();
 
   @override
   Future<void> signOut() async {
@@ -51,6 +50,11 @@ class CachingGoogleAuthRepository implements GoogleAuthRepository {
 
   @override
   Future<String> getAccessToken() async {
+    // A valid persisted token is sufficient for Drive and avoids invoking
+    // Android Credential Manager during every process recreation. Only fall
+    // back to google_sign_in when the cache is absent or near expiry.
+    final cached = await _cache.read();
+    if (cached != null) return cached;
     final token = await _inner.getAccessToken();
     if (token.isNotEmpty) {
       await _cache.save(token, DateTime.now().toUtc().add(_ttl));

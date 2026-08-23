@@ -9,7 +9,8 @@ class _SpyRule extends ShapefileValidationRule {
   var called = false;
 
   @override
-  RuleOutcome check(Map<String, Uint8List> files, Map<String, String> expectedMd5s) {
+  RuleOutcome check(
+      Map<String, Uint8List> files, Map<String, String> expectedMd5s) {
     called = true;
     return _outcome;
   }
@@ -17,7 +18,8 @@ class _SpyRule extends ShapefileValidationRule {
 
 void main() {
   test('fail-fast: first RuleFatal stops remaining rules', () {
-    final fatal = _SpyRule(const RuleFatal(ruleName: 'test', userMessage: 'err'));
+    final fatal =
+        _SpyRule(const RuleFatal(ruleName: 'test', userMessage: 'err'));
     final never = _SpyRule(const RulePassed());
     final report = ShapefileValidator(rules: [fatal, never]).validate({}, {});
     expect(report.hasFatals, isTrue);
@@ -53,5 +55,16 @@ void main() {
     // Passes empty files — R2 will fatal on missing files. Just verify it runs without error.
     final report = ShapefileValidator().validate({}, {});
     expect(report.hasFatals, isTrue); // R2 should fatal: missing files
+  });
+
+  test('relaxed mode demotes an incomplete bundle to a visible warning', () {
+    final report = ShapefileValidator().validate({}, {}, relaxedMode: true);
+
+    expect(report.hasFatals, isFalse);
+    expect(report.warnings, isNotEmpty);
+    expect(
+      report.warnings.any((warning) => warning.userMessage.contains('missing')),
+      isTrue,
+    );
   });
 }

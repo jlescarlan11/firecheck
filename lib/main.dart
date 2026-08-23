@@ -64,9 +64,6 @@ Future<void> main() async {
 
   await Supabase.initialize(url: supaUrl, anonKey: supaKey);
   await GoogleSignIn.instance.initialize(serverClientId: googleWebClientId);
-  // Restore a prior Google sign-in silently if one exists, so the Drive
-  // access token is available without user interaction on app launch.
-  unawaited(GoogleSignIn.instance.attemptLightweightAuthentication());
   await registerPeriodicSync();
   await registerPeriodicDriveUpload();
   MapboxOptions.setAccessToken(mapboxToken);

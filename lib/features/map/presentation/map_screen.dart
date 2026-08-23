@@ -546,6 +546,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   Future<void> _handlePolygonLongPress(Feature feature) async {
+    // Sketch mode owns map gestures. Mapbox can still report a long-press hit
+    // on an existing annotation, so suppress the reshape/form action sheet
+    // here as well as in the renderer's ordinary tap path.
+    if (ref.read(geometryEditorControllerProvider).isSketchMode) return;
     final l = AppLocalizations.of(context)!;
     final locked = ref.read(isAssignmentLockedProvider);
     final definition = ref.read(currentFormDefinitionProvider).valueOrNull ??

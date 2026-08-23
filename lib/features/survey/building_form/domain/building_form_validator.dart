@@ -19,8 +19,11 @@ ValidationResult validateBuildingForm(
   final fieldErrors = <String, String>{};
   final warnings = <String>[];
 
-  if (requirements.isRequired(FieldRequirementKeys.buildingPhoto) &&
-      photoCount < 1) {
+  // Photos are durable field evidence, not a configurable questionnaire
+  // field. The photo strip always presents one photo as required, so the
+  // completion contract must enforce the same invariant even when a legacy
+  // field_requirements.txt marks building.photo optional.
+  if (photoCount < 1) {
     fieldErrors['photo'] = 'photo_required';
   }
 

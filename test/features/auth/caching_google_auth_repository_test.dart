@@ -23,6 +23,22 @@ void main() {
     expect(await cache.read(), 'fake-access-token');
   });
 
+  test('valid cached token avoids invoking Google account restoration',
+      () async {
+    final countingInner = _CountingTokenRepo();
+    final cachedRepo = CachingGoogleAuthRepository(
+      inner: countingInner,
+      cache: cache,
+    );
+    await cache.save(
+      'restored-token',
+      DateTime.now().toUtc().add(const Duration(hours: 1)),
+    );
+
+    expect(await cachedRepo.getAccessToken(), 'restored-token');
+    expect(countingInner.tokenRequests, 0);
+  });
+
   test('signOut clears the cached token', () async {
     await cache.save(
       'leftover-tok',
@@ -57,4 +73,14 @@ void main() {
 class _EmptyTokenRepo extends FakeGoogleAuthRepository {
   @override
   Future<String> getAccessToken() async => '';
+}
+
+class _CountingTokenRepo extends FakeGoogleAuthRepository {
+  int tokenRequests = 0;
+
+  @override
+  Future<String> getAccessToken() async {
+    tokenRequests += 1;
+    return super.getAccessToken();
+  }
 }
