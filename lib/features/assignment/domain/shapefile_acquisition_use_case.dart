@@ -16,6 +16,7 @@ import 'package:firecheck/core/drive/drive_assignment.dart';
 import 'package:firecheck/core/drive/drive_download_event.dart';
 import 'package:firecheck/core/errors/failure.dart';
 import 'package:firecheck/core/forms/field_requirements_store.dart';
+import 'package:firecheck/core/forms/form_definition_store.dart';
 import 'package:firecheck/core/sync/shapefile/shapefile_importer.dart';
 import 'package:firecheck/core/sync/shapefile/shapefile_validator.dart';
 import 'package:firecheck/core/validation/validation_failure_reporter.dart';
@@ -85,6 +86,7 @@ class ShapefileAcquisitionUseCase {
     AssignmentNameResolver? assignmentNameResolver,
     CanonicalFeaturePublisher? canonicalFeaturePublisher,
     this.onRequirementsUpdated,
+    this.onFormDefinitionUpdated,
   })  : assignmentNameResolver =
             assignmentNameResolver ?? const NoopAssignmentNameResolver(),
         canonicalFeaturePublisher =
@@ -96,6 +98,7 @@ class ShapefileAcquisitionUseCase {
   final AssignmentNameResolver assignmentNameResolver;
   final CanonicalFeaturePublisher canonicalFeaturePublisher;
   final void Function()? onRequirementsUpdated;
+  final void Function()? onFormDefinitionUpdated;
 
   /// Full path: download the assignment, persist any sidecar, validate,
   /// and — if validation passes without warnings — import + publish.
@@ -113,7 +116,8 @@ class ShapefileAcquisitionUseCase {
     Map<String, Uint8List>? shapefiles;
     var shapeMd5s = <String, String>{};
     try {
-      await for (final event in source.downloadShapefiles(assignment.assignmentId)) {
+      await for (final event
+          in source.downloadShapefiles(assignment.assignmentId)) {
         switch (event) {
           case DriveDownloadProgress(:final downloaded, :final total):
             yield AcquisitionProgress(downloaded: downloaded, total: total);
@@ -151,6 +155,16 @@ class ShapefileAcquisitionUseCase {
       final bytes = shapefiles.remove(configKey);
       shapeMd5s.remove(configKey);
       if (bytes != null) await _persistFieldRequirements(bytes);
+    }
+
+    final definitionKey = shapefiles.keys.firstWhere(
+      (key) => key.toLowerCase() == formDefinitionFilename,
+      orElse: () => '',
+    );
+    if (definitionKey.isNotEmpty) {
+      final bytes = shapefiles.remove(definitionKey);
+      shapeMd5s.remove(definitionKey);
+      if (bytes != null) await _persistFormDefinition(bytes);
     }
 
     yield const AcquisitionValidating();
@@ -223,6 +237,8 @@ class ShapefileAcquisitionUseCase {
     try {
       final bytes = await source.fetchFieldRequirementsSidecar(assignmentId);
       if (bytes != null) await _persistFieldRequirements(bytes);
+      final definition = await source.fetchFormDefinitionSidecar(assignmentId);
+      if (definition != null) await _persistFormDefinition(definition);
     } catch (_) {
       // Non-fatal.
     }
@@ -273,6 +289,15 @@ class ShapefileAcquisitionUseCase {
       onRequirementsUpdated?.call();
     } catch (_) {
       // Non-fatal — the form falls back to the bundled asset.
+    }
+  }
+
+  Future<void> _persistFormDefinition(Uint8List bytes) async {
+    try {
+      await writeFormDefinition(bytes);
+      onFormDefinitionUpdated?.call();
+    } on Object {
+      // Non-fatal — the form falls back to the bundled legacy definition.
     }
   }
 }

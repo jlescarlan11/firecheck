@@ -17,6 +17,11 @@ class Submissions extends Table {
   // comparison without re-querying. Null for non-conflict submissions;
   // cleared on resolve.
   TextColumn get pendingTheirsId => text().nullable()();
+  // Immutable identifier of the published definition used when this draft
+  // was created. It travels with offline submissions so old answers remain
+  // interpretable after a newer form is published.
+  TextColumn get formVersion =>
+      text().withDefault(const Constant('legacy-v1'))();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
 

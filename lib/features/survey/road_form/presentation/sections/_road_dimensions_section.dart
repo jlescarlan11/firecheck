@@ -1,6 +1,8 @@
 import 'package:firecheck/core/forms/field_requirements.dart';
 import 'package:firecheck/core/forms/field_requirements_providers.dart';
 import 'package:firecheck/core/forms/form_variant_providers.dart';
+import 'package:firecheck/core/forms/form_definition.dart';
+import 'package:firecheck/core/forms/form_definition_providers.dart';
 import 'package:firecheck/core/forms/required_label.dart';
 import 'package:firecheck/features/survey/building_form/presentation/sections/_persistent_text_field.dart';
 import 'package:firecheck/features/survey/building_form/presentation/sections/_section_card.dart';
@@ -42,11 +44,13 @@ class RoadDimensionsSection extends ConsumerWidget {
       return const SizedBox.shrink();
     }
     final reqs = ref.watch(fieldRequirementsProvider);
+    final definition = ref.watch(currentFormDefinitionProvider).valueOrNull ??
+        FormDefinition.legacy;
 
     return SectionCard(
       title: l.sectionRoadDimensions,
       child: PersistentTextField(
-        enabled: !disabled,
+        enabled: !disabled && definition.isFieldEditable('road.widthMeters'),
         value: width?.toString() ?? '',
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
         labelText: requiredLabel(

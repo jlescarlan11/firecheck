@@ -1,5 +1,7 @@
 import 'package:firecheck/core/forms/field_requirements.dart';
 import 'package:firecheck/core/forms/field_requirements_providers.dart';
+import 'package:firecheck/core/forms/form_definition.dart';
+import 'package:firecheck/core/forms/form_definition_providers.dart';
 import 'package:firecheck/core/forms/form_variant_providers.dart';
 import 'package:firecheck/core/forms/required_label.dart';
 import 'package:firecheck/features/survey/building_form/domain/building_form_applicability.dart';
@@ -56,21 +58,27 @@ class IdentitySection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context)!;
-    final state = ref.watch(buildingFormNotifierProvider(
-      _key(submissionId, featureId),
-    ),);
+    final state = ref.watch(
+      buildingFormNotifierProvider(
+        _key(submissionId, featureId),
+      ),
+    );
     final notifier = ref.read(
       buildingFormNotifierProvider(_key(submissionId, featureId)).notifier,
     );
     final hidden = ref.watch(currentFormVariantProvider).hideBuildingFields;
     final reqs = ref.watch(fieldRequirementsProvider);
+    final definition = ref.watch(currentFormDefinitionProvider).valueOrNull ??
+        FormDefinition.legacy;
+    bool enabled(String field) =>
+        !disabled && definition.isFieldEditable('building.$field');
     bool show(BuildingFormField f) => !hidden.contains(f);
 
     final children = <Widget>[];
     if (show(BuildingFormField.cbmsId)) {
       children.add(
         PersistentTextField(
-          enabled: !disabled,
+          enabled: enabled('cbmsId'),
           value: state.cbmsId ?? '',
           labelText: l.fieldCbmsId,
           onChanged: (v) => notifier.update(
@@ -83,7 +91,7 @@ class IdentitySection extends ConsumerWidget {
       if (children.isNotEmpty) children.add(const SizedBox(height: 8));
       children.add(
         PersistentTextField(
-          enabled: !disabled,
+          enabled: enabled('buildingName'),
           value: state.buildingName ?? '',
           labelText: requiredLabel(
             l.fieldBuildingName,
@@ -117,7 +125,7 @@ class IdentitySection extends ConsumerWidget {
                 ),
               ),
           ],
-          onChanged: disabled
+          onChanged: !enabled('ra9514Type')
               ? null
               : (v) {
                   if (v == null) return;

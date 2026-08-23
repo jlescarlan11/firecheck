@@ -52,6 +52,10 @@ class _NoOpDriveApi implements DriveApi {
       null;
 
   @override
+  Future<Uint8List?> fetchFormDefinitionSidecar(String assignmentId) async =>
+      null;
+
+  @override
   Future<({String folderPath, String folderUrl})> uploadAssignmentFiles({
     required String enumeratorId,
     required String assignmentId,

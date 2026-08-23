@@ -79,6 +79,7 @@ flutter:
   assets:
     - .env
     - assets/form_variants.json
+    - assets/form_definition.json
 
 flutter_launcher_icons:
   android: true

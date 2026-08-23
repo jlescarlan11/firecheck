@@ -1112,6 +1112,18 @@ class $FeaturesTable extends Features with TableInfo<$FeaturesTable, Feature> {
   late final GeneratedColumn<String> externalCode = GeneratedColumn<String>(
       'external_code', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _splitFromIdMeta =
+      const VerificationMeta('splitFromId');
+  @override
+  late final GeneratedColumn<String> splitFromId = GeneratedColumn<String>(
+      'split_from_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _mergedIntoIdMeta =
+      const VerificationMeta('mergedIntoId');
+  @override
+  late final GeneratedColumn<String> mergedIntoId = GeneratedColumn<String>(
+      'merged_into_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -1128,6 +1140,8 @@ class $FeaturesTable extends Features with TableInfo<$FeaturesTable, Feature> {
         status,
         pendingDedupOf,
         externalCode,
+        splitFromId,
+        mergedIntoId,
         createdAt
       ];
   @override
@@ -1189,6 +1203,18 @@ class $FeaturesTable extends Features with TableInfo<$FeaturesTable, Feature> {
           externalCode.isAcceptableOrUnknown(
               data['external_code']!, _externalCodeMeta));
     }
+    if (data.containsKey('split_from_id')) {
+      context.handle(
+          _splitFromIdMeta,
+          splitFromId.isAcceptableOrUnknown(
+              data['split_from_id']!, _splitFromIdMeta));
+    }
+    if (data.containsKey('merged_into_id')) {
+      context.handle(
+          _mergedIntoIdMeta,
+          mergedIntoId.isAcceptableOrUnknown(
+              data['merged_into_id']!, _mergedIntoIdMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -1220,6 +1246,10 @@ class $FeaturesTable extends Features with TableInfo<$FeaturesTable, Feature> {
           DriftSqlType.string, data['${effectivePrefix}pending_dedup_of']),
       externalCode: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}external_code']),
+      splitFromId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}split_from_id']),
+      mergedIntoId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}merged_into_id']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
     );
@@ -1240,6 +1270,8 @@ class Feature extends DataClass implements Insertable<Feature> {
   final String status;
   final String? pendingDedupOf;
   final String? externalCode;
+  final String? splitFromId;
+  final String? mergedIntoId;
   final DateTime createdAt;
   const Feature(
       {required this.id,
@@ -1250,6 +1282,8 @@ class Feature extends DataClass implements Insertable<Feature> {
       required this.status,
       this.pendingDedupOf,
       this.externalCode,
+      this.splitFromId,
+      this.mergedIntoId,
       required this.createdAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1265,6 +1299,12 @@ class Feature extends DataClass implements Insertable<Feature> {
     }
     if (!nullToAbsent || externalCode != null) {
       map['external_code'] = Variable<String>(externalCode);
+    }
+    if (!nullToAbsent || splitFromId != null) {
+      map['split_from_id'] = Variable<String>(splitFromId);
+    }
+    if (!nullToAbsent || mergedIntoId != null) {
+      map['merged_into_id'] = Variable<String>(mergedIntoId);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
@@ -1284,6 +1324,12 @@ class Feature extends DataClass implements Insertable<Feature> {
       externalCode: externalCode == null && nullToAbsent
           ? const Value.absent()
           : Value(externalCode),
+      splitFromId: splitFromId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(splitFromId),
+      mergedIntoId: mergedIntoId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mergedIntoId),
       createdAt: Value(createdAt),
     );
   }
@@ -1300,6 +1346,8 @@ class Feature extends DataClass implements Insertable<Feature> {
       status: serializer.fromJson<String>(json['status']),
       pendingDedupOf: serializer.fromJson<String?>(json['pendingDedupOf']),
       externalCode: serializer.fromJson<String?>(json['externalCode']),
+      splitFromId: serializer.fromJson<String?>(json['splitFromId']),
+      mergedIntoId: serializer.fromJson<String?>(json['mergedIntoId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -1315,6 +1363,8 @@ class Feature extends DataClass implements Insertable<Feature> {
       'status': serializer.toJson<String>(status),
       'pendingDedupOf': serializer.toJson<String?>(pendingDedupOf),
       'externalCode': serializer.toJson<String?>(externalCode),
+      'splitFromId': serializer.toJson<String?>(splitFromId),
+      'mergedIntoId': serializer.toJson<String?>(mergedIntoId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -1328,6 +1378,8 @@ class Feature extends DataClass implements Insertable<Feature> {
           String? status,
           Value<String?> pendingDedupOf = const Value.absent(),
           Value<String?> externalCode = const Value.absent(),
+          Value<String?> splitFromId = const Value.absent(),
+          Value<String?> mergedIntoId = const Value.absent(),
           DateTime? createdAt}) =>
       Feature(
         id: id ?? this.id,
@@ -1340,6 +1392,9 @@ class Feature extends DataClass implements Insertable<Feature> {
             pendingDedupOf.present ? pendingDedupOf.value : this.pendingDedupOf,
         externalCode:
             externalCode.present ? externalCode.value : this.externalCode,
+        splitFromId: splitFromId.present ? splitFromId.value : this.splitFromId,
+        mergedIntoId:
+            mergedIntoId.present ? mergedIntoId.value : this.mergedIntoId,
         createdAt: createdAt ?? this.createdAt,
       );
   Feature copyWithCompanion(FeaturesCompanion data) {
@@ -1361,6 +1416,11 @@ class Feature extends DataClass implements Insertable<Feature> {
       externalCode: data.externalCode.present
           ? data.externalCode.value
           : this.externalCode,
+      splitFromId:
+          data.splitFromId.present ? data.splitFromId.value : this.splitFromId,
+      mergedIntoId: data.mergedIntoId.present
+          ? data.mergedIntoId.value
+          : this.mergedIntoId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -1376,14 +1436,26 @@ class Feature extends DataClass implements Insertable<Feature> {
           ..write('status: $status, ')
           ..write('pendingDedupOf: $pendingDedupOf, ')
           ..write('externalCode: $externalCode, ')
+          ..write('splitFromId: $splitFromId, ')
+          ..write('mergedIntoId: $mergedIntoId, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, assignmentId, featureType,
-      geometryGeojson, isNew, status, pendingDedupOf, externalCode, createdAt);
+  int get hashCode => Object.hash(
+      id,
+      assignmentId,
+      featureType,
+      geometryGeojson,
+      isNew,
+      status,
+      pendingDedupOf,
+      externalCode,
+      splitFromId,
+      mergedIntoId,
+      createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1396,6 +1468,8 @@ class Feature extends DataClass implements Insertable<Feature> {
           other.status == this.status &&
           other.pendingDedupOf == this.pendingDedupOf &&
           other.externalCode == this.externalCode &&
+          other.splitFromId == this.splitFromId &&
+          other.mergedIntoId == this.mergedIntoId &&
           other.createdAt == this.createdAt);
 }
 
@@ -1408,6 +1482,8 @@ class FeaturesCompanion extends UpdateCompanion<Feature> {
   final Value<String> status;
   final Value<String?> pendingDedupOf;
   final Value<String?> externalCode;
+  final Value<String?> splitFromId;
+  final Value<String?> mergedIntoId;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const FeaturesCompanion({
@@ -1419,6 +1495,8 @@ class FeaturesCompanion extends UpdateCompanion<Feature> {
     this.status = const Value.absent(),
     this.pendingDedupOf = const Value.absent(),
     this.externalCode = const Value.absent(),
+    this.splitFromId = const Value.absent(),
+    this.mergedIntoId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -1431,6 +1509,8 @@ class FeaturesCompanion extends UpdateCompanion<Feature> {
     this.status = const Value.absent(),
     this.pendingDedupOf = const Value.absent(),
     this.externalCode = const Value.absent(),
+    this.splitFromId = const Value.absent(),
+    this.mergedIntoId = const Value.absent(),
     required DateTime createdAt,
     this.rowid = const Value.absent(),
   })  : id = Value(id),
@@ -1447,6 +1527,8 @@ class FeaturesCompanion extends UpdateCompanion<Feature> {
     Expression<String>? status,
     Expression<String>? pendingDedupOf,
     Expression<String>? externalCode,
+    Expression<String>? splitFromId,
+    Expression<String>? mergedIntoId,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -1459,6 +1541,8 @@ class FeaturesCompanion extends UpdateCompanion<Feature> {
       if (status != null) 'status': status,
       if (pendingDedupOf != null) 'pending_dedup_of': pendingDedupOf,
       if (externalCode != null) 'external_code': externalCode,
+      if (splitFromId != null) 'split_from_id': splitFromId,
+      if (mergedIntoId != null) 'merged_into_id': mergedIntoId,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -1473,6 +1557,8 @@ class FeaturesCompanion extends UpdateCompanion<Feature> {
       Value<String>? status,
       Value<String?>? pendingDedupOf,
       Value<String?>? externalCode,
+      Value<String?>? splitFromId,
+      Value<String?>? mergedIntoId,
       Value<DateTime>? createdAt,
       Value<int>? rowid}) {
     return FeaturesCompanion(
@@ -1484,6 +1570,8 @@ class FeaturesCompanion extends UpdateCompanion<Feature> {
       status: status ?? this.status,
       pendingDedupOf: pendingDedupOf ?? this.pendingDedupOf,
       externalCode: externalCode ?? this.externalCode,
+      splitFromId: splitFromId ?? this.splitFromId,
+      mergedIntoId: mergedIntoId ?? this.mergedIntoId,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -1516,6 +1604,12 @@ class FeaturesCompanion extends UpdateCompanion<Feature> {
     if (externalCode.present) {
       map['external_code'] = Variable<String>(externalCode.value);
     }
+    if (splitFromId.present) {
+      map['split_from_id'] = Variable<String>(splitFromId.value);
+    }
+    if (mergedIntoId.present) {
+      map['merged_into_id'] = Variable<String>(mergedIntoId.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -1536,6 +1630,8 @@ class FeaturesCompanion extends UpdateCompanion<Feature> {
           ..write('status: $status, ')
           ..write('pendingDedupOf: $pendingDedupOf, ')
           ..write('externalCode: $externalCode, ')
+          ..write('splitFromId: $splitFromId, ')
+          ..write('mergedIntoId: $mergedIntoId, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -1590,6 +1686,26 @@ class $FeatureGeometryRevisionsTable extends FeatureGeometryRevisions
   late final GeneratedColumn<String> overrideReason = GeneratedColumn<String>(
       'override_reason', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _operationMeta =
+      const VerificationMeta('operation');
+  @override
+  late final GeneratedColumn<String> operation = GeneratedColumn<String>(
+      'operation', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('reshape'));
+  static const VerificationMeta _relatedFeatureIdMeta =
+      const VerificationMeta('relatedFeatureId');
+  @override
+  late final GeneratedColumn<String> relatedFeatureId = GeneratedColumn<String>(
+      'related_feature_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _relatedGeojsonMeta =
+      const VerificationMeta('relatedGeojson');
+  @override
+  late final GeneratedColumn<String> relatedGeojson = GeneratedColumn<String>(
+      'related_geojson', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _syncStatusMeta =
       const VerificationMeta('syncStatus');
   @override
@@ -1613,6 +1729,9 @@ class $FeatureGeometryRevisionsTable extends FeatureGeometryRevisions
         editedBy,
         editedAt,
         overrideReason,
+        operation,
+        relatedFeatureId,
+        relatedGeojson,
         syncStatus,
         createdAt
       ];
@@ -1672,6 +1791,22 @@ class $FeatureGeometryRevisionsTable extends FeatureGeometryRevisions
           overrideReason.isAcceptableOrUnknown(
               data['override_reason']!, _overrideReasonMeta));
     }
+    if (data.containsKey('operation')) {
+      context.handle(_operationMeta,
+          operation.isAcceptableOrUnknown(data['operation']!, _operationMeta));
+    }
+    if (data.containsKey('related_feature_id')) {
+      context.handle(
+          _relatedFeatureIdMeta,
+          relatedFeatureId.isAcceptableOrUnknown(
+              data['related_feature_id']!, _relatedFeatureIdMeta));
+    }
+    if (data.containsKey('related_geojson')) {
+      context.handle(
+          _relatedGeojsonMeta,
+          relatedGeojson.isAcceptableOrUnknown(
+              data['related_geojson']!, _relatedGeojsonMeta));
+    }
     if (data.containsKey('sync_status')) {
       context.handle(
           _syncStatusMeta,
@@ -1708,6 +1843,12 @@ class $FeatureGeometryRevisionsTable extends FeatureGeometryRevisions
           .read(DriftSqlType.dateTime, data['${effectivePrefix}edited_at'])!,
       overrideReason: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}override_reason']),
+      operation: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}operation'])!,
+      relatedFeatureId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}related_feature_id']),
+      relatedGeojson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}related_geojson']),
       syncStatus: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}sync_status'])!,
       createdAt: attachedDatabase.typeMapping
@@ -1730,6 +1871,9 @@ class FeatureGeometryRevision extends DataClass
   final String editedBy;
   final DateTime editedAt;
   final String? overrideReason;
+  final String operation;
+  final String? relatedFeatureId;
+  final String? relatedGeojson;
   final String syncStatus;
   final DateTime createdAt;
   const FeatureGeometryRevision(
@@ -1740,6 +1884,9 @@ class FeatureGeometryRevision extends DataClass
       required this.editedBy,
       required this.editedAt,
       this.overrideReason,
+      required this.operation,
+      this.relatedFeatureId,
+      this.relatedGeojson,
       required this.syncStatus,
       required this.createdAt});
   @override
@@ -1753,6 +1900,13 @@ class FeatureGeometryRevision extends DataClass
     map['edited_at'] = Variable<DateTime>(editedAt);
     if (!nullToAbsent || overrideReason != null) {
       map['override_reason'] = Variable<String>(overrideReason);
+    }
+    map['operation'] = Variable<String>(operation);
+    if (!nullToAbsent || relatedFeatureId != null) {
+      map['related_feature_id'] = Variable<String>(relatedFeatureId);
+    }
+    if (!nullToAbsent || relatedGeojson != null) {
+      map['related_geojson'] = Variable<String>(relatedGeojson);
     }
     map['sync_status'] = Variable<String>(syncStatus);
     map['created_at'] = Variable<DateTime>(createdAt);
@@ -1770,6 +1924,13 @@ class FeatureGeometryRevision extends DataClass
       overrideReason: overrideReason == null && nullToAbsent
           ? const Value.absent()
           : Value(overrideReason),
+      operation: Value(operation),
+      relatedFeatureId: relatedFeatureId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(relatedFeatureId),
+      relatedGeojson: relatedGeojson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(relatedGeojson),
       syncStatus: Value(syncStatus),
       createdAt: Value(createdAt),
     );
@@ -1786,6 +1947,9 @@ class FeatureGeometryRevision extends DataClass
       editedBy: serializer.fromJson<String>(json['editedBy']),
       editedAt: serializer.fromJson<DateTime>(json['editedAt']),
       overrideReason: serializer.fromJson<String?>(json['overrideReason']),
+      operation: serializer.fromJson<String>(json['operation']),
+      relatedFeatureId: serializer.fromJson<String?>(json['relatedFeatureId']),
+      relatedGeojson: serializer.fromJson<String?>(json['relatedGeojson']),
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
@@ -1801,6 +1965,9 @@ class FeatureGeometryRevision extends DataClass
       'editedBy': serializer.toJson<String>(editedBy),
       'editedAt': serializer.toJson<DateTime>(editedAt),
       'overrideReason': serializer.toJson<String?>(overrideReason),
+      'operation': serializer.toJson<String>(operation),
+      'relatedFeatureId': serializer.toJson<String?>(relatedFeatureId),
+      'relatedGeojson': serializer.toJson<String?>(relatedGeojson),
       'syncStatus': serializer.toJson<String>(syncStatus),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
@@ -1814,6 +1981,9 @@ class FeatureGeometryRevision extends DataClass
           String? editedBy,
           DateTime? editedAt,
           Value<String?> overrideReason = const Value.absent(),
+          String? operation,
+          Value<String?> relatedFeatureId = const Value.absent(),
+          Value<String?> relatedGeojson = const Value.absent(),
           String? syncStatus,
           DateTime? createdAt}) =>
       FeatureGeometryRevision(
@@ -1825,6 +1995,12 @@ class FeatureGeometryRevision extends DataClass
         editedAt: editedAt ?? this.editedAt,
         overrideReason:
             overrideReason.present ? overrideReason.value : this.overrideReason,
+        operation: operation ?? this.operation,
+        relatedFeatureId: relatedFeatureId.present
+            ? relatedFeatureId.value
+            : this.relatedFeatureId,
+        relatedGeojson:
+            relatedGeojson.present ? relatedGeojson.value : this.relatedGeojson,
         syncStatus: syncStatus ?? this.syncStatus,
         createdAt: createdAt ?? this.createdAt,
       );
@@ -1842,6 +2018,13 @@ class FeatureGeometryRevision extends DataClass
       overrideReason: data.overrideReason.present
           ? data.overrideReason.value
           : this.overrideReason,
+      operation: data.operation.present ? data.operation.value : this.operation,
+      relatedFeatureId: data.relatedFeatureId.present
+          ? data.relatedFeatureId.value
+          : this.relatedFeatureId,
+      relatedGeojson: data.relatedGeojson.present
+          ? data.relatedGeojson.value
+          : this.relatedGeojson,
       syncStatus:
           data.syncStatus.present ? data.syncStatus.value : this.syncStatus,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
@@ -1858,6 +2041,9 @@ class FeatureGeometryRevision extends DataClass
           ..write('editedBy: $editedBy, ')
           ..write('editedAt: $editedAt, ')
           ..write('overrideReason: $overrideReason, ')
+          ..write('operation: $operation, ')
+          ..write('relatedFeatureId: $relatedFeatureId, ')
+          ..write('relatedGeojson: $relatedGeojson, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
@@ -1865,8 +2051,19 @@ class FeatureGeometryRevision extends DataClass
   }
 
   @override
-  int get hashCode => Object.hash(id, featureId, prevGeojson, newGeojson,
-      editedBy, editedAt, overrideReason, syncStatus, createdAt);
+  int get hashCode => Object.hash(
+      id,
+      featureId,
+      prevGeojson,
+      newGeojson,
+      editedBy,
+      editedAt,
+      overrideReason,
+      operation,
+      relatedFeatureId,
+      relatedGeojson,
+      syncStatus,
+      createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1878,6 +2075,9 @@ class FeatureGeometryRevision extends DataClass
           other.editedBy == this.editedBy &&
           other.editedAt == this.editedAt &&
           other.overrideReason == this.overrideReason &&
+          other.operation == this.operation &&
+          other.relatedFeatureId == this.relatedFeatureId &&
+          other.relatedGeojson == this.relatedGeojson &&
           other.syncStatus == this.syncStatus &&
           other.createdAt == this.createdAt);
 }
@@ -1891,6 +2091,9 @@ class FeatureGeometryRevisionsCompanion
   final Value<String> editedBy;
   final Value<DateTime> editedAt;
   final Value<String?> overrideReason;
+  final Value<String> operation;
+  final Value<String?> relatedFeatureId;
+  final Value<String?> relatedGeojson;
   final Value<String> syncStatus;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
@@ -1902,6 +2105,9 @@ class FeatureGeometryRevisionsCompanion
     this.editedBy = const Value.absent(),
     this.editedAt = const Value.absent(),
     this.overrideReason = const Value.absent(),
+    this.operation = const Value.absent(),
+    this.relatedFeatureId = const Value.absent(),
+    this.relatedGeojson = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -1914,6 +2120,9 @@ class FeatureGeometryRevisionsCompanion
     required String editedBy,
     required DateTime editedAt,
     this.overrideReason = const Value.absent(),
+    this.operation = const Value.absent(),
+    this.relatedFeatureId = const Value.absent(),
+    this.relatedGeojson = const Value.absent(),
     this.syncStatus = const Value.absent(),
     required DateTime createdAt,
     this.rowid = const Value.absent(),
@@ -1932,6 +2141,9 @@ class FeatureGeometryRevisionsCompanion
     Expression<String>? editedBy,
     Expression<DateTime>? editedAt,
     Expression<String>? overrideReason,
+    Expression<String>? operation,
+    Expression<String>? relatedFeatureId,
+    Expression<String>? relatedGeojson,
     Expression<String>? syncStatus,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
@@ -1944,6 +2156,9 @@ class FeatureGeometryRevisionsCompanion
       if (editedBy != null) 'edited_by': editedBy,
       if (editedAt != null) 'edited_at': editedAt,
       if (overrideReason != null) 'override_reason': overrideReason,
+      if (operation != null) 'operation': operation,
+      if (relatedFeatureId != null) 'related_feature_id': relatedFeatureId,
+      if (relatedGeojson != null) 'related_geojson': relatedGeojson,
       if (syncStatus != null) 'sync_status': syncStatus,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
@@ -1958,6 +2173,9 @@ class FeatureGeometryRevisionsCompanion
       Value<String>? editedBy,
       Value<DateTime>? editedAt,
       Value<String?>? overrideReason,
+      Value<String>? operation,
+      Value<String?>? relatedFeatureId,
+      Value<String?>? relatedGeojson,
       Value<String>? syncStatus,
       Value<DateTime>? createdAt,
       Value<int>? rowid}) {
@@ -1969,6 +2187,9 @@ class FeatureGeometryRevisionsCompanion
       editedBy: editedBy ?? this.editedBy,
       editedAt: editedAt ?? this.editedAt,
       overrideReason: overrideReason ?? this.overrideReason,
+      operation: operation ?? this.operation,
+      relatedFeatureId: relatedFeatureId ?? this.relatedFeatureId,
+      relatedGeojson: relatedGeojson ?? this.relatedGeojson,
       syncStatus: syncStatus ?? this.syncStatus,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
@@ -1999,6 +2220,15 @@ class FeatureGeometryRevisionsCompanion
     if (overrideReason.present) {
       map['override_reason'] = Variable<String>(overrideReason.value);
     }
+    if (operation.present) {
+      map['operation'] = Variable<String>(operation.value);
+    }
+    if (relatedFeatureId.present) {
+      map['related_feature_id'] = Variable<String>(relatedFeatureId.value);
+    }
+    if (relatedGeojson.present) {
+      map['related_geojson'] = Variable<String>(relatedGeojson.value);
+    }
     if (syncStatus.present) {
       map['sync_status'] = Variable<String>(syncStatus.value);
     }
@@ -2021,6 +2251,9 @@ class FeatureGeometryRevisionsCompanion
           ..write('editedBy: $editedBy, ')
           ..write('editedAt: $editedAt, ')
           ..write('overrideReason: $overrideReason, ')
+          ..write('operation: $operation, ')
+          ..write('relatedFeatureId: $relatedFeatureId, ')
+          ..write('relatedGeojson: $relatedGeojson, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
@@ -2088,6 +2321,14 @@ class $SubmissionsTable extends Submissions
   late final GeneratedColumn<String> pendingTheirsId = GeneratedColumn<String>(
       'pending_theirs_id', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _formVersionMeta =
+      const VerificationMeta('formVersion');
+  @override
+  late final GeneratedColumn<String> formVersion = GeneratedColumn<String>(
+      'form_version', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('legacy-v1'));
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -2110,6 +2351,7 @@ class $SubmissionsTable extends Submissions
         syncStatus,
         overrideReason,
         pendingTheirsId,
+        formVersion,
         createdAt,
         updatedAt
       ];
@@ -2168,6 +2410,12 @@ class $SubmissionsTable extends Submissions
           pendingTheirsId.isAcceptableOrUnknown(
               data['pending_theirs_id']!, _pendingTheirsIdMeta));
     }
+    if (data.containsKey('form_version')) {
+      context.handle(
+          _formVersionMeta,
+          formVersion.isAcceptableOrUnknown(
+              data['form_version']!, _formVersionMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -2205,6 +2453,8 @@ class $SubmissionsTable extends Submissions
           .read(DriftSqlType.string, data['${effectivePrefix}override_reason']),
       pendingTheirsId: attachedDatabase.typeMapping.read(
           DriftSqlType.string, data['${effectivePrefix}pending_theirs_id']),
+      formVersion: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}form_version'])!,
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       updatedAt: attachedDatabase.typeMapping
@@ -2227,6 +2477,7 @@ class Submission extends DataClass implements Insertable<Submission> {
   final String syncStatus;
   final String? overrideReason;
   final String? pendingTheirsId;
+  final String formVersion;
   final DateTime createdAt;
   final DateTime updatedAt;
   const Submission(
@@ -2238,6 +2489,7 @@ class Submission extends DataClass implements Insertable<Submission> {
       required this.syncStatus,
       this.overrideReason,
       this.pendingTheirsId,
+      required this.formVersion,
       required this.createdAt,
       required this.updatedAt});
   @override
@@ -2259,6 +2511,7 @@ class Submission extends DataClass implements Insertable<Submission> {
     if (!nullToAbsent || pendingTheirsId != null) {
       map['pending_theirs_id'] = Variable<String>(pendingTheirsId);
     }
+    map['form_version'] = Variable<String>(formVersion);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -2282,6 +2535,7 @@ class Submission extends DataClass implements Insertable<Submission> {
       pendingTheirsId: pendingTheirsId == null && nullToAbsent
           ? const Value.absent()
           : Value(pendingTheirsId),
+      formVersion: Value(formVersion),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -2299,6 +2553,7 @@ class Submission extends DataClass implements Insertable<Submission> {
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
       overrideReason: serializer.fromJson<String?>(json['overrideReason']),
       pendingTheirsId: serializer.fromJson<String?>(json['pendingTheirsId']),
+      formVersion: serializer.fromJson<String>(json['formVersion']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -2315,6 +2570,7 @@ class Submission extends DataClass implements Insertable<Submission> {
       'syncStatus': serializer.toJson<String>(syncStatus),
       'overrideReason': serializer.toJson<String?>(overrideReason),
       'pendingTheirsId': serializer.toJson<String?>(pendingTheirsId),
+      'formVersion': serializer.toJson<String>(formVersion),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -2329,6 +2585,7 @@ class Submission extends DataClass implements Insertable<Submission> {
           String? syncStatus,
           Value<String?> overrideReason = const Value.absent(),
           Value<String?> pendingTheirsId = const Value.absent(),
+          String? formVersion,
           DateTime? createdAt,
           DateTime? updatedAt}) =>
       Submission(
@@ -2343,6 +2600,7 @@ class Submission extends DataClass implements Insertable<Submission> {
         pendingTheirsId: pendingTheirsId.present
             ? pendingTheirsId.value
             : this.pendingTheirsId,
+        formVersion: formVersion ?? this.formVersion,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
       );
@@ -2364,6 +2622,8 @@ class Submission extends DataClass implements Insertable<Submission> {
       pendingTheirsId: data.pendingTheirsId.present
           ? data.pendingTheirsId.value
           : this.pendingTheirsId,
+      formVersion:
+          data.formVersion.present ? data.formVersion.value : this.formVersion,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -2380,6 +2640,7 @@ class Submission extends DataClass implements Insertable<Submission> {
           ..write('syncStatus: $syncStatus, ')
           ..write('overrideReason: $overrideReason, ')
           ..write('pendingTheirsId: $pendingTheirsId, ')
+          ..write('formVersion: $formVersion, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -2396,6 +2657,7 @@ class Submission extends DataClass implements Insertable<Submission> {
       syncStatus,
       overrideReason,
       pendingTheirsId,
+      formVersion,
       createdAt,
       updatedAt);
   @override
@@ -2410,6 +2672,7 @@ class Submission extends DataClass implements Insertable<Submission> {
           other.syncStatus == this.syncStatus &&
           other.overrideReason == this.overrideReason &&
           other.pendingTheirsId == this.pendingTheirsId &&
+          other.formVersion == this.formVersion &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -2423,6 +2686,7 @@ class SubmissionsCompanion extends UpdateCompanion<Submission> {
   final Value<String> syncStatus;
   final Value<String?> overrideReason;
   final Value<String?> pendingTheirsId;
+  final Value<String> formVersion;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -2435,6 +2699,7 @@ class SubmissionsCompanion extends UpdateCompanion<Submission> {
     this.syncStatus = const Value.absent(),
     this.overrideReason = const Value.absent(),
     this.pendingTheirsId = const Value.absent(),
+    this.formVersion = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -2448,6 +2713,7 @@ class SubmissionsCompanion extends UpdateCompanion<Submission> {
     this.syncStatus = const Value.absent(),
     this.overrideReason = const Value.absent(),
     this.pendingTheirsId = const Value.absent(),
+    this.formVersion = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
@@ -2464,6 +2730,7 @@ class SubmissionsCompanion extends UpdateCompanion<Submission> {
     Expression<String>? syncStatus,
     Expression<String>? overrideReason,
     Expression<String>? pendingTheirsId,
+    Expression<String>? formVersion,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -2477,6 +2744,7 @@ class SubmissionsCompanion extends UpdateCompanion<Submission> {
       if (syncStatus != null) 'sync_status': syncStatus,
       if (overrideReason != null) 'override_reason': overrideReason,
       if (pendingTheirsId != null) 'pending_theirs_id': pendingTheirsId,
+      if (formVersion != null) 'form_version': formVersion,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -2492,6 +2760,7 @@ class SubmissionsCompanion extends UpdateCompanion<Submission> {
       Value<String>? syncStatus,
       Value<String?>? overrideReason,
       Value<String?>? pendingTheirsId,
+      Value<String>? formVersion,
       Value<DateTime>? createdAt,
       Value<DateTime>? updatedAt,
       Value<int>? rowid}) {
@@ -2504,6 +2773,7 @@ class SubmissionsCompanion extends UpdateCompanion<Submission> {
       syncStatus: syncStatus ?? this.syncStatus,
       overrideReason: overrideReason ?? this.overrideReason,
       pendingTheirsId: pendingTheirsId ?? this.pendingTheirsId,
+      formVersion: formVersion ?? this.formVersion,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -2537,6 +2807,9 @@ class SubmissionsCompanion extends UpdateCompanion<Submission> {
     if (pendingTheirsId.present) {
       map['pending_theirs_id'] = Variable<String>(pendingTheirsId.value);
     }
+    if (formVersion.present) {
+      map['form_version'] = Variable<String>(formVersion.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -2560,6 +2833,7 @@ class SubmissionsCompanion extends UpdateCompanion<Submission> {
           ..write('syncStatus: $syncStatus, ')
           ..write('overrideReason: $overrideReason, ')
           ..write('pendingTheirsId: $pendingTheirsId, ')
+          ..write('formVersion: $formVersion, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -8980,6 +9254,8 @@ typedef $$FeaturesTableCreateCompanionBuilder = FeaturesCompanion Function({
   Value<String> status,
   Value<String?> pendingDedupOf,
   Value<String?> externalCode,
+  Value<String?> splitFromId,
+  Value<String?> mergedIntoId,
   required DateTime createdAt,
   Value<int> rowid,
 });
@@ -8992,6 +9268,8 @@ typedef $$FeaturesTableUpdateCompanionBuilder = FeaturesCompanion Function({
   Value<String> status,
   Value<String?> pendingDedupOf,
   Value<String?> externalCode,
+  Value<String?> splitFromId,
+  Value<String?> mergedIntoId,
   Value<DateTime> createdAt,
   Value<int> rowid,
 });
@@ -9030,6 +9308,12 @@ class $$FeaturesTableFilterComposer
 
   ColumnFilters<String> get externalCode => $composableBuilder(
       column: $table.externalCode, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get splitFromId => $composableBuilder(
+      column: $table.splitFromId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get mergedIntoId => $composableBuilder(
+      column: $table.mergedIntoId, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -9072,6 +9356,13 @@ class $$FeaturesTableOrderingComposer
       column: $table.externalCode,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get splitFromId => $composableBuilder(
+      column: $table.splitFromId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get mergedIntoId => $composableBuilder(
+      column: $table.mergedIntoId,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 }
@@ -9109,6 +9400,12 @@ class $$FeaturesTableAnnotationComposer
   GeneratedColumn<String> get externalCode => $composableBuilder(
       column: $table.externalCode, builder: (column) => column);
 
+  GeneratedColumn<String> get splitFromId => $composableBuilder(
+      column: $table.splitFromId, builder: (column) => column);
+
+  GeneratedColumn<String> get mergedIntoId => $composableBuilder(
+      column: $table.mergedIntoId, builder: (column) => column);
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 }
@@ -9144,6 +9441,8 @@ class $$FeaturesTableTableManager extends RootTableManager<
             Value<String> status = const Value.absent(),
             Value<String?> pendingDedupOf = const Value.absent(),
             Value<String?> externalCode = const Value.absent(),
+            Value<String?> splitFromId = const Value.absent(),
+            Value<String?> mergedIntoId = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -9156,6 +9455,8 @@ class $$FeaturesTableTableManager extends RootTableManager<
             status: status,
             pendingDedupOf: pendingDedupOf,
             externalCode: externalCode,
+            splitFromId: splitFromId,
+            mergedIntoId: mergedIntoId,
             createdAt: createdAt,
             rowid: rowid,
           ),
@@ -9168,6 +9469,8 @@ class $$FeaturesTableTableManager extends RootTableManager<
             Value<String> status = const Value.absent(),
             Value<String?> pendingDedupOf = const Value.absent(),
             Value<String?> externalCode = const Value.absent(),
+            Value<String?> splitFromId = const Value.absent(),
+            Value<String?> mergedIntoId = const Value.absent(),
             required DateTime createdAt,
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -9180,6 +9483,8 @@ class $$FeaturesTableTableManager extends RootTableManager<
             status: status,
             pendingDedupOf: pendingDedupOf,
             externalCode: externalCode,
+            splitFromId: splitFromId,
+            mergedIntoId: mergedIntoId,
             createdAt: createdAt,
             rowid: rowid,
           ),
@@ -9211,6 +9516,9 @@ typedef $$FeatureGeometryRevisionsTableCreateCompanionBuilder
   required String editedBy,
   required DateTime editedAt,
   Value<String?> overrideReason,
+  Value<String> operation,
+  Value<String?> relatedFeatureId,
+  Value<String?> relatedGeojson,
   Value<String> syncStatus,
   required DateTime createdAt,
   Value<int> rowid,
@@ -9224,6 +9532,9 @@ typedef $$FeatureGeometryRevisionsTableUpdateCompanionBuilder
   Value<String> editedBy,
   Value<DateTime> editedAt,
   Value<String?> overrideReason,
+  Value<String> operation,
+  Value<String?> relatedFeatureId,
+  Value<String?> relatedGeojson,
   Value<String> syncStatus,
   Value<DateTime> createdAt,
   Value<int> rowid,
@@ -9258,6 +9569,17 @@ class $$FeatureGeometryRevisionsTableFilterComposer
 
   ColumnFilters<String> get overrideReason => $composableBuilder(
       column: $table.overrideReason,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get operation => $composableBuilder(
+      column: $table.operation, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get relatedFeatureId => $composableBuilder(
+      column: $table.relatedFeatureId,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get relatedGeojson => $composableBuilder(
+      column: $table.relatedGeojson,
       builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get syncStatus => $composableBuilder(
@@ -9298,6 +9620,17 @@ class $$FeatureGeometryRevisionsTableOrderingComposer
       column: $table.overrideReason,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get operation => $composableBuilder(
+      column: $table.operation, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get relatedFeatureId => $composableBuilder(
+      column: $table.relatedFeatureId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get relatedGeojson => $composableBuilder(
+      column: $table.relatedGeojson,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get syncStatus => $composableBuilder(
       column: $table.syncStatus, builder: (column) => ColumnOrderings(column));
 
@@ -9334,6 +9667,15 @@ class $$FeatureGeometryRevisionsTableAnnotationComposer
 
   GeneratedColumn<String> get overrideReason => $composableBuilder(
       column: $table.overrideReason, builder: (column) => column);
+
+  GeneratedColumn<String> get operation =>
+      $composableBuilder(column: $table.operation, builder: (column) => column);
+
+  GeneratedColumn<String> get relatedFeatureId => $composableBuilder(
+      column: $table.relatedFeatureId, builder: (column) => column);
+
+  GeneratedColumn<String> get relatedGeojson => $composableBuilder(
+      column: $table.relatedGeojson, builder: (column) => column);
 
   GeneratedColumn<String> get syncStatus => $composableBuilder(
       column: $table.syncStatus, builder: (column) => column);
@@ -9380,6 +9722,9 @@ class $$FeatureGeometryRevisionsTableTableManager extends RootTableManager<
             Value<String> editedBy = const Value.absent(),
             Value<DateTime> editedAt = const Value.absent(),
             Value<String?> overrideReason = const Value.absent(),
+            Value<String> operation = const Value.absent(),
+            Value<String?> relatedFeatureId = const Value.absent(),
+            Value<String?> relatedGeojson = const Value.absent(),
             Value<String> syncStatus = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
@@ -9392,6 +9737,9 @@ class $$FeatureGeometryRevisionsTableTableManager extends RootTableManager<
             editedBy: editedBy,
             editedAt: editedAt,
             overrideReason: overrideReason,
+            operation: operation,
+            relatedFeatureId: relatedFeatureId,
+            relatedGeojson: relatedGeojson,
             syncStatus: syncStatus,
             createdAt: createdAt,
             rowid: rowid,
@@ -9404,6 +9752,9 @@ class $$FeatureGeometryRevisionsTableTableManager extends RootTableManager<
             required String editedBy,
             required DateTime editedAt,
             Value<String?> overrideReason = const Value.absent(),
+            Value<String> operation = const Value.absent(),
+            Value<String?> relatedFeatureId = const Value.absent(),
+            Value<String?> relatedGeojson = const Value.absent(),
             Value<String> syncStatus = const Value.absent(),
             required DateTime createdAt,
             Value<int> rowid = const Value.absent(),
@@ -9416,6 +9767,9 @@ class $$FeatureGeometryRevisionsTableTableManager extends RootTableManager<
             editedBy: editedBy,
             editedAt: editedAt,
             overrideReason: overrideReason,
+            operation: operation,
+            relatedFeatureId: relatedFeatureId,
+            relatedGeojson: relatedGeojson,
             syncStatus: syncStatus,
             createdAt: createdAt,
             rowid: rowid,
@@ -9454,6 +9808,7 @@ typedef $$SubmissionsTableCreateCompanionBuilder = SubmissionsCompanion
   Value<String> syncStatus,
   Value<String?> overrideReason,
   Value<String?> pendingTheirsId,
+  Value<String> formVersion,
   required DateTime createdAt,
   required DateTime updatedAt,
   Value<int> rowid,
@@ -9468,6 +9823,7 @@ typedef $$SubmissionsTableUpdateCompanionBuilder = SubmissionsCompanion
   Value<String> syncStatus,
   Value<String?> overrideReason,
   Value<String?> pendingTheirsId,
+  Value<String> formVersion,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
   Value<int> rowid,
@@ -9507,6 +9863,9 @@ class $$SubmissionsTableFilterComposer
   ColumnFilters<String> get pendingTheirsId => $composableBuilder(
       column: $table.pendingTheirsId,
       builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get formVersion => $composableBuilder(
+      column: $table.formVersion, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -9551,6 +9910,9 @@ class $$SubmissionsTableOrderingComposer
       column: $table.pendingTheirsId,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get formVersion => $composableBuilder(
+      column: $table.formVersion, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 
@@ -9591,6 +9953,9 @@ class $$SubmissionsTableAnnotationComposer
   GeneratedColumn<String> get pendingTheirsId => $composableBuilder(
       column: $table.pendingTheirsId, builder: (column) => column);
 
+  GeneratedColumn<String> get formVersion => $composableBuilder(
+      column: $table.formVersion, builder: (column) => column);
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
@@ -9629,6 +9994,7 @@ class $$SubmissionsTableTableManager extends RootTableManager<
             Value<String> syncStatus = const Value.absent(),
             Value<String?> overrideReason = const Value.absent(),
             Value<String?> pendingTheirsId = const Value.absent(),
+            Value<String> formVersion = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
@@ -9642,6 +10008,7 @@ class $$SubmissionsTableTableManager extends RootTableManager<
             syncStatus: syncStatus,
             overrideReason: overrideReason,
             pendingTheirsId: pendingTheirsId,
+            formVersion: formVersion,
             createdAt: createdAt,
             updatedAt: updatedAt,
             rowid: rowid,
@@ -9655,6 +10022,7 @@ class $$SubmissionsTableTableManager extends RootTableManager<
             Value<String> syncStatus = const Value.absent(),
             Value<String?> overrideReason = const Value.absent(),
             Value<String?> pendingTheirsId = const Value.absent(),
+            Value<String> formVersion = const Value.absent(),
             required DateTime createdAt,
             required DateTime updatedAt,
             Value<int> rowid = const Value.absent(),
@@ -9668,6 +10036,7 @@ class $$SubmissionsTableTableManager extends RootTableManager<
             syncStatus: syncStatus,
             overrideReason: overrideReason,
             pendingTheirsId: pendingTheirsId,
+            formVersion: formVersion,
             createdAt: createdAt,
             updatedAt: updatedAt,
             rowid: rowid,

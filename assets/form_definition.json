@@ -1,0 +1,10 @@
+{
+  "version": "legacy-v1",
+  "name": "FireCheck standard form",
+  "editPolicy": {
+    "featureTypes": ["building", "road"],
+    "fields": {}
+  },
+  "visibilityRules": [],
+  "constraints": []
+}

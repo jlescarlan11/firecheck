@@ -9,6 +9,7 @@ import 'package:firecheck/core/drive/ftp_credentials.dart';
 import 'package:firecheck/core/drive/transport_source.dart';
 import 'package:firecheck/core/drive/transport_source_factory.dart';
 import 'package:firecheck/core/forms/field_requirements_providers.dart';
+import 'package:firecheck/core/forms/form_definition_providers.dart';
 import 'package:firecheck/core/errors/failure.dart';
 import 'package:firecheck/core/mapbox/offline_pack_adapter.dart';
 import 'package:firecheck/core/sync/shapefile/shapefile_importer.dart';
@@ -165,7 +166,8 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
     // Delta check: mark assignments whose modifiedTime matches stored value.
     final assignments = await Future.wait(
       rawAssignments.map((a) async {
-        final stored = await assignmentRepo.getDriveModifiedTime(a.assignmentId);
+        final stored =
+            await assignmentRepo.getDriveModifiedTime(a.assignmentId);
         return stored == a.inputZipModifiedTime
             ? a.copyWith(alreadyDownloaded: true)
             : a;
@@ -240,12 +242,14 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
     final available = await storageChecker.getAvailableBytes();
     if (!mounted) return;
     if (available < needed) {
-      state = InsufficientStorage(requiredBytes: needed, availableBytes: available);
+      state =
+          InsufficientStorage(requiredBytes: needed, availableBytes: available);
       return;
     }
 
     _enumeratorId = await googleAuthRepo.getEnumeratorId();
-    await _runAcquisition(source: source, selected: selected, totalBytes: needed);
+    await _runAcquisition(
+        source: source, selected: selected, totalBytes: needed);
   }
 
   Future<void> acknowledgeWarning() async {
@@ -283,7 +287,8 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
       state = GetMapsError(NetworkFailure(e.toString()), isRetryable: true);
       return;
     }
-    await _runAcquisition(source: source, selected: selected, totalBytes: needed);
+    await _runAcquisition(
+        source: source, selected: selected, totalBytes: needed);
   }
 
   Future<void> _runAcquisition({
@@ -373,8 +378,8 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
         if (!mounted) return;
         switch (event) {
           case OfflinePackProgress(:final downloaded, :final total):
-            state =
-                DownloadingTiles(downloadedBytes: downloaded, totalBytes: total);
+            state = DownloadingTiles(
+                downloadedBytes: downloaded, totalBytes: total);
             await packRepo.updateProgress(packId, downloaded, total);
           case OfflinePackComplete():
             await packRepo.markReady(packId);
@@ -384,8 +389,8 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
             final currentTotal = state is DownloadingTiles
                 ? (state as DownloadingTiles).totalBytes
                 : 0;
-            state = Ready(
-                featureCount: features.length, totalBytes: currentTotal);
+            state =
+                Ready(featureCount: features.length, totalBytes: currentTotal);
             return;
           case OfflinePackError(:final message):
             await packRepo.markError(packId, message);
@@ -399,9 +404,8 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
       }
     } on Object catch (_) {
       if (!mounted) return;
-      final features = await featureRepo
-          .watchFeaturesForAssignment(assignment.id)
-          .first;
+      final features =
+          await featureRepo.watchFeaturesForAssignment(assignment.id).first;
       state = Ready(featureCount: features.length, totalBytes: 0);
     }
   }
@@ -445,8 +449,7 @@ final canonicalFeaturePublisherProvider =
   return const NoopCanonicalFeaturePublisher();
 });
 
-final transportSourceFactoryProvider =
-    Provider<TransportSourceFactory>((ref) {
+final transportSourceFactoryProvider = Provider<TransportSourceFactory>((ref) {
   return TransportSourceFactory(driveApi: ref.watch(driveApiProvider));
 });
 
@@ -460,6 +463,8 @@ final shapefileAcquisitionUseCaseProvider =
     canonicalFeaturePublisher: ref.watch(canonicalFeaturePublisherProvider),
     onRequirementsUpdated: () =>
         ref.read(fieldRequirementsRevisionProvider.notifier).state++,
+    onFormDefinitionUpdated: () =>
+        ref.read(formDefinitionRevisionProvider.notifier).state++,
   );
 });
 

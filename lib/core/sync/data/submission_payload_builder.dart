@@ -47,6 +47,7 @@ class SubmissionPayloadBuilder {
         'does_not_exist': s.doesNotExist,
         'remarks': s.remarks,
         'override_reason': s.overrideReason,
+        'form_version': s.formVersion,
         'created_at': s.createdAt.toIso8601String(),
         'updated_at': s.updatedAt.toIso8601String(),
       };

@@ -1,4 +1,6 @@
 import 'package:firecheck/core/forms/form_variant_providers.dart';
+import 'package:firecheck/core/forms/form_definition.dart';
+import 'package:firecheck/core/forms/form_definition_providers.dart';
 import 'package:firecheck/features/survey/building_form/presentation/sections/_persistent_text_field.dart';
 import 'package:firecheck/features/survey/building_form/presentation/sections/_section_card.dart';
 import 'package:firecheck/features/survey/road_form/domain/road_form_applicability.dart';
@@ -62,6 +64,10 @@ class RoadFeaturesSection extends ConsumerWidget {
     }
     final showOthersDesc =
         hasOthers && !hidden.contains(RoadFormField.othersDescription);
+    final definition = ref.watch(currentFormDefinitionProvider).valueOrNull ??
+        FormDefinition.legacy;
+    bool enabled(String field) =>
+        !disabled && definition.isFieldEditable('road.$field');
 
     return SectionCard(
       title: l.sectionRoadFeatures,
@@ -72,7 +78,7 @@ class RoadFeaturesSection extends ConsumerWidget {
             CheckboxListTile(
               title: Text(_featureLabel(l, labelKey)),
               value: selected.contains(code),
-              onChanged: disabled
+              onChanged: !enabled('roadFeatures')
                   ? null
                   : (v) {
                       final next = [...selected];
@@ -97,7 +103,7 @@ class RoadFeaturesSection extends ConsumerWidget {
           if (showOthersDesc) ...[
             const SizedBox(height: 8),
             PersistentTextField(
-              enabled: !disabled,
+              enabled: enabled('othersDescription'),
               value: state.othersDescription ?? '',
               labelText: l.roadFeatureOthersDescription,
               onChanged: (v) => notifier.update(

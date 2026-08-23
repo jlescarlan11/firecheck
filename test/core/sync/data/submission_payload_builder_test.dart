@@ -45,8 +45,8 @@ void main() {
   test('submitted_by passes through UUID value unchanged', () async {
     await (db.update(db.submissions)..where((t) => t.id.equals('s1')))
         .write(SubmissionsCompanion(
-          submittedBy: const Value('550e8400-e29b-41d4-a716-446655440000'),
-        ));
+      submittedBy: const Value('550e8400-e29b-41d4-a716-446655440000'),
+    ));
     final p = await builder.build('s1');
     final sub = p['submission']! as Map<String, dynamic>;
     expect(sub['submitted_by'], '550e8400-e29b-41d4-a716-446655440000');
@@ -65,6 +65,14 @@ void main() {
     expect(p['building_attributes'], isNull);
     expect(p['road_attributes'], isNull);
     expect(p['household_survey'], isNull);
+  });
+
+  test('payload preserves the offline draft form version', () async {
+    await (db.update(db.submissions)..where((table) => table.id.equals('s1')))
+        .write(const SubmissionsCompanion(formVersion: Value('2026.08.1')));
+    final payload = await builder.build('s1');
+    final submission = payload['submission']! as Map<String, dynamic>;
+    expect(submission['form_version'], '2026.08.1');
   });
 
   test('building submission with attrs + olp; jsonb columns decoded', () async {

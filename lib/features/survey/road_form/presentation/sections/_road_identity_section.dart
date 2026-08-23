@@ -1,3 +1,5 @@
+import 'package:firecheck/core/forms/form_definition.dart';
+import 'package:firecheck/core/forms/form_definition_providers.dart';
 import 'package:firecheck/core/forms/form_variant_providers.dart';
 import 'package:firecheck/features/survey/building_form/presentation/sections/_persistent_text_field.dart';
 import 'package:firecheck/features/survey/building_form/presentation/sections/_section_card.dart';
@@ -33,11 +35,15 @@ class RoadIdentitySection extends ConsumerWidget {
     );
 
     final hidden = ref.watch(currentFormVariantProvider).hideRoadFields;
+    final definition = ref.watch(currentFormDefinitionProvider).valueOrNull ??
+        FormDefinition.legacy;
+    bool enabled(String field) =>
+        !disabled && definition.isFieldEditable('road.$field');
     final children = <Widget>[];
     if (!hidden.contains(RoadFormField.roadName)) {
       children.add(
         PersistentTextField(
-          enabled: !disabled,
+          enabled: enabled('roadName'),
           value: state.roadName ?? '',
           labelText: l.fieldRoadName,
           onChanged: (v) => notifier.update(
@@ -52,7 +58,7 @@ class RoadIdentitySection extends ConsumerWidget {
       SwitchListTile(
         title: Text(l.fieldIsBridge),
         value: state.isBridge,
-        onChanged: disabled
+        onChanged: !enabled('isBridge')
             ? null
             : (v) => notifier.update((s) => s.copyWith(isBridge: v)),
         contentPadding: EdgeInsets.zero,

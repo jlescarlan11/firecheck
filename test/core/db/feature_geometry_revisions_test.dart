@@ -14,34 +14,38 @@ void main() {
     // Seed one assignment + one feature so the FK on revisions is satisfied
     // and the geometry update has something to update.
     await db.into(db.assignments).insert(
-      AssignmentsCompanion.insert(
-        id: 'a1',
-        enumeratorId: 'e1',
-        campaignId: 'c1',
-        boundaryPolygonGeojson: '{}',
-        createdAt: DateTime.utc(2026, 1, 1),
-      ),
-    );
+          AssignmentsCompanion.insert(
+            id: 'a1',
+            enumeratorId: 'e1',
+            campaignId: 'c1',
+            boundaryPolygonGeojson: '{}',
+            createdAt: DateTime.utc(2026, 1, 1),
+          ),
+        );
     await db.into(db.features).insert(
-      FeaturesCompanion.insert(
-        id: 'f1',
-        assignmentId: 'a1',
-        featureType: 'building',
-        geometryGeojson: '{"type":"Polygon","coordinates":[[[0,0],[1,0],[0,1],[0,0]]]}',
-        createdAt: DateTime.utc(2026, 1, 1),
-      ),
-    );
+          FeaturesCompanion.insert(
+            id: 'f1',
+            assignmentId: 'a1',
+            featureType: 'building',
+            geometryGeojson:
+                '{"type":"Polygon","coordinates":[[[0,0],[1,0],[0,1],[0,0]]]}',
+            createdAt: DateTime.utc(2026, 1, 1),
+          ),
+        );
   });
 
   tearDown(() => db.close());
 
-  test('saveReshape writes feature update + revision row + sync_job atomically', () async {
-    const newGeojson = '{"type":"Polygon","coordinates":[[[0,0],[2,0],[0,2],[0,0]]]}';
+  test('saveReshape writes feature update + revision row + sync_job atomically',
+      () async {
+    const newGeojson =
+        '{"type":"Polygon","coordinates":[[[0,0],[2,0],[0,2],[0,0]]]}';
 
     await repo.saveReshape(
       revisionId: 'r1',
       featureId: 'f1',
-      prevGeojson: '{"type":"Polygon","coordinates":[[[0,0],[1,0],[0,1],[0,0]]]}',
+      prevGeojson:
+          '{"type":"Polygon","coordinates":[[[0,0],[1,0],[0,1],[0,0]]]}',
       newGeojson: newGeojson,
       editedBy: 'e1',
       editedAt: DateTime.utc(2026, 4, 29, 12, 0),
@@ -70,8 +74,10 @@ void main() {
     await repo.saveReshape(
       revisionId: 'r2',
       featureId: 'f1',
-      prevGeojson: '{"type":"Polygon","coordinates":[[[0,0],[1,0],[0,1],[0,0]]]}',
-      newGeojson:  '{"type":"Polygon","coordinates":[[[0,0],[2,0],[0,2],[0,0]]]}',
+      prevGeojson:
+          '{"type":"Polygon","coordinates":[[[0,0],[1,0],[0,1],[0,0]]]}',
+      newGeojson:
+          '{"type":"Polygon","coordinates":[[[0,0],[2,0],[0,2],[0,0]]]}',
       editedBy: 'e1',
       editedAt: DateTime.utc(2026, 4, 29, 12, 0),
       overrideReason: 'corner visible from sidewalk',
@@ -81,12 +87,68 @@ void main() {
     expect(revisions.first.overrideReason, 'corner visible from sidewalk');
   });
 
+  test('saveSplit persists both halves and one replayable operation', () async {
+    final source = await (db.select(db.features)
+          ..where((row) => row.id.equals('f1')))
+        .getSingle();
+    final secondId = await repo.saveSplit(
+      revisionId: 'split-1',
+      source: source,
+      firstGeojson: '{"half":1}',
+      secondGeojson: '{"half":2}',
+      editedBy: 'e1',
+      editedAt: DateTime.utc(2026, 8, 23),
+    );
+
+    final features = await db.select(db.features).get();
+    expect(features, hasLength(2));
+    final second = features.singleWhere((feature) => feature.id == secondId);
+    expect(second.splitFromId, 'f1');
+    expect(second.geometryGeojson, '{"half":2}');
+    final revision = await repo.getById('split-1');
+    expect(revision!.operation, 'split');
+    expect(revision.relatedFeatureId, secondId);
+    expect(await db.select(db.syncJobs).get(), hasLength(1));
+  });
+
+  test('saveMerge tombstones the secondary and records its prior geometry',
+      () async {
+    await db.into(db.features).insert(
+          FeaturesCompanion.insert(
+            id: 'f2',
+            assignmentId: 'a1',
+            featureType: 'building',
+            geometryGeojson: '{"second":true}',
+            createdAt: DateTime.utc(2026),
+          ),
+        );
+    final features = await db.select(db.features).get();
+    await repo.saveMerge(
+      revisionId: 'merge-1',
+      primary: features.singleWhere((feature) => feature.id == 'f1'),
+      secondary: features.singleWhere((feature) => feature.id == 'f2'),
+      mergedGeojson: '{"merged":true}',
+      editedBy: 'e1',
+      editedAt: DateTime.utc(2026, 8, 23),
+    );
+
+    final secondary = await (db.select(db.features)
+          ..where((row) => row.id.equals('f2')))
+        .getSingle();
+    expect(secondary.mergedIntoId, 'f1');
+    final revision = await repo.getById('merge-1');
+    expect(revision!.operation, 'merge');
+    expect(revision.relatedGeojson, '{"second":true}');
+  });
+
   test('getById returns the revision', () async {
     await repo.saveReshape(
       revisionId: 'r3',
       featureId: 'f1',
-      prevGeojson: '{"type":"Polygon","coordinates":[[[0,0],[1,0],[0,1],[0,0]]]}',
-      newGeojson:  '{"type":"Polygon","coordinates":[[[0,0],[2,0],[0,2],[0,0]]]}',
+      prevGeojson:
+          '{"type":"Polygon","coordinates":[[[0,0],[1,0],[0,1],[0,0]]]}',
+      newGeojson:
+          '{"type":"Polygon","coordinates":[[[0,0],[2,0],[0,2],[0,0]]]}',
       editedBy: 'e1',
       editedAt: DateTime.utc(2026, 4, 29, 12, 0),
       overrideReason: null,
@@ -97,7 +159,8 @@ void main() {
     expect(found!.featureId, 'f1');
   });
 
-  test('saveReshape rolls back all writes when revision insert fails', () async {
+  test('saveReshape rolls back all writes when revision insert fails',
+      () async {
     // Pre-insert a row with revisionId='r4' so the second write throws a UNIQUE constraint.
     await db.into(db.featureGeometryRevisions).insert(
           FeatureGeometryRevisionsCompanion.insert(
@@ -120,8 +183,10 @@ void main() {
       repo.saveReshape(
         revisionId: 'r4', // collides on PK
         featureId: 'f1',
-        prevGeojson: '{"type":"Polygon","coordinates":[[[0,0],[1,0],[0,1],[0,0]]]}',
-        newGeojson:  '{"type":"Polygon","coordinates":[[[0,0],[3,0],[0,3],[0,0]]]}',
+        prevGeojson:
+            '{"type":"Polygon","coordinates":[[[0,0],[1,0],[0,1],[0,0]]]}',
+        newGeojson:
+            '{"type":"Polygon","coordinates":[[[0,0],[3,0],[0,3],[0,0]]]}',
         editedBy: 'e1',
         editedAt: DateTime.utc(2026, 4, 29, 13),
         overrideReason: null,
@@ -149,8 +214,10 @@ void main() {
     await repo.saveReshape(
       revisionId: 'r5',
       featureId: 'f1',
-      prevGeojson: '{"type":"Polygon","coordinates":[[[0,0],[1,0],[0,1],[0,0]]]}',
-      newGeojson:  '{"type":"Polygon","coordinates":[[[0,0],[2,0],[0,2],[0,0]]]}',
+      prevGeojson:
+          '{"type":"Polygon","coordinates":[[[0,0],[1,0],[0,1],[0,0]]]}',
+      newGeojson:
+          '{"type":"Polygon","coordinates":[[[0,0],[2,0],[0,2],[0,0]]]}',
       editedBy: 'e1',
       editedAt: DateTime.utc(2026, 4, 29),
       overrideReason: null,
@@ -165,8 +232,10 @@ void main() {
     await repo.saveReshape(
       revisionId: 'r6',
       featureId: 'f1',
-      prevGeojson: '{"type":"Polygon","coordinates":[[[0,0],[1,0],[0,1],[0,0]]]}',
-      newGeojson:  '{"type":"Polygon","coordinates":[[[0,0],[2,0],[0,2],[0,0]]]}',
+      prevGeojson:
+          '{"type":"Polygon","coordinates":[[[0,0],[1,0],[0,1],[0,0]]]}',
+      newGeojson:
+          '{"type":"Polygon","coordinates":[[[0,0],[2,0],[0,2],[0,0]]]}',
       editedBy: 'e1',
       editedAt: DateTime.utc(2026, 4, 29),
       overrideReason: null,
@@ -175,5 +244,77 @@ void main() {
     await repo.markFailed('r6');
     final r = await repo.getById('r6');
     expect(r!.syncStatus, 'failed');
+  });
+
+  test('conflict remains local until explicit keep-server resolution',
+      () async {
+    await repo.saveReshape(
+      revisionId: 'conflict-1',
+      featureId: 'f1',
+      prevGeojson: '{"old":true}',
+      newGeojson: '{"local":true}',
+      editedBy: 'e1',
+      editedAt: DateTime.utc(2026, 8, 23),
+      overrideReason: null,
+    );
+    await repo.markFailed('conflict-1');
+    expect((await repo.getById('conflict-1'))!.syncStatus, 'failed');
+    expect((await db.select(db.features).getSingle()).geometryGeojson,
+        '{"local":true}');
+
+    await repo.resolveKeepingServer(
+      revisionId: 'conflict-1',
+      serverGeojson: '{"server":true}',
+    );
+    expect((await repo.getById('conflict-1'))!.syncStatus, 'discarded');
+    expect((await db.select(db.features).getSingle()).geometryGeojson,
+        '{"server":true}');
+  });
+
+  test('retry-local resolution rebases and creates a new pending job',
+      () async {
+    await repo.saveReshape(
+      revisionId: 'conflict-2',
+      featureId: 'f1',
+      prevGeojson: '{"old":true}',
+      newGeojson: '{"local":true}',
+      editedBy: 'e1',
+      editedAt: DateTime.utc(2026, 8, 23),
+      overrideReason: null,
+    );
+    await repo.markFailed('conflict-2');
+    await repo.resolveRetryingLocal(
+      revisionId: 'conflict-2',
+      serverGeojson: '{"server":true}',
+    );
+    final revision = await repo.getById('conflict-2');
+    expect(revision!.prevGeojson, '{"server":true}');
+    expect(revision.newGeojson, '{"local":true}');
+    expect(revision.syncStatus, 'ready_to_upload');
+    final jobs = await db.select(db.syncJobs).get();
+    expect(jobs, hasLength(1));
+    expect(jobs.single.status, 'pending');
+  });
+
+  test('keep-server resolution rolls back both local halves of a split',
+      () async {
+    final source = await db.select(db.features).getSingle();
+    await repo.saveSplit(
+      revisionId: 'split-conflict',
+      source: source,
+      firstGeojson: '{"local":1}',
+      secondGeojson: '{"local":2}',
+      editedBy: 'e1',
+      editedAt: DateTime.utc(2026, 8, 23),
+    );
+    await repo.markFailed('split-conflict');
+    await repo.resolveKeepingServer(
+      revisionId: 'split-conflict',
+      serverGeojson: '{"server":true}',
+    );
+    final features = await db.select(db.features).get();
+    expect(features, hasLength(1));
+    expect(features.single.id, 'f1');
+    expect(features.single.geometryGeojson, '{"server":true}');
   });
 }

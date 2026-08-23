@@ -15,18 +15,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 final geometrySignalProvider = StreamProvider.autoDispose
     .family<GeometrySignal, String>((ref, featureId) async* {
   final repo = ref.watch(featureRepositoryProvider);
+  final boundary =
+      ref.watch(currentAssignmentProvider).valueOrNull?.boundaryPolygonGeojson;
   await for (final features in repo.watchAllFeatures()) {
-    final match = features
-        .where((f) => f.id == featureId)
-        .cast<dynamic>()
-        .firstOrNull;
+    final match =
+        features.where((feature) => feature.id == featureId).firstOrNull;
     if (match == null) {
       yield GeometrySignal.empty;
       continue;
     }
     yield geometrySignalFromGeojson(
-      match.geometryGeojson as String,
-      featureType: match.featureType as String,
+      match.geometryGeojson,
+      featureType: match.featureType,
+      boundaryGeojson: boundary,
     );
   }
 });

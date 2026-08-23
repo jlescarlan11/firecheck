@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/geo/point_in_polygon.dart';
+import 'package:firecheck/core/geo/geometry_operations.dart';
 import 'package:firecheck/core/geo/polygon_bounds.dart';
 import 'package:firecheck/core/geo/polygon_validator.dart';
 import 'package:firecheck/core/geo/polyline_validator.dart';
@@ -36,14 +37,21 @@ class GeometryEditorController extends Notifier<GeometryEditorState> {
     state = const GeometryEditorState();
   }
 
-  void moveVertex(int ringIdx, int vertexIdx, LngLat next) {
+  void moveVertex(
+    int ringIdx,
+    int vertexIdx,
+    LngLat next, {
+    Iterable<String> snapCandidates = const [],
+  }) {
     if (!state.isActive) return;
+    final snapped = snapToGeometry(next, snapCandidates);
+    final resolved = snapped?.point ?? next;
     final rings = _cloneRings(state.workingRings);
     final prev = rings[ringIdx][vertexIdx];
-    rings[ringIdx][vertexIdx] = next;
+    rings[ringIdx][vertexIdx] = resolved;
     final newStack = [
       ...state.undoStack,
-      Move(ringIdx: ringIdx, vertexIdx: vertexIdx, prev: prev, next: next),
+      Move(ringIdx: ringIdx, vertexIdx: vertexIdx, prev: prev, next: resolved),
     ];
     state = state.copyWith(
       workingRings: rings,
@@ -257,8 +265,7 @@ class GeometryEditorController extends Notifier<GeometryEditorState> {
       return jsonEncode({'type': 'Polygon', 'coordinates': rings});
     }
     if (state.workingRings.length == 1) {
-      final coords =
-          state.workingRings[0].map((v) => [v.lng, v.lat]).toList();
+      final coords = state.workingRings[0].map((v) => [v.lng, v.lat]).toList();
       return jsonEncode({'type': 'LineString', 'coordinates': coords});
     }
     final coords = state.workingRings
@@ -296,9 +303,8 @@ _ParsedGeometry _parseGeojson(String s) {
   }
   if (type == 'MultiLineString') {
     return _ParsedGeometry(
-      rings: coords
-          .map<List<LngLat>>((part) => _parseLine(part as List))
-          .toList(),
+      rings:
+          coords.map<List<LngLat>>((part) => _parseLine(part as List)).toList(),
       isClosed: false,
     );
   }

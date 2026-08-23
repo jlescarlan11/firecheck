@@ -6,7 +6,11 @@ import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/geo/centroid.dart';
 import 'package:firecheck/core/geo/polygon_bounds.dart';
 import 'package:firecheck/core/geo/polygon_validator.dart';
+import 'package:firecheck/core/geo/point_in_polygon.dart';
+import 'package:firecheck/core/geo/geometry_operations.dart';
 import 'package:firecheck/core/geo/polyline_midpoint.dart';
+import 'package:firecheck/core/forms/form_definition.dart';
+import 'package:firecheck/core/forms/form_definition_providers.dart';
 import 'package:firecheck/core/location/distance.dart';
 import 'package:firecheck/core/location/location_providers.dart';
 import 'package:firecheck/core/location/location_service.dart';
@@ -211,15 +215,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   Expanded(
                     child: Consumer(
                       builder: (context, ref2, _) {
-                        final isLocked =
-                            ref2.watch(isAssignmentLockedProvider);
+                        final isLocked = ref2.watch(isAssignmentLockedProvider);
                         return _pill(
                           sketchActive
                               ? l.addModePillActiveLabel
                               : l.newFeaturePlaceholder,
                           on: sketchActive,
-                          disabled:
-                              sketchActive || reshapeActive || isLocked,
+                          disabled: sketchActive || reshapeActive || isLocked,
                           key: const Key('map.add-feature-pill'),
                           onTap: _onPlusPressed,
                         );
@@ -242,9 +244,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 // would otherwise still complete in the background after the
                 // UI exits edit mode, producing surprising state transitions.
                 onCancel: editorState.saving ? null : _onReshapeCancel,
-                onUndo: () => ref
-                    .read(geometryEditorControllerProvider.notifier)
-                    .undo(),
+                onUndo: () =>
+                    ref.read(geometryEditorControllerProvider.notifier).undo(),
                 onSave: _onReshapeSave,
               ),
             ),
@@ -260,9 +261,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 undoEnabled: editorState.undoStack.isNotEmpty,
                 saveEnabled: _sketchFinishEnabled(editorState),
                 onCancel: _onSketchCancel,
-                onUndo: () => ref
-                    .read(geometryEditorControllerProvider.notifier)
-                    .undo(),
+                onUndo: () =>
+                    ref.read(geometryEditorControllerProvider.notifier).undo(),
                 onSave: _onSketchFinish,
               ),
             ),
@@ -314,25 +314,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final assignment = ref.read(currentAssignmentProvider).value;
     if (s.originalFeature == null || assignment == null) return;
 
-    // validateBuildingPolygon enforces polygon rules (closure, orientation,
-    // self-intersection). Polyline reshape doesn't have those rules; skip
-    // the check when the working geometry is open.
-    //
-    // Boundary handling: when the user provided an override reason at
-    // reshape entry (e.g. they're editing a building from far away), also
-    // skip the per-vertex boundary check. The user already justified the
-    // edit; blocking on boundary here would force them to cancel and start
-    // over even though they explicitly accepted responsibility. Pass the
-    // empty-string sentinel to validateBuildingPolygon, which short-circuits
-    // the boundary check the same way the morning fix for empty-coords
-    // Polygons did.
+    // Distance overrides never override the assignment's hard boundary.
     if (s.isClosed) {
-      final boundaryForCheck = s.overrideReason != null
-          ? ''
-          : assignment.boundaryPolygonGeojson;
       final res = validateBuildingPolygon(
         s.workingRings,
-        boundaryGeojson: boundaryForCheck,
+        boundaryGeojson: assignment.boundaryPolygonGeojson,
       );
       if (!res.valid) {
         final msg = _validationMessage(res.error!, l);
@@ -349,6 +335,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         );
         return;
       }
+    } else if (s.workingRings.expand((ring) => ring).any(
+          (vertex) => !pointInPolygonGeojson(
+            vertex.lat,
+            vertex.lng,
+            assignment.boundaryPolygonGeojson,
+          ),
+        )) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l.outsideBoundarySnackbar)),
+      );
+      return;
     }
 
     ctrl.markSaving(saving: true);
@@ -396,8 +393,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     return switch (err) {
       PolygonValidationError.tooFewVertices => l.reshapeErrorTooFewVertices,
       PolygonValidationError.zeroOrNegativeArea => l.reshapeErrorZeroArea,
-      PolygonValidationError.selfIntersection =>
-        l.reshapeErrorSelfIntersection,
+      PolygonValidationError.selfIntersection => l.reshapeErrorSelfIntersection,
       PolygonValidationError.vertexOutsideBoundary =>
         l.reshapeErrorOutsideBoundary,
       PolygonValidationError.zeroLengthEdge => l.reshapeErrorZeroLengthEdge,
@@ -507,9 +503,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final l = AppLocalizations.of(context)!;
     final state = ref.read(geometryEditorControllerProvider);
     final type = state.pendingFeatureType ?? '';
-    final vertexCount = state.workingRings.isNotEmpty
-        ? state.workingRings[0].length
-        : 0;
+    final vertexCount =
+        state.workingRings.isNotEmpty ? state.workingRings[0].length : 0;
 
     if (vertexCount == 0) {
       ref.read(geometryEditorControllerProvider.notifier).cancel();
@@ -553,20 +548,169 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Future<void> _handlePolygonLongPress(Feature feature) async {
     final l = AppLocalizations.of(context)!;
     final locked = ref.read(isAssignmentLockedProvider);
-    if (locked) {
+    final definition = ref.read(currentFormDefinitionProvider).valueOrNull ??
+        FormDefinition.legacy;
+    if (locked ||
+        feature.status == 'complete' ||
+        feature.status == 'demolished' ||
+        !definition.isFeatureEditable(feature.featureType)) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(l.reshapeLockedSnackbar)));
       return;
     }
     if (!mounted) return;
-    final action = await showReshapeActionSheet(context, locked: locked);
+    final action = await showReshapeActionSheet(
+      context,
+      locked: locked,
+      featureType: feature.featureType,
+    );
     if (!mounted || action == null) return;
     switch (action) {
       case ReshapeAction.openForm:
         await _handleFeatureTap(feature);
       case ReshapeAction.reshape:
         await _enterReshape(feature);
+      case ReshapeAction.split:
+        await _splitFeature(feature);
+      case ReshapeAction.merge:
+        await _mergeFeature(feature);
     }
+  }
+
+  Future<void> _splitFeature(Feature feature) async {
+    final ring = decodePolygonGeojson(feature.geometryGeojson);
+    if (ring == null || ring.length < 4 || !mounted) return;
+    var first = 0;
+    var second = ring.length ~/ 2;
+    final vertices = await showDialog<(int, int)>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Choose split vertices'),
+          content: Row(
+            children: [
+              Expanded(
+                child: DropdownButton<int>(
+                  key: const Key('split.first-vertex'),
+                  value: first,
+                  isExpanded: true,
+                  items: [
+                    for (var index = 0; index < ring.length; index++)
+                      DropdownMenuItem(
+                          value: index, child: Text('${index + 1}')),
+                  ],
+                  onChanged: (value) =>
+                      setDialogState(() => first = value ?? first),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: DropdownButton<int>(
+                  key: const Key('split.second-vertex'),
+                  value: second,
+                  isExpanded: true,
+                  items: [
+                    for (var index = 0; index < ring.length; index++)
+                      DropdownMenuItem(
+                          value: index, child: Text('${index + 1}')),
+                  ],
+                  onChanged: (value) =>
+                      setDialogState(() => second = value ?? second),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              key: const Key('split.confirm'),
+              onPressed: () => Navigator.pop(dialogContext, (first, second)),
+              child: const Text('Split'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (vertices == null || !mounted) return;
+    try {
+      final result = splitPolygonAtVertices(
+        feature.geometryGeojson,
+        firstVertex: vertices.$1,
+        secondVertex: vertices.$2,
+      );
+      await ref.read(reshapeRepositoryProvider).saveSplit(
+            revisionId: const Uuid().v4(),
+            source: feature,
+            firstGeojson: result.firstGeojson,
+            secondGeojson: result.secondGeojson,
+            editedBy: ref.read(currentUserIdProvider) ?? '',
+            editedAt: DateTime.now(),
+          );
+    } on Object catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not split polygon: $error')),
+        );
+      }
+    }
+  }
+
+  Future<void> _mergeFeature(Feature feature) async {
+    final features = ref.read(currentFeaturesProvider).valueOrNull ?? const [];
+    final candidates = <Feature>[];
+    for (final candidate in features) {
+      if (candidate.id == feature.id ||
+          candidate.assignmentId != feature.assignmentId ||
+          candidate.featureType != feature.featureType ||
+          candidate.status == 'complete' ||
+          candidate.status == 'demolished') {
+        continue;
+      }
+      try {
+        mergeAdjacentPolygons(
+            feature.geometryGeojson, candidate.geometryGeojson);
+        candidates.add(candidate);
+      } on FormatException {
+        // Only polygons sharing a complete edge are eligible.
+      }
+    }
+    if (!mounted) return;
+    if (candidates.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No editable adjacent polygon found')),
+      );
+      return;
+    }
+    final selected = await showDialog<Feature>(
+      context: context,
+      builder: (dialogContext) => SimpleDialog(
+        title: const Text('Merge with polygon'),
+        children: [
+          for (final candidate in candidates)
+            SimpleDialogOption(
+              key: Key('merge.candidate.${candidate.id}'),
+              onPressed: () => Navigator.pop(dialogContext, candidate),
+              child: Text(candidate.externalCode ?? candidate.id),
+            ),
+        ],
+      ),
+    );
+    if (selected == null) return;
+    final merged = mergeAdjacentPolygons(
+      feature.geometryGeojson,
+      selected.geometryGeojson,
+    );
+    await ref.read(reshapeRepositoryProvider).saveMerge(
+          revisionId: const Uuid().v4(),
+          primary: feature,
+          secondary: selected,
+          mergedGeojson: merged,
+          editedBy: ref.read(currentUserIdProvider) ?? '',
+          editedAt: DateTime.now(),
+        );
   }
 
   Future<void> _enterReshape(Feature feature) async {
@@ -677,6 +821,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final submission = await submissionRepo.ensureDraftForFeature(
       featureId: f.id,
       enumeratorId: userId,
+      formVersion:
+          ref.read(currentFormDefinitionProvider).valueOrNull?.version ??
+              'legacy-v1',
     );
 
     if (reason != null) {
@@ -764,9 +911,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     if (perm == LocationPermission.denied) {
       final allow = await _showLocationRationale();
       if (allow != true) {
-        analytics.track('map.recenter.tapped', properties: {
-          'outcome': 'permission_rationale_dismissed',
-        },);
+        analytics.track(
+          'map.recenter.tapped',
+          properties: {
+            'outcome': 'permission_rationale_dismissed',
+          },
+        );
         return;
       }
       perm = await locationService.requestPermission();
@@ -775,16 +925,22 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     if (perm == LocationPermission.deniedForever ||
         perm == LocationPermission.unableToDetermine) {
       _showSettingsShortcutSnackbar(locationService);
-      analytics.track('map.recenter.tapped', properties: {
-        'outcome': 'permission_denied_forever',
-      },);
+      analytics.track(
+        'map.recenter.tapped',
+        properties: {
+          'outcome': 'permission_denied_forever',
+        },
+      );
       return;
     }
 
     if (perm == LocationPermission.denied) {
-      analytics.track('map.recenter.tapped', properties: {
-        'outcome': 'permission_denied',
-      },);
+      analytics.track(
+        'map.recenter.tapped',
+        properties: {
+          'outcome': 'permission_denied',
+        },
+      );
       return;
     }
 
@@ -793,10 +949,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final cached = ref.read(currentPositionProvider).valueOrNull;
     if (cached != null && cached.accuracy <= 100.0) {
       _flyTo(cached, seq: seq);
-      analytics.track('map.recenter.tapped', properties: {
-        'outcome': 'recentered_from_cache',
-        'accuracy_m': cached.accuracy.round(),
-      },);
+      analytics.track(
+        'map.recenter.tapped',
+        properties: {
+          'outcome': 'recentered_from_cache',
+          'accuracy_m': cached.accuracy.round(),
+        },
+      );
       return;
     }
 
@@ -810,19 +969,25 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
       if (!mounted || seq != _cameraRequestSeq) return;
       _flyTo(accurate, seq: seq);
-      analytics.track('map.recenter.tapped', properties: {
-        'outcome': 'recentered_after_wait',
-        'accuracy_m': accurate.accuracy.round(),
-      },);
+      analytics.track(
+        'map.recenter.tapped',
+        properties: {
+          'outcome': 'recentered_after_wait',
+          'accuracy_m': accurate.accuracy.round(),
+        },
+      );
     } on TimeoutException {
       if (!mounted || seq != _cameraRequestSeq) return;
       final best = ref.read(currentPositionProvider).valueOrNull;
       if (best != null) _flyTo(best, seq: seq);
       _showLowAccuracySnackbar();
-      analytics.track('map.recenter.tapped', properties: {
-        'outcome': 'low_accuracy_timeout',
-        'accuracy_m': best?.accuracy.round(),
-      },);
+      analytics.track(
+        'map.recenter.tapped',
+        properties: {
+          'outcome': 'low_accuracy_timeout',
+          'accuracy_m': best?.accuracy.round(),
+        },
+      );
     } finally {
       if (mounted && seq == _cameraRequestSeq) {
         setState(() => _recenterState = RecenterButtonState.idle);
@@ -862,28 +1027,30 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final cached = ref.read(currentPositionProvider).valueOrNull;
     if (cached != null) return cached;
 
-    unawaited(showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => Dialog(
-        backgroundColor: Colors.white,
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-              const SizedBox(width: 14),
-              Text(l.gpsWaitingSnackbar),
-            ],
+    unawaited(
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => Dialog(
+          backgroundColor: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                const SizedBox(width: 14),
+                Text(l.gpsWaitingSnackbar),
+              ],
+            ),
           ),
         ),
       ),
-    ),);
+    );
 
     try {
       final pos = await ref

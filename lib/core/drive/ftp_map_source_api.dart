@@ -86,7 +86,8 @@ class FtpMapSourceApi implements DriveApi {
     try {
       final folder = _joinPath(credentials.remotePath, assignmentId);
       final entries = await c.list(folder);
-      final fileEntries = entries.where((e) => !e.isDir).toList(growable: false);
+      final fileEntries =
+          entries.where((e) => !e.isDir).toList(growable: false);
       final total = fileEntries.fold<int>(0, (a, e) => a + e.size);
       final files = <String, Uint8List>{};
       var downloaded = 0;
@@ -110,11 +111,19 @@ class FtpMapSourceApi implements DriveApi {
 
   @override
   Future<Uint8List?> fetchFieldRequirementsSidecar(String assignmentId) async {
+    return _fetchSidecar(assignmentId, 'field_requirements.txt');
+  }
+
+  @override
+  Future<Uint8List?> fetchFormDefinitionSidecar(String assignmentId) async {
+    return _fetchSidecar(assignmentId, 'form_definition.json');
+  }
+
+  Future<Uint8List?> _fetchSidecar(String assignmentId, String target) async {
     final c = await _FtpClient.connect(credentials);
     try {
       final folder = _joinPath(credentials.remotePath, assignmentId);
       final entries = await c.list(folder);
-      const target = 'field_requirements.txt';
       for (final e in entries) {
         if (!e.isDir && e.name.toLowerCase() == target) {
           return await c.retrieve(_joinPath(folder, e.name));

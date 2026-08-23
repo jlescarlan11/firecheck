@@ -12,32 +12,40 @@ class SubmissionRepository {
   Future<Submission> ensureDraftForFeature({
     required String featureId,
     required String enumeratorId,
+    String formVersion = 'legacy-v1',
   }) async {
     final existing = await (_db.select(_db.submissions)
-          ..where((t) =>
-              t.featureId.equals(featureId) & t.syncStatus.equals('draft'),)
+          ..where(
+            (t) => t.featureId.equals(featureId) & t.syncStatus.equals('draft'),
+          )
           ..orderBy([(t) => OrderingTerm.asc(t.createdAt)])
           ..limit(1))
         .getSingleOrNull();
     if (existing != null) return existing;
-    return _createDraft(featureId, enumeratorId);
+    return _createDraft(featureId, enumeratorId, formVersion);
   }
 
   /// Always creates a new draft. Used by the "+" tab.
   Future<Submission> createAdditionalSubmission({
     required String featureId,
     required String enumeratorId,
+    String formVersion = 'legacy-v1',
   }) {
-    return _createDraft(featureId, enumeratorId);
+    return _createDraft(featureId, enumeratorId, formVersion);
   }
 
-  Future<Submission> _createDraft(String featureId, String enumeratorId) async {
+  Future<Submission> _createDraft(
+    String featureId,
+    String enumeratorId,
+    String formVersion,
+  ) async {
     final now = DateTime.now();
     final id = const Uuid().v4();
     final companion = SubmissionsCompanion.insert(
       id: id,
       featureId: featureId,
       submittedBy: Value(enumeratorId),
+      formVersion: Value(formVersion),
       createdAt: now,
       updatedAt: now,
     );
@@ -63,10 +71,12 @@ class SubmissionRepository {
   Future<void> updateOverrideReason(String submissionId, String reason) {
     return (_db.update(_db.submissions)
           ..where((t) => t.id.equals(submissionId)))
-        .write(SubmissionsCompanion(
-      overrideReason: Value(reason),
-      updatedAt: Value(DateTime.now()),
-    ),);
+        .write(
+      SubmissionsCompanion(
+        overrideReason: Value(reason),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
   }
 
   Future<void> updateDoesNotExist(
@@ -75,19 +85,23 @@ class SubmissionRepository {
   }) {
     return (_db.update(_db.submissions)
           ..where((t) => t.id.equals(submissionId)))
-        .write(SubmissionsCompanion(
-      doesNotExist: Value(doesNotExist),
-      updatedAt: Value(DateTime.now()),
-    ),);
+        .write(
+      SubmissionsCompanion(
+        doesNotExist: Value(doesNotExist),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
   }
 
   Future<void> markStatus(String submissionId, String syncStatus) {
     return (_db.update(_db.submissions)
           ..where((t) => t.id.equals(submissionId)))
-        .write(SubmissionsCompanion(
-      syncStatus: Value(syncStatus),
-      updatedAt: Value(DateTime.now()),
-    ),);
+        .write(
+      SubmissionsCompanion(
+        syncStatus: Value(syncStatus),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
   }
 
   Future<void> deleteSubmission(String submissionId) {

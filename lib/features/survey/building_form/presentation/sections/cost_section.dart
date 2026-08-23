@@ -1,5 +1,7 @@
 import 'package:firecheck/core/forms/field_requirements.dart';
 import 'package:firecheck/core/forms/field_requirements_providers.dart';
+import 'package:firecheck/core/forms/form_definition.dart';
+import 'package:firecheck/core/forms/form_definition_providers.dart';
 import 'package:firecheck/core/forms/form_variant_providers.dart';
 import 'package:firecheck/core/forms/required_label.dart';
 import 'package:firecheck/features/survey/building_form/domain/building_form_applicability.dart';
@@ -73,6 +75,10 @@ class CostSection extends ConsumerWidget {
       return const SizedBox.shrink();
     }
     final reqs = ref.watch(fieldRequirementsProvider);
+    final definition = ref.watch(currentFormDefinitionProvider).valueOrNull ??
+        FormDefinition.legacy;
+    bool enabled(String field) =>
+        !disabled && definition.isFieldEditable('building.$field');
 
     return SectionCard(
       title: l.sectionCost,
@@ -80,11 +86,11 @@ class CostSection extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           IgnorePointer(
-            ignoring: disabled,
+            ignoring: !enabled('costIsExact'),
             child: RadioGroup<bool>(
               groupValue: state.costIsExact,
               onChanged: (v) {
-                if (disabled || v == null) return;
+                if (!enabled('costIsExact') || v == null) return;
                 if (v) {
                   notifier.update(
                     (s) => s.copyWith(
@@ -126,7 +132,7 @@ class CostSection extends ConsumerWidget {
           const SizedBox(height: 8),
           if (state.costIsExact)
             PersistentTextField(
-              enabled: !disabled,
+              enabled: enabled('costAmount'),
               value: state.costAmount?.toString() ?? '',
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
@@ -158,7 +164,7 @@ class CostSection extends ConsumerWidget {
                     child: Text(_rangeLabel(l, labelKey)),
                   ),
               ],
-              onChanged: disabled
+              onChanged: !enabled('costEstimateRange')
                   ? null
                   : (v) {
                       if (v == null) return;

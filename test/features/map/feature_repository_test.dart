@@ -20,8 +20,7 @@ void main() {
     expect(list, isEmpty);
   });
 
-  test('watchFeaturesForAssignment only returns matching assignment',
-      () async {
+  test('watchFeaturesForAssignment only returns matching assignment', () async {
     final now = DateTime.now();
     await db.into(db.features).insert(
           FeaturesCompanion.insert(
@@ -68,8 +67,7 @@ void main() {
       expect(f.status, 'unfilled');
     });
 
-    test('feature with a draft + building_attributes is in_progress',
-        () async {
+    test('feature with a draft + building_attributes is in_progress', () async {
       final now = DateTime.now();
       await db.into(db.features).insert(
             FeaturesCompanion.insert(
@@ -124,7 +122,7 @@ void main() {
       expect(f.status, 'complete');
     });
 
-    test('does_not_exist submission without attrs is in_progress', () async {
+    test('does_not_exist submission without attrs is demolished', () async {
       final now = DateTime.now();
       await db.into(db.features).insert(
             FeaturesCompanion.insert(
@@ -146,7 +144,7 @@ void main() {
           );
       await repo.markFeatureStatus('f1');
       final f = (await db.select(db.features).get()).single;
-      expect(f.status, 'in_progress');
+      expect(f.status, 'demolished');
     });
 
     test('road feature with a draft + road_attributes is in_progress',
@@ -207,7 +205,7 @@ void main() {
       expect(f.status, 'complete');
     });
 
-    test('road feature with doesNotExist submission is in_progress', () async {
+    test('road feature with doesNotExist submission is demolished', () async {
       final now = DateTime.now();
       await db.into(db.features).insert(
             FeaturesCompanion.insert(
@@ -229,7 +227,7 @@ void main() {
           );
       await repo.markFeatureStatus('f1');
       final f = (await db.select(db.features).get()).single;
-      expect(f.status, 'in_progress');
+      expect(f.status, 'demolished');
     });
   });
 }

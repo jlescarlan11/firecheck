@@ -62,17 +62,27 @@ class SupabaseSyncApi implements SyncApi {
     FeatureGeometryRevision revision,
   ) async {
     try {
-      await _client.rpc<dynamic>(
-        'update_feature_geometry',
-        params: {
-          'p_revision_id': revision.id,
-          'p_feature_id': revision.featureId,
-          'p_prev_geojson': revision.prevGeojson,
-          'p_new_geojson': revision.newGeojson,
-          'p_edited_at': revision.editedAt.toIso8601String(),
-          'p_override_reason': revision.overrideReason,
-        },
-      );
+      final params = {
+        'p_revision_id': revision.id,
+        'p_feature_id': revision.featureId,
+        'p_prev_geojson': revision.prevGeojson,
+        'p_new_geojson': revision.newGeojson,
+        'p_edited_at': revision.editedAt.toIso8601String(),
+        'p_override_reason': revision.overrideReason,
+      };
+      if (revision.operation == 'reshape') {
+        await _client.rpc<dynamic>('update_feature_geometry', params: params);
+      } else {
+        await _client.rpc<dynamic>(
+          'apply_feature_geometry_operation',
+          params: {
+            ...params,
+            'p_operation': revision.operation,
+            'p_related_feature_id': revision.relatedFeatureId,
+            'p_related_geojson': revision.relatedGeojson,
+          },
+        );
+      }
       return const Success();
     } on PostgrestException catch (e) {
       // P0001 + 'geometry_conflict' → server has newer geometry; permanent.

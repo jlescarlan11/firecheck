@@ -22,6 +22,10 @@ abstract interface class DriveApi {
   /// since the last import.
   Future<Uint8List?> fetchFieldRequirementsSidecar(String assignmentId);
 
+  /// Fetches the versioned structured form definition without downloading
+  /// the shapefiles again. Used by the delta-skip path.
+  Future<Uint8List?> fetchFormDefinitionSidecar(String assignmentId);
+
   /// Uploads [files] to /firecheck/{assignmentId}/ on Drive.
   ///
   /// Files whose name already exists in the assignment folder are

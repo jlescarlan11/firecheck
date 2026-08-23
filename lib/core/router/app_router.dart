@@ -7,6 +7,7 @@ import 'package:firecheck/features/assignment/presentation/get_maps_screen.dart'
 import 'package:firecheck/features/auth/presentation/auth_providers.dart';
 import 'package:firecheck/features/auth/presentation/sign_in_screen.dart';
 import 'package:firecheck/features/home/presentation/home_screen.dart';
+import 'package:firecheck/features/form_preview/presentation/form_preview_screen.dart';
 import 'package:firecheck/features/conflict_review/presentation/attribution_conflict_screen.dart';
 import 'package:firecheck/features/conflict_review/presentation/conflict_review_list_screen.dart';
 import 'package:firecheck/features/conflict_review/presentation/dedup_review_screen.dart';
@@ -89,6 +90,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const MapScreen(),
       ),
       GoRoute(
+        path: '/form-preview',
+        builder: (context, state) => const FormPreviewScreen(),
+      ),
+      GoRoute(
         path: '/feature/:featureId',
         builder: (context, state) => SubmissionDetailScreen(
           featureId: Uri.decodeComponent(state.pathParameters['featureId']!),
@@ -99,8 +104,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final featureId =
               Uri.decodeComponent(state.pathParameters['featureId']!);
-          final submissionId =
-              state.uri.queryParameters['submissionId'] ?? '';
+          final submissionId = state.uri.queryParameters['submissionId'] ?? '';
           return OlpResultScreen(
             submissionId: submissionId,
             featureId: featureId,

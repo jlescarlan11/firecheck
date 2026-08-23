@@ -8,6 +8,7 @@ void main() {
         id: id,
         featureId: 'f1',
         doesNotExist: false,
+        formVersion: 'legacy-v1',
         syncStatus: 'draft',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),

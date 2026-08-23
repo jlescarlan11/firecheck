@@ -1,5 +1,7 @@
 import 'package:firecheck/core/forms/field_requirements.dart';
 import 'package:firecheck/core/forms/field_requirements_providers.dart';
+import 'package:firecheck/core/forms/form_definition.dart';
+import 'package:firecheck/core/forms/form_definition_providers.dart';
 import 'package:firecheck/core/forms/form_variant_providers.dart';
 import 'package:firecheck/core/forms/required_label.dart';
 import 'package:firecheck/features/survey/building_form/domain/building_form_applicability.dart';
@@ -56,9 +58,11 @@ class ConstructionSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context)!;
-    final state = ref.watch(buildingFormNotifierProvider(
-      _key(submissionId, featureId),
-    ),);
+    final state = ref.watch(
+      buildingFormNotifierProvider(
+        _key(submissionId, featureId),
+      ),
+    );
     final notifier = ref.read(
       buildingFormNotifierProvider(_key(submissionId, featureId)).notifier,
     );
@@ -67,13 +71,17 @@ class ConstructionSection extends ConsumerWidget {
     final showWarning = storeys != null && storeys > 50;
     final hidden = ref.watch(currentFormVariantProvider).hideBuildingFields;
     final reqs = ref.watch(fieldRequirementsProvider);
+    final definition = ref.watch(currentFormDefinitionProvider).valueOrNull ??
+        FormDefinition.legacy;
+    bool enabled(String field) =>
+        !disabled && definition.isFieldEditable('building.$field');
     bool show(BuildingFormField f) => !hidden.contains(f);
 
     final children = <Widget>[];
     if (show(BuildingFormField.storeys)) {
       children.add(
         PersistentTextField(
-          enabled: !disabled,
+          enabled: enabled('storeys'),
           value: storeys?.toString() ?? '',
           keyboardType: TextInputType.number,
           labelText: requiredLabel(
@@ -108,7 +116,7 @@ class ConstructionSection extends ConsumerWidget {
                 child: Text(_materialLabel(l, labelKey)),
               ),
           ],
-          onChanged: disabled
+          onChanged: !enabled('material')
               ? null
               : (v) {
                   if (v == null) return;
