@@ -1,5 +1,6 @@
 import 'package:firecheck/core/geo/polygon_validator.dart' show LngLat;
 import 'package:firecheck/features/map/presentation/map_renderer.dart';
+import 'package:firecheck/features/map/presentation/map_providers.dart';
 import 'package:firecheck/features/map/geometry_editor/presentation/midpoint_handle.dart';
 import 'package:firecheck/features/map/geometry_editor/presentation/geometry_editor_providers.dart';
 import 'package:firecheck/features/map/geometry_editor/presentation/reshape_remove_confirm_dialog.dart';
@@ -16,6 +17,13 @@ class GeometryEditorOverlay extends ConsumerWidget {
     final state = ref.watch(geometryEditorControllerProvider);
     if (!state.isActive) return const SizedBox.shrink();
     final notifier = ref.read(geometryEditorControllerProvider.notifier);
+    final snapCandidates =
+        (ref.watch(currentFeaturesProvider).valueOrNull ?? const [])
+            .where((feature) =>
+                feature.id != state.originalFeature?.id &&
+                feature.featureType == 'building')
+            .map((feature) => feature.geometryGeojson)
+            .toList(growable: false);
 
     final children = <Widget>[];
 
@@ -56,34 +64,36 @@ class GeometryEditorOverlay extends ConsumerWidget {
           if (p.dy < minY) minY = p.dy;
           if (p.dy > maxY) maxY = p.dy;
         }
-        children.add(Positioned(
-          left: minX,
-          top: minY,
-          width: maxX - minX,
-          height: maxY - minY,
-          child: GestureDetector(
-            key: const Key('reshape.body'),
-            behavior: HitTestBehavior.translucent,
-            onPanUpdate: (d) {
-              // Translate the working geometry by the screen-delta converted
-              // to lng/lat. Use the centroid as the projection anchor so the
-              // delta is locally accurate across both small and large extents.
-              final centerLng = (minX + maxX) / 2;
-              final centerLat = (minY + maxY) / 2;
-              final origin = projection.lngLatFromScreenPoint(
-                Offset(centerLng, centerLat),
-              );
-              final moved = projection.lngLatFromScreenPoint(
-                Offset(centerLng + d.delta.dx, centerLat + d.delta.dy),
-              );
-              notifier.translateAll(
-                moved.lng - origin.lng,
-                moved.lat - origin.lat,
-              );
-            },
-            child: const SizedBox.expand(),
+        children.add(
+          Positioned(
+            left: minX,
+            top: minY,
+            width: maxX - minX,
+            height: maxY - minY,
+            child: GestureDetector(
+              key: const Key('reshape.body'),
+              behavior: HitTestBehavior.translucent,
+              onPanUpdate: (d) {
+                // Translate the working geometry by the screen-delta converted
+                // to lng/lat. Use the centroid as the projection anchor so the
+                // delta is locally accurate across both small and large extents.
+                final centerLng = (minX + maxX) / 2;
+                final centerLat = (minY + maxY) / 2;
+                final origin = projection.lngLatFromScreenPoint(
+                  Offset(centerLng, centerLat),
+                );
+                final moved = projection.lngLatFromScreenPoint(
+                  Offset(centerLng + d.delta.dx, centerLat + d.delta.dy),
+                );
+                notifier.translateAll(
+                  moved.lng - origin.lng,
+                  moved.lat - origin.lat,
+                );
+              },
+              child: const SizedBox.expand(),
+            ),
           ),
-        ),);
+        );
       }
     }
 
@@ -94,33 +104,40 @@ class GeometryEditorOverlay extends ConsumerWidget {
       for (var i = 0; i < ring.length; i++) {
         final v = ring[i];
         final p = projection.screenPointFromLngLat(v.lng, v.lat);
-        children.add(Positioned(
-          left: p.dx - 22,
-          top: p.dy - 22,
-          child: GestureDetector(
-            key: Key('reshape.vertex.$ringIdx.$i'),
-            onPanUpdate: (d) {
-              final cur = ref
-                  .read(geometryEditorControllerProvider)
-                  .workingRings[ringIdx];
-              if (i >= cur.length) return;
-              final cv = cur[i];
-              final screen = projection.screenPointFromLngLat(cv.lng, cv.lat);
-              final next = screen + d.delta;
-              final nextLngLat = projection.lngLatFromScreenPoint(next);
-              notifier.moveVertex(ringIdx, i, nextLngLat);
-            },
-            onLongPress: () async {
-              final confirm = await showReshapeRemoveConfirm(
-                context,
-                currentRingLength: ring.length,
-                minRingLength: state.isClosed ? 3 : 2,
-              );
-              if (confirm) notifier.removeVertex(ringIdx, i);
-            },
-            child: const VertexHandle(),
+        children.add(
+          Positioned(
+            left: p.dx - 22,
+            top: p.dy - 22,
+            child: GestureDetector(
+              key: Key('reshape.vertex.$ringIdx.$i'),
+              onPanUpdate: (d) {
+                final cur = ref
+                    .read(geometryEditorControllerProvider)
+                    .workingRings[ringIdx];
+                if (i >= cur.length) return;
+                final cv = cur[i];
+                final screen = projection.screenPointFromLngLat(cv.lng, cv.lat);
+                final next = screen + d.delta;
+                final nextLngLat = projection.lngLatFromScreenPoint(next);
+                notifier.moveVertex(
+                  ringIdx,
+                  i,
+                  nextLngLat,
+                  snapCandidates: snapCandidates,
+                );
+              },
+              onLongPress: () async {
+                final confirm = await showReshapeRemoveConfirm(
+                  context,
+                  currentRingLength: ring.length,
+                  minRingLength: state.isClosed ? 3 : 2,
+                );
+                if (confirm) notifier.removeVertex(ringIdx, i);
+              },
+              child: const VertexHandle(),
+            ),
           ),
-        ),);
+        );
       }
 
       // For closed shapes the midpoint wraps last→first; for open polylines
@@ -133,29 +150,36 @@ class GeometryEditorOverlay extends ConsumerWidget {
         final mLat = (a.lat + b.lat) / 2;
         final p = projection.screenPointFromLngLat(mLng, mLat);
         final insertAt = i + 1;
-        children.add(Positioned(
-          left: p.dx - 22,
-          top: p.dy - 22,
-          child: GestureDetector(
-            key: Key('reshape.midpoint.$ringIdx.$i'),
-            onPanStart: (d) {
-              // A2 gesture: insert immediately, then drag with same gesture.
-              notifier.addVertex(ringIdx, insertAt, (lng: mLng, lat: mLat));
-            },
-            onPanUpdate: (d) {
-              final cur = ref
-                  .read(geometryEditorControllerProvider)
-                  .workingRings[ringIdx];
-              if (insertAt >= cur.length) return;
-              final v = cur[insertAt];
-              final screen = projection.screenPointFromLngLat(v.lng, v.lat);
-              final next = screen + d.delta;
-              final nextLngLat = projection.lngLatFromScreenPoint(next);
-              notifier.moveVertex(ringIdx, insertAt, nextLngLat);
-            },
-            child: const MidpointHandle(),
+        children.add(
+          Positioned(
+            left: p.dx - 22,
+            top: p.dy - 22,
+            child: GestureDetector(
+              key: Key('reshape.midpoint.$ringIdx.$i'),
+              onPanStart: (d) {
+                // A2 gesture: insert immediately, then drag with same gesture.
+                notifier.addVertex(ringIdx, insertAt, (lng: mLng, lat: mLat));
+              },
+              onPanUpdate: (d) {
+                final cur = ref
+                    .read(geometryEditorControllerProvider)
+                    .workingRings[ringIdx];
+                if (insertAt >= cur.length) return;
+                final v = cur[insertAt];
+                final screen = projection.screenPointFromLngLat(v.lng, v.lat);
+                final next = screen + d.delta;
+                final nextLngLat = projection.lngLatFromScreenPoint(next);
+                notifier.moveVertex(
+                  ringIdx,
+                  insertAt,
+                  nextLngLat,
+                  snapCandidates: snapCandidates,
+                );
+              },
+              child: const MidpointHandle(),
+            ),
           ),
-        ),);
+        );
       }
     }
 

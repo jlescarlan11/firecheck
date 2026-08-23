@@ -7,12 +7,16 @@ class FeatureRepository {
 
   Stream<List<Feature>> watchFeaturesForAssignment(String assignmentId) {
     return (_db.select(_db.features)
-          ..where((t) => t.assignmentId.equals(assignmentId)))
+          ..where(
+            (t) =>
+                t.assignmentId.equals(assignmentId) & t.mergedIntoId.isNull(),
+          ))
         .watch();
   }
 
   Stream<List<Feature>> watchAllFeatures() {
-    return _db.select(_db.features).watch();
+    return (_db.select(_db.features)..where((t) => t.mergedIntoId.isNull()))
+        .watch();
   }
 
   Future<Feature?> getFeature(String id) {
@@ -40,7 +44,10 @@ class FeatureRepository {
           s.syncStatus == 'queued' ||
           s.syncStatus == 'uploaded',
     );
-    if (anyComplete) {
+    final demolished = submissions.any((s) => s.doesNotExist);
+    if (demolished) {
+      status = 'demolished';
+    } else if (anyComplete) {
       status = 'complete';
     } else if (submissions.isNotEmpty) {
       final attrIds = submissions.map((s) => s.id).toList();
@@ -56,7 +63,7 @@ class FeatureRepository {
             .get();
         anyAttrs = attrs.isNotEmpty;
       }
-      final anyInProgress = anyAttrs || submissions.any((s) => s.doesNotExist);
+      final anyInProgress = anyAttrs;
       if (anyInProgress) status = 'in_progress';
     }
 

@@ -35,8 +35,8 @@ class HomeScreen extends ConsumerWidget {
       if (next is ExportFailed) {
         final msg = switch (next.failure) {
           NoCompletedFeatures() => l.exportErrorNoFeatures,
-          WriteError()          => l.exportErrorWriteFailed,
-          ShareError()          => l.exportErrorShareFailed,
+          WriteError() => l.exportErrorWriteFailed,
+          ShareError() => l.exportErrorShareFailed,
         };
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(msg)),
@@ -51,7 +51,7 @@ class HomeScreen extends ConsumerWidget {
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (snap) => Padding(
           padding: const EdgeInsets.all(16),
-          child: Column(
+          child: ListView(
             children: [
               const UploadBanner(),
               const SizedBox(height: 8),
@@ -112,6 +112,11 @@ class HomeScreen extends ConsumerWidget {
                 title: l.getMaps,
                 subtitle: l.getMapsSubtitle,
                 onTap: () => context.push('/get-maps'),
+              ),
+              _ActionTile(
+                title: 'Preview form rules',
+                subtitle: 'Test skip logic and constraints before publishing',
+                onTap: () => context.push('/form-preview'),
               ),
               if (!isLocked)
                 _ActionTile(

@@ -1,6 +1,8 @@
 import 'package:firecheck/core/forms/field_requirements.dart';
 import 'package:firecheck/core/forms/field_requirements_providers.dart';
 import 'package:firecheck/core/forms/form_variant_providers.dart';
+import 'package:firecheck/core/forms/form_definition.dart';
+import 'package:firecheck/core/forms/form_definition_providers.dart';
 import 'package:firecheck/core/forms/required_label.dart';
 import 'package:firecheck/features/survey/building_form/domain/building_form_applicability.dart';
 import 'package:firecheck/features/survey/building_form/presentation/building_form_providers.dart';
@@ -55,9 +57,11 @@ class FireLoadSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context)!;
-    final state = ref.watch(buildingFormNotifierProvider(
-      _key(submissionId, featureId),
-    ),);
+    final state = ref.watch(
+      buildingFormNotifierProvider(
+        _key(submissionId, featureId),
+      ),
+    );
     final notifier = ref.read(
       buildingFormNotifierProvider(_key(submissionId, featureId)).notifier,
     );
@@ -67,6 +71,10 @@ class FireLoadSection extends ConsumerWidget {
       return const SizedBox.shrink();
     }
     final reqs = ref.watch(fieldRequirementsProvider);
+    final definition = ref.watch(currentFormDefinitionProvider).valueOrNull ??
+        FormDefinition.legacy;
+    final editable =
+        !disabled && definition.isFieldEditable('building.fireLoad');
 
     return SectionCard(
       title: requiredLabel(
@@ -82,7 +90,7 @@ class FireLoadSection extends ConsumerWidget {
             FilterChip(
               label: Text(_fireLoadLabel(l, labelKey)),
               selected: selected.contains(value),
-              onSelected: disabled
+              onSelected: !editable
                   ? null
                   : (v) {
                       final next = {...selected};

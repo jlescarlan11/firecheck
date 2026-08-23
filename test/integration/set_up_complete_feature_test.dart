@@ -24,7 +24,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('Set up at least one complete feature (Building)', (tester) async {
+  testWidgets('Set up at least one complete feature (Building)',
+      (tester) async {
     final db = AppDatabase.forTesting(NativeDatabase.memory());
     addTearDown(db.close);
 
@@ -50,7 +51,8 @@ void main() {
           mapRendererProvider.overrideWithValue(renderer),
           currentUserIdProvider.overrideWith((ref) => 'admin'),
           driveApiProvider.overrideWith((ref) => FakeDriveApi()),
-          shapefileImporterProvider.overrideWith((ref) => FakeShapefileImporter(db: db)),
+          shapefileImporterProvider
+              .overrideWith((ref) => FakeShapefileImporter(db: db)),
           storageCheckerProvider.overrideWithValue(const FakeStorageChecker()),
           validationFailureReporterProvider
               .overrideWithValue(FakeValidationFailureReporter()),
@@ -79,7 +81,8 @@ void main() {
     await tester.pumpAndSettle();
 
     // 5. Fill required fields in detail screen
-    await tester.enterText(find.byKey(const Key('field.building_name')), 'Test Building');
+    await tester.enterText(
+        find.byKey(const Key('field.building_name')), 'Test Building');
     await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const Key('field.ra_9514_type')));
@@ -95,7 +98,8 @@ void main() {
     await tester.tap(find.text('Concrete').last);
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byKey(const Key('field.cost_exact')), '1000000');
+    await tester.enterText(
+        find.byKey(const Key('field.cost_exact')), '1000000');
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Wood furniture'));
@@ -103,16 +107,18 @@ void main() {
 
     final features = await db.select(db.features).get();
     final featureId = features.first.id;
-    final submissions = await (db.select(db.submissions)..where((t) => t.featureId.equals(featureId))).get();
+    final submissions = await (db.select(db.submissions)
+          ..where((t) => t.featureId.equals(featureId)))
+        .get();
     final submissionId = submissions.first.id;
-    
+
     await db.into(db.photos).insert(PhotosCompanion.insert(
-      id: 'p1',
-      submissionId: submissionId,
-      localPath: '/tmp/test.jpg',
-      capturedAt: DateTime.now(),
-      createdAt: DateTime.now(),
-    ));
+          id: 'p1',
+          submissionId: submissionId,
+          localPath: '/tmp/test.jpg',
+          capturedAt: DateTime.now(),
+          createdAt: DateTime.now(),
+        ));
     await tester.pumpAndSettle();
 
     // 6. Tap Done
@@ -120,7 +126,9 @@ void main() {
     await tester.pumpAndSettle();
 
     // 7. Back on map, verify feature status is complete (green)
-    final updatedFeature = await (db.select(db.features)..where((t) => t.id.equals(featureId))).getSingle();
+    final updatedFeature = await (db.select(db.features)
+          ..where((t) => t.id.equals(featureId)))
+        .getSingle();
     expect(updatedFeature.status, 'complete');
     // skip reason: pending rewrite for sketch flow
   }, skip: true);
@@ -134,13 +142,21 @@ class FakeDriveApi implements DriveApi {
   @override
   Stream<DriveDownloadEvent> downloadShapefiles(String assignmentId) async* {}
   @override
-  Future<Uint8List?> fetchFieldRequirementsSidecar(String assignmentId) async => null;
+  Future<Uint8List?> fetchFieldRequirementsSidecar(String assignmentId) async =>
+      null;
+  @override
+  Future<Uint8List?> fetchFormDefinitionSidecar(String assignmentId) async =>
+      null;
   @override
   Future<({String folderPath, String folderUrl})> uploadAssignmentFiles({
     required String enumeratorId,
     required String assignmentId,
     required List<({String filename, Uint8List bytes})> files,
-  }) async => (folderPath: 'FieldData/admin/2026-05-15/', folderUrl: 'https://drive.google.com/...');
+  }) async =>
+      (
+        folderPath: 'FieldData/admin/2026-05-15/',
+        folderUrl: 'https://drive.google.com/...'
+      );
 }
 
 class FakeShapefileImporter implements ShapefileImporter {
@@ -152,8 +168,15 @@ class FakeShapefileImporter implements ShapefileImporter {
   @override
   get reprojector => throw UnimplementedError();
   @override
-  Future<ImportResult> importShapefiles(Map<String, Uint8List> files, String assignmentId, String driveModifiedTime, String driveFolderId, String enumeratorId, {String? assignmentDisplayName}) async {
-    return const ImportResult(buildingCount: 0, roadCount: 0, boundaryGeojson: '{}');
+  Future<ImportResult> importShapefiles(
+      Map<String, Uint8List> files,
+      String assignmentId,
+      String driveModifiedTime,
+      String driveFolderId,
+      String enumeratorId,
+      {String? assignmentDisplayName}) async {
+    return const ImportResult(
+        buildingCount: 0, roadCount: 0, boundaryGeojson: '{}');
   }
 }
 
@@ -173,4 +196,3 @@ class FakeValidationFailureReporter implements ValidationFailureReporter {
     String? fileChecksum,
   }) async {}
 }
-

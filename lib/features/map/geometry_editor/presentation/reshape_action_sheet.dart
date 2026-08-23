@@ -1,11 +1,12 @@
 import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
-enum ReshapeAction { openForm, reshape }
+enum ReshapeAction { openForm, reshape, split, merge }
 
 Future<ReshapeAction?> showReshapeActionSheet(
   BuildContext context, {
   required bool locked,
+  String? featureType,
 }) {
   final l = AppLocalizations.of(context)!;
   return showModalBottomSheet<ReshapeAction>(
@@ -22,6 +23,26 @@ Future<ReshapeAction?> showReshapeActionSheet(
               ),
               dense: true,
             ),
+            if (featureType == 'building') ...[
+              ListTile(
+                key: const Key('reshape.actionsheet.split'),
+                enabled: !locked,
+                leading: const Icon(Icons.call_split),
+                title: const Text('Split polygon'),
+                onTap: locked
+                    ? null
+                    : () => Navigator.of(ctx).pop(ReshapeAction.split),
+              ),
+              ListTile(
+                key: const Key('reshape.actionsheet.merge'),
+                enabled: !locked,
+                leading: const Icon(Icons.merge),
+                title: const Text('Merge with adjacent polygon'),
+                onTap: locked
+                    ? null
+                    : () => Navigator.of(ctx).pop(ReshapeAction.merge),
+              ),
+            ],
             ListTile(
               key: const Key('reshape.actionsheet.openForm'),
               leading: const Icon(Icons.edit_document),

@@ -21,6 +21,7 @@ class GeometrySignal {
     required this.vertexCount,
     this.areaSqMeters,
     this.lengthMeters,
+    this.distanceFromBoundaryMeters,
   });
 
   /// Signal for an unknown / unparseable geometry. Skip rules should treat
@@ -38,17 +39,27 @@ class GeometrySignal {
   /// Length in meters for polylines. Null for closed shapes and points.
   final double? lengthMeters;
 
+  /// Shortest distance to the assignment boundary. Zero means the geometry
+  /// touches the boundary; null means no assignment boundary was available.
+  final double? distanceFromBoundaryMeters;
+
   @override
   bool operator ==(Object other) =>
       other is GeometrySignal &&
       other.featureType == featureType &&
       other.vertexCount == vertexCount &&
       other.areaSqMeters == areaSqMeters &&
-      other.lengthMeters == lengthMeters;
+      other.lengthMeters == lengthMeters &&
+      other.distanceFromBoundaryMeters == distanceFromBoundaryMeters;
 
   @override
-  int get hashCode =>
-      Object.hash(featureType, vertexCount, areaSqMeters, lengthMeters);
+  int get hashCode => Object.hash(
+        featureType,
+        vertexCount,
+        areaSqMeters,
+        lengthMeters,
+        distanceFromBoundaryMeters,
+      );
 }
 
 /// Derives a [GeometrySignal] from a GeoJSON string. Returns
@@ -57,6 +68,7 @@ class GeometrySignal {
 GeometrySignal geometrySignalFromGeojson(
   String geojson, {
   required String featureType,
+  String? boundaryGeojson,
 }) {
   if (geojson.isEmpty) {
     return GeometrySignal(featureType: featureType, vertexCount: 0);
@@ -67,7 +79,12 @@ GeometrySignal geometrySignalFromGeojson(
     final coords = m['coordinates'] as List;
     switch (type) {
       case 'Point':
-        return GeometrySignal(featureType: featureType, vertexCount: 1);
+        return GeometrySignal(
+          featureType: featureType,
+          vertexCount: 1,
+          distanceFromBoundaryMeters:
+              _distanceFromBoundary(coords, boundaryGeojson),
+        );
       case 'LineString':
         final line = coords
             .map<List<double>>(
@@ -80,6 +97,8 @@ GeometrySignal geometrySignalFromGeojson(
           featureType: featureType,
           vertexCount: line.length,
           lengthMeters: _polylineMeters(line),
+          distanceFromBoundaryMeters:
+              _distanceFromBoundary(coords, boundaryGeojson),
         );
       case 'Polygon':
         final ring = (coords.first as List)
@@ -99,6 +118,8 @@ GeometrySignal geometrySignalFromGeojson(
           featureType: featureType,
           vertexCount: open.length,
           areaSqMeters: _polygonAreaSqMeters(open),
+          distanceFromBoundaryMeters:
+              _distanceFromBoundary(coords, boundaryGeojson),
         );
       default:
         return GeometrySignal(featureType: featureType, vertexCount: 0);
@@ -106,6 +127,71 @@ GeometrySignal geometrySignalFromGeojson(
   } catch (_) {
     return GeometrySignal(featureType: featureType, vertexCount: 0);
   }
+}
+
+double? _distanceFromBoundary(List<dynamic> coordinates, String? boundary) {
+  if (boundary == null || boundary.isEmpty) return null;
+  try {
+    final decoded = jsonDecode(boundary) as Map<String, dynamic>;
+    final rawBoundary =
+        (decoded['coordinates'] as List<dynamic>).first as List<dynamic>;
+    final boundaryRing = rawBoundary
+        .map((raw) => (raw as List<dynamic>)
+            .map((value) => (value as num).toDouble())
+            .toList())
+        .toList();
+    final featurePoints = <List<double>>[];
+    void collect(Object? raw) {
+      if (raw is! List<dynamic> || raw.isEmpty) return;
+      if (raw.length >= 2 && raw[0] is num && raw[1] is num) {
+        featurePoints.add([
+          (raw[0] as num).toDouble(),
+          (raw[1] as num).toDouble(),
+        ]);
+      } else {
+        for (final child in raw) {
+          collect(child);
+        }
+      }
+    }
+
+    collect(coordinates);
+    if (featurePoints.isEmpty || boundaryRing.length < 2) return null;
+    var minimum = double.infinity;
+    for (final point in featurePoints) {
+      for (var index = 0; index < boundaryRing.length - 1; index++) {
+        minimum = math.min(
+          minimum,
+          _pointSegmentMeters(
+              point, boundaryRing[index], boundaryRing[index + 1]),
+        );
+      }
+    }
+    return minimum;
+  } on Object {
+    return null;
+  }
+}
+
+double _pointSegmentMeters(
+    List<double> point, List<double> start, List<double> end) {
+  final meanLat = (point[1] + start[1] + end[1]) / 3;
+  final scale = math.cos(meanLat * math.pi / 180);
+  final px = point[0] * scale;
+  final py = point[1];
+  final ax = start[0] * scale;
+  final ay = start[1];
+  final bx = end[0] * scale;
+  final by = end[1];
+  final dx = bx - ax;
+  final dy = by - ay;
+  final lengthSquared = dx * dx + dy * dy;
+  final t = lengthSquared == 0
+      ? 0.0
+      : (((px - ax) * dx + (py - ay) * dy) / lengthSquared).clamp(0.0, 1.0);
+  final projectedLng = (ax + t * dx) / scale;
+  final projectedLat = ay + t * dy;
+  return _haversineMeters(point[1], point[0], projectedLat, projectedLng);
 }
 
 double _polylineMeters(List<List<double>> coords) {
@@ -127,8 +213,7 @@ double _polylineMeters(List<List<double>> coords) {
 /// geodesy dep. Returns absolute area in m².
 double _polygonAreaSqMeters(List<List<double>> ring) {
   if (ring.length < 3) return 0;
-  final mean =
-      ring.map((p) => p[1]).reduce((a, b) => a + b) / ring.length;
+  final mean = ring.map((p) => p[1]).reduce((a, b) => a + b) / ring.length;
   final cosLat = math.cos(mean * math.pi / 180.0);
   const metersPerDegreeLat = 111320.0;
   double sum = 0;

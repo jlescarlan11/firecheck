@@ -84,4 +84,30 @@ void main() {
     );
     expect(tile.enabled, isFalse);
   });
+
+  testWidgets('building action sheet exposes split and merge', (tester) async {
+    ReshapeAction? result;
+    await tester.pumpWidget(
+      _wrap(
+        Builder(
+          builder: (context) => TextButton(
+            onPressed: () async {
+              result = await showReshapeActionSheet(
+                context,
+                locked: false,
+                featureType: 'building',
+              );
+            },
+            child: const Text('open'),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('reshape.actionsheet.merge')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('reshape.actionsheet.split')));
+    await tester.pumpAndSettle();
+    expect(result, ReshapeAction.split);
+  });
 }

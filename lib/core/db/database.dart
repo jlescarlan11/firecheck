@@ -52,7 +52,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -79,7 +79,8 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(submissions, submissions.overrideReason);
           }
           if (from < 4) {
-            await m.addColumn(householdSurveys, householdSurveys.homeownerAcknowledged);
+            await m.addColumn(
+                householdSurveys, householdSurveys.homeownerAcknowledged);
             await m.addColumn(householdSurveys, householdSurveys.completedAt);
           }
           if (from < 5) {
@@ -170,6 +171,40 @@ class AppDatabase extends _$AppDatabase {
             }
             if (existing.contains('features')) {
               await m.addColumn(features, features.externalCode);
+            }
+          }
+          if (from < 15) {
+            final hasSubmissions = await customSelect(
+              "SELECT 1 FROM sqlite_master WHERE type='table' AND name='submissions'",
+            ).getSingleOrNull();
+            if (hasSubmissions != null) {
+              await m.addColumn(submissions, submissions.formVersion);
+            }
+          }
+          if (from < 16) {
+            final tables = (await customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' "
+              "AND name IN ('features', 'feature_geometry_revisions')",
+            ).get())
+                .map((row) => row.read<String>('name'))
+                .toSet();
+            if (tables.contains('features')) {
+              await m.addColumn(features, features.splitFromId);
+              await m.addColumn(features, features.mergedIntoId);
+            }
+            if (tables.contains('feature_geometry_revisions')) {
+              await m.addColumn(
+                featureGeometryRevisions,
+                featureGeometryRevisions.operation,
+              );
+              await m.addColumn(
+                featureGeometryRevisions,
+                featureGeometryRevisions.relatedFeatureId,
+              );
+              await m.addColumn(
+                featureGeometryRevisions,
+                featureGeometryRevisions.relatedGeojson,
+              );
             }
           }
         },

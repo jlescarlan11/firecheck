@@ -2,6 +2,8 @@ import 'package:drift/native.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/forms/form_variant.dart';
 import 'package:firecheck/core/forms/form_variant_providers.dart';
+import 'package:firecheck/core/forms/form_definition.dart';
+import 'package:firecheck/core/forms/form_definition_providers.dart';
 import 'package:firecheck/features/home/presentation/home_providers.dart';
 import 'package:firecheck/features/survey/road_form/presentation/sections/_road_features_section.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
@@ -27,6 +29,9 @@ void main() {
           // flight when the widget tree disposes.
           currentFormVariantProvider
               .overrideWithValue(FormVariant.defaultVariant),
+          currentFormDefinitionProvider.overrideWith(
+            (ref) async => FormDefinition.legacy,
+          ),
         ],
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -58,5 +63,7 @@ void main() {
     // would still be pending when _verifyInvariants() runs and the test
     // would fail with "A Timer is still pending".
     await tester.pump(const Duration(milliseconds: 600));
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 1));
   });
 }

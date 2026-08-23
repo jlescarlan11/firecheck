@@ -1,3 +1,9 @@
+import 'package:firecheck/core/forms/form_definition.dart';
+import 'package:firecheck/core/forms/form_definition_providers.dart';
+import 'package:firecheck/core/forms/constraint_hints.dart';
+import 'package:firecheck/core/forms/geometry_signal.dart';
+import 'package:firecheck/core/forms/geometry_signal_providers.dart';
+import 'package:firecheck/features/survey/building_form/domain/building_form_context.dart';
 import 'package:firecheck/features/survey/building_form/presentation/building_form_providers.dart';
 import 'package:firecheck/features/survey/building_form/presentation/remaining_questions_badge.dart';
 import 'package:firecheck/features/survey/building_form/presentation/sections/construction_section.dart';
@@ -36,6 +42,13 @@ class BuildingForm extends ConsumerWidget {
     final state = ref.watch(buildingFormNotifierProvider(key));
     final notifier = ref.read(buildingFormNotifierProvider(key).notifier);
     final disabled = state.doesNotExist || readOnly;
+    final definition = ref.watch(currentFormDefinitionProvider).valueOrNull ??
+        FormDefinition.legacy;
+    final geometry = ref.watch(geometrySignalProvider(featureId)).valueOrNull ??
+        GeometrySignal.empty;
+    final formContext = buildingFormContext(state, geometry);
+    bool visible(String section) =>
+        definition.isVisible('building.section.$section', formContext);
 
     return ListView(
       padding: const EdgeInsets.all(12),
@@ -43,13 +56,10 @@ class BuildingForm extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: disabled
-                ? const Color(0xFFFFF0F0)
-                : const Color(0xFFFFF8ED),
+            color: disabled ? const Color(0xFFFFF0F0) : const Color(0xFFFFF8ED),
             border: Border.all(
-              color: disabled
-                  ? const Color(0xFFF0A0A0)
-                  : const Color(0xFFF6D68E),
+              color:
+                  disabled ? const Color(0xFFF0A0A0) : const Color(0xFFF6D68E),
             ),
             borderRadius: BorderRadius.circular(6),
           ),
@@ -92,33 +102,39 @@ class BuildingForm extends ConsumerWidget {
           submissionId: submissionId,
           featureId: featureId,
         ),
+        ConstraintHints(definition: definition, fieldPrefix: 'building.'),
         const SizedBox(height: 12),
-        IdentitySection(
-          submissionId: submissionId,
-          featureId: featureId,
-          disabled: disabled,
-        ),
-        ConstructionSection(
-          submissionId: submissionId,
-          featureId: featureId,
-          disabled: disabled,
-        ),
-        CostSection(
-          submissionId: submissionId,
-          featureId: featureId,
-          disabled: disabled,
-        ),
-        FfFacilitiesSection(
-          submissionId: submissionId,
-          featureId: featureId,
-          disabled: disabled,
-        ),
-        FireLoadSection(
-          submissionId: submissionId,
-          featureId: featureId,
-          disabled: disabled,
-        ),
-        if (!state.doesNotExist)
+        if (visible('identity'))
+          IdentitySection(
+            submissionId: submissionId,
+            featureId: featureId,
+            disabled: disabled,
+          ),
+        if (visible('construction'))
+          ConstructionSection(
+            submissionId: submissionId,
+            featureId: featureId,
+            disabled: disabled,
+          ),
+        if (visible('cost'))
+          CostSection(
+            submissionId: submissionId,
+            featureId: featureId,
+            disabled: disabled,
+          ),
+        if (visible('fireFightingFacilities'))
+          FfFacilitiesSection(
+            submissionId: submissionId,
+            featureId: featureId,
+            disabled: disabled,
+          ),
+        if (visible('fireLoad'))
+          FireLoadSection(
+            submissionId: submissionId,
+            featureId: featureId,
+            disabled: disabled,
+          ),
+        if (!state.doesNotExist && visible('olp'))
           OlpSurveySection(
             submissionId: submissionId,
             featureId: featureId,

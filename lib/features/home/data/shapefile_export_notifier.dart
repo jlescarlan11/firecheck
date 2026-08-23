@@ -58,7 +58,7 @@ final shapefileExportNotifierProvider =
     assignmentId: assignmentId,
     exporter: ShapefileExporter(
       db: db,
-      supabaseUrl: dotenv.env['SUPABASE_URL'],
+      supabaseUrl: dotenv.isInitialized ? dotenv.env['SUPABASE_URL'] : null,
       shareFile: (path) async {
         await SharePlus.instance.share(ShareParams(files: [XFile(path)]));
       },

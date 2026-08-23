@@ -125,9 +125,8 @@ class FakeMapRenderer implements MapRenderer {
           return GestureDetector(
             key: Key('fake-map-feature-${f.id}'),
             onTap: sketchActive ? null : () => onFeatureTap(f),
-            onLongPress: sketchActive
-                ? null
-                : () => onPolygonLongPress?.call(f),
+            onLongPress:
+                sketchActive ? null : () => onPolygonLongPress?.call(f),
             child: Container(
               key: f.isNew
                   ? Key('fake-map-new-feature-${f.id}')
@@ -145,6 +144,8 @@ class FakeMapRenderer implements MapRenderer {
 
   Color _colorForStatus(String status) {
     switch (status) {
+      case 'demolished':
+        return const Color(0x66808080);
       case 'complete':
         return const Color(0x66276749);
       case 'in_progress':
@@ -314,9 +315,11 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
         if (_projectionReadyPending && _projection != null) {
           _projectionReadyPending = false;
           final s = Size(constraints.maxWidth, constraints.maxHeight);
-          unawaited(_projection!.refresh(s.width, s.height).then((_) {
-            if (mounted) widget.onProjectionReady?.call(_projection!);
-          }),);
+          unawaited(
+            _projection!.refresh(s.width, s.height).then((_) {
+              if (mounted) widget.onProjectionReady?.call(_projection!);
+            }),
+          );
         }
 
         return MapWidget(
@@ -779,7 +782,8 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
           geometry: point,
           iconColor: 0xFF3B82F6,
           iconSize: 1.2,
-          iconImage: 'marker', // built-in default; if missing, the dot is invisible
+          iconImage:
+              'marker', // built-in default; if missing, the dot is invisible
         ),
       );
     }
@@ -831,6 +835,8 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
 
   int _colorForStatus(String status) {
     switch (status) {
+      case 'demolished':
+        return 0xFF808080;
       case 'complete':
         return 0xFF276749;
       case 'in_progress':

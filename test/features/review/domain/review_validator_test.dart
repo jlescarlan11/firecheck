@@ -35,6 +35,7 @@ Submission _sub(
       featureId: featureId,
       submittedBy: 'u-1',
       doesNotExist: doesNotExist,
+      formVersion: 'legacy-v1',
       syncStatus: syncStatus,
       createdAt: DateTime(2026, 4, 27),
       updatedAt: DateTime(2026, 4, 27),
@@ -88,7 +89,9 @@ void main() {
     expect(state.canStartUpload, isFalse);
   });
 
-  test('feature with no submission → warning feature_has_no_finalized_submission', () {
+  test(
+      'feature with no submission → warning feature_has_no_finalized_submission',
+      () {
     final state = buildReviewState(
       ReviewSourceData(
         features: [_building('f-1')],
@@ -164,7 +167,8 @@ void main() {
     );
   });
 
-  test('residential building (type A) with no OLP → warning olp_residential', () {
+  test('residential building (type A) with no OLP → warning olp_residential',
+      () {
     final state = buildReviewState(
       ReviewSourceData(
         features: [_building('f-1')],
@@ -182,7 +186,8 @@ void main() {
     );
   });
 
-  test('cost_is_exact=true with null cost_amount → warning cost_amount_missing', () {
+  test('cost_is_exact=true with null cost_amount → warning cost_amount_missing',
+      () {
     final state = buildReviewState(
       ReviewSourceData(
         features: [_building('f-1')],
@@ -200,7 +205,9 @@ void main() {
     );
   });
 
-  test('does_not_exist=true short-circuits ra_9514_type/width blockers but keeps photo blocker', () {
+  test(
+      'does_not_exist=true short-circuits ra_9514_type/width blockers but keeps photo blocker',
+      () {
     final stateBuilding = buildReviewState(
       ReviewSourceData(
         features: [_building('f-1')],

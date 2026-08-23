@@ -15,6 +15,7 @@ class FakeDriveApi implements DriveApi {
     Exception? uploadError,
     ({String folderPath, String folderUrl})? uploadResult,
     Uint8List? fieldRequirementsSidecar,
+    Uint8List? formDefinitionSidecar,
   })  : _assignments = assignments ?? [],
         _totalSize = totalSize,
         _downloadComplete = downloadComplete,
@@ -24,7 +25,8 @@ class FakeDriveApi implements DriveApi {
         _downloadError = downloadError,
         _uploadError = uploadError,
         _uploadResult = uploadResult,
-        _fieldRequirementsSidecar = fieldRequirementsSidecar;
+        _fieldRequirementsSidecar = fieldRequirementsSidecar,
+        _formDefinitionSidecar = formDefinitionSidecar;
 
   final List<DriveAssignment> _assignments;
   final int _totalSize;
@@ -36,10 +38,12 @@ class FakeDriveApi implements DriveApi {
   final Exception? _uploadError;
   final ({String folderPath, String folderUrl})? _uploadResult;
   final Uint8List? _fieldRequirementsSidecar;
+  final Uint8List? _formDefinitionSidecar;
 
   /// True after [fetchFieldRequirementsSidecar] runs at least once. Lets
   /// notifier tests assert the delta-skip path still refreshes the sidecar.
   bool fetchFieldRequirementsSidecarCalled = false;
+  bool fetchFormDefinitionSidecarCalled = false;
 
   @override
   Future<List<DriveAssignment>> listAssignments() async {
@@ -76,6 +80,12 @@ class FakeDriveApi implements DriveApi {
   Future<Uint8List?> fetchFieldRequirementsSidecar(String assignmentId) async {
     fetchFieldRequirementsSidecarCalled = true;
     return _fieldRequirementsSidecar;
+  }
+
+  @override
+  Future<Uint8List?> fetchFormDefinitionSidecar(String assignmentId) async {
+    fetchFormDefinitionSidecarCalled = true;
+    return _formDefinitionSidecar;
   }
 
   @override

@@ -16,6 +16,18 @@ void main() {
       expect(s.vertexCount, 1);
     });
 
+    test('computes distance from the feature to the assignment boundary', () {
+      const feature = '{"type":"Point","coordinates":[0.5,0.5]}';
+      const boundary =
+          '{"type":"Polygon","coordinates":[[[0,0],[1,0],[1,1],[0,1],[0,0]]]}';
+      final signal = geometrySignalFromGeojson(
+        feature,
+        featureType: 'point',
+        boundaryGeojson: boundary,
+      );
+      expect(signal.distanceFromBoundaryMeters, closeTo(55660, 200));
+    });
+
     test('LineString → vertexCount + non-zero length', () {
       const g =
           '{"type":"LineString","coordinates":[[123.88,10.31],[123.89,10.31]]}';
@@ -27,7 +39,8 @@ void main() {
     });
 
     test('Polygon → vertexCount strips closing vertex + non-zero area', () {
-      const g = '{"type":"Polygon","coordinates":[[[0,0],[0.001,0],[0.001,0.001],[0,0.001],[0,0]]]}';
+      const g =
+          '{"type":"Polygon","coordinates":[[[0,0],[0.001,0],[0.001,0.001],[0,0.001],[0,0]]]}';
       final s = geometrySignalFromGeojson(g, featureType: 'building');
       expect(s.vertexCount, 4);
       expect(s.areaSqMeters, isNotNull);

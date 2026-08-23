@@ -7,8 +7,8 @@ class Features extends Table {
   TextColumn get featureType => text()(); // building|road
   TextColumn get geometryGeojson => text()();
   BoolColumn get isNew => boolean().withDefault(const Constant(false))();
-  TextColumn get status =>
-      text().withDefault(const Constant('unfilled'))(); // unfilled|in_progress|complete
+  TextColumn get status => text().withDefault(
+      const Constant('unfilled'))(); // unfilled|in_progress|complete
   // When the server's dedup-aware upload returns `dedup_pending`, the
   // UUID of the existing canonical row it might duplicate is stored here.
   // Non-null = "needs user review"; cleared once the user resolves.
@@ -17,6 +17,9 @@ class Features extends Table {
   // Original feat_id attribute from the shapefile DBF (e.g. "BLD-003").
   // Null for user-added features and for features predating this column.
   TextColumn get externalCode => text().nullable()();
+  // Lineage/tombstone metadata for offline-safe geometry operations.
+  TextColumn get splitFromId => text().nullable()();
+  TextColumn get mergedIntoId => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
 
   @override

@@ -40,6 +40,7 @@ class GoogleDriveApi implements DriveApi {
   // form-field validation without a rebuild (Issue #43). Matched by exact
   // filename, case-insensitive.
   static const _configFilename = 'field_requirements.txt';
+  static const _formDefinitionFilename = 'form_definition.json';
   // Optional sidecar that pins the canonical Supabase UUID for this assignment.
   // When present its content overrides the UUID-v5 derivation from the folder
   // name, so a human-readable folder like "cebu" can map to the exact UUID the
@@ -120,7 +121,8 @@ class GoogleDriveApi implements DriveApi {
         final dot = name.lastIndexOf('.');
         final ext = dot >= 0 ? name.substring(dot).toLowerCase() : '';
         final isShapefile = _shapefileExts.contains(ext);
-        final isConfig = lowerName == _configFilename;
+        final isConfig = lowerName == _configFilename ||
+            lowerName == _formDefinitionFilename;
         if (isShapefile || isConfig) {
           shapefiles[name] = f.id!;
           if (f.md5Checksum != null) md5s[name] = f.md5Checksum!;
@@ -173,14 +175,16 @@ class GoogleDriveApi implements DriveApi {
   @override
   Future<int> getTotalSize(String assignmentId) async {
     final sizes = _sizeCache[assignmentId];
-    if (sizes == null) throw const NetworkFailure('Assignment files not cached');
+    if (sizes == null)
+      throw const NetworkFailure('Assignment files not cached');
     return sizes.values.fold<int>(0, (acc, s) => acc + s);
   }
 
   @override
   Stream<DriveDownloadEvent> downloadShapefiles(String assignmentId) async* {
     final files = _fileCache[assignmentId];
-    if (files == null) throw const NetworkFailure('Assignment files not cached');
+    if (files == null)
+      throw const NetworkFailure('Assignment files not cached');
     final api = await _api();
 
     final sizes = _sizeCache[assignmentId] ?? {};
@@ -208,11 +212,23 @@ class GoogleDriveApi implements DriveApi {
 
   @override
   Future<Uint8List?> fetchFieldRequirementsSidecar(String assignmentId) async {
+    return _fetchSidecar(assignmentId, _configFilename);
+  }
+
+  @override
+  Future<Uint8List?> fetchFormDefinitionSidecar(String assignmentId) async {
+    return _fetchSidecar(assignmentId, _formDefinitionFilename);
+  }
+
+  Future<Uint8List?> _fetchSidecar(
+    String assignmentId,
+    String filename,
+  ) async {
     final files = _fileCache[assignmentId];
     if (files == null) return null;
     String? fileId;
     for (final entry in files.entries) {
-      if (entry.key.toLowerCase() == _configFilename) {
+      if (entry.key.toLowerCase() == filename) {
         fileId = entry.value;
         break;
       }
@@ -293,8 +309,7 @@ class GoogleDriveApi implements DriveApi {
 
     return (
       folderPath: 'firecheck/output/$assignmentId/',
-      folderUrl:
-          'https://drive.google.com/drive/folders/$assignmentFolderId',
+      folderUrl: 'https://drive.google.com/drive/folders/$assignmentFolderId',
     );
   }
 
