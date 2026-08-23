@@ -14,4 +14,11 @@ void main() {
     final c = FakeCameraService();
     expect(await c.capturePhoto(), isNull);
   });
+
+  test('FakeCameraService exposes a scripted lost-data result', () async {
+    final camera = FakeCameraService(scriptedLostPath: '/tmp/lost.jpg');
+
+    expect(await camera.recoverLostPhoto(), '/tmp/lost.jpg');
+    expect(camera.recoveryCallCount, 1);
+  });
 }

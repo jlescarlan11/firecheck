@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/features/home/presentation/home_providers.dart';
@@ -51,6 +52,11 @@ void main() {
 
   test('debounced write lands in road_attributes after 500ms', () async {
     const key = RoadFormKey(submissionId: 's1', featureId: 'f1');
+    final subscription = container.listen(
+      roadFormNotifierProvider(key),
+      (_, __) {},
+    );
+    addTearDown(subscription.close);
     container.read(roadFormNotifierProvider(key).notifier)
       ..update((s) => s.copyWith(roadName: 'Mango Ave'))
       ..update((s) => s.copyWith(widthMeters: 4.5));
@@ -83,5 +89,56 @@ void main() {
           ..where((t) => t.id.equals('s1')))
         .getSingle();
     expect(sub.doesNotExist, isTrue);
+  });
+
+  test('reopening hydrates every persisted road attribute', () async {
+    await db.into(db.roadAttributes).insert(
+          RoadAttributesCompanion.insert(
+            submissionId: 's1',
+            isBridge: const Value(true),
+            roadName: const Value('Mango Avenue'),
+            widthMeters: const Value(8),
+            roadFeaturesJson: const Value('["parking","others"]'),
+            othersDescription: const Value('Loading bay'),
+          ),
+        );
+
+    const key = RoadFormKey(submissionId: 's1', featureId: 'f1');
+    final notifier = container.read(roadFormNotifierProvider(key).notifier);
+    await notifier.flushNow();
+    final state = container.read(roadFormNotifierProvider(key));
+
+    expect(state.isBridge, isTrue);
+    expect(state.roadName, 'Mango Avenue');
+    expect(state.widthMeters, 8);
+    expect(state.roadFeatures, ['parking', 'others']);
+    expect(state.othersDescription, 'Loading bay');
+  });
+
+  test('editing one field after reopen preserves untouched persisted values',
+      () async {
+    await db.into(db.roadAttributes).insert(
+          RoadAttributesCompanion.insert(
+            submissionId: 's1',
+            roadName: const Value('Old name'),
+            widthMeters: const Value(8),
+            roadFeaturesJson: const Value('["parking"]'),
+          ),
+        );
+
+    const key = RoadFormKey(submissionId: 's1', featureId: 'f1');
+    final notifier = container.read(roadFormNotifierProvider(key).notifier)
+      ..update((s) => s.copyWith(roadName: 'New name'));
+    await notifier.flushNow();
+
+    final persisted = await RoadAttributesRepository(db).findBySubmission('s1');
+    expect(persisted?.roadName, 'New name');
+    expect(persisted?.widthMeters, 8);
+    expect(
+      RoadAttributesRepository.decodeStringList(
+        persisted!.roadFeaturesJson,
+      ),
+      ['parking'],
+    );
   });
 }

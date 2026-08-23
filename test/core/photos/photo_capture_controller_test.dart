@@ -4,8 +4,10 @@ import 'package:drift/native.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/photos/camera_service.dart';
 import 'package:firecheck/core/photos/image_processor.dart';
+import 'package:firecheck/core/photos/pending_photo_capture_store.dart';
 import 'package:firecheck/core/photos/photo_capture_controller.dart';
 import 'package:firecheck/core/photos/photo_storage_service.dart';
+import 'package:firecheck/core/security/secure_storage.dart';
 import 'package:firecheck/features/survey/photo_capture/data/photo_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
@@ -16,6 +18,7 @@ void main() {
   late AppDatabase db;
   late InMemoryPhotoStorage storage;
   late String srcPath;
+  late PendingPhotoCaptureStore pendingStore;
   const submissionId = 'sub-1';
 
   setUp(() async {
@@ -27,6 +30,7 @@ void main() {
 
     db = AppDatabase.forTesting(NativeDatabase.memory());
     storage = InMemoryPhotoStorage(root: tempDir.path);
+    pendingStore = PendingPhotoCaptureStore(InMemorySecureStorage());
 
     // Seed the FK chain so photos.submission_id has a valid parent. With
     // PRAGMA foreign_keys = ON, an orphan insert would fail.
@@ -65,8 +69,12 @@ void main() {
       processor: const ImageProcessor(),
       storage: storage,
       repo: PhotoRepository(db: db, storage: storage),
+      pendingStore: pendingStore,
     );
-    final id = await controller.capture(submissionId: submissionId);
+    final id = await controller.capture(
+      submissionId: submissionId,
+      featureId: 'feat-1',
+    );
     expect(id, isNotNull);
 
     final rows = await db.select(db.photos).get();
@@ -81,10 +89,59 @@ void main() {
       processor: const ImageProcessor(),
       storage: storage,
       repo: PhotoRepository(db: db, storage: storage),
+      pendingStore: pendingStore,
     );
-    final id = await controller.capture(submissionId: submissionId);
+    final id = await controller.capture(
+      submissionId: submissionId,
+      featureId: 'feat-1',
+    );
     expect(id, isNull);
     final rows = await db.select(db.photos).get();
     expect(rows, isEmpty);
+  });
+
+  test('recovers lost Android photo into pending submission', () async {
+    await pendingStore.save(
+      const PendingPhotoCapture(
+        submissionId: submissionId,
+        featureId: 'feat-1',
+      ),
+    );
+    final camera = FakeCameraService(scriptedLostPath: srcPath);
+    final controller = PhotoCaptureController(
+      camera: camera,
+      processor: const ImageProcessor(),
+      storage: storage,
+      repo: PhotoRepository(db: db, storage: storage),
+      pendingStore: pendingStore,
+    );
+
+    final recovered = await controller.recoverPendingCapture();
+
+    expect(recovered?.featureId, 'feat-1');
+    expect(recovered?.submissionId, submissionId);
+    expect(camera.recoveryCallCount, 1);
+    expect(await db.select(db.photos).get(), hasLength(1));
+    expect(await pendingStore.read(), isNull);
+  });
+
+  test('clears stale pending context when Android has no lost data', () async {
+    await pendingStore.save(
+      const PendingPhotoCapture(
+        submissionId: submissionId,
+        featureId: 'feat-1',
+      ),
+    );
+    final controller = PhotoCaptureController(
+      camera: FakeCameraService(),
+      processor: const ImageProcessor(),
+      storage: storage,
+      repo: PhotoRepository(db: db, storage: storage),
+      pendingStore: pendingStore,
+    );
+
+    expect(await controller.recoverPendingCapture(), isNull);
+    expect(await pendingStore.read(), isNull);
+    expect(await db.select(db.photos).get(), isEmpty);
   });
 }

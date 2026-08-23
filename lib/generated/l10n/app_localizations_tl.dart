@@ -448,7 +448,8 @@ class AppLocalizationsTl extends AppLocalizations {
   String get roadFeatureOthersDescription => 'Ilarawan ang iba pang katangian';
 
   @override
-  String get addModePillActiveLabel => 'Pindutin nang matagal para magdagdag';
+  String get addModePillActiveLabel =>
+      'I-tap ang mapa para magdagdag ng vertex';
 
   @override
   String get outsideBoundarySnackbar =>

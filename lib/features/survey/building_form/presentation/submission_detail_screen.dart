@@ -47,8 +47,13 @@ final _featureByIdProvider =
 });
 
 class SubmissionDetailScreen extends ConsumerStatefulWidget {
-  const SubmissionDetailScreen({required this.featureId, super.key});
+  const SubmissionDetailScreen({
+    required this.featureId,
+    this.initialSubmissionId,
+    super.key,
+  });
   final String featureId;
+  final String? initialSubmissionId;
 
   @override
   ConsumerState<SubmissionDetailScreen> createState() =>
@@ -58,6 +63,7 @@ class SubmissionDetailScreen extends ConsumerStatefulWidget {
 class _SubmissionDetailScreenState
     extends ConsumerState<SubmissionDetailScreen> {
   int _activeIndex = 0;
+  bool _selectedInitialSubmission = false;
 
   @override
   void initState() {
@@ -129,6 +135,15 @@ class _SubmissionDetailScreenState
             data: (submissions) {
               if (submissions.isEmpty) {
                 return const Center(child: CircularProgressIndicator());
+              }
+              if (!_selectedInitialSubmission) {
+                _selectedInitialSubmission = true;
+                final requested = widget.initialSubmissionId;
+                if (requested != null) {
+                  final requestedIndex =
+                      submissions.indexWhere((item) => item.id == requested);
+                  if (requestedIndex >= 0) _activeIndex = requestedIndex;
+                }
               }
               if (_activeIndex >= submissions.length) {
                 // Tab was removed while the screen was open; clamp.
@@ -232,7 +247,10 @@ class _SubmissionDetailScreenState
                           final locked = ref2.watch(isAssignmentLockedProvider);
                           return IgnorePointer(
                             ignoring: locked,
-                            child: PhotoStrip(submissionId: active.id),
+                            child: PhotoStrip(
+                              submissionId: active.id,
+                              featureId: widget.featureId,
+                            ),
                           );
                         },
                       ),

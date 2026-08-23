@@ -145,7 +145,7 @@
   "roadFeatureParking": "Paradahan",
   "roadFeatureOthers": "Iba pa",
   "roadFeatureOthersDescription": "Ilarawan ang iba pang katangian",
-  "addModePillActiveLabel": "Pindutin nang matagal para magdagdag",
+  "addModePillActiveLabel": "I-tap ang mapa para magdagdag ng vertex",
   "outsideBoundarySnackbar": "Wala sa loob ng iyong nasasakupang lugar",
   "pickFeatureTypeTitle": "Anong nakita mo?",
   "pickFeatureTypeBuilding": "Gusali",

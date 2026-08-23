@@ -138,7 +138,7 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
   /// Issue #46: when true, the validator demotes fatals to warnings so any
   /// available map data passes through to the importer, regardless of
   /// source, format, or predefined limitations.
-  bool unrestricted = false;
+  bool unrestricted = true;
 
   void setUnrestricted({required bool value}) {
     unrestricted = value;

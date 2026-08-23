@@ -97,6 +97,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/feature/:featureId',
         builder: (context, state) => SubmissionDetailScreen(
           featureId: Uri.decodeComponent(state.pathParameters['featureId']!),
+          initialSubmissionId: state.uri.queryParameters['submissionId'],
         ),
       ),
       GoRoute(

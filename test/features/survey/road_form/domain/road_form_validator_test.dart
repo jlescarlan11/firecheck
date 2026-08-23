@@ -1,3 +1,4 @@
+import 'package:firecheck/core/forms/field_requirements.dart';
 import 'package:firecheck/features/survey/road_form/domain/road_form_state.dart';
 import 'package:firecheck/features/survey/road_form/domain/road_form_validator.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -71,5 +72,17 @@ void main() {
       final r = validateRoadForm(s, 1);
       expect(r.isComplete, isTrue);
     });
+  });
+
+  test('photo remains required when a legacy sidecar marks it optional', () {
+    final requirements = parseFieldRequirements('road.photo = optional');
+    final result = validateRoadForm(
+      empty().copyWith(doesNotExist: true),
+      0,
+      requirements: requirements,
+    );
+
+    expect(result.fieldErrors, containsPair('photo', 'photo_required'));
+    expect(result.isComplete, isFalse);
   });
 }

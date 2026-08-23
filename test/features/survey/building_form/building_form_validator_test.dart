@@ -1,3 +1,4 @@
+import 'package:firecheck/core/forms/field_requirements.dart';
 import 'package:firecheck/features/survey/building_form/domain/building_form_state.dart';
 import 'package:firecheck/features/survey/building_form/domain/building_form_validator.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -78,5 +79,17 @@ void main() {
       final r = validateBuildingForm(s, 1);
       expect(r.isComplete, isTrue);
     });
+  });
+
+  test('photo remains required when a legacy sidecar marks it optional', () {
+    final requirements = parseFieldRequirements('building.photo = optional');
+    final result = validateBuildingForm(
+      empty().copyWith(doesNotExist: true),
+      0,
+      requirements: requirements,
+    );
+
+    expect(result.fieldErrors, containsPair('photo', 'photo_required'));
+    expect(result.isComplete, isFalse);
   });
 }

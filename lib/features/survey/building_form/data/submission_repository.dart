@@ -61,6 +61,12 @@ class SubmissionRepository {
         .watch();
   }
 
+  Future<Submission?> findById(String submissionId) {
+    return (_db.select(_db.submissions)
+          ..where((t) => t.id.equals(submissionId)))
+        .getSingleOrNull();
+  }
+
   Future<int> countSubmissionsForFeature(String featureId) async {
     final rows = await (_db.select(_db.submissions)
           ..where((t) => t.featureId.equals(featureId)))

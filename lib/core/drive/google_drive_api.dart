@@ -1,6 +1,6 @@
 // lib/core/drive/google_drive_api.dart
+import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:firecheck/core/drive/drive_api.dart';
 import 'package:firecheck/core/drive/drive_assignment.dart';
@@ -14,10 +14,17 @@ import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
 
 class GoogleDriveApi implements DriveApi {
-  GoogleDriveApi({required GoogleTokenSource googleAuthRepo})
-      : _googleAuthRepo = googleAuthRepo;
+  GoogleDriveApi({
+    required GoogleTokenSource googleAuthRepo,
+    this.requestTimeout = const Duration(seconds: 20),
+    this.inactivityTimeout = const Duration(seconds: 15),
+    @visibleForTesting this.apiOverride,
+  }) : _googleAuthRepo = googleAuthRepo;
 
   final GoogleTokenSource _googleAuthRepo;
+  final Duration requestTimeout;
+  final Duration inactivityTimeout;
+  final gdrive.DriveApi? apiOverride;
   static const _uuid = Uuid();
   static final _uuidPattern = RegExp(
     r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
@@ -48,7 +55,12 @@ class GoogleDriveApi implements DriveApi {
   static const _assignmentIdFilename = 'assignment_id.txt';
 
   Future<gdrive.DriveApi> _api() async {
-    final token = await _googleAuthRepo.getAccessToken();
+    final override = apiOverride;
+    if (override != null) return override;
+    final token = await _bounded(
+      _googleAuthRepo.getAccessToken(),
+      operation: 'Google authentication',
+    );
     final credentials = AccessCredentials(
       AccessToken(
         'Bearer',
@@ -61,16 +73,50 @@ class GoogleDriveApi implements DriveApi {
     return gdrive.DriveApi(authenticatedClient(http.Client(), credentials));
   }
 
+  Future<T> _bounded<T>(
+    Future<T> request, {
+    required String operation,
+  }) async {
+    try {
+      return await request.timeout(requestTimeout);
+    } on TimeoutException {
+      throw NetworkFailure(
+        '$operation timed out. Check your connection and try again.',
+      );
+    }
+  }
+
+  Stream<T> _boundedStream<T>(
+    Stream<T> stream, {
+    required String operation,
+  }) {
+    return stream.timeout(
+      inactivityTimeout,
+      onTimeout: (sink) {
+        sink
+          ..addError(
+            NetworkFailure(
+              '$operation stalled. Check your connection and try again.',
+            ),
+          )
+          ..close();
+      },
+    );
+  }
+
   @override
   Future<List<DriveAssignment>> listAssignments() async {
     final api = await _api();
 
     // Locate /firecheck folder
-    final firecheckResult = await api.files.list(
-      q: "name = 'firecheck' and mimeType = 'application/vnd.google-apps.folder'"
-          ' and trashed = false',
-      spaces: 'drive',
-      $fields: 'files(id)',
+    final firecheckResult = await _bounded(
+      api.files.list(
+        q: "name = 'firecheck' and mimeType = 'application/vnd.google-apps.folder'"
+            ' and trashed = false',
+        spaces: 'drive',
+        $fields: 'files(id)',
+      ),
+      operation: 'Drive folder lookup',
     );
     final firecheckId = firecheckResult.files?.firstOrNull?.id;
     if (firecheckId == null) return [];
@@ -81,21 +127,27 @@ class GoogleDriveApi implements DriveApi {
     //   firecheck/output/<assignment>/<enumerator files>   ← uploads write here
     // The split keeps the enumerator-written subtree (which the app owns
     // under drive.file scope) cleanly separate from the admin's base map.
-    final inputResult = await api.files.list(
-      q: "name = 'input' and mimeType = 'application/vnd.google-apps.folder'"
-          " and '$firecheckId' in parents and trashed = false",
-      spaces: 'drive',
-      $fields: 'files(id)',
+    final inputResult = await _bounded(
+      api.files.list(
+        q: "name = 'input' and mimeType = 'application/vnd.google-apps.folder'"
+            " and '$firecheckId' in parents and trashed = false",
+        spaces: 'drive',
+        $fields: 'files(id)',
+      ),
+      operation: 'Drive input-folder lookup',
     );
     final inputId = inputResult.files?.firstOrNull?.id;
     if (inputId == null) return [];
 
     // Assignments live directly inside firecheck/input/<assignment>/.
-    final foldersResult = await api.files.list(
-      q: "mimeType = 'application/vnd.google-apps.folder'"
-          " and '$inputId' in parents and trashed = false",
-      spaces: 'drive',
-      $fields: 'files(id,name,modifiedTime)',
+    final foldersResult = await _bounded(
+      api.files.list(
+        q: "mimeType = 'application/vnd.google-apps.folder'"
+            " and '$inputId' in parents and trashed = false",
+        spaces: 'drive',
+        $fields: 'files(id,name,modifiedTime)',
+      ),
+      operation: 'Drive assignment listing',
     );
 
     final assignments = <DriveAssignment>[];
@@ -106,10 +158,13 @@ class GoogleDriveApi implements DriveApi {
       if (folderModTime == null) continue;
 
       // Enumerate shapefile components (.shp, .dbf, .shx, .prj)
-      final filesResult = await api.files.list(
-        q: "'$folderId' in parents and trashed = false",
-        spaces: 'drive',
-        $fields: 'files(id,name,md5Checksum,size)',
+      final filesResult = await _bounded(
+        api.files.list(
+          q: "'$folderId' in parents and trashed = false",
+          spaces: 'drive',
+          $fields: 'files(id,name,md5Checksum,size)',
+        ),
+        operation: 'Drive assignment file listing',
       );
       final shapefiles = <String, String>{};
       final md5s = <String, String>{};
@@ -137,12 +192,18 @@ class GoogleDriveApi implements DriveApi {
       String? pinnedLocalId;
       if (assignmentIdFileId != null) {
         try {
-          final media = await api.files.get(
-            assignmentIdFileId,
-            downloadOptions: gdrive.DownloadOptions.fullMedia,
+          final media = await _bounded(
+            api.files.get(
+              assignmentIdFileId,
+              downloadOptions: gdrive.DownloadOptions.fullMedia,
+            ),
+            operation: 'Drive assignment metadata download',
           ) as gdrive.Media;
           final bytes = <int>[];
-          await for (final chunk in media.stream) {
+          await for (final chunk in _boundedStream(
+            media.stream,
+            operation: 'Drive assignment metadata download',
+          )) {
             bytes.addAll(chunk);
           }
           final raw = utf8.decode(bytes).trim().toLowerCase();
@@ -193,13 +254,19 @@ class GoogleDriveApi implements DriveApi {
     final result = <String, Uint8List>{};
 
     for (final entry in files.entries) {
-      final media = await api.files.get(
-        entry.value,
-        downloadOptions: gdrive.DownloadOptions.fullMedia,
+      final media = await _bounded(
+        api.files.get(
+          entry.value,
+          downloadOptions: gdrive.DownloadOptions.fullMedia,
+        ),
+        operation: 'Drive map download',
       ) as gdrive.Media;
 
       final chunks = <int>[];
-      await for (final chunk in media.stream) {
+      await for (final chunk in _boundedStream(
+        media.stream,
+        operation: 'Drive map download',
+      )) {
         chunks.addAll(chunk);
         downloaded += chunk.length;
         yield DriveDownloadProgress(downloaded: downloaded, total: total);
@@ -235,12 +302,18 @@ class GoogleDriveApi implements DriveApi {
     }
     if (fileId == null) return null;
     final api = await _api();
-    final media = await api.files.get(
-      fileId,
-      downloadOptions: gdrive.DownloadOptions.fullMedia,
+    final media = await _bounded(
+      api.files.get(
+        fileId,
+        downloadOptions: gdrive.DownloadOptions.fullMedia,
+      ),
+      operation: 'Drive requirements download',
     ) as gdrive.Media;
     final chunks = <int>[];
-    await for (final chunk in media.stream) {
+    await for (final chunk in _boundedStream(
+      media.stream,
+      operation: 'Drive requirements download',
+    )) {
       chunks.addAll(chunk);
     }
     return Uint8List.fromList(chunks);

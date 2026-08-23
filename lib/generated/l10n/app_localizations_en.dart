@@ -447,7 +447,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get roadFeatureOthersDescription => 'Describe other features';
 
   @override
-  String get addModePillActiveLabel => 'Tap & hold to drop pin';
+  String get addModePillActiveLabel => 'Tap the map to add a vertex';
 
   @override
   String get outsideBoundarySnackbar =>

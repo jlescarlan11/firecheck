@@ -8,8 +8,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class PhotoStrip extends ConsumerWidget {
-  const PhotoStrip({required this.submissionId, super.key});
+  const PhotoStrip({
+    required this.submissionId,
+    required this.featureId,
+    super.key,
+  });
   final String submissionId;
+  final String featureId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -72,7 +77,10 @@ class PhotoStrip extends ConsumerWidget {
                 separatorBuilder: (_, __) => const SizedBox(width: 6),
                 itemBuilder: (context, i) {
                   if (i == photos.length) {
-                    return _AddPhotoChip(submissionId: submissionId);
+                    return _AddPhotoChip(
+                      submissionId: submissionId,
+                      featureId: featureId,
+                    );
                   }
                   return _Thumbnail(photo: photos[i]);
                 },
@@ -86,8 +94,12 @@ class PhotoStrip extends ConsumerWidget {
 }
 
 class _AddPhotoChip extends ConsumerWidget {
-  const _AddPhotoChip({required this.submissionId});
+  const _AddPhotoChip({
+    required this.submissionId,
+    required this.featureId,
+  });
   final String submissionId;
+  final String featureId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -98,7 +110,7 @@ class _AddPhotoChip extends ConsumerWidget {
         try {
           await ref
               .read(photoCaptureControllerProvider)
-              .capture(submissionId: submissionId);
+              .capture(submissionId: submissionId, featureId: featureId);
         } on Object {
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(

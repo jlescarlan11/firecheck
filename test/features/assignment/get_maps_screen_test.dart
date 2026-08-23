@@ -27,6 +27,10 @@ void main() {
     await tester.pumpWidget(buildSubject(const Idle()));
     await tester.pump();
     expect(find.text('Start download'), findsOneWidget);
+    expect(
+      tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value,
+      isTrue,
+    );
   });
 
   testWidgets('DownloadingTiles shows progress + Cancel', (tester) async {

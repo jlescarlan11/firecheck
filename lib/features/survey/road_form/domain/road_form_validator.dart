@@ -20,8 +20,10 @@ ValidationResult validateRoadForm(
   final errors = <String, String>{};
   final warnings = <String>[];
 
-  if (requirements.isRequired(FieldRequirementKeys.roadPhoto) &&
-      photoCount < 1) {
+  // Photos are durable field evidence, not a configurable questionnaire
+  // field. Keep this aligned with the always-required photo strip and the
+  // review/upload gate even when a legacy sidecar marks road.photo optional.
+  if (photoCount < 1) {
     errors['photo'] = 'photo_required';
   }
 
