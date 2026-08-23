@@ -50,131 +50,129 @@ class HomeScreen extends ConsumerWidget {
       body: asyncSnap.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text(l.homeErrorPrefix(e.toString()))),
-        data: (snap) => SingleChildScrollView(
+        data: (snap) => ListView(
           padding: const EdgeInsets.all(16),
-          child: ListView(
-            children: [
-              const UploadBanner(),
-              const SizedBox(height: 8),
-              const ConflictBanner(),
-              const SizedBox(height: 8),
-              if (lock is Submitted)
-                SubmittedBanner(submittedAt: lock.submittedAt)
-              else
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l.assignmentProgress,
+          children: [
+            const UploadBanner(),
+            const SizedBox(height: 8),
+            const ConflictBanner(),
+            const SizedBox(height: 8),
+            if (lock is Submitted)
+              SubmittedBanner(submittedAt: lock.submittedAt)
+            else
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l.assignmentProgress,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        l.featuresLabel(
+                          snap.completedFeatures,
+                          snap.totalFeatures,
+                        ),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      LinearProgressIndicator(
+                        value: snap.totalFeatures == 0
+                            ? 0
+                            : snap.completedFeatures / snap.totalFeatures,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        l.jobCountsLabel(
+                          snap.queuedJobs,
+                          snap.failedJobs,
+                          snap.deadJobs,
+                        ),
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            const SizedBox(height: 12),
+            _ActionTile(
+              title: l.gatherData,
+              subtitle: l.gatherDataSubtitle,
+              onTap: () => context.push('/map'),
+            ),
+            _ActionTile(
+              title: l.getMaps,
+              subtitle: l.getMapsSubtitle,
+              onTap: () => context.push('/get-maps'),
+            ),
+            _ActionTile(
+              title: 'Preview form rules',
+              subtitle: 'Test skip logic and constraints before publishing',
+              onTap: () => context.push('/form-preview'),
+            ),
+            if (!isLocked)
+              _ActionTile(
+                title: l.uploadData,
+                subtitle: l.uploadDataSubtitle,
+                onTap: () => _onUploadDataTap(context, ref, l),
+              ),
+            _ActionTile(
+              title: switch (exportState) {
+                ExportValidating() => l.exportValidating,
+                ExportExporting() => l.exportShapefileExporting,
+                _ => l.exportShapefile,
+              },
+              subtitle: l.exportShapefileSubtitle,
+              trailing: isBusy
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.chevron_right),
+              onTap: (snap.completedFeatures == 0 || isBusy)
+                  ? null
+                  : () => ref
+                      .read(shapefileExportNotifierProvider.notifier)
+                      .export(),
+            ),
+            if (exportState is ExportValidationFailed)
+              ...exportState.errors.map(
+                (e) => Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 2,
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        size: 14,
+                        color: Colors.red,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          _validationErrorMessage(l, e),
                           style: const TextStyle(
+                            color: Colors.red,
                             fontSize: 12,
-                            color: Colors.grey,
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          l.featuresLabel(
-                            snap.completedFeatures,
-                            snap.totalFeatures,
-                          ),
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        LinearProgressIndicator(
-                          value: snap.totalFeatures == 0
-                              ? 0
-                              : snap.completedFeatures / snap.totalFeatures,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          l.jobCountsLabel(
-                            snap.queuedJobs,
-                            snap.failedJobs,
-                            snap.deadJobs,
-                          ),
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
-              const SizedBox(height: 12),
-              _ActionTile(
-                title: l.gatherData,
-                subtitle: l.gatherDataSubtitle,
-                onTap: () => context.push('/map'),
               ),
-              _ActionTile(
-                title: l.getMaps,
-                subtitle: l.getMapsSubtitle,
-                onTap: () => context.push('/get-maps'),
-              ),
-              _ActionTile(
-                title: 'Preview form rules',
-                subtitle: 'Test skip logic and constraints before publishing',
-                onTap: () => context.push('/form-preview'),
-              ),
-              if (!isLocked)
-                _ActionTile(
-                  title: l.uploadData,
-                  subtitle: l.uploadDataSubtitle,
-                  onTap: () => _onUploadDataTap(context, ref, l),
-                ),
-              _ActionTile(
-                title: switch (exportState) {
-                  ExportValidating() => l.exportValidating,
-                  ExportExporting() => l.exportShapefileExporting,
-                  _ => l.exportShapefile,
-                },
-                subtitle: l.exportShapefileSubtitle,
-                trailing: isBusy
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.chevron_right),
-                onTap: (snap.completedFeatures == 0 || isBusy)
-                    ? null
-                    : () => ref
-                        .read(shapefileExportNotifierProvider.notifier)
-                        .export(),
-              ),
-              if (exportState is ExportValidationFailed)
-                ...exportState.errors.map(
-                  (e) => Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 2,
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.error_outline,
-                          size: 14,
-                          color: Colors.red,
-                        ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            _validationErrorMessage(l, e),
-                            style: const TextStyle(
-                              color: Colors.red,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-            ],
-          ),
+          ],
         ),
       ),
       bottomNavigationBar: const AppBottomNav(current: AppTab.home),
