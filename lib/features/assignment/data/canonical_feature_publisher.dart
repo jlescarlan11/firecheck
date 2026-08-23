@@ -1,5 +1,4 @@
 // lib/features/assignment/data/canonical_feature_publisher.dart
-import 'package:drift/drift.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 

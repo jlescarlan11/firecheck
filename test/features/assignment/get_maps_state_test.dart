@@ -1,5 +1,4 @@
 // test/features/assignment/get_maps_state_test.dart
-import 'package:firecheck/core/drive/drive_assignment.dart';
 import 'package:firecheck/core/errors/failure.dart';
 import 'package:firecheck/features/assignment/domain/get_maps_state.dart';
 import 'package:flutter_test/flutter_test.dart';

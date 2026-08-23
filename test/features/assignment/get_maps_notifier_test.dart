@@ -21,7 +21,6 @@ import 'package:firecheck/features/assignment/presentation/assignment_providers.
 import 'package:firecheck/features/auth/data/fake_google_auth_repository.dart';
 import 'package:firecheck/core/sync/shapefile/shapefile_validator.dart';
 import 'package:firecheck/core/sync/shapefile/validation/shapefile_validation_rule.dart';
-import 'package:firecheck/core/sync/shapefile/validation/validation_report.dart';
 import 'package:firecheck/core/validation/validation_failure_reporter.dart';
 import 'package:firecheck/features/map/data/feature_repository.dart';
 import 'package:flutter_test/flutter_test.dart';

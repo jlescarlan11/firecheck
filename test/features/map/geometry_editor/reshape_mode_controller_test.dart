@@ -3,7 +3,6 @@ import 'package:firecheck/core/geo/polygon_validator.dart' show LngLat;
 import 'package:firecheck/features/map/geometry_editor/domain/geometry_editor_state.dart';
 import 'package:firecheck/features/map/geometry_editor/domain/reshape_op.dart';
 import 'package:firecheck/features/map/geometry_editor/domain/sketch_validation_error.dart';
-import 'package:firecheck/features/map/geometry_editor/presentation/geometry_editor_controller.dart';
 import 'package:firecheck/features/map/geometry_editor/presentation/geometry_editor_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';

@@ -54,11 +54,20 @@ final shapefileExportNotifierProvider =
   final assignmentAsync = ref.watch(currentAssignmentProvider);
   final assignmentId = assignmentAsync.value?.id ?? '';
 
+  // dotenv may not be initialized in widget tests; degrade to null URL
+  // (photo URL rewriting is skipped when null).
+  String? supabaseUrl;
+  try {
+    supabaseUrl = dotenv.env['SUPABASE_URL'];
+  } on Error {
+    supabaseUrl = null;
+  }
+
   return ShapefileExportNotifier(
     assignmentId: assignmentId,
     exporter: ShapefileExporter(
       db: db,
-      supabaseUrl: dotenv.env['SUPABASE_URL'],
+      supabaseUrl: supabaseUrl,
       shareFile: (path) async {
         await SharePlus.instance.share(ShareParams(files: [XFile(path)]));
       },

@@ -1,3 +1,4 @@
+import 'package:firecheck/core/navigation/app_bottom_nav.dart';
 import 'package:firecheck/core/security/biometric_gate_provider.dart';
 import 'package:firecheck/core/sync/shapefile/export/export_failure.dart';
 import 'package:firecheck/core/sync/shapefile/export/export_validation_result.dart';
@@ -45,11 +46,11 @@ class HomeScreen extends ConsumerWidget {
     });
 
     return Scaffold(
-      appBar: AppBar(title: const Text('FireCheck')),
+      appBar: AppBar(title: Text(l.appTitle)),
       body: asyncSnap.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
-        data: (snap) => Padding(
+        error: (e, _) => Center(child: Text(l.homeErrorPrefix(e.toString()))),
+        data: (snap) => SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
@@ -171,6 +172,7 @@ class HomeScreen extends ConsumerWidget {
           ),
         ),
       ),
+      bottomNavigationBar: const AppBottomNav(current: AppTab.home),
     );
   }
 

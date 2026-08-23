@@ -26,10 +26,6 @@
   "getMapsSubtitle": "Download your assignment",
   "uploadData": "Upload Data",
   "uploadDataSubtitle": "Send completed work",
-  "comingInPhase": "Coming in {phase}",
-  "@comingInPhase": {
-    "placeholders": {"phase": {"type": "String"}}
-  },
   "getMapsTitle": "Get Maps",
   "getMapsExplainer": "We'll download about {size} of map data and {count} building records. Works best on wifi.",
   "@getMapsExplainer": {
@@ -82,37 +78,17 @@
   "@featureTooFarBody": {
     "placeholders": {"distance": {"type": "int"}}
   },
-  "continueAnyway": "Continue anyway",
   "metersAway": "{distance} m away",
   "@metersAway": {
     "placeholders": {"distance": {"type": "int"}}
   },
   "phase2FormNote": "Form coming in Phase 2 — the full attribution form will open from this sheet.",
   "close": "Close",
-  "statusUnfilled": "Unfilled",
-  "statusInProgress": "In progress",
-  "statusComplete": "Complete",
-  "statusNew": "New",
   "featureTypeBuilding": "Building",
   "featureTypeRoad": "Road",
   "submissionDetailTitleBuilding": "Building",
   "submissionDetailTitleRoad": "Road",
-  "tabStructure": "Structure {n}",
-  "@tabStructure": {
-    "placeholders": {"n": {"type": "int"}}
-  },
   "tabSoftCapTooltip": "This polygon already has 5 structures",
-  "savedAgo": "✓ Saved {seconds} seconds ago · {connectivity}",
-  "@savedAgo": {
-    "placeholders": {
-      "seconds": {"type": "int"},
-      "connectivity": {"type": "String"}
-    }
-  },
-  "savedJustNow": "✓ Saved just now · {connectivity}",
-  "@savedJustNow": {
-    "placeholders": {"connectivity": {"type": "String"}}
-  },
   "photosLabel": "Photos",
   "photosRequiredBadge": "0 / 1 required",
   "photosCompleteBadge": "1+ ✓",
@@ -184,7 +160,6 @@
   "storeysWarningTooTall": "That's very tall — confirm?",
   "errorRequiredField": "Required",
   "cameraPermissionSnackbar": "Enable camera permission to take photos",
-  "savedFailedSnackbar": "Couldn't save. Retrying…",
   "gpsWaitingSnackbar": "Waiting for GPS fix…",
   "sectionRoadIdentity": "Road identity",
   "sectionRoadDimensions": "Dimensions",
@@ -198,7 +173,6 @@
   "roadFeatureParking": "Parking",
   "roadFeatureOthers": "Others",
   "roadFeatureOthersDescription": "Describe other features",
-  "addModeBannerHint": "Long-press the map to add a building or road. Tap the pill again to cancel.",
   "addModePillActiveLabel": "Tap & hold to drop pin",
   "outsideBoundarySnackbar": "Long-press is outside your assignment area",
   "pickFeatureTypeTitle": "What did you find?",
@@ -323,7 +297,6 @@
   "@summaryPhotosPending": { "placeholders": { "n": {"type": "int"} } },
   "failedJobsTitle": "Failed ({n})",
   "@failedJobsTitle": { "placeholders": { "n": {"type": "int"} } },
-  "retryButton": "Retry",
   "retryAllButton": "Retry all",
   "validationBlockersTitle": "Must fix before upload ({n})",
   "@validationBlockersTitle": { "placeholders": { "n": {"type": "int"} } },
@@ -340,7 +313,6 @@
   "startUploadDisabledTooltip": "Fix the blockers above first",
   "uploadProgressLabel": "Uploading {done} of {total} items…",
   "@uploadProgressLabel": { "placeholders": { "done": {"type": "int"}, "total": {"type": "int"} } },
-  "uploadProgressShowDetails": "Show details",
   "uploadCompleteSuccess": "All {n} items uploaded.",
   "@uploadCompleteSuccess": { "placeholders": { "n": {"type": "int"} } },
   "uploadCompleteWithFailures": "{n} items failed. Check Failed section.",
@@ -433,5 +405,20 @@
       "type": {"type": "String"}
     }
   },
-  "sketchBannerFinish": "Finish"
+  "sketchBannerFinish": "Finish",
+  "navHome": "Home",
+  "navAccount": "Account",
+  "accountTitle": "Account",
+  "accountSignOut": "Sign out",
+  "accountSignOutConfirmTitle": "Sign out?",
+  "accountSignOutConfirmBody": "You'll need to sign in again to continue.",
+  "accountSignOutCancel": "Cancel",
+  "accountSignOutError": "Couldn't sign out. Try again.",
+  "appTitle": "FireCheck",
+  "homeErrorPrefix": "Error: {error}",
+  "@homeErrorPrefix": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  }
 }

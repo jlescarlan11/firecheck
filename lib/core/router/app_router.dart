@@ -2,6 +2,7 @@
 import 'package:firecheck/features/assignment/presentation/assignment_closed_blocker.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_lock_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_lock_state.dart';
+import 'package:firecheck/features/account/presentation/account_screen.dart';
 import 'package:firecheck/features/assignment/presentation/get_maps_screen.dart';
 import 'package:firecheck/features/auth/presentation/auth_providers.dart';
 import 'package:firecheck/features/auth/presentation/sign_in_screen.dart';
@@ -74,6 +75,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             return const HomeScreen();
           },
         ),
+      ),
+      GoRoute(
+        path: '/account',
+        builder: (context, state) => const AccountScreen(),
       ),
       GoRoute(
         path: '/get-maps',
