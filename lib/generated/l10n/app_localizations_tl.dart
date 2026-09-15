@@ -1362,10 +1362,10 @@ class AppLocalizationsTl extends AppLocalizations {
 
   @override
   String get designReviewBody =>
-      'Suriin ang mga natapos na survey bago i-upload.';
+      'Suriin lamang ang mga na-edit o bagong idinagdag na feature bago i-upload.';
 
   @override
-  String get designSummaryTitle => 'Buod ng takda';
+  String get designSummaryTitle => 'Buod ng mga na-edit na feature';
 
   @override
   String get designActivityTitle => 'Gawain ng pangkat';

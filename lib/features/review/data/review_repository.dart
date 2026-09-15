@@ -48,10 +48,36 @@ class ReviewRepository {
   }
 
   Future<ReviewSourceData> _snapshot(String assignmentId) async {
-    final features = await (_db.select(_db.features)
-          ..where((t) =>
-              t.assignmentId.equals(assignmentId) & t.mergedIntoId.isNull()))
-        .get();
+    // Opening a feature creates an empty draft. Only fetch features with
+    // saved fieldwork (or newly added geometry), before loading related rows
+    // and building validation widgets for potentially thousands of features.
+    final features = await _db.customSelect(
+      ''' 
+      SELECT f.* FROM features f
+      WHERE f.assignment_id = ? AND f.merged_into_id IS NULL
+      AND (f.is_new = 1 OR EXISTS (
+        SELECT 1 FROM submissions s WHERE s.feature_id = f.id
+        AND (
+          s.sync_status != 'draft' OR s.does_not_exist = 1
+          OR s.remarks IS NOT NULL OR s.override_reason IS NOT NULL
+          OR s.updated_at > s.created_at
+          OR EXISTS (SELECT 1 FROM building_attributes b WHERE b.submission_id = s.id)
+          OR EXISTS (SELECT 1 FROM road_attributes r WHERE r.submission_id = s.id)
+          OR EXISTS (SELECT 1 FROM household_surveys h WHERE h.submission_id = s.id)
+          OR EXISTS (SELECT 1 FROM photos p WHERE p.submission_id = s.id)
+        )
+      ))
+      ''',
+      variables: [Variable.withString(assignmentId)],
+      readsFrom: {
+        _db.features,
+        _db.submissions,
+        _db.buildingAttributes,
+        _db.roadAttributes,
+        _db.householdSurveys,
+        _db.photos,
+      },
+    ).map((row) => _db.features.map(row.data)).get();
     final featureIds = features.map((f) => f.id).toList();
 
     final submissions = featureIds.isEmpty

@@ -1333,10 +1333,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get designReviewBody =>
-      'Check your completed surveys before uploading.';
+      'Review only edited or newly added features before uploading.';
 
   @override
-  String get designSummaryTitle => 'Assignment summary';
+  String get designSummaryTitle => 'Edited features summary';
 
   @override
   String get designActivityTitle => 'Team activity';
