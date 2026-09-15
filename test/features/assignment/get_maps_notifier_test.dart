@@ -252,6 +252,56 @@ void main() {
     expect(n.state, isA<DownloadingTiles>());
   });
 
+  for (final canonical in [false, true]) {
+    test('named folder is recognized after import (canonical=$canonical)',
+        () async {
+      final db = AppDatabase.forTesting(NativeDatabase.memory());
+      const assignment = DriveAssignment(
+        assignmentId: 'cebu',
+        localAssignmentId: '8bf2dcad-871a-5b15-b40d-97f9d3b190d1',
+        inputZipModifiedTime: '2026-04-28T10:00:00Z',
+        driveFolderId: 'cebu-drive-folder',
+      );
+      final importer = _NoopImporter(db);
+      await importer.importShapefiles(
+        {},
+        canonical
+            ? 'f47ac10b-58cc-4372-a567-0e02b2c3d479'
+            : assignment.localAssignmentId,
+        assignment.inputZipModifiedTime,
+        assignment.driveFolderId,
+        'enumerator',
+      );
+      final n = _makeNotifier(
+        db: db,
+        importer: importer,
+        assignments: [assignment],
+      );
+      addTearDown(() async {
+        n.dispose();
+        await db.close();
+      });
+
+      await n.start();
+      expect(
+        (n.state as PickingAssignment).assignments.single.alreadyDownloaded,
+        isTrue,
+      );
+      await n.confirmDownload();
+      expect(importer.callCount, 1, reason: 'Do not re-import the saved map');
+
+      // A changed source still requires a fresh import.
+      await db.update(db.assignments).write(
+        const AssignmentsCompanion(driveModifiedTime: Value('older-version')),
+      );
+      await n.start();
+      expect(
+        (n.state as PickingAssignment).assignments.single.alreadyDownloaded,
+        isFalse,
+      );
+    });
+  }
+
   test('delta skip still pulls field_requirements.txt sidecar', () async {
     final db = AppDatabase.forTesting(NativeDatabase.memory());
     await db.into(db.assignments).insert(

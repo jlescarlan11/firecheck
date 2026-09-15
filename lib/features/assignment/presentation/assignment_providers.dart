@@ -161,8 +161,10 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
     // Delta check: mark assignments whose modifiedTime matches stored value.
     final assignments = await Future.wait(
       rawAssignments.map((a) async {
-        final stored =
-            await assignmentRepo.getDriveModifiedTime(a.assignmentId);
+        final stored = await assignmentRepo.getDriveModifiedTime(
+          a.localAssignmentId,
+          driveFolderId: a.driveFolderId,
+        );
         return stored == a.inputZipModifiedTime
             ? a.copyWith(alreadyDownloaded: true)
             : a;

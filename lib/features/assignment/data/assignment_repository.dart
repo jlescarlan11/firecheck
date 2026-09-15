@@ -61,7 +61,20 @@ class AssignmentRepository {
     });
   }
 
-  Future<String?> getDriveModifiedTime(String assignmentId) async {
+  Future<String?> getDriveModifiedTime(
+    String assignmentId, {
+    String? driveFolderId,
+  }) async {
+    // Imports may use a canonical UUID instead of the locally derived UUID.
+    // The source folder identity is preserved in either case.
+    if (driveFolderId != null && driveFolderId.isNotEmpty) {
+      final imported = await (db.select(db.assignments)
+            ..where((t) => t.driveFolderId.equals(driveFolderId))
+            ..orderBy([(t) => OrderingTerm.desc(t.downloadedAt)])
+            ..limit(1))
+          .getSingleOrNull();
+      if (imported != null) return imported.driveModifiedTime;
+    }
     final row = await (db.select(db.assignments)
           ..where((t) => t.id.equals(assignmentId)))
         .getSingleOrNull();

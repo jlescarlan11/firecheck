@@ -2,8 +2,8 @@ import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/features/review/data/review_repository.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:firecheck/features/review/domain/review_validator.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   late AppDatabase db;
@@ -49,12 +49,14 @@ void main() {
       () async {
     await seedAssignmentAndFeature();
     final now = DateTime(2026, 4, 27);
-    await db.into(db.submissions).insert(SubmissionsCompanion.insert(
-          id: 's-1',
-          featureId: 'f-1',
-          createdAt: now,
-          updatedAt: now,
-        ));
+    await db.into(db.submissions).insert(
+          SubmissionsCompanion.insert(
+            id: 's-1',
+            featureId: 'f-1',
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
     expect((await repo.streamForAssignment('a-1').first).features, isEmpty);
 
     await db.into(db.buildingAttributes).insert(
@@ -84,34 +86,35 @@ void main() {
     await seedAssignmentAndFeature();
     final now = DateTime(2026, 4, 27);
     await db.batch((batch) {
-      batch.insertAll(db.features, [
-        for (var i = 2; i <= 1428; i++)
+      batch
+        ..insertAll(db.features, [
+          for (var i = 2; i <= 1428; i++)
+            FeaturesCompanion.insert(
+              id: 'f-$i',
+              assignmentId: 'a-1',
+              featureType: 'building',
+              geometryGeojson: '{}',
+              createdAt: now,
+            ),
           FeaturesCompanion.insert(
-            id: 'f-$i',
-            assignmentId: 'a-1',
+            id: 'other',
+            assignmentId: 'a-2',
             featureType: 'building',
+            isNew: const Value(true),
             geometryGeojson: '{}',
             createdAt: now,
           ),
-        FeaturesCompanion.insert(
-          id: 'other',
-          assignmentId: 'a-2',
-          featureType: 'building',
-          isNew: const Value(true),
-          geometryGeojson: '{}',
-          createdAt: now,
-        ),
-      ]);
-      batch.insertAll(db.submissions, [
-        for (var i = 1; i <= 2; i++)
-          SubmissionsCompanion.insert(
-            id: 's-$i',
-            featureId: 'f-$i',
-            syncStatus: const Value('ready_to_upload'),
-            createdAt: now,
-            updatedAt: now,
-          ),
-      ]);
+        ])
+        ..insertAll(db.submissions, [
+          for (var i = 1; i <= 2; i++)
+            SubmissionsCompanion.insert(
+              id: 's-$i',
+              featureId: 'f-$i',
+              syncStatus: const Value('ready_to_upload'),
+              createdAt: now,
+              updatedAt: now,
+            ),
+        ]);
     });
     final snapshot = await repo.streamForAssignment('a-1').first;
     expect(snapshot.features.map((f) => f.id), unorderedEquals(['f-1', 'f-2']));
