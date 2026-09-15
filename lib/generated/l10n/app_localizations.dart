@@ -2429,13 +2429,13 @@ abstract class AppLocalizations {
   /// No description provided for @designReviewBody.
   ///
   /// In en, this message translates to:
-  /// **'Check your completed surveys before uploading.'**
+  /// **'Review only edited or newly added features before uploading.'**
   String get designReviewBody;
 
   /// No description provided for @designSummaryTitle.
   ///
   /// In en, this message translates to:
-  /// **'Assignment summary'**
+  /// **'Edited features summary'**
   String get designSummaryTitle;
 
   /// No description provided for @designActivityTitle.
