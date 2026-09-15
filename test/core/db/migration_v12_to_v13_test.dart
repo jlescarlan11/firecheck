@@ -17,6 +17,8 @@ void main() {
             // statements touch — the test doesn't need a fully
             // representative schema.
             rawDb.execute('PRAGMA user_version = 12');
+            // The v17 migration also touches the old upload table.
+            rawDb.execute('CREATE TABLE drive_upload_jobs (id TEXT PRIMARY KEY)');
             rawDb.execute('''
               CREATE TABLE IF NOT EXISTS sync_jobs (
                 id TEXT NOT NULL PRIMARY KEY,

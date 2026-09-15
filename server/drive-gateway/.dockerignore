@@ -1,0 +1,8 @@
+node_modules
+.secrets
+.env.*
+client_secret_*.json
+dist
+.env
+.git
+test

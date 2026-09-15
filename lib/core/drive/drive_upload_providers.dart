@@ -7,6 +7,7 @@ import 'package:firecheck/core/drive/drive_upload_worker.dart';
 import 'package:firecheck/core/drive/enqueue_assignment_use_case.dart';
 import 'package:firecheck/core/drive/finalize_assignment_upload_use_case.dart';
 import 'package:firecheck/core/drive/google_drive_upload_api.dart';
+import 'package:firecheck/core/gateway/gateway_providers.dart';
 import 'package:firecheck/core/supabase/supabase_client_provider.dart';
 import 'package:firecheck/core/sync/shapefile/export/shapefile_exporter.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
@@ -22,10 +23,14 @@ final driveUploadRepoProvider = Provider<DriveUploadRepository>((ref) {
 
 final driveUploadWorkerProvider = Provider<DriveUploadWorker>((ref) {
   final client = ref.watch(supabaseClientProvider);
+  final gateway = ref.watch(gatewayUploadRunnerProvider);
   return DriveUploadWorker(
-    api: GoogleDriveUploadApi(
-      googleAuthRepo: ref.watch(googleAuthRepositoryProvider),
-    ),
+    gatewayDrain: gateway?.drain,
+    api: gateway != null
+        ? null
+        : GoogleDriveUploadApi(
+            googleAuthRepo: ref.watch(googleAuthRepositoryProvider),
+          ),
     repo: ref.watch(driveUploadRepoProvider),
     db: ref.watch(appDatabaseProvider),
     // Per-enumerator Drive subfolder. Prefer the Google email so the
@@ -59,6 +64,7 @@ final enqueueAssignmentUseCaseProvider =
     Provider<EnqueueAssignmentUseCase>((ref) {
   final db = ref.watch(appDatabaseProvider);
   return EnqueueAssignmentUseCase(
+    currentUserId: () => ref.read(supabaseClientProvider).auth.currentUser?.id,
     db: db,
     repo: ref.watch(driveUploadRepoProvider),
     exporter: ShapefileExporter(
@@ -77,6 +83,7 @@ final finalizeAssignmentUploadUseCaseProvider =
     Provider<FinalizeAssignmentUploadUseCase>((ref) {
   final client = ref.watch(supabaseClientProvider);
   return FinalizeAssignmentUploadUseCase(
+    gatewayReceipt: ref.watch(gatewayUploadRunnerProvider)?.receipt,
     db: ref.watch(appDatabaseProvider),
     repo: ref.watch(driveUploadRepoProvider),
     assignmentRepo: ref.watch(assignmentRepositoryProvider),

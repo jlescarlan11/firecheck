@@ -286,7 +286,7 @@ class _PickingAssignmentView extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              a.assignmentId,
+                              a.displayName ?? a.assignmentId,
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                               ),

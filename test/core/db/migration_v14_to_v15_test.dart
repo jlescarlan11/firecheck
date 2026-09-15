@@ -17,6 +17,6 @@ void main() {
         );
     final submission = await database.select(database.submissions).getSingle();
     expect(submission.formVersion, 'legacy-v1');
-    expect(database.schemaVersion, 16);
+    expect(database.schemaVersion, 17);
   });
 }

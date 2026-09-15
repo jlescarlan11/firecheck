@@ -8,6 +8,9 @@ import 'package:firecheck/core/drive/drive_upload_worker.dart';
 import 'package:firecheck/core/drive/finalize_assignment_upload_use_case.dart';
 import 'package:firecheck/core/drive/google_drive_upload_api.dart';
 import 'package:firecheck/core/errors/failure.dart';
+import 'package:firecheck/core/gateway/gateway_client.dart';
+import 'package:firecheck/core/gateway/gateway_providers.dart';
+import 'package:firecheck/core/gateway/gateway_upload_runner.dart';
 import 'package:firecheck/core/security/secure_storage.dart';
 import 'package:firecheck/features/assignment/data/assignment_repository.dart';
 import 'package:firecheck/features/auth/data/cached_token_source.dart';
@@ -48,10 +51,20 @@ void driveUploadCallbackDispatcher() {
           FlutterSecureStorageAdapter(),
         ),
       );
-      final uploadApi = GoogleDriveUploadApi(googleAuthRepo: tokenSource);
+      final gatewayUri = configuredGatewayUri();
+      final gatewayClient = gatewayUri == null
+          ? null
+          : GatewayClient.supabase(gatewayUri, Supabase.instance.client);
+      final uploadApi = gatewayClient == null
+          ? GoogleDriveUploadApi(googleAuthRepo: tokenSource)
+          : null;
       final repo = DriveUploadRepository(db);
+      final gateway = gatewayClient == null
+          ? null
+          : GatewayUploadRunner(client: gatewayClient, repo: repo);
       final worker = DriveUploadWorker(
         api: uploadApi,
+        gatewayDrain: gateway?.drain,
         repo: repo,
         db: db,
         enumeratorIdentifier: () =>
@@ -71,6 +84,7 @@ void driveUploadCallbackDispatcher() {
       // audit row) so background-completed uploads aren't invisible to
       // the rest of the app.
       final finalizeUseCase = FinalizeAssignmentUploadUseCase(
+        gatewayReceipt: gateway?.receipt,
         db: db,
         repo: repo,
         assignmentRepo: AssignmentRepository(db: db),
@@ -85,6 +99,7 @@ void driveUploadCallbackDispatcher() {
       );
 
       await db.close();
+      gatewayClient?.close();
       return true;
     } on Object {
       return false;

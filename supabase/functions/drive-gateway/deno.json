@@ -1,0 +1,8 @@
+{
+  "imports": {
+    "fastify": "npm:fastify@5.12.4",
+    "@fastify/rate-limit": "npm:@fastify/rate-limit@11.2.0",
+    "pg": "npm:pg@8.23.0",
+    "google-auth-library": "npm:google-auth-library@11.0.2"
+  }
+}
