@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firecheck/core/drive/drive_download_event.dart';
 import 'package:firecheck/core/drive/google_drive_api.dart';
 import 'package:firecheck/core/errors/failure.dart';
 import 'package:firecheck/features/auth/data/google_auth_repository.dart';
@@ -140,4 +141,69 @@ void main() {
       throwsA(isA<NetworkFailure>()),
     );
   });
+
+  test('chunked map downloads preserve bytes, progress, and sidecars', () async {
+    final api = _MockDriveApi();
+    final files = _MockFilesResource();
+    when(() => api.files).thenReturn(files);
+    var listCall = 0;
+    when(
+      () => files.list(
+        q: any(named: 'q'),
+        spaces: any(named: 'spaces'),
+        $fields: any(named: r'$fields'),
+      ),
+    ).thenAnswer((_) async {
+      listCall += 1;
+      return switch (listCall) {
+        1 => gdrive.FileList()..files = [gdrive.File()..id = 'firecheck'],
+        2 => gdrive.FileList()..files = [gdrive.File()..id = 'input'],
+        3 => gdrive.FileList()
+          ..files = [
+            gdrive.File()
+              ..id = 'assignment-folder'
+              ..name = 'cebu'
+              ..modifiedTime = DateTime.utc(2026),
+          ],
+        _ => gdrive.FileList()
+          ..files = [
+            gdrive.File()
+              ..id = 'shape'
+              ..name = 'buildings.shp'
+              ..md5Checksum = 'shape-md5'
+              ..size = '5',
+            gdrive.File()
+              ..id = 'config'
+              ..name = 'form_definition.json'
+              ..size = '2',
+          ],
+      };
+    });
+    when(
+      () => files.get(any(), downloadOptions: any(named: 'downloadOptions')),
+    ).thenAnswer((invocation) async {
+      final isShape = invocation.positionalArguments.first == 'shape';
+      return gdrive.Media(
+        Stream<List<int>>.fromIterable(
+          isShape ? [[0, 255], [128], [1, 2]] : [[123], [125]],
+        ),
+        isShape ? 5 : 2,
+      );
+    });
+    final drive = GoogleDriveApi(
+      googleAuthRepo: _FakeTokenSource(),
+      apiOverride: api,
+    );
+    await drive.listAssignments();
+    final events = await drive.downloadShapefiles('cebu').toList();
+    final progress = events.whereType<DriveDownloadProgress>().toList();
+    expect(progress.map((event) => event.downloaded), [2, 3, 5, 6, 7]);
+    expect(progress.every((event) => event.total == 7), isTrue);
+    final complete = events.last as DriveDownloadComplete;
+    expect(complete.files['buildings.shp'], [0, 255, 128, 1, 2]);
+    expect(complete.expectedMd5s['buildings.shp'], 'shape-md5');
+    expect(complete.files['form_definition.json'], [123, 125]);
+    expect(await drive.fetchFormDefinitionSidecar('cebu'), [123, 125]);
+  });
+
 }

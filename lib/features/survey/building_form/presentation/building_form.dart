@@ -1,8 +1,9 @@
+import 'package:firecheck/core/forms/constraint_hints.dart';
 import 'package:firecheck/core/forms/form_definition.dart';
 import 'package:firecheck/core/forms/form_definition_providers.dart';
-import 'package:firecheck/core/forms/constraint_hints.dart';
 import 'package:firecheck/core/forms/geometry_signal.dart';
 import 'package:firecheck/core/forms/geometry_signal_providers.dart';
+import 'package:firecheck/core/theme/app_layout.dart';
 import 'package:firecheck/features/survey/building_form/domain/building_form_context.dart';
 import 'package:firecheck/features/survey/building_form/presentation/building_form_providers.dart';
 import 'package:firecheck/features/survey/building_form/presentation/remaining_questions_badge.dart';
@@ -51,17 +52,15 @@ class BuildingForm extends ConsumerWidget {
         definition.isVisible('building.section.$section', formContext);
 
     return ListView(
-      padding: const EdgeInsets.all(12),
+      padding: appPageInsets(context),
       children: [
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: disabled ? const Color(0xFFFFF0F0) : const Color(0xFFFFF8ED),
-            border: Border.all(
-              color:
-                  disabled ? const Color(0xFFF0A0A0) : const Color(0xFFF6D68E),
-            ),
-            borderRadius: BorderRadius.circular(6),
+            color: state.doesNotExist
+                ? Theme.of(context).colorScheme.errorContainer
+                : Theme.of(context).colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
             children: [
@@ -79,8 +78,8 @@ class BuildingForm extends ConsumerWidget {
                     Text(
                       l.doesNotExistHelper,
                       style: const TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFF888888),
+                        fontSize: 13,
+                        color: Color(0xFF596166),
                       ),
                     ),
                   ],

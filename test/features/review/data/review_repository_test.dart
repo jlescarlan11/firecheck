@@ -15,20 +15,24 @@ void main() {
   tearDown(() async => db.close());
 
   Future<void> seedAssignmentAndFeature() async {
-    await db.into(db.assignments).insert(AssignmentsCompanion.insert(
-          id: 'a-1',
-          enumeratorId: 'e-1',
-          campaignId: 'c-1',
-          boundaryPolygonGeojson: '{}',
-          createdAt: DateTime(2026, 4, 27),
-        ),);
-    await db.into(db.features).insert(FeaturesCompanion.insert(
-          id: 'f-1',
-          assignmentId: 'a-1',
-          featureType: 'building',
-          geometryGeojson: '{}',
-          createdAt: DateTime(2026, 4, 27),
-        ),);
+    await db.into(db.assignments).insert(
+          AssignmentsCompanion.insert(
+            id: 'a-1',
+            enumeratorId: 'e-1',
+            campaignId: 'c-1',
+            boundaryPolygonGeojson: '{}',
+            createdAt: DateTime(2026, 4, 27),
+          ),
+        );
+    await db.into(db.features).insert(
+          FeaturesCompanion.insert(
+            id: 'f-1',
+            assignmentId: 'a-1',
+            featureType: 'building',
+            geometryGeojson: '{}',
+            createdAt: DateTime(2026, 4, 27),
+          ),
+        );
   }
 
   test('emits a snapshot containing seeded features', () async {
@@ -41,6 +45,16 @@ void main() {
     expect(first.deadJobs, isEmpty);
   });
 
+  test('merged-away features are excluded from review validation', () async {
+    await seedAssignmentAndFeature();
+    await db.update(db.features).write(
+          const FeaturesCompanion(mergedIntoId: Value('survivor')),
+        );
+    final snapshot = await repo.streamForAssignment('a-1').first;
+    expect(snapshot.features, isEmpty);
+    expect(snapshot.submissions, isEmpty);
+  });
+
   test('re-emits when a submission is added', () async {
     await seedAssignmentAndFeature();
     final emitted = <int>[];
@@ -49,13 +63,15 @@ void main() {
     });
     await Future<void>.delayed(const Duration(milliseconds: 50));
 
-    await db.into(db.submissions).insert(SubmissionsCompanion.insert(
-          id: 's-1',
-          featureId: 'f-1',
-          submittedBy: const Value('u-1'),
-          createdAt: DateTime(2026, 4, 27),
-          updatedAt: DateTime(2026, 4, 27),
-        ),);
+    await db.into(db.submissions).insert(
+          SubmissionsCompanion.insert(
+            id: 's-1',
+            featureId: 'f-1',
+            submittedBy: const Value('u-1'),
+            createdAt: DateTime(2026, 4, 27),
+            updatedAt: DateTime(2026, 4, 27),
+          ),
+        );
     await Future<void>.delayed(const Duration(milliseconds: 50));
 
     await sub.cancel();
@@ -64,20 +80,24 @@ void main() {
 
   test('photoCountsBySubmission counts photos per submission id', () async {
     await seedAssignmentAndFeature();
-    await db.into(db.submissions).insert(SubmissionsCompanion.insert(
-          id: 's-1',
-          featureId: 'f-1',
-          submittedBy: const Value('u-1'),
-          createdAt: DateTime(2026, 4, 27),
-          updatedAt: DateTime(2026, 4, 27),
-        ),);
-    await db.into(db.photos).insert(PhotosCompanion.insert(
-          id: 'p-1',
-          submissionId: 's-1',
-          localPath: '/tmp/x.jpg',
-          capturedAt: DateTime(2026, 4, 27),
-          createdAt: DateTime(2026, 4, 27),
-        ),);
+    await db.into(db.submissions).insert(
+          SubmissionsCompanion.insert(
+            id: 's-1',
+            featureId: 'f-1',
+            submittedBy: const Value('u-1'),
+            createdAt: DateTime(2026, 4, 27),
+            updatedAt: DateTime(2026, 4, 27),
+          ),
+        );
+    await db.into(db.photos).insert(
+          PhotosCompanion.insert(
+            id: 'p-1',
+            submissionId: 's-1',
+            localPath: '/tmp/x.jpg',
+            capturedAt: DateTime(2026, 4, 27),
+            createdAt: DateTime(2026, 4, 27),
+          ),
+        );
 
     final snap = await repo.streamForAssignment('a-1').first;
     expect(snap.photoCountsBySubmission['s-1'], 1);
@@ -86,19 +106,23 @@ void main() {
   test('deadJobs surfaces only sync_jobs with status=dead for this assignment',
       () async {
     await seedAssignmentAndFeature();
-    await db.into(db.submissions).insert(SubmissionsCompanion.insert(
-          id: 's-1',
-          featureId: 'f-1',
-          submittedBy: const Value('u-1'),
-          createdAt: DateTime(2026, 4, 27),
-          updatedAt: DateTime(2026, 4, 27),
-        ),);
-    await db.into(db.syncJobs).insert(SyncJobsCompanion.insert(
-          id: 'j-1',
-          entityType: 'submission',
-          entityId: 's-1',
-          createdAt: DateTime(2026, 4, 27),
-        ),);
+    await db.into(db.submissions).insert(
+          SubmissionsCompanion.insert(
+            id: 's-1',
+            featureId: 'f-1',
+            submittedBy: const Value('u-1'),
+            createdAt: DateTime(2026, 4, 27),
+            updatedAt: DateTime(2026, 4, 27),
+          ),
+        );
+    await db.into(db.syncJobs).insert(
+          SyncJobsCompanion.insert(
+            id: 'j-1',
+            entityType: 'submission',
+            entityId: 's-1',
+            createdAt: DateTime(2026, 4, 27),
+          ),
+        );
     await (db.update(db.syncJobs)..where((t) => t.id.equals('j-1'))).write(
       const SyncJobsCompanion(
         status: Value('dead'),

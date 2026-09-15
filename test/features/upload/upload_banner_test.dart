@@ -51,9 +51,13 @@ void main() {
     expect(find.textContaining('file'), findsNothing);
   });
 
-  testWidgets('banner shows singular label for one pending job', (tester) async {
+  testWidgets('banner shows singular label for one pending job',
+      (tester) async {
     final state = DriveUploadState(jobs: [
-      _makeJob(id: 'j1', status: DriveUploadJobStatus.pending, sizeBytes: 1024 * 1024),
+      _makeJob(
+          id: 'j1',
+          status: DriveUploadJobStatus.pending,
+          sizeBytes: 1024 * 1024),
     ]);
 
     await tester.pumpWidget(_wrap(const UploadBanner(), state));
@@ -65,8 +69,14 @@ void main() {
   testWidgets('banner shows plural label for multiple pending jobs',
       (tester) async {
     final state = DriveUploadState(jobs: [
-      _makeJob(id: 'j1', status: DriveUploadJobStatus.pending, sizeBytes: 1024 * 1024),
-      _makeJob(id: 'j2', status: DriveUploadJobStatus.failed, sizeBytes: 2 * 1024 * 1024),
+      _makeJob(
+          id: 'j1',
+          status: DriveUploadJobStatus.pending,
+          sizeBytes: 1024 * 1024),
+      _makeJob(
+          id: 'j2',
+          status: DriveUploadJobStatus.failed,
+          sizeBytes: 2 * 1024 * 1024),
     ]);
 
     await tester.pumpWidget(_wrap(const UploadBanner(), state));
@@ -78,8 +88,14 @@ void main() {
   testWidgets('banner excludes uploading jobs from pending count',
       (tester) async {
     final state = DriveUploadState(jobs: [
-      _makeJob(id: 'j1', status: DriveUploadJobStatus.pending, sizeBytes: 1024 * 1024),
-      _makeJob(id: 'j2', status: DriveUploadJobStatus.uploading, sizeBytes: 5 * 1024 * 1024),
+      _makeJob(
+          id: 'j1',
+          status: DriveUploadJobStatus.pending,
+          sizeBytes: 1024 * 1024),
+      _makeJob(
+          id: 'j2',
+          status: DriveUploadJobStatus.uploading,
+          sizeBytes: 5 * 1024 * 1024),
     ]);
 
     await tester.pumpWidget(_wrap(const UploadBanner(), state));

@@ -38,7 +38,7 @@ void main() {
     expect(find.text('Submitted to Google Drive'), findsOneWidget);
     expect(find.text('FieldData/enum-1/2026-05-02/'), findsOneWidget);
     expect(find.text('ASN-AABBCCDD'), findsOneWidget);
-    expect(find.text('Open in Google Drive →'), findsOneWidget);
+    expect(find.text('Open in Google Drive'), findsOneWidget);
     expect(find.text('May 2 · 8:42 PM'), findsOneWidget);
   });
 
@@ -57,7 +57,7 @@ void main() {
       DriveUploadConfirmationCard(state: successState),
     ));
 
-    await tester.tap(find.text('Copy'));
+    await tester.tap(find.byTooltip('Copy Google Drive link'));
     await tester.pump();
 
     expect(
@@ -105,7 +105,7 @@ void main() {
     expect(find.text('Re-authenticate'), findsOneWidget);
     expect(find.text('Retry Upload'), findsNothing);
     // Button is disabled (onPressed null) when canRetry is false.
-    final button = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
+    final button = tester.widget<FilledButton>(find.byType(FilledButton));
     expect(button.onPressed, isNull);
   });
 }

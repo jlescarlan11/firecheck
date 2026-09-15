@@ -86,6 +86,6 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.textContaining('Review'), findsOneWidget);
+    expect(find.widgetWithText(AppBar, 'Review & Upload'), findsOneWidget);
   });
 }

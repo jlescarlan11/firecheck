@@ -1,4 +1,5 @@
 // lib/features/auth/data/caching_google_auth_repository.dart
+import 'package:firecheck/core/errors/failure.dart';
 import 'package:firecheck/features/auth/data/google_access_token_cache.dart';
 import 'package:firecheck/features/auth/data/google_auth_repository.dart';
 
@@ -7,14 +8,15 @@ import 'package:firecheck/features/auth/data/google_auth_repository.dart';
 /// interactive sign-in flow) can re-use it via a [GoogleTokenSource] that
 /// reads the same cache.
 ///
-/// Wraps any [GoogleAuthRepository] and adds two behaviours:
+/// Wraps any [GoogleAuthRepository] and adds token caching:
 ///   * `getAccessToken` writes the returned token to the cache before
 ///     returning it to the caller.
-///   * `signOut` clears the cache after the inner sign-out completes, so a
+///   * `signIn` clears any token left by a previous account.
+///   * `signOut` clears the cache even if native sign-out fails, so a
 ///     background isolate cannot keep using a token that no longer maps to
 ///     an active Supabase session.
 ///
-/// All other methods pass through unchanged.
+/// Token reads require an active app session.
 class CachingGoogleAuthRepository implements GoogleAuthRepository {
   CachingGoogleAuthRepository({
     required GoogleAuthRepository inner,
@@ -37,25 +39,40 @@ class CachingGoogleAuthRepository implements GoogleAuthRepository {
   Future<String> getEnumeratorId() => _inner.getEnumeratorId();
 
   @override
-  Future<void> signIn() => _inner.signIn();
+  Future<void> signIn() async {
+    await _cache.clear();
+    await _inner.signIn();
+  }
 
   @override
   Future<bool> requestDriveUploadScope() => _inner.requestDriveUploadScope();
 
   @override
   Future<void> signOut() async {
-    await _inner.signOut();
-    await _cache.clear();
+    try {
+      await _inner.signOut();
+    } finally {
+      await _cache.clear();
+    }
   }
 
   @override
   Future<String> getAccessToken() async {
+    if (!await _inner.isSignedIn()) {
+      await _cache.clear();
+      throw const AuthFailure('Sign in to FireCheck to access Google Drive.');
+    }
+    final userId = await _inner.getEnumeratorId();
     // A valid persisted token is sufficient for Drive and avoids invoking
     // Android Credential Manager during every process recreation. Only fall
     // back to google_sign_in when the cache is absent or near expiry.
     final cached = await _cache.read();
     if (cached != null) return cached;
     final token = await _inner.getAccessToken();
+    if (!await _inner.isSignedIn() ||
+        await _inner.getEnumeratorId() != userId) {
+      throw const AuthFailure('Your account changed. Please try again.');
+    }
     if (token.isNotEmpty) {
       await _cache.save(token, DateTime.now().toUtc().add(_ttl));
     }

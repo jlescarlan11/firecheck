@@ -101,6 +101,8 @@ class ConstructionSection extends ConsumerWidget {
       if (children.isNotEmpty) children.add(const SizedBox(height: 8));
       children.add(
         DropdownButtonFormField<String>(
+          isExpanded: true,
+          itemHeight: null,
           initialValue: state.material,
           decoration: InputDecoration(
             labelText: requiredLabel(

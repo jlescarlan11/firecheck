@@ -1,6 +1,8 @@
 import 'package:firecheck/core/forms/form_definition.dart';
 import 'package:firecheck/core/forms/form_definition_providers.dart';
 import 'package:firecheck/core/forms/geometry_signal.dart';
+import 'package:firecheck/core/theme/app_layout.dart';
+import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -39,8 +41,11 @@ class _FormPreviewScreenState extends ConsumerState<FormPreviewScreen> {
           final targets =
               definition.visibilityRules.map((rule) => rule.target).toSet();
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: appPageInsets(context),
             children: [
+              AppPageIntro(
+                  title: AppLocalizations.of(context)!.formRulesTitle,
+                  subtitle: AppLocalizations.of(context)!.designFormRulesBody),
               Text(
                 '${definition.name} · ${definition.version}',
                 style: Theme.of(context).textTheme.titleLarge,

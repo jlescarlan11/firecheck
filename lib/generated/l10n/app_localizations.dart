@@ -104,6 +104,60 @@ abstract class AppLocalizations {
   /// **'FireCheck'**
   String get appTitle;
 
+  /// No description provided for @fieldWorkspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Field workspace'**
+  String get fieldWorkspace;
+
+  /// No description provided for @noLocalMaps.
+  ///
+  /// In en, this message translates to:
+  /// **'No maps downloaded'**
+  String get noLocalMaps;
+
+  /// No description provided for @retryAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get retryAction;
+
+  /// No description provided for @uploadsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploads'**
+  String get uploadsTitle;
+
+  /// No description provided for @formRulesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Form rules'**
+  String get formRulesTitle;
+
+  /// No description provided for @homeLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your field work.'**
+  String get homeLoadError;
+
+  /// No description provided for @accountLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your account.'**
+  String get accountLoadError;
+
+  /// No description provided for @signInIdentity.
+  ///
+  /// In en, this message translates to:
+  /// **'Bureau of Fire Protection'**
+  String get signInIdentity;
+
+  /// No description provided for @signInPurpose.
+  ///
+  /// In en, this message translates to:
+  /// **'Field surveys'**
+  String get signInPurpose;
+
   /// No description provided for @signIn.
   ///
   /// In en, this message translates to:
@@ -2191,6 +2245,240 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Error: {error}'**
   String homeErrorPrefix(String error);
+
+  /// No description provided for @homeFieldwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Your fieldwork'**
+  String get homeFieldwork;
+
+  /// No description provided for @homeIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything you need for this assignment.'**
+  String get homeIntro;
+
+  /// No description provided for @homeContinueSurvey.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue survey'**
+  String get homeContinueSurvey;
+
+  /// No description provided for @homeStartSurvey.
+  ///
+  /// In en, this message translates to:
+  /// **'Start survey'**
+  String get homeStartSurvey;
+
+  /// No description provided for @homeViewMap.
+  ///
+  /// In en, this message translates to:
+  /// **'View map'**
+  String get homeViewMap;
+
+  /// No description provided for @homeManageData.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage data'**
+  String get homeManageData;
+
+  /// No description provided for @homeGetMaps.
+  ///
+  /// In en, this message translates to:
+  /// **'Get maps'**
+  String get homeGetMaps;
+
+  /// No description provided for @homeReviewUpload.
+  ///
+  /// In en, this message translates to:
+  /// **'Review & upload'**
+  String get homeReviewUpload;
+
+  /// No description provided for @homeSurveyed.
+  ///
+  /// In en, this message translates to:
+  /// **'features surveyed'**
+  String get homeSurveyed;
+
+  /// No description provided for @homeProgressCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{completed} / {total}'**
+  String homeProgressCount(int completed, int total);
+
+  /// No description provided for @homePercentComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% complete'**
+  String homePercentComplete(int percent);
+
+  /// No description provided for @homeRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} remaining'**
+  String homeRemaining(int count);
+
+  /// No description provided for @homeLocalSaveHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Survey changes are saved on this device.'**
+  String get homeLocalSaveHint;
+
+  /// No description provided for @homeEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Download an assignment to start surveying.'**
+  String get homeEmptyHint;
+
+  /// No description provided for @homeMoreActions.
+  ///
+  /// In en, this message translates to:
+  /// **'More actions'**
+  String get homeMoreActions;
+
+  /// No description provided for @homePendingFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 file pending upload} other{{count} files pending upload}}'**
+  String homePendingFiles(int count);
+
+  /// No description provided for @homeUploadingFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Uploading 1 file} other{Uploading {count} files}}'**
+  String homeUploadingFiles(int count);
+
+  /// No description provided for @homeFailedFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 file needs a retry} other{{count} files need a retry}}'**
+  String homeFailedFiles(int count);
+
+  /// No description provided for @homeSyncAttention.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 survey sync needs attention} other{{count} survey syncs need attention}}'**
+  String homeSyncAttention(int count);
+
+  /// No description provided for @homeSyncPending.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 survey sync pending} other{{count} survey syncs pending}}'**
+  String homeSyncPending(int count);
+
+  /// No description provided for @designSignInTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready for fieldwork.'**
+  String get designSignInTitle;
+
+  /// No description provided for @designSignInBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to download your assignment and continue your surveys.'**
+  String get designSignInBody;
+
+  /// No description provided for @designAccountBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your profile and fieldwork tools.'**
+  String get designAccountBody;
+
+  /// No description provided for @designMapsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Take your work offline.'**
+  String get designMapsTitle;
+
+  /// No description provided for @designMapsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Download an assignment before heading into the field.'**
+  String get designMapsBody;
+
+  /// No description provided for @designDownloadSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Download source'**
+  String get designDownloadSource;
+
+  /// No description provided for @designImportOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Import options'**
+  String get designImportOptions;
+
+  /// No description provided for @designUploadsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your upload queue'**
+  String get designUploadsTitle;
+
+  /// No description provided for @designUploadsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Review saved files and send them when you are ready.'**
+  String get designUploadsBody;
+
+  /// No description provided for @designReviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review your fieldwork'**
+  String get designReviewTitle;
+
+  /// No description provided for @designReviewBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your completed surveys before uploading.'**
+  String get designReviewBody;
+
+  /// No description provided for @designSummaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignment summary'**
+  String get designSummaryTitle;
+
+  /// No description provided for @designActivityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Team activity'**
+  String get designActivityTitle;
+
+  /// No description provided for @designActivityBody.
+  ///
+  /// In en, this message translates to:
+  /// **'See the latest surveys shared by other enumerators.'**
+  String get designActivityBody;
+
+  /// No description provided for @designConflictsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolve changes'**
+  String get designConflictsTitle;
+
+  /// No description provided for @designConflictsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Review overlapping updates before continuing.'**
+  String get designConflictsBody;
+
+  /// No description provided for @designFormRulesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview the questions and rules used in your surveys.'**
+  String get designFormRulesBody;
+
+  /// No description provided for @downloadProgressUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculating progress…'**
+  String get downloadProgressUnknown;
+
+  /// No description provided for @uploadLoadMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Load more changes'**
+  String get uploadLoadMore;
 }
 
 class _AppLocalizationsDelegate

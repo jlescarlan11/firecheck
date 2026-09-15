@@ -40,8 +40,8 @@ class UncheckedItemsList extends StatelessWidget {
                   child: Text(
                     resolveOlpKey(l, item.suggestionKey),
                     style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF3B82F6),
+                      fontSize: 14,
+                      color: Color(0xFF596166),
                       fontStyle: FontStyle.italic,
                     ),
                   ),

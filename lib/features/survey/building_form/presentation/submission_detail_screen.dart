@@ -1,22 +1,22 @@
 import 'package:firecheck/core/auth/current_user_provider.dart';
 import 'package:firecheck/core/db/database.dart';
-import 'package:firecheck/core/photos/photo_providers.dart';
-import 'package:firecheck/features/assignment/presentation/assignment_lock_providers.dart';
-import 'package:firecheck/features/assignment/presentation/assignment_lock_state.dart';
 import 'package:firecheck/core/forms/field_requirements_providers.dart';
 import 'package:firecheck/core/forms/form_definition_providers.dart';
 import 'package:firecheck/core/forms/geometry_signal.dart';
 import 'package:firecheck/core/forms/geometry_signal_providers.dart';
+import 'package:firecheck/core/photos/photo_providers.dart';
+import 'package:firecheck/features/assignment/presentation/assignment_lock_providers.dart';
+import 'package:firecheck/features/assignment/presentation/assignment_lock_state.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
 import 'package:firecheck/features/home/presentation/home_providers.dart';
-import 'package:firecheck/features/survey/building_form/domain/building_form_validator.dart';
 import 'package:firecheck/features/survey/building_form/domain/building_form_context.dart';
+import 'package:firecheck/features/survey/building_form/domain/building_form_validator.dart';
 import 'package:firecheck/features/survey/building_form/presentation/building_form.dart';
 import 'package:firecheck/features/survey/building_form/presentation/building_form_providers.dart';
 import 'package:firecheck/features/survey/building_form/presentation/submission_tabs.dart';
 import 'package:firecheck/features/survey/photo_capture/presentation/photo_strip.dart';
-import 'package:firecheck/features/survey/road_form/domain/road_form_validator.dart';
 import 'package:firecheck/features/survey/road_form/domain/road_form_context.dart';
+import 'package:firecheck/features/survey/road_form/domain/road_form_validator.dart';
 import 'package:firecheck/features/survey/road_form/presentation/road_form.dart';
 import 'package:firecheck/features/survey/road_form/presentation/road_form_providers.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
@@ -76,7 +76,8 @@ class _SubmissionDetailScreenState
     final userId = ref.read(currentUserIdProvider);
     if (userId == null) {
       throw StateError(
-          'SubmissionDetailScreen reached without an authenticated user');
+        'SubmissionDetailScreen reached without an authenticated user',
+      );
     }
     await repo.ensureDraftForFeature(
       featureId: widget.featureId,
@@ -92,7 +93,8 @@ class _SubmissionDetailScreenState
     final userId = ref.read(currentUserIdProvider);
     if (userId == null) {
       throw StateError(
-          'SubmissionDetailScreen._addTab without authenticated user');
+        'SubmissionDetailScreen._addTab without authenticated user',
+      );
     }
     await repo.createAdditionalSubmission(
       featureId: widget.featureId,
@@ -374,15 +376,22 @@ class _Footer extends ConsumerWidget {
                 ? l.footerStatusPhotoRequired
                 : l.footerStatusFieldsMissing);
         return Container(
-          color: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border(
+              top: BorderSide(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           child: Row(
             children: [
               Expanded(
                 child: Text(
                   statusText,
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: 13,
                     color: ready
                         ? const Color(0xFF276749)
                         : const Color(0xFFC53030),

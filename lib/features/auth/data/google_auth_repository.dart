@@ -19,11 +19,11 @@ abstract interface class GoogleTokenSource {
   Future<bool> isSignedIn();
 
   /// Returns the Supabase user UUID for the currently signed-in user.
-  /// Throws [AuthFailure] if no session is active.
+  /// Throws AuthFailure if no session is active.
   Future<String> getEnumeratorId();
 
-  /// Returns a valid Google OAuth access token. Refreshes the Supabase
-  /// session first if providerToken is absent.
+  /// Returns a Google OAuth access token for the signed-in account without
+  /// opening sign-in or consent UI. Throws AuthFailure if reconnection is needed.
   Future<String> getAccessToken();
 }
 

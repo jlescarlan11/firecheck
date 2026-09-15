@@ -26,6 +26,7 @@ class _FakeNotifier extends StateNotifier<GetMapsState>
   _FakeNotifier(super.state);
   String? lastSelectId;
   bool confirmCalled = false;
+  int resetCalls = 0;
 
   @override
   void selectAssignment(String id) => lastSelectId = id;
@@ -36,7 +37,7 @@ class _FakeNotifier extends StateNotifier<GetMapsState>
   @override
   Future<void> cancel() async {}
   @override
-  void reset() {}
+  void reset() => resetCalls++;
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
@@ -49,6 +50,29 @@ const _brgy = DriveAssignment(
 );
 
 void main() {
+  testWidgets('import options are absent and start is immediately available',
+      (tester) async {
+    await tester.pumpWidget(_wrap(const Idle()));
+    expect(find.text('Import options'), findsNothing);
+    expect(find.byType(SwitchListTile), findsNothing);
+    expect(tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
+        isNotNull);
+  });
+  for (final entry in [
+    (500, 1000, '50%'),
+    (1200, 1000, '100%'),
+    (-10, 1000, '0%'),
+    (0, 0, 'Calculating progress…')
+  ]) {
+    testWidgets('download progress displays ${entry.$3}', (tester) async {
+      await tester.pumpWidget(
+          _wrap(DownloadingShapefiles(downloaded: entry.$1, total: entry.$2)));
+      await tester.pump();
+      expect(find.text(entry.$3), findsOneWidget);
+      expect(find.textContaining('MB'), findsNothing);
+    });
+  }
+
   testWidgets('DiscoveringAssignments → spinner shown', (tester) async {
     await tester.pumpWidget(_wrap(const DiscoveringAssignments()));
     await tester.pump();
@@ -56,7 +80,8 @@ void main() {
   });
 
   testWidgets('PickingAssignment → assignment name shown', (tester) async {
-    final state = PickingAssignment(assignments: [_brgy], selectedId: 'brgy-001');
+    final state =
+        PickingAssignment(assignments: [_brgy], selectedId: 'brgy-001');
     await tester.pumpWidget(_wrap(state));
     await tester.pumpAndSettle();
     expect(find.text('brgy-001'), findsOneWidget);
@@ -72,13 +97,21 @@ void main() {
     expect(btn.onPressed, isNotNull);
   });
 
-  testWidgets('InsufficientStorage → Download Selected button disabled',
+  testWidgets('InsufficientStorage offers a retry after freeing storage',
       (tester) async {
     final state = InsufficientStorage(requiredBytes: 100, availableBytes: 10);
     await tester.pumpWidget(_wrap(state));
     await tester.pumpAndSettle();
     final btn = tester.widget<FilledButton>(find.byType(FilledButton));
-    expect(btn.onPressed, isNull);
+    expect(btn.onPressed, isNotNull);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(GetMapsScreen)),
+    );
+    final notifier =
+        container.read(getMapsNotifierProvider.notifier) as _FakeNotifier;
+    final before = notifier.resetCalls;
+    await tester.tap(find.text('Try again'));
+    expect(notifier.resetCalls, before + 1);
   });
 
   testWidgets('DownloadingShapefiles → progress bar and cancel shown',

@@ -1,3 +1,4 @@
+import 'package:firecheck/core/drive/drive_upload_providers.dart';
 import 'package:firecheck/core/navigation/app_bottom_nav.dart';
 import 'package:firecheck/core/security/biometric_gate_provider.dart';
 import 'package:firecheck/core/sync/shapefile/export/export_failure.dart';
@@ -6,10 +7,11 @@ import 'package:firecheck/features/assignment/presentation/assignment_lock_provi
 import 'package:firecheck/features/assignment/presentation/assignment_lock_state.dart';
 import 'package:firecheck/features/assignment/presentation/submitted_banner.dart';
 import 'package:firecheck/features/conflict_review/presentation/conflict_banner.dart';
+import 'package:firecheck/features/conflict_review/presentation/conflict_review_providers.dart';
 import 'package:firecheck/features/home/data/shapefile_export_notifier.dart';
 import 'package:firecheck/features/home/domain/export_state.dart';
+import 'package:firecheck/features/home/domain/progress_snapshot.dart';
 import 'package:firecheck/features/home/presentation/home_providers.dart';
-import 'package:firecheck/features/upload/presentation/upload_banner.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,6 +24,18 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context)!;
     final asyncSnap = ref.watch(progressProvider);
+    final colors = Theme.of(context).colorScheme;
+    final uploads = ref.watch(driveUploadNotifierProvider);
+    final conflicts = ref.watch(awaitingResolutionCountProvider);
+    final uploadCount = uploads.pendingCount + uploads.uploadingCount;
+    final failedFiles = uploads.failedCount;
+    final uploadSummary = failedFiles > 0
+        ? l.homeFailedFiles(failedFiles)
+        : uploads.isUploading
+            ? l.homeUploadingFiles(uploads.uploadingCount)
+            : uploadCount > 0
+                ? l.homePendingFiles(uploadCount)
+                : l.uploadDataSubtitle;
     final lock = ref.watch(assignmentLockStateProvider).value;
     // Only ClosedRemotely blocks edits/uploads. Submitted is informational
     // (banner only) — enumerators may re-export and re-upload after a
@@ -46,133 +60,302 @@ class HomeScreen extends ConsumerWidget {
     });
 
     return Scaffold(
-      appBar: AppBar(title: Text(l.appTitle)),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        toolbarHeight: 88,
+        titleSpacing: 24,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.local_fire_department_outlined,
+              color: colors.primary,
+              size: 30,
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                l.appTitle,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            tooltip: l.uploadsTitle,
+            icon: Badge.count(
+              count: uploadCount,
+              isLabelVisible: uploadCount > 0,
+              backgroundColor: colors.primary,
+              child: const Icon(Icons.cloud_upload_outlined, size: 28),
+            ),
+            onPressed: () => context.push('/uploads'),
+          ),
+          PopupMenuButton<String>(
+            tooltip: l.homeMoreActions,
+            onSelected: (_) =>
+                ref.read(shapefileExportNotifierProvider.notifier).export(),
+            itemBuilder: (_) => [
+              PopupMenuItem(
+                value: 'export',
+                enabled: (asyncSnap.valueOrNull?.completedFeatures ?? 0) > 0 &&
+                    !isBusy,
+                child: Text(
+                  switch (exportState) {
+                    ExportValidating() => l.exportValidating,
+                    ExportExporting() => l.exportShapefileExporting,
+                    _ => l.exportShapefile,
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
       body: asyncSnap.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text(l.homeErrorPrefix(e.toString()))),
-        data: (snap) => ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            const UploadBanner(),
-            const SizedBox(height: 8),
-            const ConflictBanner(),
-            const SizedBox(height: 8),
-            if (lock is Submitted)
-              SubmittedBanner(submittedAt: lock.submittedAt)
-            else
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l.assignmentProgress,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        l.featuresLabel(
-                          snap.completedFeatures,
-                          snap.totalFeatures,
-                        ),
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      LinearProgressIndicator(
-                        value: snap.totalFeatures == 0
-                            ? 0
-                            : snap.completedFeatures / snap.totalFeatures,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        l.jobCountsLabel(
-                          snap.queuedJobs,
-                          snap.failedJobs,
-                          snap.deadJobs,
-                        ),
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                    ],
-                  ),
+        error: (e, _) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.cloud_off_outlined, size: 40),
+                const SizedBox(height: 12),
+                Text(l.homeLoadError, textAlign: TextAlign.center),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: () => ref.invalidate(progressProvider),
+                  icon: const Icon(Icons.refresh),
+                  label: Text(l.retryAction),
                 ),
-              ),
-            const SizedBox(height: 12),
-            _ActionTile(
-              title: l.gatherData,
-              subtitle: l.gatherDataSubtitle,
-              onTap: () => context.push('/map'),
+              ],
             ),
-            _ActionTile(
-              title: l.getMaps,
-              subtitle: l.getMapsSubtitle,
-              onTap: () => context.push('/get-maps'),
-            ),
-            _ActionTile(
-              title: 'Preview form rules',
-              subtitle: 'Test skip logic and constraints before publishing',
-              onTap: () => context.push('/form-preview'),
-            ),
-            if (!isLocked)
-              _ActionTile(
-                title: l.uploadData,
-                subtitle: l.uploadDataSubtitle,
-                onTap: () => _onUploadDataTap(context, ref, l),
-              ),
-            _ActionTile(
-              title: switch (exportState) {
-                ExportValidating() => l.exportValidating,
-                ExportExporting() => l.exportShapefileExporting,
-                _ => l.exportShapefile,
-              },
-              subtitle: l.exportShapefileSubtitle,
-              trailing: isBusy
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.chevron_right),
-              onTap: (snap.completedFeatures == 0 || isBusy)
-                  ? null
-                  : () => ref
-                      .read(shapefileExportNotifierProvider.notifier)
-                      .export(),
-            ),
-            if (exportState is ExportValidationFailed)
-              ...exportState.errors.map(
-                (e) => Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 2,
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.error_outline,
-                        size: 14,
-                        color: Colors.red,
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          _validationErrorMessage(l, e),
+          ),
+        ),
+        data: (snap) => LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  constraints.maxWidth > 728
+                      ? (constraints.maxWidth - 680) / 2
+                      : 24,
+                  12,
+                  constraints.maxWidth > 728
+                      ? (constraints.maxWidth - 680) / 2
+                      : 24,
+                  24,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          l.homeFieldwork,
                           style: const TextStyle(
-                            color: Colors.red,
-                            fontSize: 12,
+                            fontSize: 32,
+                            height: 1.2,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.8,
                           ),
                         ),
+                        const SizedBox(height: 8),
+                        Text(
+                          l.homeIntro,
+                          style: TextStyle(
+                            fontSize: 16,
+                            height: 1.4,
+                            color: colors.onSurfaceVariant,
+                          ),
+                        ),
+                        if (conflicts > 0) ...[
+                          const SizedBox(height: 20),
+                          const ConflictBanner(),
+                        ],
+                        if (lock is Submitted) ...[
+                          const SizedBox(height: 20),
+                          SubmittedBanner(submittedAt: lock.submittedAt),
+                        ],
+                        if (isLocked) ...[
+                          const SizedBox(height: 20),
+                          Text(
+                            l.readOnlyBannerClosed,
+                            style: TextStyle(color: colors.onSurfaceVariant),
+                          ),
+                        ],
+                        const SizedBox(height: 28),
+                        _AssignmentProgress(snapshot: snap),
+                        const SizedBox(height: 22),
+                        FilledButton(
+                          key: const Key('home-survey-action'),
+                          style: FilledButton.styleFrom(
+                            minimumSize: const Size.fromHeight(56),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 14,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed: snap.totalFeatures == 0
+                              ? null
+                              : () => context.push('/map'),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.map_outlined, size: 28),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Text(
+                                  isLocked
+                                      ? l.homeViewMap
+                                      : snap.completedFeatures +
+                                                  snap.inProgressFeatures >
+                                              0
+                                          ? l.homeContinueSurvey
+                                          : l.homeStartSurvey,
+                                  style: const TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const Icon(Icons.chevron_right),
+                            ],
+                          ),
+                        ),
+                        if (snap.totalFeatures == 0) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            l.homeEmptyHint,
+                            style: TextStyle(
+                              color: colors.onSurfaceVariant,
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 36),
+                        Text(
+                          l.homeManageData,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _ActionTile(
+                          icon: Icons.map_outlined,
+                          title: l.homeGetMaps,
+                          subtitle: snap.totalFeatures == 0
+                              ? l.noLocalMaps
+                              : l.getMapsSubtitle,
+                          onTap: () => context.push('/get-maps'),
+                        ),
+                        if (!isLocked)
+                          _ActionTile(
+                            icon: Icons.cloud_upload_outlined,
+                            title: l.homeReviewUpload,
+                            subtitle: uploadSummary,
+                            onTap: () => _onUploadDataTap(context, ref, l),
+                          ),
+                        Divider(height: 1, color: colors.outlineVariant),
+                        if (snap.failedJobs + snap.deadJobs > 0 ||
+                            snap.queuedJobs > 0) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            snap.failedJobs + snap.deadJobs > 0
+                                ? l.homeSyncAttention(
+                                    snap.failedJobs + snap.deadJobs,
+                                  )
+                                : l.homeSyncPending(snap.queuedJobs),
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: snap.failedJobs + snap.deadJobs > 0
+                                  ? colors.error
+                                  : colors.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                        if (isBusy) ...[
+                          const SizedBox(height: 16),
+                          const LinearProgressIndicator(),
+                          const SizedBox(height: 8),
+                          Text(
+                            exportState is ExportValidating
+                                ? l.exportValidating
+                                : l.exportShapefileExporting,
+                          ),
+                        ],
+                        if (exportState is ExportValidationFailed)
+                          ...exportState.errors.map(
+                            (e) => Padding(
+                              padding: const EdgeInsets.only(top: 12),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Icon(
+                                    Icons.error_outline,
+                                    size: 18,
+                                    color: colors.error,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      _validationErrorMessage(l, e),
+                                      style: TextStyle(
+                                        color: colors.error,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    if (snap.totalFeatures > 0)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 32, bottom: 12),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.save_outlined,
+                              size: 20,
+                              color: colors.onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 10),
+                            Flexible(
+                              child: Text(
+                                l.homeLocalSaveHint,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  height: 1.4,
+                                  color: colors.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ],
-                  ),
+                  ],
                 ),
               ),
-          ],
+            ),
+          ),
         ),
       ),
       bottomNavigationBar: const AppBottomNav(current: AppTab.home),
@@ -199,7 +382,7 @@ class HomeScreen extends ConsumerWidget {
     final biometric = ref.read(biometricGateProvider);
     final available = await biometric.isAvailable();
     if (!available) {
-      if (context.mounted) context.push('/review');
+      if (context.mounted) await context.push<void>('/review');
       return;
     }
     final ok = await biometric.authenticate(reason: l.biometricGateReason);
@@ -211,7 +394,7 @@ class HomeScreen extends ConsumerWidget {
       }
       return;
     }
-    if (context.mounted) context.push('/review');
+    if (context.mounted) await context.push<void>('/review');
   }
 }
 
@@ -220,23 +403,130 @@ class _ActionTile extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
-    this.trailing,
+    required this.icon,
   });
   final String title;
+  final IconData icon;
   final String subtitle;
   final VoidCallback? onTap;
-  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    final colors = Theme.of(context).colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: colors.outlineVariant)),
+      ),
       child: ListTile(
-        title: Text(title),
-        subtitle: Text(subtitle),
-        trailing: trailing ?? const Icon(Icons.chevron_right),
+        contentPadding: const EdgeInsets.symmetric(vertical: 2),
+        minLeadingWidth: 34,
+        horizontalTitleGap: 18,
+        leading: Icon(icon, color: colors.onSurface, size: 30),
+        title: Text(
+          title,
+          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 3),
+          child: Text(
+            subtitle,
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.35,
+              color: colors.onSurfaceVariant,
+            ),
+          ),
+        ),
+        trailing: Icon(Icons.chevron_right, color: colors.onSurfaceVariant),
         onTap: onTap,
         enabled: onTap != null,
       ),
+    );
+  }
+}
+
+class _AssignmentProgress extends StatelessWidget {
+  const _AssignmentProgress({required this.snapshot});
+
+  final ProgressSnapshot snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    final colors = Theme.of(context).colorScheme;
+    final progress = snapshot.totalFeatures == 0
+        ? 0.0
+        : (snapshot.completedFeatures / snapshot.totalFeatures).clamp(0.0, 1.0);
+    final remaining = (snapshot.totalFeatures - snapshot.completedFeatures)
+        .clamp(0, snapshot.totalFeatures);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l.assignmentProgress,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 12),
+        Semantics(
+          label: l.featuresLabel(
+            snapshot.completedFeatures,
+            snapshot.totalFeatures,
+          ),
+          excludeSemantics: true,
+          child: Text(
+            l.homeProgressCount(
+              snapshot.completedFeatures,
+              snapshot.totalFeatures,
+            ),
+            style: const TextStyle(
+              fontSize: 40,
+              height: 1.1,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -1,
+            ),
+          ),
+        ),
+        Text(
+          l.homeSurveyed,
+          style: TextStyle(fontSize: 17, color: colors.onSurfaceVariant),
+        ),
+        const SizedBox(height: 12),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final label = Text(
+              l.homePercentComplete((progress * 100).round()),
+              style: TextStyle(fontSize: 14, color: colors.onSurfaceVariant),
+            );
+            final bar = LinearProgressIndicator(
+              value: progress,
+              color: colors.primary,
+              backgroundColor: colors.surfaceContainerHighest,
+              minHeight: 10,
+              borderRadius: BorderRadius.circular(8),
+              semanticsLabel: l.assignmentProgress,
+            );
+            if (constraints.maxWidth < 300 ||
+                MediaQuery.textScalerOf(context).scale(14) > 18) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [bar, const SizedBox(height: 8), label],
+              );
+            }
+            return Row(
+              children: [
+                Expanded(child: bar),
+                const SizedBox(width: 12),
+                label,
+              ],
+            );
+          },
+        ),
+        const SizedBox(height: 8),
+        Text(
+          l.homeRemaining(remaining),
+          style: TextStyle(fontSize: 14, color: colors.onSurfaceVariant),
+        ),
+      ],
     );
   }
 }

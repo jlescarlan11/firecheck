@@ -1,3 +1,4 @@
+import 'package:firecheck/core/theme/app_layout.dart';
 import 'package:firecheck/features/review/domain/review_state.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -49,21 +50,31 @@ class ValidationSection extends StatelessWidget {
       labels[i.featureId] = i.featureLabel;
     }
 
-    return Card(
-      color: isBlocker ? const Color(0xFFFFF5F5) : const Color(0xFFFFFAF0),
+    return AppSection(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.zero,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Icon(
-                  isBlocker ? Icons.error_outline : Icons.warning_amber_outlined,
+                  isBlocker
+                      ? Icons.error_outline
+                      : Icons.warning_amber_outlined,
                   color: color,
                 ),
                 const SizedBox(width: 8),
-                Text(title, style: TextStyle(fontWeight: FontWeight.w600, color: color)),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: color,
+                    ),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 8),

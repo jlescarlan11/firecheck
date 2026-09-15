@@ -6,7 +6,6 @@ import 'package:flutter/foundation.dart';
 class HeaderIntegrityRule extends ShapefileValidationRule {
   const HeaderIntegrityRule();
 
-  static const _layers = ['boundary', 'buildings', 'roads'];
   static const _shpFileCode = 9994;
 
   @override
@@ -14,9 +13,14 @@ class HeaderIntegrityRule extends ShapefileValidationRule {
     Map<String, Uint8List> files,
     Map<String, String> expectedMd5s,
   ) {
-    for (final layer in _layers) {
-      final shp = files['$layer.shp'];
-      if (shp == null) continue; // missing files caught by R2
+    if (!files.keys.any((name) => name.endsWith('.shp'))) {
+      return const RuleFatal(
+        ruleName: 'header_integrity',
+        userMessage: 'No readable map layers were found in this download.',
+      );
+    }
+    for (final entry in files.entries.where((e) => e.key.endsWith('.shp'))) {
+      final shp = entry.value;
 
       if (shp.length < 100) {
         return const RuleFatal(

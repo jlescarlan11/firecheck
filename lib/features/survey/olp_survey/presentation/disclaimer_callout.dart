@@ -16,8 +16,7 @@ class DisclaimerCallout extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context)!;
-    final key =
-        OlpFormKey(submissionId: submissionId, featureId: featureId);
+    final key = OlpFormKey(submissionId: submissionId, featureId: featureId);
     final state = ref.watch(olpSectionNotifierProvider(key));
     final notifier = ref.read(olpSectionNotifierProvider(key).notifier);
 

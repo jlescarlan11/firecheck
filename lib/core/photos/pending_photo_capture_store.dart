@@ -6,10 +6,16 @@ class PendingPhotoCapture {
   const PendingPhotoCapture({
     required this.submissionId,
     required this.featureId,
+    this.recoveredSourcePath,
   });
 
   final String submissionId;
   final String featureId;
+
+  /// Path retained after ImagePicker lost-data retrieval until the image has
+  /// been processed and inserted durably. This makes a failed recovery
+  /// retryable instead of consuming the only ImagePicker result.
+  final String? recoveredSourcePath;
 }
 
 /// Persists the form context before Android hands control to the camera app.
@@ -27,6 +33,8 @@ class PendingPhotoCaptureStore {
       jsonEncode({
         'submission_id': capture.submissionId,
         'feature_id': capture.featureId,
+        if (capture.recoveredSourcePath != null)
+          'recovered_source_path': capture.recoveredSourcePath,
       }),
     );
   }
@@ -39,6 +47,7 @@ class PendingPhotoCaptureStore {
       if (value is! Map<String, dynamic>) return null;
       final submissionId = value['submission_id'];
       final featureId = value['feature_id'];
+      final recoveredSourcePath = value['recovered_source_path'];
       if (submissionId is! String ||
           submissionId.isEmpty ||
           featureId is! String ||
@@ -48,6 +57,10 @@ class PendingPhotoCaptureStore {
       return PendingPhotoCapture(
         submissionId: submissionId,
         featureId: featureId,
+        recoveredSourcePath:
+            recoveredSourcePath is String && recoveredSourcePath.isNotEmpty
+                ? recoveredSourcePath
+                : null,
       );
     } on FormatException {
       return null;

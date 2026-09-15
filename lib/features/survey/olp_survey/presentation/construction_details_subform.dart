@@ -18,8 +18,7 @@ class ConstructionDetailsSubform extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context)!;
-    final key =
-        OlpFormKey(submissionId: submissionId, featureId: featureId);
+    final key = OlpFormKey(submissionId: submissionId, featureId: featureId);
     final state = ref.watch(olpSectionNotifierProvider(key));
     final notifier = ref.read(olpSectionNotifierProvider(key).notifier);
 
@@ -106,7 +105,7 @@ class _ElementRow extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(elementLabel, style: const TextStyle(fontSize: 12)),
+          Text(elementLabel, style: const TextStyle(fontSize: 14)),
           Wrap(
             spacing: 8,
             children: [

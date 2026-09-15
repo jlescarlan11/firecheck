@@ -12,6 +12,33 @@ class AppLocalizationsTl extends AppLocalizations {
   String get appTitle => 'FireCheck';
 
   @override
+  String get fieldWorkspace => 'Gawain sa field';
+
+  @override
+  String get noLocalMaps => 'Walang na-download na mapa';
+
+  @override
+  String get retryAction => 'Subukan muli';
+
+  @override
+  String get uploadsTitle => 'Mga upload';
+
+  @override
+  String get formRulesTitle => 'Mga panuntunan ng form';
+
+  @override
+  String get homeLoadError => 'Hindi ma-load ang iyong gawain.';
+
+  @override
+  String get accountLoadError => 'Hindi ma-load ang iyong account.';
+
+  @override
+  String get signInIdentity => 'Bureau of Fire Protection';
+
+  @override
+  String get signInPurpose => 'Mga survey sa field';
+
+  @override
   String get signIn => 'Mag-sign in';
 
   @override
@@ -1191,4 +1218,176 @@ class AppLocalizationsTl extends AppLocalizations {
   String homeErrorPrefix(String error) {
     return 'Error: $error';
   }
+
+  @override
+  String get homeFieldwork => 'Gawain sa field';
+
+  @override
+  String get homeIntro => 'Lahat ng kailangan para sa iyong takda.';
+
+  @override
+  String get homeContinueSurvey => 'Ipagpatuloy ang survey';
+
+  @override
+  String get homeStartSurvey => 'Simulan ang survey';
+
+  @override
+  String get homeViewMap => 'Tingnan ang mapa';
+
+  @override
+  String get homeManageData => 'Pamahalaan ang datos';
+
+  @override
+  String get homeGetMaps => 'Kumuha ng mapa';
+
+  @override
+  String get homeReviewUpload => 'Suriin at i-upload';
+
+  @override
+  String get homeSurveyed => 'na-survey na feature';
+
+  @override
+  String homeProgressCount(int completed, int total) {
+    return '$completed / $total';
+  }
+
+  @override
+  String homePercentComplete(int percent) {
+    return '$percent% tapos';
+  }
+
+  @override
+  String homeRemaining(int count) {
+    return '$count natitira';
+  }
+
+  @override
+  String get homeLocalSaveHint =>
+      'Naka-save sa device na ito ang mga pagbabago sa survey.';
+
+  @override
+  String get homeEmptyHint =>
+      'Mag-download ng takda para makapagsimula ng survey.';
+
+  @override
+  String get homeMoreActions => 'Iba pang aksyon';
+
+  @override
+  String homePendingFiles(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count file na naghihintay ng upload',
+      one: '1 file na naghihintay ng upload',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String homeUploadingFiles(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Nag-a-upload ng $count file',
+      one: 'Nag-a-upload ng 1 file',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String homeFailedFiles(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count file na kailangang subukang muli',
+      one: '1 file na kailangang subukang muli',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String homeSyncAttention(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count survey sync ang kailangang ayusin',
+      one: '1 survey sync ang kailangang ayusin',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String homeSyncPending(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count survey sync ang nakabinbin',
+      one: '1 survey sync ang nakabinbin',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get designSignInTitle => 'Handa na sa field.';
+
+  @override
+  String get designSignInBody =>
+      'Mag-sign in para i-download ang iyong takda at ipagpatuloy ang mga survey.';
+
+  @override
+  String get designAccountBody =>
+      'Ang iyong profile at mga kagamitan sa field.';
+
+  @override
+  String get designMapsTitle => 'Dalhin ang gawain offline.';
+
+  @override
+  String get designMapsBody => 'Mag-download ng takda bago pumunta sa field.';
+
+  @override
+  String get designDownloadSource => 'Pinagmulan ng download';
+
+  @override
+  String get designImportOptions => 'Mga opsyon sa pag-import';
+
+  @override
+  String get designUploadsTitle => 'Mga nakapilang upload';
+
+  @override
+  String get designUploadsBody =>
+      'Suriin ang mga naka-save na file at ipadala kapag handa ka na.';
+
+  @override
+  String get designReviewTitle => 'Suriin ang iyong gawain';
+
+  @override
+  String get designReviewBody =>
+      'Suriin ang mga natapos na survey bago i-upload.';
+
+  @override
+  String get designSummaryTitle => 'Buod ng takda';
+
+  @override
+  String get designActivityTitle => 'Gawain ng pangkat';
+
+  @override
+  String get designActivityBody =>
+      'Tingnan ang pinakabagong survey na ibinahagi ng ibang enumerator.';
+
+  @override
+  String get designConflictsTitle => 'Ayusin ang mga pagbabago';
+
+  @override
+  String get designConflictsBody =>
+      'Suriin ang magkakasalungat na update bago magpatuloy.';
+
+  @override
+  String get designFormRulesBody =>
+      'Tingnan ang mga tanong at panuntunan sa iyong mga survey.';
+
+  @override
+  String get downloadProgressUnknown => 'Kinakalkula ang progreso…';
+
+  @override
+  String get uploadLoadMore => 'Ipakita ang higit pang pagbabago';
 }

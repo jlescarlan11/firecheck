@@ -1,5 +1,7 @@
 import 'package:firecheck/core/db/database.dart';
+import 'package:firecheck/core/theme/app_layout.dart';
 import 'package:firecheck/features/conflict_review/presentation/conflict_review_providers.dart';
+import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -17,12 +19,10 @@ class ConflictReviewListScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Resolve conflicts')),
       body: subsAsync.when(
-        loading: () =>
-            const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (subs) => dedupAsync.when(
-          loading: () =>
-              const Center(child: CircularProgressIndicator()),
+          loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => Center(child: Text('Error: $e')),
           data: (dedup) {
             if (subs.isEmpty && dedup.isEmpty) {
@@ -30,12 +30,16 @@ class ConflictReviewListScreen extends ConsumerWidget {
             }
             return ListView(
               key: const Key('conflict-review.list'),
+              padding: appPageInsets(context),
               children: [
+                AppPageIntro(
+                    title: AppLocalizations.of(context)!.designConflictsTitle,
+                    subtitle:
+                        AppLocalizations.of(context)!.designConflictsBody),
                 if (subs.isNotEmpty)
                   const _SectionHeader('Attribution conflicts'),
                 for (final s in subs) _SubmissionTile(submission: s),
-                if (dedup.isNotEmpty)
-                  const _SectionHeader('New-feature dedup'),
+                if (dedup.isNotEmpty) const _SectionHeader('New-feature dedup'),
                 for (final f in dedup) _DedupTile(feature: f),
               ],
             );
@@ -56,11 +60,16 @@ class _Empty extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.check_circle_outline,
-                size: 56, color: Colors.green.shade400),
+            Icon(
+              Icons.check_circle_outline,
+              size: 56,
+              color: Colors.green.shade400,
+            ),
             const SizedBox(height: 12),
-            const Text('Nothing to resolve.',
-                style: TextStyle(fontWeight: FontWeight.w600)),
+            const Text(
+              'Nothing to resolve.',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
             const SizedBox(height: 4),
             Text(
               "You're caught up. Conflicts and dedup decisions will appear "
@@ -82,14 +91,14 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      padding: const EdgeInsets.only(top: 24, bottom: 12),
       child: Text(
         text,
         style: TextStyle(
           color: Colors.grey.shade700,
           fontWeight: FontWeight.w700,
-          fontSize: 12,
-          letterSpacing: 0.4,
+          fontSize: 18,
+          letterSpacing: 0,
         ),
       ),
     );
@@ -108,8 +117,10 @@ class _SubmissionTile extends StatelessWidget {
         backgroundColor: Color(0xFFFFE0B2),
         child: Icon(Icons.warning_amber_rounded, color: Color(0xFFB85A00)),
       ),
-      title: Text('Submission ${_short(submission.id)}',
-          style: const TextStyle(fontWeight: FontWeight.w600)),
+      title: Text(
+        'Submission ${_short(submission.id)}',
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
       subtitle: Text(
         'Feature ${_short(submission.featureId)} • conflict with '
         '${_short(submission.pendingTheirsId ?? '?')}',

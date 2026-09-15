@@ -33,12 +33,13 @@ class GeometryEditorBanner extends ConsumerWidget {
     final primaryLabel = isSketch ? l.sketchBannerFinish : l.reshapeBannerSave;
 
     return Material(
-      color: const Color(0xFF3182CE),
+      color: Theme.of(context).colorScheme.surface,
       child: SafeArea(
         bottom: false,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            const Divider(),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               child: Row(
@@ -46,7 +47,6 @@ class GeometryEditorBanner extends ConsumerWidget {
                   TextButton(
                     key: const Key('reshape.banner.cancel'),
                     onPressed: onCancel,
-                    style: TextButton.styleFrom(foregroundColor: Colors.white),
                     child: const Text('Cancel'),
                   ),
                   Expanded(
@@ -54,7 +54,6 @@ class GeometryEditorBanner extends ConsumerWidget {
                       title,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                        color: Colors.white,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -62,12 +61,6 @@ class GeometryEditorBanner extends ConsumerWidget {
                   FilledButton(
                     key: const Key('reshape.banner.save'),
                     onPressed: saveEnabled ? onSave : null,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: const Color(0xFF3182CE),
-                      disabledBackgroundColor:
-                          Colors.white.withValues(alpha: 0.4),
-                    ),
                     child: Text(primaryLabel),
                   ),
                 ],
@@ -80,11 +73,8 @@ class GeometryEditorBanner extends ConsumerWidget {
                 child: TextButton.icon(
                   key: const Key('reshape.banner.undo'),
                   onPressed: undoEnabled ? onUndo : null,
-                  icon: const Icon(Icons.undo, color: Colors.white, size: 16),
-                  label: const Text(
-                    'Undo',
-                    style: TextStyle(color: Colors.white),
-                  ),
+                  icon: const Icon(Icons.undo, size: 20),
+                  label: const Text('Undo'),
                 ),
               ),
             ),

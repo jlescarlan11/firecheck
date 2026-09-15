@@ -25,6 +25,20 @@ class PhotoCaptureController {
     required String submissionId,
     required String featureId,
   }) async {
+    // Do not overwrite the only recovered ImagePicker result with a new
+    // camera context. A later camera attempt first completes the retained
+    // recovery; if it still cannot persist, the retained source remains for
+    // another retry.
+    final retained = await pendingStore.read();
+    if (retained?.recoveredSourcePath case final sourcePath?) {
+      final id = await _persist(
+        sourcePath: sourcePath,
+        submissionId: retained!.submissionId,
+      );
+      await pendingStore.clear();
+      return id;
+    }
+
     await pendingStore.save(
       PendingPhotoCapture(
         submissionId: submissionId,
@@ -59,11 +73,20 @@ class PhotoCaptureController {
   Future<PendingPhotoCapture?> recoverPendingCapture() async {
     final pending = await pendingStore.read();
     if (pending == null) return null;
-    final src = await camera.recoverLostPhoto();
+    final src = pending.recoveredSourcePath ?? await camera.recoverLostPhoto();
     if (src == null) {
       await pendingStore.clear();
       return null;
     }
+    // ImagePicker exposes lost data only once. Retain the recovered path
+    // before processing so a transient filesystem/DB failure can be retried
+    // on the next bootstrap instead of silently discarding the photo.
+    final retained = PendingPhotoCapture(
+      submissionId: pending.submissionId,
+      featureId: pending.featureId,
+      recoveredSourcePath: src,
+    );
+    await pendingStore.save(retained);
     await _persist(sourcePath: src, submissionId: pending.submissionId);
     await pendingStore.clear();
     return pending;
@@ -73,6 +96,12 @@ class PhotoCaptureController {
     required String sourcePath,
     required String submissionId,
   }) async {
+    final submission = await (repo.db.select(repo.db.submissions)
+          ..where((t) => t.id.equals(submissionId)))
+        .getSingleOrNull();
+    if (submission == null) {
+      throw StateError('Cannot attach a photo to a missing submission.');
+    }
     final dest = await storage.reserveDestPath(submissionId: submissionId);
     final gps = await processor.resizeAndCopyExif(
       sourcePath: sourcePath,

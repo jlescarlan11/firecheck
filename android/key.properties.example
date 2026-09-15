@@ -9,7 +9,7 @@
 #     -alias firecheck
 #
 # Then fill in the values below. `storeFile` may be an absolute path,
-# or relative to the `android/` directory.
+# or relative to the `android/app/` directory.
 
 storePassword=
 keyPassword=

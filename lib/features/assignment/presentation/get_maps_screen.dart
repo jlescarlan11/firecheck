@@ -1,13 +1,11 @@
 // lib/features/assignment/presentation/get_maps_screen.dart
-import 'dart:async';
 
 import 'package:firecheck/core/drive/ftp_credentials.dart';
 import 'package:firecheck/core/drive/transport_source.dart';
 import 'package:firecheck/core/errors/failure.dart';
-import 'package:firecheck/features/assignment/data/map_import_preferences.dart';
+import 'package:firecheck/core/theme/app_layout.dart';
 import 'package:firecheck/features/assignment/domain/get_maps_state.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
-import 'package:firecheck/features/auth/presentation/auth_providers.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -48,7 +46,7 @@ class _GetMapsScreenState extends ConsumerState<GetMapsScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(l.getMapsTitle)),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: appPageInsets(context),
         child: switch (state) {
           Idle() => _IdleView(
               onStart: () => ref.read(getMapsNotifierProvider.notifier).start(),
@@ -70,7 +68,8 @@ class _GetMapsScreenState extends ConsumerState<GetMapsScreen> {
               failure: failure,
               isRetryable: isRetryable,
               onAction: isRetryable
-                  ? () => ref.read(getMapsNotifierProvider.notifier).retryDownload()
+                  ? () =>
+                      ref.read(getMapsNotifierProvider.notifier).retryDownload()
                   : () => ref.read(getMapsNotifierProvider.notifier).reset(),
             ),
         },
@@ -90,36 +89,6 @@ class _IdleView extends ConsumerStatefulWidget {
 class _IdleViewState extends ConsumerState<_IdleView> {
   // Issue #45: which transport the user picked for this download.
   TransportSource _source = TransportSource.googleDrive;
-  // Issue #46: when on, the validator demotes fatals to warnings so the
-  // importer accepts any geospatial data the team happens to have.
-  bool _unrestricted = true;
-
-  @override
-  void initState() {
-    super.initState();
-    unawaited(_restoreUnrestrictedPreference());
-  }
-
-  Future<void> _restoreUnrestrictedPreference() async {
-    try {
-      final value =
-          await ref.read(mapImportPreferencesProvider).isUnrestricted();
-      if (mounted) setState(() => _unrestricted = value);
-    } on Object {
-      // Keep the safe product default when preference storage is unavailable.
-    }
-  }
-
-  Future<void> _saveUnrestrictedPreference(bool value) async {
-    try {
-      await ref
-          .read(mapImportPreferencesProvider)
-          .setUnrestricted(value: value);
-    } on Object {
-      // The in-memory choice remains usable for this import attempt.
-    }
-  }
-
   // Issue #45 — credentials are kept in-memory only for the current
   // download. Persisting them would require secure storage and a
   // permissions UX that's out of scope for this batch.
@@ -145,10 +114,10 @@ class _IdleViewState extends ConsumerState<_IdleView> {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          AppPageIntro(title: l.designMapsTitle, subtitle: l.designMapsBody),
           Text(
-            l.getMapsExplainer('~100 MB', 10),
-            style: Theme.of(context).textTheme.bodyMedium,
-            textAlign: TextAlign.center,
+            l.designDownloadSource,
+            style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 16),
           SegmentedButton<TransportSource>(
@@ -202,37 +171,22 @@ class _IdleViewState extends ConsumerState<_IdleView> {
               ),
             ),
           ],
-          const SizedBox(height: 12),
-          SwitchListTile(
-            title: const Text('Allow any map data (no restrictions)'),
-            subtitle: const Text(
-              'Import every readable SHP layer. Missing optional layers show '
-              'a warning; unreadable data still stops the import.',
-            ),
-            value: _unrestricted,
-            onChanged: (value) {
-              setState(() => _unrestricted = value);
-              unawaited(_saveUnrestrictedPreference(value));
-            },
-          ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 28),
           FilledButton(
             onPressed: () {
-              ref.read(getMapsNotifierProvider.notifier)
-                ..setUnrestricted(value: _unrestricted)
-                ..setTransport(
-                  _source,
-                  ftp: _source == TransportSource.ftp
-                      ? FtpCredentials(
-                          host: _host.text.trim(),
-                          user: _user.text,
-                          password: _pass.text,
-                          remotePath: _remotePath.text.trim().isEmpty
-                              ? '/'
-                              : _remotePath.text.trim(),
-                        )
-                      : null,
-                );
+              ref.read(getMapsNotifierProvider.notifier).setTransport(
+                    _source,
+                    ftp: _source == TransportSource.ftp
+                        ? FtpCredentials(
+                            host: _host.text.trim(),
+                            user: _user.text,
+                            password: _pass.text,
+                            remotePath: _remotePath.text.trim().isEmpty
+                                ? '/'
+                                : _remotePath.text.trim(),
+                          )
+                        : null,
+                  );
               widget.onStart();
             },
             child: Text(l.startDownload),
@@ -242,10 +196,6 @@ class _IdleViewState extends ConsumerState<_IdleView> {
     );
   }
 }
-
-final mapImportPreferencesProvider = Provider<MapImportPreferences>((ref) {
-  return MapImportPreferences(ref.watch(secureStorageProvider));
-});
 
 class _DiscoveringView extends StatelessWidget {
   const _DiscoveringView();
@@ -290,6 +240,13 @@ class _PickingAssignmentView extends ConsumerWidget {
               style: Theme.of(context).textTheme.bodyMedium,
               textAlign: TextAlign.center,
             ),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: () =>
+                  ref.read(getMapsNotifierProvider.notifier).reset(),
+              icon: const Icon(Icons.refresh),
+              label: Text(l.retryAction),
+            ),
           ],
         ),
       );
@@ -297,13 +254,15 @@ class _PickingAssignmentView extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(l.pickAssignmentTitle,
-            style: Theme.of(context).textTheme.titleMedium),
+        Text(
+          l.pickAssignmentTitle,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
         const SizedBox(height: 12),
         Expanded(
           child: ListView.separated(
             itemCount: state.assignments.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            separatorBuilder: (_, __) => const Divider(),
             itemBuilder: (context, i) {
               final a = state.assignments[i];
               final selected = a.assignmentId == state.selectedId;
@@ -312,14 +271,12 @@ class _PickingAssignmentView extends ConsumerWidget {
                     .read(getMapsNotifierProvider.notifier)
                     .selectAssignment(a.assignmentId),
                 child: Container(
-                  padding: const EdgeInsets.all(12),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
                   decoration: BoxDecoration(
-                    border: Border.all(
-                      color: selected
-                          ? Theme.of(context).colorScheme.primary
-                          : Colors.grey.shade300,
-                      width: selected ? 2 : 1,
-                    ),
+                    color: selected
+                        ? Theme.of(context).colorScheme.primaryContainer
+                        : Colors.white,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -328,9 +285,12 @@ class _PickingAssignmentView extends ConsumerWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(a.assignmentId,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold)),
+                            Text(
+                              a.assignmentId,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                             const SizedBox(height: 2),
                             Text(
                               a.alreadyDownloaded
@@ -341,9 +301,15 @@ class _PickingAssignmentView extends ConsumerWidget {
                           ],
                         ),
                       ),
-                      if (selected)
-                        Icon(Icons.check,
-                            color: Theme.of(context).colorScheme.primary),
+                      const SizedBox(width: 12),
+                      Icon(
+                        selected
+                            ? Icons.check_circle_outline
+                            : Icons.radio_button_unchecked,
+                        color: selected
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.outline,
+                      ),
                     ],
                   ),
                 ),
@@ -362,30 +328,37 @@ class _PickingAssignmentView extends ConsumerWidget {
   }
 }
 
-class _InsufficientStorageView extends StatelessWidget {
+class _InsufficientStorageView extends ConsumerWidget {
   const _InsufficientStorageView({required this.state});
   final InsufficientStorage state;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context)!;
     final needed = (state.requiredBytes / 1048576).ceil();
     final available = (state.availableBytes / 1048576).floor();
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(Icons.warning_amber_rounded,
-            size: 48, color: Theme.of(context).colorScheme.error),
+        Icon(
+          Icons.warning_amber_rounded,
+          size: 48,
+          color: Theme.of(context).colorScheme.error,
+        ),
         const SizedBox(height: 12),
-        Text(l.insufficientStorageTitle,
-            style: Theme.of(context).textTheme.titleMedium),
+        Text(
+          l.insufficientStorageTitle,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
         const SizedBox(height: 8),
-        Text(l.insufficientStorageBody(needed, available),
-            textAlign: TextAlign.center),
+        Text(
+          l.insufficientStorageBody(needed, available),
+          textAlign: TextAlign.center,
+        ),
         const SizedBox(height: 24),
         FilledButton(
-          onPressed: null,
-          child: Text(l.downloadSelected),
+          onPressed: () => ref.read(getMapsNotifierProvider.notifier).reset(),
+          child: Text(l.retryAction),
         ),
         const SizedBox(height: 8),
         Text(l.freeSpaceHint, style: Theme.of(context).textTheme.bodySmall),
@@ -401,9 +374,9 @@ class _DownloadingShapefilesView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context)!;
-    final progress = state.total == 0 ? null : state.downloaded / state.total;
-    final dl = (state.downloaded / 1048576).toStringAsFixed(1);
-    final tot = (state.total / 1048576).toStringAsFixed(1);
+    final progress = state.total <= 0
+        ? null
+        : (state.downloaded / state.total).clamp(0.0, 1.0);
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -413,14 +386,15 @@ class _DownloadingShapefilesView extends ConsumerWidget {
         LinearProgressIndicator(value: progress),
         const SizedBox(height: 8),
         Text(
-          '$dl / $tot MB',
+          progress == null
+              ? l.downloadProgressUnknown
+              : '${(progress * 100).round()}%',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodySmall,
         ),
         const SizedBox(height: 24),
         OutlinedButton(
-          onPressed: () =>
-              ref.read(getMapsNotifierProvider.notifier).cancel(),
+          onPressed: () => ref.read(getMapsNotifierProvider.notifier).cancel(),
           child: Text(l.cancelLabel),
         ),
       ],
@@ -452,12 +426,14 @@ class _ProgressView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context)!;
-    final progress = state.overallProgress;
     final (downloaded, total) = switch (state) {
-      DownloadingTiles(:final downloadedBytes, :final totalBytes) =>
-        (downloadedBytes, totalBytes),
+      DownloadingTiles(:final downloadedBytes, :final totalBytes) => (
+          downloadedBytes,
+          totalBytes
+        ),
       _ => (0, 0),
     };
+    final progress = total <= 0 ? null : (downloaded / total).clamp(0.0, 1.0);
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -467,15 +443,15 @@ class _ProgressView extends ConsumerWidget {
         LinearProgressIndicator(value: progress),
         const SizedBox(height: 8),
         Text(
-          '${(downloaded / 1048576).toStringAsFixed(1)} / '
-          '${(total / 1048576).toStringAsFixed(1)} MB',
+          progress == null
+              ? l.downloadProgressUnknown
+              : '${(progress * 100).round()}%',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodySmall,
         ),
         const SizedBox(height: 24),
         OutlinedButton(
-          onPressed: () =>
-              ref.read(getMapsNotifierProvider.notifier).cancel(),
+          onPressed: () => ref.read(getMapsNotifierProvider.notifier).cancel(),
           child: Text(l.cancelLabel),
         ),
       ],
@@ -544,8 +520,11 @@ class _ShapefileWarningView extends ConsumerWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Icon(Icons.warning_amber_rounded,
-            size: 48, color: Theme.of(context).colorScheme.tertiary),
+        Icon(
+          Icons.warning_amber_rounded,
+          size: 48,
+          color: Theme.of(context).colorScheme.tertiary,
+        ),
         const SizedBox(height: 12),
         Text(
           l.getMapsWarningTitle,
@@ -596,7 +575,9 @@ class _ErrorView extends StatelessWidget {
         const Icon(Icons.error_outline, color: Colors.red, size: 64),
         const SizedBox(height: 12),
         Text(
-          '${l.downloadFailed} ${failure.message}',
+          failure is AuthFailure
+              ? failure.message
+              : '${l.downloadFailed} ${failure.message}',
           textAlign: TextAlign.center,
         ),
         if (isValidation) ...[

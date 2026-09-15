@@ -8,7 +8,9 @@ class ProgressRepository {
   final AppDatabase _db;
 
   Stream<ProgressSnapshot> watchProgress() {
-    final featuresStream = _db.select(_db.features).watch();
+    final featuresStream = (_db.select(_db.features)
+          ..where((t) => t.mergedIntoId.isNull()))
+        .watch();
     final jobsStream = _db.select(_db.syncJobs).watch();
 
     return Rx.combineLatest(

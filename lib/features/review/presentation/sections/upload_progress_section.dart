@@ -1,3 +1,4 @@
+import 'package:firecheck/core/theme/app_layout.dart';
 import 'package:firecheck/features/review/domain/upload_progress.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -21,15 +22,17 @@ class UploadProgressSection extends StatelessWidget {
     return switch (progress) {
       Idle() => const SizedBox.shrink(),
       Locked() => const SizedBox.shrink(),
-      InProgress(:final done, :final total) => Card(
+      InProgress(:final done, :final total) => AppSection(
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.zero,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(l.uploadProgressLabel(done, total)),
                 const SizedBox(height: 8),
-                LinearProgressIndicator(value: total == 0 ? null : done / total),
+                LinearProgressIndicator(
+                  value: total == 0 ? null : done / total,
+                ),
                 if (onReset != null) ...[
                   const SizedBox(height: 8),
                   Align(
@@ -44,12 +47,9 @@ class UploadProgressSection extends StatelessWidget {
             ),
           ),
         ),
-      Completed(:final failedCount) => Card(
-          color: failedCount == 0
-              ? const Color(0xFFE6FFFA)
-              : const Color(0xFFFFF5F5),
+      Completed(:final failedCount) => AppSection(
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.zero,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

@@ -108,6 +108,8 @@ class IdentitySection extends ConsumerWidget {
       if (children.isNotEmpty) children.add(const SizedBox(height: 8));
       children.add(
         DropdownButtonFormField<String>(
+          isExpanded: true,
+          itemHeight: null,
           initialValue: state.ra9514Type,
           decoration: InputDecoration(
             labelText: requiredLabel(

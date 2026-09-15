@@ -1,3 +1,4 @@
+import 'package:firecheck/core/theme/app_layout.dart';
 import 'package:firecheck/features/survey/olp_survey/domain/olp_score.dart';
 import 'package:firecheck/features/survey/olp_survey/presentation/olp_section_providers.dart';
 import 'package:firecheck/features/survey/olp_survey/presentation/result/mark_complete_button.dart';
@@ -27,8 +28,12 @@ class OlpResultScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: Text(l.olpResultTitle)),
       body: ListView(
+        padding: appPageInsets(context),
         children: [
-          ScoreHero(score: result.totalScore, classification: result.classification),
+          ScoreHero(
+            score: result.totalScore,
+            classification: result.classification,
+          ),
           PerSectionProgress(sectionScores: result.sectionScores),
           const Divider(),
           UncheckedItemsList(items: result.uncheckedItems),
@@ -37,7 +42,7 @@ class OlpResultScreen extends ConsumerWidget {
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: appPageInsets(context, vertical: 16),
           child: SizedBox(
             width: double.infinity,
             child: MarkCompleteButton(

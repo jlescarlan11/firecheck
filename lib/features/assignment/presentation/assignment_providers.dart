@@ -1,16 +1,17 @@
 // lib/features/assignment/presentation/assignment_providers.dart
 import 'dart:async';
 
+import 'package:firecheck/core/auth/current_user_provider.dart';
 import 'package:firecheck/core/db/database.dart';
-import 'package:firecheck/core/drive/drive_assignment.dart';
 import 'package:firecheck/core/device/storage_checker.dart';
 import 'package:firecheck/core/drive/drive_api.dart';
+import 'package:firecheck/core/drive/drive_assignment.dart';
 import 'package:firecheck/core/drive/ftp_credentials.dart';
 import 'package:firecheck/core/drive/transport_source.dart';
 import 'package:firecheck/core/drive/transport_source_factory.dart';
+import 'package:firecheck/core/errors/failure.dart';
 import 'package:firecheck/core/forms/field_requirements_providers.dart';
 import 'package:firecheck/core/forms/form_definition_providers.dart';
-import 'package:firecheck/core/errors/failure.dart';
 import 'package:firecheck/core/mapbox/offline_pack_adapter.dart';
 import 'package:firecheck/core/sync/shapefile/shapefile_importer.dart';
 import 'package:firecheck/core/sync/shapefile/shapefile_validator.dart';
@@ -19,7 +20,6 @@ import 'package:firecheck/features/assignment/data/assignment_name_resolver.dart
 import 'package:firecheck/features/assignment/data/assignment_repository.dart';
 import 'package:firecheck/features/assignment/data/canonical_feature_publisher.dart';
 import 'package:firecheck/features/assignment/data/feature_submission_status.dart';
-import 'package:firecheck/core/auth/current_user_provider.dart';
 import 'package:firecheck/features/assignment/data/offline_tile_pack_repository.dart';
 import 'package:firecheck/features/assignment/domain/get_maps_state.dart';
 import 'package:firecheck/features/assignment/domain/shapefile_acquisition_use_case.dart';
@@ -135,15 +135,6 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
   DriveAssignment? _selectedAssignment;
   String? _enumeratorId;
 
-  /// Issue #46: when true, the validator demotes fatals to warnings so any
-  /// available map data passes through to the importer, regardless of
-  /// source, format, or predefined limitations.
-  bool unrestricted = true;
-
-  void setUnrestricted({required bool value}) {
-    unrestricted = value;
-  }
-
   Future<void> start() async {
     _cancelled = false;
     state = const DiscoveringAssignments();
@@ -151,6 +142,10 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
     List<DriveAssignment> rawAssignments;
     try {
       rawAssignments = await _activeSource.listAssignments();
+    } on AuthFailure catch (e) {
+      if (!mounted) return;
+      state = GetMapsError(e, isRetryable: false);
+      return;
     } catch (e) {
       if (!mounted) return;
       state = GetMapsError(NetworkFailure(e.toString()), isRetryable: true);
@@ -249,7 +244,10 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
 
     _enumeratorId = await googleAuthRepo.getEnumeratorId();
     await _runAcquisition(
-        source: source, selected: selected, totalBytes: needed);
+      source: source,
+      selected: selected,
+      totalBytes: needed,
+    );
   }
 
   Future<void> acknowledgeWarning() async {
@@ -270,7 +268,13 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
     final s = state;
     if (s is! GetMapsError || !s.isRetryable) return;
     final selected = _selectedAssignment;
-    if (selected == null) return;
+    // Discovery has no selected assignment yet. Retrying it must begin a
+    // fresh list request rather than silently returning from the download
+    // retry path.
+    if (selected == null) {
+      await start();
+      return;
+    }
     final DriveApi source;
     try {
       source = _activeSource;
@@ -288,7 +292,10 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
       return;
     }
     await _runAcquisition(
-        source: source, selected: selected, totalBytes: needed);
+      source: source,
+      selected: selected,
+      totalBytes: needed,
+    );
   }
 
   Future<void> _runAcquisition({
@@ -302,7 +309,7 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
           assignment: selected,
           enumeratorId: _enumeratorId ?? '',
           totalBytes: totalBytes,
-          unrestricted: unrestricted,
+          unrestricted: true,
         ),
       );
 
@@ -335,9 +342,11 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
           if (!mounted) return;
           await _startTileDownload();
           return;
-        case AcquisitionImportFailed():
-          // Non-fatal — let the user open the map even if import failed.
-          state = const Ready(featureCount: 0, totalBytes: 0);
+        case AcquisitionImportFailed(:final failure):
+          // A readable but incomplete bundle may proceed after its warning,
+          // but data the importer cannot use must never look like a finished
+          // empty assignment.
+          state = GetMapsError(failure, isRetryable: false);
           return;
         case AcquisitionFailed(:final failure, :final isRetryable):
           state = GetMapsError(failure, isRetryable: isRetryable);
@@ -351,8 +360,10 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
     final assignment = await assignmentRepo.getCurrentAssignment();
     if (!mounted) return;
     if (assignment == null) {
-      // Import didn't create an assignment — let user open the map anyway.
-      state = const Ready(featureCount: 0, totalBytes: 0);
+      state = const GetMapsError(
+        StorageFailure('Imported map data did not create an assignment.'),
+        isRetryable: false,
+      );
       return;
     }
 
@@ -379,7 +390,9 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
         switch (event) {
           case OfflinePackProgress(:final downloaded, :final total):
             state = DownloadingTiles(
-                downloadedBytes: downloaded, totalBytes: total);
+              downloadedBytes: downloaded,
+              totalBytes: total,
+            );
             await packRepo.updateProgress(packId, downloaded, total);
           case OfflinePackComplete():
             await packRepo.markReady(packId);
@@ -435,7 +448,8 @@ final shapefileValidatorProvider = Provider<ShapefileValidator>((ref) {
 final validationFailureReporterProvider =
     Provider<ValidationFailureReporter>((ref) {
   throw UnimplementedError(
-      'Override validationFailureReporterProvider in main.dart');
+    'Override validationFailureReporterProvider in main.dart',
+  );
 });
 
 /// Overridden in main.dart with SupabaseAssignmentNameResolver.

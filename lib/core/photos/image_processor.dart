@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 import 'package:native_exif/native_exif.dart';
 
@@ -14,29 +15,14 @@ class ImageProcessor {
     required String sourcePath,
     required String destPath,
   }) async {
-    final srcBytes = await File(sourcePath).readAsBytes();
-    final decoded = img.decodeImage(srcBytes);
-    if (decoded == null) {
-      throw const ImageProcessingException('Could not decode source image');
-    }
-
-    final resized = _resizeToLongestEdge(decoded, 1600);
-    final outBytes = img.encodeJpg(resized, quality: 85);
-    await File(destPath).writeAsBytes(outBytes, flush: true);
-
-    final gps = await _copyExifAndReadGps(sourcePath, destPath);
-    return gps;
-  }
-
-  img.Image _resizeToLongestEdge(img.Image src, int target) {
-    final w = src.width;
-    final h = src.height;
-    if (w <= target && h <= target) return src;
-    // copyResize preserves aspect ratio when only one dimension is supplied.
-    if (w >= h) {
-      return img.copyResize(src, width: target);
-    }
-    return img.copyResize(src, height: target);
+    // Pass only paths so full-resolution pixels stay in the worker isolate.
+    // Platform-channel EXIF operations remain on the main isolate.
+    await compute(
+      _resizePhoto,
+      (sourcePath: sourcePath, destPath: destPath),
+      debugLabel: 'resizePhoto',
+    );
+    return _copyExifAndReadGps(sourcePath, destPath);
   }
 
   /// Reads GPS from [sourcePath] via `native_exif` and writes it onto
@@ -85,6 +71,28 @@ class ImageProcessor {
       }
     }
   }
+}
+
+/// Runs file decoding, resizing, and JPEG encoding off the UI isolate.
+Future<void> _resizePhoto(
+  ({String sourcePath, String destPath}) paths,
+) async {
+  final srcBytes = await File(paths.sourcePath).readAsBytes();
+  final decoded = img.decodeImage(srcBytes);
+  if (decoded == null) {
+    throw const ImageProcessingException('Could not decode source image');
+  }
+  const target = 1600;
+  final img.Image resized;
+  if (decoded.width <= target && decoded.height <= target) {
+    resized = decoded;
+  } else if (decoded.width >= decoded.height) {
+    resized = img.copyResize(decoded, width: target);
+  } else {
+    resized = img.copyResize(decoded, height: target);
+  }
+  final outBytes = img.encodeJpg(resized, quality: 85);
+  await File(paths.destPath).writeAsBytes(outBytes, flush: true);
 }
 
 class ImageProcessingException implements Exception {

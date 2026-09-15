@@ -1,5 +1,7 @@
+import 'package:firecheck/core/theme/app_layout.dart';
 import 'package:firecheck/features/remote_activity/domain/remote_attribution_view.dart';
 import 'package:firecheck/features/remote_activity/presentation/remote_activity_providers.dart';
+import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -26,9 +28,14 @@ class RemoteActivityListScreen extends ConsumerWidget {
           }
           return ListView.separated(
             key: const Key('remote-activity.list'),
-            itemCount: rows.length,
+            padding: appPageInsets(context),
+            itemCount: rows.length + 1,
             separatorBuilder: (_, __) => const Divider(height: 1),
-            itemBuilder: (context, i) => _RemoteAttributionTile(view: rows[i]),
+            itemBuilder: (context, i) => i == 0
+                ? AppPageIntro(
+                    title: AppLocalizations.of(context)!.designActivityTitle,
+                    subtitle: AppLocalizations.of(context)!.designActivityBody)
+                : _RemoteAttributionTile(view: rows[i - 1]),
           );
         },
       ),
@@ -47,8 +54,11 @@ class _Empty extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.people_alt_outlined,
-                size: 56, color: Colors.grey.shade400),
+            Icon(
+              Icons.people_alt_outlined,
+              size: 56,
+              color: Colors.grey.shade400,
+            ),
             const SizedBox(height: 12),
             const Text(
               'No remote activity yet.',
@@ -78,16 +88,12 @@ class _RemoteAttributionTile extends StatelessWidget {
     return ListTile(
       key: Key('remote-activity.tile.${view.featureId}'),
       leading: CircleAvatar(
-        backgroundColor: view.featureType == 'building'
-            ? Colors.blueGrey.shade100
-            : Colors.brown.shade100,
+        backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
         child: Icon(
           view.featureType == 'building'
               ? Icons.home_work_outlined
               : Icons.alt_route_outlined,
-          color: view.featureType == 'building'
-              ? Colors.blueGrey.shade700
-              : Colors.brown.shade700,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
           size: 20,
         ),
       ),

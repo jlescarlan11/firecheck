@@ -35,18 +35,18 @@ class RoadFormNotifier extends StateNotifier<RoadFormState> {
   Timer? _debounce;
   static const _window = Duration(milliseconds: 500);
   late final Future<void> _initialLoad;
+  late RoadFormState _latestState = state;
 
   Future<void> _loadInitial() async {
-    final submissionId = state.submissionId;
+    final submissionId = _latestState.submissionId;
     final attrs = await attrsRepo.findBySubmission(submissionId);
     final submission = await submissionRepo.findById(submissionId);
-    if (!mounted) return;
 
     // Preserve any edit made during the short async hydration window while
     // filling untouched fields from the durable row. This also prevents a
     // later flush from replacing persisted values with the notifier's blank
     // constructor defaults.
-    final current = state;
+    final current = _latestState;
     final hydrated = RoadFormState(
       submissionId: current.submissionId,
       isBridge: current.isBridge || (attrs?.isBridge ?? false),
@@ -62,21 +62,23 @@ class RoadFormNotifier extends StateNotifier<RoadFormState> {
       othersDescription: current.othersDescription ?? attrs?.othersDescription,
       doesNotExist: current.doesNotExist || (submission?.doesNotExist ?? false),
     );
-    state = applyApplicability(
+    _latestState = applyApplicability(
       hydrated,
       hidden: hiddenFields,
       geometry: _geometrySignal,
     );
+    if (mounted) state = _latestState;
   }
 
   void update(RoadFormState Function(RoadFormState) mutate) {
     // Apply field applicability after the mutation — field visibility and
     // auto-clear share this hook with the remaining-questions count.
-    state = applyApplicability(
-      mutate(state),
+    _latestState = applyApplicability(
+      mutate(_latestState),
       hidden: hiddenFields,
       geometry: _geometrySignal,
     );
+    state = _latestState;
     _debounce?.cancel();
     _debounce = Timer(_window, _flush);
   }
@@ -84,11 +86,12 @@ class RoadFormNotifier extends StateNotifier<RoadFormState> {
   void onGeometryChanged(GeometrySignal signal) {
     if (signal == _geometrySignal) return;
     _geometrySignal = signal;
-    state = applyApplicability(
-      state,
+    _latestState = applyApplicability(
+      _latestState,
       hidden: hiddenFields,
       geometry: signal,
     );
+    if (mounted) state = _latestState;
   }
 
   Future<void> flushNow() async {
@@ -96,11 +99,11 @@ class RoadFormNotifier extends StateNotifier<RoadFormState> {
     await _flush();
   }
 
-  Future<void> _flush() async {
+  Future<void> _flush({bool allowDisposed = false}) async {
     try {
       await _initialLoad;
-      if (!mounted) return;
-      final s = state;
+      if (!mounted && !allowDisposed) return;
+      final s = _latestState;
       await submissionRepo.updateDoesNotExist(
         s.submissionId,
         doesNotExist: s.doesNotExist,
@@ -127,7 +130,7 @@ class RoadFormNotifier extends StateNotifier<RoadFormState> {
   void dispose() {
     _debounce?.cancel();
     // Best-effort flush on dispose; deliberately not awaited.
-    unawaited(_flush());
+    unawaited(_flush(allowDisposed: true));
     super.dispose();
   }
 }

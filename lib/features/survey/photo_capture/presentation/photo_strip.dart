@@ -23,7 +23,7 @@ class PhotoStrip extends ConsumerWidget {
 
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -49,7 +49,7 @@ class PhotoStrip extends ConsumerWidget {
                       l.photosRequiredBadge,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 10,
+                        fontSize: 13,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -67,7 +67,7 @@ class PhotoStrip extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           SizedBox(
-            height: 60,
+            height: 76,
             child: photosAsync.when(
               loading: () => const SizedBox(),
               error: (e, _) => const SizedBox(),
@@ -120,19 +120,19 @@ class _AddPhotoChip extends ConsumerWidget {
         }
       },
       child: Container(
-        width: 60,
-        height: 60,
+        width: 76,
+        height: 76,
         decoration: BoxDecoration(
-          color: const Color(0x103B82F6),
-          border: Border.all(color: const Color(0xFF3B82F6), width: 1.5),
+          color: const Color(0xFFFCF0EE),
+          border: Border.all(color: const Color(0xFFB93228), width: 1.5),
           borderRadius: BorderRadius.circular(6),
         ),
         child: Center(
           child: Text(
             l.addPhoto,
             style: const TextStyle(
-              color: Color(0xFF3B82F6),
-              fontSize: 10,
+              color: Color(0xFFB93228),
+              fontSize: 13,
               fontWeight: FontWeight.w600,
             ),
             textAlign: TextAlign.center,
@@ -175,8 +175,8 @@ class _Thumbnail extends ConsumerWidget {
         }
       },
       child: Container(
-        width: 60,
-        height: 60,
+        width: 76,
+        height: 76,
         decoration: BoxDecoration(
           color: Colors.grey.shade400,
           borderRadius: BorderRadius.circular(6),

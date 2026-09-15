@@ -49,7 +49,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.textContaining('Submitted'), findsAtLeastNWidgets(1));
-    expect(find.text('Upload Data'), findsOneWidget);
+    expect(find.text('Review & upload'), findsOneWidget);
   });
 
   testWidgets('Upload Data tile shown when unlocked', (tester) async {
@@ -75,7 +75,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('Upload Data'), findsOneWidget);
+    expect(find.text('Review & upload'), findsOneWidget);
   });
 
   testWidgets('Upload Data tile hidden when ClosedRemotely', (tester) async {
@@ -100,6 +100,6 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('Upload Data'), findsNothing);
+    expect(find.text('Review & upload'), findsNothing);
   });
 }

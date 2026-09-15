@@ -98,4 +98,19 @@ void main() {
     expect(snap.failedJobs, 1);
     expect(snap.deadJobs, 1);
   });
+
+  test('merged-away features do not inflate progress totals', () async {
+    await db.into(db.features).insert(FeaturesCompanion.insert(
+          id: 'merged',
+          assignmentId: 'a1',
+          featureType: 'building',
+          geometryGeojson: '{}',
+          createdAt: DateTime(2026),
+          status: const Value('complete'),
+          mergedIntoId: const Value('survivor'),
+        ));
+    final snap = await repo.watchProgress().first;
+    expect(snap.totalFeatures, 0);
+    expect(snap.completedFeatures, 0);
+  });
 }

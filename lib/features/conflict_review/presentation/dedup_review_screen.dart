@@ -1,4 +1,5 @@
 import 'package:firecheck/core/sync/domain/resolution_decision.dart';
+import 'package:firecheck/core/theme/app_layout.dart';
 import 'package:firecheck/features/conflict_review/presentation/conflict_review_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,11 +29,12 @@ class _DedupReviewScreenState extends ConsumerState<DedupReviewScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Possible duplicate')),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: appPageInsets(context),
         children: [
-          const Text(
-            'A nearby feature of the same type was already added by '
-            'another enumerator. Pick how to resolve.',
+          const AppPageIntro(
+            title: 'Review this feature',
+            subtitle:
+                'A nearby feature of the same type was already added by another enumerator. Pick how to resolve.',
           ),
           const SizedBox(height: 8),
           Text(
@@ -42,17 +44,14 @@ class _DedupReviewScreenState extends ConsumerState<DedupReviewScreen> {
           const SizedBox(height: 24),
           FilledButton(
             key: const Key('dedup-review.keep-both'),
-            onPressed: _busy
-                ? null
-                : () => _resolve(DedupDecision.keepBoth),
+            onPressed: _busy ? null : () => _resolve(DedupDecision.keepBoth),
             child: const Text('Keep both'),
           ),
           const SizedBox(height: 8),
           OutlinedButton(
             key: const Key('dedup-review.replace-theirs'),
-            onPressed: _busy
-                ? null
-                : () => _resolve(DedupDecision.replaceTheirs),
+            onPressed:
+                _busy ? null : () => _resolve(DedupDecision.replaceTheirs),
             child: const Text('Replace theirs'),
           ),
           const SizedBox(height: 8),
@@ -61,9 +60,7 @@ class _DedupReviewScreenState extends ConsumerState<DedupReviewScreen> {
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.red.shade700,
             ),
-            onPressed: _busy
-                ? null
-                : () => _resolve(DedupDecision.discardMine),
+            onPressed: _busy ? null : () => _resolve(DedupDecision.discardMine),
             child: const Text('Discard mine'),
           ),
           const SizedBox(height: 8),

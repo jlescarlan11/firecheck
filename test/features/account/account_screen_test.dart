@@ -182,7 +182,7 @@ void main() {
 
     // AppBar title still renders; "Account" also appears in the bottom nav.
     expect(
-      find.descendant(of: find.byType(AppBar), matching: find.text('Account')),
+      find.descendant(of: find.byType(AppBar), matching: find.text('FireCheck')),
       findsOneWidget,
     );
     expect(find.text('Sign out'), findsNothing);

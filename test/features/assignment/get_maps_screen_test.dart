@@ -27,10 +27,7 @@ void main() {
     await tester.pumpWidget(buildSubject(const Idle()));
     await tester.pump();
     expect(find.text('Start download'), findsOneWidget);
-    expect(
-      tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value,
-      isTrue,
-    );
+    expect(find.byType(SwitchListTile), findsNothing);
   });
 
   testWidgets('DownloadingTiles shows progress + Cancel', (tester) async {
@@ -44,6 +41,8 @@ void main() {
     );
     await tester.pump();
     expect(find.text('Downloading map tiles…'), findsOneWidget);
+    expect(find.text('50%'), findsOneWidget);
+    expect(find.textContaining('MB'), findsNothing);
     expect(find.text('Cancel'), findsOneWidget);
     expect(find.byType(LinearProgressIndicator), findsOneWidget);
   });
