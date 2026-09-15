@@ -1,1 +1,36 @@
-{"name":"firecheck-drive-gateway","version":"0.1.0","private":true,"type":"module","engines":{"node":">=24"},"scripts":{"build":"tsc","start":"node dist/main.js","test":"tsx --test test/*.test.ts","check":"tsc --noEmit","admin":"tsx tools/admin.ts"},"dependencies":{"fastify":"5.12.4","google-auth-library":"11.0.2","pg":"8.23.0"},"devDependencies":{"@types/node":"26.5.1","@types/pg":"8.23.1","tsx":"4.23.13","typescript":"5.9.3"}}
+{
+  "name": "firecheck-drive-gateway",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "test": "tsx --test test/*.test.ts",
+    "check": "tsc --noEmit",
+    "admin": "tsx tools/admin.ts",
+    "connect-drive": "tsx tools/connect-drive.ts",
+    "setup-drive": "tsx tools/setup-drive.ts",
+    "probe-drive": "tsx tools/drive-probe.ts",
+    "test:oauth": "tsx --test test/oauth-connection.test.ts",
+    "prepare:edge": "npm run build && tsx tools/prepare-edge.ts",
+    "deploy:edge": "npm run prepare:edge && tsx tools/deploy-edge.ts"
+  },
+  "dependencies": {
+    "@fastify/rate-limit": "11.2.0",
+    "fastify": "5.12.4",
+    "google-auth-library": "11.0.2",
+    "pg": "8.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "26.5.1",
+    "@types/pg": "8.23.1",
+    "deno": "2.9.6",
+    "prettier": "3.9.6",
+    "tsx": "4.23.13",
+    "typescript": "5.9.3"
+  }
+}

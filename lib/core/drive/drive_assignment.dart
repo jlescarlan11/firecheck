@@ -8,11 +8,13 @@ class DriveAssignment {
     required this.inputZipModifiedTime,
     required this.driveFolderId,
     this.alreadyDownloaded = false,
+    this.displayName,
   });
 
   /// Drive folder name — used as the cache key for file lookups.
   /// May be a human-readable string (e.g. "cebu") or a UUID.
   final String assignmentId;
+  final String? displayName;
 
   /// Always a UUID. Derived from the folder name: if the folder name is
   /// already a UUID it equals [assignmentId]; otherwise it is a stable
@@ -26,6 +28,7 @@ class DriveAssignment {
 
   DriveAssignment copyWith({bool? alreadyDownloaded}) => DriveAssignment(
         assignmentId: assignmentId,
+        displayName: displayName,
         localAssignmentId: localAssignmentId,
         inputZipModifiedTime: inputZipModifiedTime,
         driveFolderId: driveFolderId,
@@ -39,9 +42,10 @@ class DriveAssignment {
       other.localAssignmentId == localAssignmentId &&
       other.inputZipModifiedTime == inputZipModifiedTime &&
       other.driveFolderId == driveFolderId &&
+      other.displayName == displayName &&
       other.alreadyDownloaded == alreadyDownloaded;
 
   @override
-  int get hashCode => Object.hash(
-      assignmentId, localAssignmentId, inputZipModifiedTime, driveFolderId, alreadyDownloaded);
+  int get hashCode => Object.hash(assignmentId, localAssignmentId,
+      inputZipModifiedTime, driveFolderId, alreadyDownloaded, displayName);
 }

@@ -9,11 +9,14 @@ class DriveUploadWorker {
     required this.repo,
     required this.db,
     required this.enumeratorIdentifier,
+    this.gatewayDrain,
   });
 
-  final DriveUploadApi api;
+  final DriveUploadApi? api;
+  final Future<void> Function()? gatewayDrain;
   final DriveUploadRepository repo;
   final AppDatabase db;
+
   /// Resolves the per-enumerator Drive folder name. Typically the user's
   /// email so multi-user uploads stay segregated in the shared output/
   /// tree. Sync so each `_processOne` can read it without an extra await.
@@ -34,6 +37,7 @@ class DriveUploadWorker {
   Future<String>? _firecheckRootFuture;
 
   Future<void> drain() async {
+    if (gatewayDrain != null) return gatewayDrain!();
     if (_running) return;
     _running = true;
     try {
@@ -59,7 +63,7 @@ class DriveUploadWorker {
 
     try {
       final parentId = await _resolveParentFolder(job);
-      final driveFileId = await api.uploadFile(
+      final driveFileId = await api!.uploadFile(
         localPath: job.filePath,
         driveParentId: parentId,
         fileName: job.fileName,
@@ -131,7 +135,7 @@ class DriveUploadWorker {
   }
 
   Future<String> _resolveFirecheckRoot() {
-    return _firecheckRootFuture ??= api.findOrCreateFirecheckRoot().then(
+    return _firecheckRootFuture ??= api!.findOrCreateFirecheckRoot().then(
       (id) => id,
       onError: (Object e, StackTrace s) {
         _firecheckRootFuture = null;
@@ -142,12 +146,12 @@ class DriveUploadWorker {
 
   Future<String> _createFolderHierarchy(String assignmentFolderName) async {
     final firecheckRootId = await _resolveFirecheckRoot();
-    final outputId = await api.createOrGetFolder('output', firecheckRootId);
+    final outputId = await api!.createOrGetFolder('output', firecheckRootId);
     final enumeratorFolderName =
         _sanitizeFolderName(enumeratorIdentifier()) ?? 'unknown-enumerator';
     final enumeratorId =
-        await api.createOrGetFolder(enumeratorFolderName, outputId);
-    return api.createOrGetFolder(assignmentFolderName, enumeratorId);
+        await api!.createOrGetFolder(enumeratorFolderName, outputId);
+    return api!.createOrGetFolder(assignmentFolderName, enumeratorId);
   }
 
   /// Replaces characters that aren't safe in Drive folder names (mainly the

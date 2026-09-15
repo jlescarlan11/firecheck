@@ -17,10 +17,12 @@ class GoogleSignInAuthRepository implements GoogleAuthRepository {
     required GoTrueClient auth,
     required GoogleSignIn googleSignIn,
     GoogleSignInPlatform? authorizationPlatform,
+    this.requireDriveConsent = true,
   })  : _auth = auth,
         _googleSignIn = googleSignIn,
         _authorizationPlatform = authorizationPlatform;
 
+  final bool requireDriveConsent;
   final GoTrueClient _auth;
   final GoogleSignIn _googleSignIn;
   final GoogleSignInPlatform? _authorizationPlatform;
@@ -44,11 +46,13 @@ class GoogleSignInAuthRepository implements GoogleAuthRepository {
     }
     // Finish Drive consent before publishing the app session. Navigation and
     // background work can start as soon as signInWithIdToken emits that session.
-    final client = account.authorizationClient;
-    final authorization = await client.authorizationForScopes(_driveScopes) ??
-        await client.authorizeScopes(_driveScopes);
-    if (authorization.accessToken.isEmpty) {
-      throw const AuthFailure('Google Drive access was not granted.');
+    if (requireDriveConsent) {
+      final client = account.authorizationClient;
+      final authorization = await client.authorizationForScopes(_driveScopes) ??
+          await client.authorizeScopes(_driveScopes);
+      if (authorization.accessToken.isEmpty) {
+        throw const AuthFailure('Google Drive access was not granted.');
+      }
     }
     await _auth.signInWithIdToken(
       provider: OAuthProvider.google,
@@ -94,13 +98,15 @@ class GoogleSignInAuthRepository implements GoogleAuthRepository {
         .toList();
     if (identities == null || identities.length != 1) {
       throw const AuthFailure(
-          'Please sign out and sign in with Google to connect Drive.',);
+        'Please sign out and sign in with Google to connect Drive.',
+      );
     }
     final identity = identities.single;
     final email = identity.identityData?['email'];
     if (identity.id.isEmpty || email is! String || email.isEmpty) {
       throw const AuthFailure(
-          'Please sign out and sign in with Google to connect Drive.',);
+        'Please sign out and sign in with Google to connect Drive.',
+      );
     }
     // The SDK's authorization API refreshes access tokens for this account
     // without requesting a new ID token through Android Credential Manager.

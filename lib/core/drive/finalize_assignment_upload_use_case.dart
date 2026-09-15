@@ -3,7 +3,9 @@ import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/drive/drive_upload_audit_repository.dart';
 import 'package:firecheck/core/drive/drive_upload_job_status.dart';
 import 'package:firecheck/core/drive/drive_upload_repository.dart';
-import 'package:firecheck/core/drive/drive_upload_worker.dart' show sanitizeDriveFolderName;
+import 'package:firecheck/core/drive/drive_upload_worker.dart'
+    show sanitizeDriveFolderName;
+import 'package:firecheck/core/gateway/gateway_upload_runner.dart';
 import 'package:firecheck/features/assignment/data/assignment_repository.dart';
 
 /// Result of finalizing the post-drain bookkeeping for an assignment's
@@ -53,13 +55,17 @@ class FinalizeAssignmentUploadUseCase {
     required DriveUploadAuditRepository auditRepo,
     DateTime Function() now = DateTime.now,
     String? Function()? enumeratorIdentifier,
+    Future<GatewayUploadReceipt?> Function(String, String?)? gatewayReceipt,
   })  : _db = db,
         _repo = repo,
         _assignmentRepo = assignmentRepo,
         _auditRepo = auditRepo,
         _now = now,
-        _enumeratorIdentifier = enumeratorIdentifier;
+        _enumeratorIdentifier = enumeratorIdentifier,
+        _gatewayReceipt = gatewayReceipt;
 
+  final Future<GatewayUploadReceipt?> Function(String, String?)?
+      _gatewayReceipt;
   final AppDatabase _db;
   final DriveUploadRepository _repo;
   final AssignmentRepository _assignmentRepo;
@@ -67,7 +73,7 @@ class FinalizeAssignmentUploadUseCase {
   final DateTime Function() _now;
 
   /// Resolves the same per-enumerator Drive subfolder name the worker uses
-  /// when uploading. When non-null, the persisted [folderPath] mirrors the
+  /// when uploading. When non-null, the persisted `folderPath` mirrors the
   /// worker's `firecheck/output/<enumerator>/<assignmentFolderName>/`
   /// layout. When null (tests, environments without auth), the legacy
   /// `firecheck/<assignmentFolderName>/` shape is written.
@@ -84,21 +90,31 @@ class FinalizeAssignmentUploadUseCase {
     required String assignmentId,
     String? uploaderId,
   }) async {
-    final jobs = await _repo.getJobsForAssignment(assignmentId);
+    var jobs = await _repo.getJobsForAssignment(assignmentId);
+    if (_gatewayReceipt != null) {
+      jobs = jobs
+          .where((j) => j.ownerId == uploaderId && j.batchId != null)
+          .toList();
+      if (jobs.isNotEmpty) {
+        final latest = jobs.last.batchId;
+        jobs = jobs.where((j) => j.batchId == latest).toList();
+      }
+    }
     if (jobs.isEmpty) {
       return DriveUploadEmpty(assignmentId: assignmentId);
     }
 
-    final completed = jobs
-        .where((j) => j.status == DriveUploadJobStatus.completed)
-        .length;
+    final completed =
+        jobs.where((j) => j.status == DriveUploadJobStatus.completed).length;
     final failed = jobs
-        .where((j) =>
-            j.status == DriveUploadJobStatus.failed ||
-            j.status == DriveUploadJobStatus.dead,)
+        .where(
+          (j) =>
+              j.status == DriveUploadJobStatus.failed ||
+              j.status == DriveUploadJobStatus.dead,
+        )
         .length;
 
-    if (completed == 0 || failed > 0) {
+    if (completed != jobs.length || failed > 0) {
       return DriveUploadIncomplete(
         assignmentId: assignmentId,
         completedCount: completed,
@@ -112,17 +128,25 @@ class FinalizeAssignmentUploadUseCase {
       return DriveUploadEmpty(assignmentId: assignmentId);
     }
 
-    final confirmedAt = _now();
-    final folderPath = _buildFolderPath(folderName);
+    final receipt = await _gatewayReceipt?.call(assignmentId, uploaderId);
+    if (_gatewayReceipt != null && receipt == null) {
+      return DriveUploadIncomplete(
+        assignmentId: assignmentId,
+        completedCount: completed,
+        failedCount: failed,
+      );
+    }
+    final confirmedAt = receipt?.confirmedAt ?? _now();
+    final folderPath = receipt?.folderPath ?? _buildFolderPath(folderName);
 
     await _assignmentRepo.setDriveUploadResult(
       assignmentId: assignmentId,
       driveFolderPath: folderPath,
-      driveFolderUrl: '',
+      driveFolderUrl: receipt?.folderUrl ?? '',
       driveUploadConfirmedAt: confirmedAt,
     );
 
-    if (uploaderId != null) {
+    if (uploaderId != null && _gatewayReceipt == null) {
       await _auditRepo.record(
         assignmentId: assignmentId,
         uploadedBy: uploaderId,

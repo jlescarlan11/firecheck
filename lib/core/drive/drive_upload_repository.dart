@@ -14,11 +14,15 @@ class DriveUploadRepository {
     required String fileName,
     required int fileSizeBytes,
     required DateTime capturedAt,
+    String? ownerId,
+    String? batchId,
   }) async {
     await _db.into(_db.driveUploadJobs).insert(
           DriveUploadJobsCompanion.insert(
             id: id,
             assignmentId: assignmentId,
+            ownerId: Value(ownerId),
+            batchId: Value(batchId),
             filePath: filePath,
             fileType: fileType,
             fileName: fileName,
@@ -218,11 +222,15 @@ class DriveUploadRepository {
   /// hitting "file missing" against paths that no longer exist. Worker
   /// retries on the legacy failed jobs continue independently; they're
   /// harmless once they exhaust attempts.
-  Future<bool> shapefileJobExistsForAssignment(String assignmentId) async {
+  Future<bool> shapefileJobExistsForAssignment(String assignmentId,
+      {String? ownerId}) async {
     final row = await (_db.select(_db.driveUploadJobs)
           ..where(
             (t) =>
                 t.assignmentId.equals(assignmentId) &
+                (ownerId == null
+                    ? const Constant(true)
+                    : t.ownerId.equals(ownerId)) &
                 t.fileType.equals(DriveFileType.shapefile) &
                 t.status.isIn(const [
                   DriveUploadJobStatus.pending,

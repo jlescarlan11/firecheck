@@ -264,9 +264,10 @@ class ShapefileAcquisitionUseCase {
         assignment.inputZipModifiedTime,
         assignment.driveFolderId,
         enumeratorId,
-        assignmentDisplayName: resolvedId != assignment.assignmentId
-            ? assignment.assignmentId
-            : null,
+        assignmentDisplayName: assignment.displayName ??
+            (resolvedId != assignment.assignmentId
+                ? assignment.assignmentId
+                : null),
       );
     } catch (_) {
       yield const AcquisitionImportFailed(

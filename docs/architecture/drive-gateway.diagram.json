@@ -19,7 +19,7 @@
           },
           {
             "id": "gateway",
-            "label": "FireCheck file server on Cloud Run"
+            "label": "FireCheck file server on Supabase Edge Functions"
           },
           {
             "id": "db",
@@ -27,7 +27,7 @@
           },
           {
             "id": "drive",
-            "label": "Workspace Shared Drive input and output folders"
+            "label": "Shared My Drive folder input and output folders"
           },
           {
             "id": "admin",
@@ -53,7 +53,7 @@
           {
             "from": "gateway",
             "to": "drive",
-            "label": "Dedicated service account"
+            "label": "Central owner OAuth connection"
           },
           {
             "from": "admin",

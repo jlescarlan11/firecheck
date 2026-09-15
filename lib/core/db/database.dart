@@ -52,7 +52,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 17;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -60,6 +60,10 @@ class AppDatabase extends _$AppDatabase {
           await m.createAll();
         },
         onUpgrade: (m, from, to) async {
+          if (from >= 8 && from < 17) {
+            await m.addColumn(driveUploadJobs, driveUploadJobs.ownerId);
+            await m.addColumn(driveUploadJobs, driveUploadJobs.batchId);
+          }
           if (from < 2) {
             // v1 → v2:
             // 1. Rename offline_tile_packs.maplibre_pack_id → mapbox_pack_id.

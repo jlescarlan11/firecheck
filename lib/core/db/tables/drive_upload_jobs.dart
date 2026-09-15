@@ -5,6 +5,9 @@ import 'package:drift/drift.dart';
 class DriveUploadJobs extends Table {
   TextColumn get id => text()();
   TextColumn get assignmentId => text()();
+  /// Bound when exported; legacy unowned jobs require explicit re-export.
+  TextColumn get ownerId => text().nullable()();
+  TextColumn get batchId => text().nullable()();
   TextColumn get filePath => text()();
   TextColumn get fileType => text()(); // 'photo' | 'shapefile'
   TextColumn get fileName => text()();

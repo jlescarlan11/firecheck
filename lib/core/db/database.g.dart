@@ -6061,6 +6061,18 @@ class $DriveUploadJobsTable extends DriveUploadJobs
   late final GeneratedColumn<String> assignmentId = GeneratedColumn<String>(
       'assignment_id', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _ownerIdMeta =
+      const VerificationMeta('ownerId');
+  @override
+  late final GeneratedColumn<String> ownerId = GeneratedColumn<String>(
+      'owner_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _batchIdMeta =
+      const VerificationMeta('batchId');
+  @override
+  late final GeneratedColumn<String> batchId = GeneratedColumn<String>(
+      'batch_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _filePathMeta =
       const VerificationMeta('filePath');
   @override
@@ -6140,6 +6152,8 @@ class $DriveUploadJobsTable extends DriveUploadJobs
   List<GeneratedColumn> get $columns => [
         id,
         assignmentId,
+        ownerId,
+        batchId,
         filePath,
         fileType,
         fileName,
@@ -6175,6 +6189,14 @@ class $DriveUploadJobsTable extends DriveUploadJobs
               data['assignment_id']!, _assignmentIdMeta));
     } else if (isInserting) {
       context.missing(_assignmentIdMeta);
+    }
+    if (data.containsKey('owner_id')) {
+      context.handle(_ownerIdMeta,
+          ownerId.isAcceptableOrUnknown(data['owner_id']!, _ownerIdMeta));
+    }
+    if (data.containsKey('batch_id')) {
+      context.handle(_batchIdMeta,
+          batchId.isAcceptableOrUnknown(data['batch_id']!, _batchIdMeta));
     }
     if (data.containsKey('file_path')) {
       context.handle(_filePathMeta,
@@ -6263,6 +6285,10 @@ class $DriveUploadJobsTable extends DriveUploadJobs
           .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
       assignmentId: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}assignment_id'])!,
+      ownerId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}owner_id']),
+      batchId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}batch_id']),
       filePath: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}file_path'])!,
       fileType: attachedDatabase.typeMapping
@@ -6299,6 +6325,10 @@ class $DriveUploadJobsTable extends DriveUploadJobs
 class DriveUploadJob extends DataClass implements Insertable<DriveUploadJob> {
   final String id;
   final String assignmentId;
+
+  /// Bound when exported; legacy unowned jobs require explicit re-export.
+  final String? ownerId;
+  final String? batchId;
   final String filePath;
   final String fileType;
   final String fileName;
@@ -6314,6 +6344,8 @@ class DriveUploadJob extends DataClass implements Insertable<DriveUploadJob> {
   const DriveUploadJob(
       {required this.id,
       required this.assignmentId,
+      this.ownerId,
+      this.batchId,
       required this.filePath,
       required this.fileType,
       required this.fileName,
@@ -6331,6 +6363,12 @@ class DriveUploadJob extends DataClass implements Insertable<DriveUploadJob> {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['assignment_id'] = Variable<String>(assignmentId);
+    if (!nullToAbsent || ownerId != null) {
+      map['owner_id'] = Variable<String>(ownerId);
+    }
+    if (!nullToAbsent || batchId != null) {
+      map['batch_id'] = Variable<String>(batchId);
+    }
     map['file_path'] = Variable<String>(filePath);
     map['file_type'] = Variable<String>(fileType);
     map['file_name'] = Variable<String>(fileName);
@@ -6358,6 +6396,12 @@ class DriveUploadJob extends DataClass implements Insertable<DriveUploadJob> {
     return DriveUploadJobsCompanion(
       id: Value(id),
       assignmentId: Value(assignmentId),
+      ownerId: ownerId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ownerId),
+      batchId: batchId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(batchId),
       filePath: Value(filePath),
       fileType: Value(fileType),
       fileName: Value(fileName),
@@ -6387,6 +6431,8 @@ class DriveUploadJob extends DataClass implements Insertable<DriveUploadJob> {
     return DriveUploadJob(
       id: serializer.fromJson<String>(json['id']),
       assignmentId: serializer.fromJson<String>(json['assignmentId']),
+      ownerId: serializer.fromJson<String?>(json['ownerId']),
+      batchId: serializer.fromJson<String?>(json['batchId']),
       filePath: serializer.fromJson<String>(json['filePath']),
       fileType: serializer.fromJson<String>(json['fileType']),
       fileName: serializer.fromJson<String>(json['fileName']),
@@ -6407,6 +6453,8 @@ class DriveUploadJob extends DataClass implements Insertable<DriveUploadJob> {
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'assignmentId': serializer.toJson<String>(assignmentId),
+      'ownerId': serializer.toJson<String?>(ownerId),
+      'batchId': serializer.toJson<String?>(batchId),
       'filePath': serializer.toJson<String>(filePath),
       'fileType': serializer.toJson<String>(fileType),
       'fileName': serializer.toJson<String>(fileName),
@@ -6425,6 +6473,8 @@ class DriveUploadJob extends DataClass implements Insertable<DriveUploadJob> {
   DriveUploadJob copyWith(
           {String? id,
           String? assignmentId,
+          Value<String?> ownerId = const Value.absent(),
+          Value<String?> batchId = const Value.absent(),
           String? filePath,
           String? fileType,
           String? fileName,
@@ -6440,6 +6490,8 @@ class DriveUploadJob extends DataClass implements Insertable<DriveUploadJob> {
       DriveUploadJob(
         id: id ?? this.id,
         assignmentId: assignmentId ?? this.assignmentId,
+        ownerId: ownerId.present ? ownerId.value : this.ownerId,
+        batchId: batchId.present ? batchId.value : this.batchId,
         filePath: filePath ?? this.filePath,
         fileType: fileType ?? this.fileType,
         fileName: fileName ?? this.fileName,
@@ -6461,6 +6513,8 @@ class DriveUploadJob extends DataClass implements Insertable<DriveUploadJob> {
       assignmentId: data.assignmentId.present
           ? data.assignmentId.value
           : this.assignmentId,
+      ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
+      batchId: data.batchId.present ? data.batchId.value : this.batchId,
       filePath: data.filePath.present ? data.filePath.value : this.filePath,
       fileType: data.fileType.present ? data.fileType.value : this.fileType,
       fileName: data.fileName.present ? data.fileName.value : this.fileName,
@@ -6491,6 +6545,8 @@ class DriveUploadJob extends DataClass implements Insertable<DriveUploadJob> {
     return (StringBuffer('DriveUploadJob(')
           ..write('id: $id, ')
           ..write('assignmentId: $assignmentId, ')
+          ..write('ownerId: $ownerId, ')
+          ..write('batchId: $batchId, ')
           ..write('filePath: $filePath, ')
           ..write('fileType: $fileType, ')
           ..write('fileName: $fileName, ')
@@ -6511,6 +6567,8 @@ class DriveUploadJob extends DataClass implements Insertable<DriveUploadJob> {
   int get hashCode => Object.hash(
       id,
       assignmentId,
+      ownerId,
+      batchId,
       filePath,
       fileType,
       fileName,
@@ -6529,6 +6587,8 @@ class DriveUploadJob extends DataClass implements Insertable<DriveUploadJob> {
       (other is DriveUploadJob &&
           other.id == this.id &&
           other.assignmentId == this.assignmentId &&
+          other.ownerId == this.ownerId &&
+          other.batchId == this.batchId &&
           other.filePath == this.filePath &&
           other.fileType == this.fileType &&
           other.fileName == this.fileName &&
@@ -6546,6 +6606,8 @@ class DriveUploadJob extends DataClass implements Insertable<DriveUploadJob> {
 class DriveUploadJobsCompanion extends UpdateCompanion<DriveUploadJob> {
   final Value<String> id;
   final Value<String> assignmentId;
+  final Value<String?> ownerId;
+  final Value<String?> batchId;
   final Value<String> filePath;
   final Value<String> fileType;
   final Value<String> fileName;
@@ -6562,6 +6624,8 @@ class DriveUploadJobsCompanion extends UpdateCompanion<DriveUploadJob> {
   const DriveUploadJobsCompanion({
     this.id = const Value.absent(),
     this.assignmentId = const Value.absent(),
+    this.ownerId = const Value.absent(),
+    this.batchId = const Value.absent(),
     this.filePath = const Value.absent(),
     this.fileType = const Value.absent(),
     this.fileName = const Value.absent(),
@@ -6579,6 +6643,8 @@ class DriveUploadJobsCompanion extends UpdateCompanion<DriveUploadJob> {
   DriveUploadJobsCompanion.insert({
     required String id,
     required String assignmentId,
+    this.ownerId = const Value.absent(),
+    this.batchId = const Value.absent(),
     required String filePath,
     required String fileType,
     required String fileName,
@@ -6603,6 +6669,8 @@ class DriveUploadJobsCompanion extends UpdateCompanion<DriveUploadJob> {
   static Insertable<DriveUploadJob> custom({
     Expression<String>? id,
     Expression<String>? assignmentId,
+    Expression<String>? ownerId,
+    Expression<String>? batchId,
     Expression<String>? filePath,
     Expression<String>? fileType,
     Expression<String>? fileName,
@@ -6620,6 +6688,8 @@ class DriveUploadJobsCompanion extends UpdateCompanion<DriveUploadJob> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (assignmentId != null) 'assignment_id': assignmentId,
+      if (ownerId != null) 'owner_id': ownerId,
+      if (batchId != null) 'batch_id': batchId,
       if (filePath != null) 'file_path': filePath,
       if (fileType != null) 'file_type': fileType,
       if (fileName != null) 'file_name': fileName,
@@ -6639,6 +6709,8 @@ class DriveUploadJobsCompanion extends UpdateCompanion<DriveUploadJob> {
   DriveUploadJobsCompanion copyWith(
       {Value<String>? id,
       Value<String>? assignmentId,
+      Value<String?>? ownerId,
+      Value<String?>? batchId,
       Value<String>? filePath,
       Value<String>? fileType,
       Value<String>? fileName,
@@ -6655,6 +6727,8 @@ class DriveUploadJobsCompanion extends UpdateCompanion<DriveUploadJob> {
     return DriveUploadJobsCompanion(
       id: id ?? this.id,
       assignmentId: assignmentId ?? this.assignmentId,
+      ownerId: ownerId ?? this.ownerId,
+      batchId: batchId ?? this.batchId,
       filePath: filePath ?? this.filePath,
       fileType: fileType ?? this.fileType,
       fileName: fileName ?? this.fileName,
@@ -6679,6 +6753,12 @@ class DriveUploadJobsCompanion extends UpdateCompanion<DriveUploadJob> {
     }
     if (assignmentId.present) {
       map['assignment_id'] = Variable<String>(assignmentId.value);
+    }
+    if (ownerId.present) {
+      map['owner_id'] = Variable<String>(ownerId.value);
+    }
+    if (batchId.present) {
+      map['batch_id'] = Variable<String>(batchId.value);
     }
     if (filePath.present) {
       map['file_path'] = Variable<String>(filePath.value);
@@ -6727,6 +6807,8 @@ class DriveUploadJobsCompanion extends UpdateCompanion<DriveUploadJob> {
     return (StringBuffer('DriveUploadJobsCompanion(')
           ..write('id: $id, ')
           ..write('assignmentId: $assignmentId, ')
+          ..write('ownerId: $ownerId, ')
+          ..write('batchId: $batchId, ')
           ..write('filePath: $filePath, ')
           ..write('fileType: $fileType, ')
           ..write('fileName: $fileName, ')
@@ -11609,6 +11691,8 @@ typedef $$DriveUploadJobsTableCreateCompanionBuilder = DriveUploadJobsCompanion
     Function({
   required String id,
   required String assignmentId,
+  Value<String?> ownerId,
+  Value<String?> batchId,
   required String filePath,
   required String fileType,
   required String fileName,
@@ -11627,6 +11711,8 @@ typedef $$DriveUploadJobsTableUpdateCompanionBuilder = DriveUploadJobsCompanion
     Function({
   Value<String> id,
   Value<String> assignmentId,
+  Value<String?> ownerId,
+  Value<String?> batchId,
   Value<String> filePath,
   Value<String> fileType,
   Value<String> fileName,
@@ -11656,6 +11742,12 @@ class $$DriveUploadJobsTableFilterComposer
 
   ColumnFilters<String> get assignmentId => $composableBuilder(
       column: $table.assignmentId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get ownerId => $composableBuilder(
+      column: $table.ownerId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get batchId => $composableBuilder(
+      column: $table.batchId, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get filePath => $composableBuilder(
       column: $table.filePath, builder: (column) => ColumnFilters(column));
@@ -11709,6 +11801,12 @@ class $$DriveUploadJobsTableOrderingComposer
   ColumnOrderings<String> get assignmentId => $composableBuilder(
       column: $table.assignmentId,
       builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get ownerId => $composableBuilder(
+      column: $table.ownerId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get batchId => $composableBuilder(
+      column: $table.batchId, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<String> get filePath => $composableBuilder(
       column: $table.filePath, builder: (column) => ColumnOrderings(column));
@@ -11764,6 +11862,12 @@ class $$DriveUploadJobsTableAnnotationComposer
 
   GeneratedColumn<String> get assignmentId => $composableBuilder(
       column: $table.assignmentId, builder: (column) => column);
+
+  GeneratedColumn<String> get ownerId =>
+      $composableBuilder(column: $table.ownerId, builder: (column) => column);
+
+  GeneratedColumn<String> get batchId =>
+      $composableBuilder(column: $table.batchId, builder: (column) => column);
 
   GeneratedColumn<String> get filePath =>
       $composableBuilder(column: $table.filePath, builder: (column) => column);
@@ -11831,6 +11935,8 @@ class $$DriveUploadJobsTableTableManager extends RootTableManager<
           updateCompanionCallback: ({
             Value<String> id = const Value.absent(),
             Value<String> assignmentId = const Value.absent(),
+            Value<String?> ownerId = const Value.absent(),
+            Value<String?> batchId = const Value.absent(),
             Value<String> filePath = const Value.absent(),
             Value<String> fileType = const Value.absent(),
             Value<String> fileName = const Value.absent(),
@@ -11848,6 +11954,8 @@ class $$DriveUploadJobsTableTableManager extends RootTableManager<
               DriveUploadJobsCompanion(
             id: id,
             assignmentId: assignmentId,
+            ownerId: ownerId,
+            batchId: batchId,
             filePath: filePath,
             fileType: fileType,
             fileName: fileName,
@@ -11865,6 +11973,8 @@ class $$DriveUploadJobsTableTableManager extends RootTableManager<
           createCompanionCallback: ({
             required String id,
             required String assignmentId,
+            Value<String?> ownerId = const Value.absent(),
+            Value<String?> batchId = const Value.absent(),
             required String filePath,
             required String fileType,
             required String fileName,
@@ -11882,6 +11992,8 @@ class $$DriveUploadJobsTableTableManager extends RootTableManager<
               DriveUploadJobsCompanion.insert(
             id: id,
             assignmentId: assignmentId,
+            ownerId: ownerId,
+            batchId: batchId,
             filePath: filePath,
             fileType: fileType,
             fileName: fileName,

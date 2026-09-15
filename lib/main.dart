@@ -5,6 +5,8 @@ import 'package:firecheck/core/device/storage_checker.dart';
 import 'package:firecheck/core/drive/drive_upload_providers.dart';
 import 'package:firecheck/core/drive/drive_upload_workmanager.dart';
 import 'package:firecheck/core/drive/google_drive_api.dart';
+import 'package:firecheck/core/gateway/gateway_map_source.dart';
+import 'package:firecheck/core/gateway/gateway_providers.dart';
 import 'package:firecheck/core/mapbox/offline_pack_adapter.dart';
 import 'package:firecheck/core/sync/presentation/remote_cache_providers.dart';
 import 'package:firecheck/core/sync/presentation/sync_providers.dart';
@@ -83,6 +85,7 @@ Future<void> main() async {
             inner: GoogleSignInAuthRepository(
               auth: Supabase.instance.client.auth,
               googleSignIn: GoogleSignIn.instance,
+              requireDriveConsent: configuredGatewayUri() == null,
             ),
             cache: SecureStorageGoogleAccessTokenCache(
               ref.watch(secureStorageProvider),
@@ -90,9 +93,14 @@ Future<void> main() async {
           ),
         ),
         driveApiProvider.overrideWith(
-          (ref) => GoogleDriveApi(
-            googleAuthRepo: ref.watch(googleAuthRepositoryProvider),
-          ),
+          (ref) {
+            final gateway = ref.watch(gatewayClientProvider);
+            return gateway != null
+                ? GatewayMapSource(gateway)
+                : GoogleDriveApi(
+                    googleAuthRepo: ref.watch(googleAuthRepositoryProvider),
+                  );
+          },
         ),
         mapRendererProvider.overrideWithValue(MapboxMapRenderer()),
         if (tileStore != null)
@@ -113,7 +121,9 @@ Future<void> main() async {
           ),
         ),
         assignmentNameResolverProvider.overrideWithValue(
-          SupabaseAssignmentNameResolver(Supabase.instance.client),
+          configuredGatewayUri() != null
+              ? const NoopAssignmentNameResolver()
+              : SupabaseAssignmentNameResolver(Supabase.instance.client),
         ),
         canonicalFeaturePublisherProvider.overrideWith(
           (ref) => SupabaseCanonicalFeaturePublisher(
