@@ -21,7 +21,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get retryAction => 'Try again';
 
   @override
-  String get uploadsTitle => 'Uploads';
+  String get uploadsTitle => 'Upload progress';
 
   @override
   String get formRulesTitle => 'Form rules';
@@ -76,7 +76,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get uploadData => 'Upload Data';
 
   @override
-  String get uploadDataSubtitle => 'Send completed work';
+  String get uploadDataSubtitle => 'Check your work, then start uploading';
 
   @override
   String get getMapsTitle => 'Get Maps';
@@ -188,7 +188,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get followMe => 'Follow';
 
   @override
-  String get newFeaturePlaceholder => '+ New Feature (P3)';
+  String get newFeaturePlaceholder => '+ New Feature';
 
   @override
   String get featureTooFarTitle => 'Feature too far';
@@ -913,7 +913,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get reviewTitle => 'Review & Upload';
+  String get reviewTitle => 'Review before upload';
 
   @override
   String get submittedBadge => 'Submitted ✓';
@@ -968,6 +968,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get locationSnackbarOpenSettings => 'Open settings';
+
+  @override
+  String get locationSnackbarUnavailable =>
+      'Could not get your current location. Move to an open area and try again.';
+
+  @override
+  String get locationSnackbarServicesOff =>
+      'Device location is turned off. Turn on Location in your phone settings, then try again.';
 
   @override
   String get locationSnackbarLowAccuracy =>
@@ -1214,7 +1222,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeGetMaps => 'Get maps';
 
   @override
-  String get homeReviewUpload => 'Review & upload';
+  String get homeReviewUpload => 'Review before upload';
 
   @override
   String get homeSurveyed => 'features surveyed';
@@ -1322,18 +1330,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get designImportOptions => 'Import options';
 
   @override
-  String get designUploadsTitle => 'Your upload queue';
+  String get designUploadsTitle => 'Track your uploads';
 
   @override
   String get designUploadsBody =>
-      'Review saved files and send them when you are ready.';
+      'Pending files and failed uploads appear here. Check your work in Review before upload to prepare an upload.';
 
   @override
   String get designReviewTitle => 'Review your fieldwork';
 
   @override
   String get designReviewBody =>
-      'Review only edited or newly added features before uploading.';
+      'Check edited and newly added features below, then tap Start Upload. You can track files and retry failures in Upload progress.';
 
   @override
   String get designSummaryTitle => 'Edited features summary';

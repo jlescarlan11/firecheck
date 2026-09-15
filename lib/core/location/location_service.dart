@@ -43,7 +43,7 @@ class GeolocatorLocationService implements LocationService {
   Stream<Position> positionStream() => Geolocator.getPositionStream(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
-          distanceFilter: 3,
+          // The default zero distance filter also delivers stationary updates.
         ),
       );
 
@@ -78,7 +78,8 @@ class FakeLocationService implements LocationService {
   Future<LocationPermission> checkPermission() async => checkPermissionResult;
 
   @override
-  Future<LocationPermission> requestPermission() async => requestPermissionResult;
+  Future<LocationPermission> requestPermission() async =>
+      requestPermissionResult;
 
   @override
   Future<bool> isLocationServiceEnabled() async => serviceEnabled;

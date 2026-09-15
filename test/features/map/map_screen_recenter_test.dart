@@ -23,11 +23,12 @@ Position fakePos({
   required double lat,
   required double lng,
   required double accuracy,
+  DateTime? timestamp,
 }) {
   return Position(
     latitude: lat,
     longitude: lng,
-    timestamp: DateTime.utc(2026),
+    timestamp: timestamp ?? DateTime.now(),
     accuracy: accuracy,
     altitude: 0,
     altitudeAccuracy: 0,
@@ -58,34 +59,190 @@ Future<void> pumpMap(
   required AnalyticsService analytics,
   Stream<Position>? positionStream,
 }) async {
-  await tester.pumpWidget(ProviderScope(
-    overrides: [
-      mapRendererProvider.overrideWithValue(renderer),
-      locationServiceProvider.overrideWithValue(locationService),
-      analyticsServiceProvider.overrideWithValue(analytics),
-      currentFeaturesProvider.overrideWith((_) => Stream.value(const [])),
-      currentAssignmentProvider.overrideWith((_) => Stream.value(fakeAssignment())),
-      // Map-badge chip watches the remote attribution cache via Drift; in
-      // the map screen tests we don't wire a real DB, so short-circuit the
-      // data source to avoid a pending-timer leak at teardown.
-      othersRemoteAttributionsProvider.overrideWith(
-        (_) => Stream.value(const []),
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        mapRendererProvider.overrideWithValue(renderer),
+        locationServiceProvider.overrideWithValue(locationService),
+        analyticsServiceProvider.overrideWithValue(analytics),
+        currentFeaturesProvider.overrideWith((_) => Stream.value(const [])),
+        currentAssignmentProvider
+            .overrideWith((_) => Stream.value(fakeAssignment())),
+        // Map-badge chip watches the remote attribution cache via Drift; in
+        // the map screen tests we don't wire a real DB, so short-circuit the
+        // data source to avoid a pending-timer leak at teardown.
+        othersRemoteAttributionsProvider.overrideWith(
+          (_) => Stream.value(const []),
+        ),
+        assignmentLockStateProvider
+            .overrideWith((_) => Stream.value(const Unlocked())),
+        if (positionStream != null)
+          currentPositionProvider.overrideWith((_) => positionStream),
+      ],
+      child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: MapScreen(),
       ),
-      assignmentLockStateProvider.overrideWith((_) => Stream.value(const Unlocked())),
-      if (positionStream != null)
-        currentPositionProvider.overrideWith((_) => positionStream),
-    ],
-    child: const MaterialApp(
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: MapScreen(),
     ),
-  ),);
+  );
   await tester.pump();
   await tester.pump();
 }
 
 void main() {
+  group('location recovery', () {
+    testWidgets('stale accurate cache is replaced by a fresh fix',
+        (tester) async {
+      final renderer = FakeMapRenderer();
+      await pumpMap(
+        tester,
+        renderer: renderer,
+        locationService: FakeLocationService(
+          positions: Stream.value(fakePos(lat: 11, lng: 124, accuracy: 10)),
+        ),
+        analytics: RecordingAnalyticsService(),
+        positionStream: Stream.value(
+          fakePos(
+            lat: 10,
+            lng: 123,
+            accuracy: 5,
+            timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
+          ),
+        ),
+      );
+      await tester.tap(find.byType(RecenterButton));
+      await tester.pumpAndSettle();
+      expect(renderer.cameraTargetHistory.single.lat, 11);
+    });
+
+    testWidgets('no fix shows failure and retry can obtain a new fix',
+        (tester) async {
+      final renderer = FakeMapRenderer();
+      final loc = FakeLocationService();
+      await pumpMap(
+        tester,
+        renderer: renderer,
+        locationService: loc,
+        analytics: RecordingAnalyticsService(),
+        positionStream: const Stream.empty(),
+      );
+      await tester.tap(find.byType(RecenterButton));
+      await tester.pumpAndSettle();
+      expect(renderer.cameraTargetHistory, isEmpty);
+      expect(
+        find.text(
+          'Could not get your current location. Move to an open area and try again.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          'Location accuracy is low. Showing your approximate position.',
+        ),
+        findsNothing,
+      );
+      loc.positions = Stream.value(fakePos(lat: 11, lng: 124, accuracy: 10));
+      await tester.tap(find.text('Try again'));
+      await tester.pumpAndSettle();
+      expect(renderer.cameraTargetHistory.single.lat, 11);
+    });
+
+    testWidgets('poor fix from recenter stream is retained for fallback',
+        (tester) async {
+      final renderer = FakeMapRenderer();
+      await pumpMap(
+        tester,
+        renderer: renderer,
+        locationService: FakeLocationService(
+          positions: Stream.value(fakePos(lat: 11, lng: 124, accuracy: 250)),
+        ),
+        analytics: RecordingAnalyticsService(),
+        positionStream: const Stream.empty(),
+      );
+      await tester.tap(find.byType(RecenterButton));
+      await tester.pumpAndSettle();
+      expect(renderer.cameraTargetHistory.single.lat, 11);
+      expect(
+        find.text(
+          'Location accuracy is low. Showing your approximate position.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('disabled services do not center on cached coordinates',
+        (tester) async {
+      final renderer = FakeMapRenderer();
+      await pumpMap(
+        tester,
+        renderer: renderer,
+        locationService: FakeLocationService(serviceEnabled: false),
+        analytics: RecordingAnalyticsService(),
+        positionStream: Stream.value(fakePos(lat: 10, lng: 123, accuracy: 10)),
+      );
+      await tester.tap(find.byType(RecenterButton));
+      await tester.pumpAndSettle();
+      expect(renderer.cameraTargetHistory, isEmpty);
+      expect(
+        find.text(
+          'Device location is turned off. Turn on Location in your phone settings, then try again.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('stream error restores the button and offers retry',
+        (tester) async {
+      final renderer = FakeMapRenderer();
+      await pumpMap(
+        tester,
+        renderer: renderer,
+        locationService: FakeLocationService(
+          positions: Stream.error(StateError('GPS unavailable')),
+        ),
+        analytics: RecordingAnalyticsService(),
+        positionStream: const Stream.empty(),
+      );
+      await tester.tap(find.byType(RecenterButton));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.byIcon(Icons.my_location), findsOneWidget);
+      expect(find.text('Try again'), findsOneWidget);
+      expect(renderer.cameraTargetHistory, isEmpty);
+    });
+
+    testWidgets(
+        'timeout cancels location subscription and rejects stale fallback',
+        (tester) async {
+      final controller = StreamController<Position>();
+      final renderer = FakeMapRenderer();
+      await pumpMap(
+        tester,
+        renderer: renderer,
+        locationService: FakeLocationService(positions: controller.stream),
+        analytics: RecordingAnalyticsService(),
+        positionStream: Stream.value(
+          fakePos(
+            lat: 10,
+            lng: 123,
+            accuracy: 250,
+            timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
+          ),
+        ),
+      );
+      await tester.tap(find.byType(RecenterButton));
+      await tester.pump();
+      expect(controller.hasListener, isTrue);
+      await tester.pump(const Duration(seconds: 16));
+      await tester.pumpAndSettle();
+      expect(controller.hasListener, isFalse);
+      expect(renderer.cameraTargetHistory, isEmpty);
+      expect(find.text('Try again'), findsOneWidget);
+      await tester.runAsync(controller.close);
+    });
+  });
+
   group('AC2 cache hit', () {
     testWidgets(
       'tap → flies to cached accurate fix; analytics outcome=recentered_from_cache',
@@ -182,7 +339,7 @@ void main() {
 
   group('AC6/AC7 timeout', () {
     testWidgets(
-      'stream emits only poor fixes → after 8s, best-effort recenter + warning',
+      'stream emits only poor fixes → after 15s, best-effort recenter + warning',
       (tester) async {
         final renderer = FakeMapRenderer();
         final poor = fakePos(lat: 10, lng: 123, accuracy: 250);
@@ -205,15 +362,17 @@ void main() {
         await tester.runAsync(() async {
           await tester.tap(find.byType(RecenterButton));
           await tester.pump();
-          // Real-time wait so .timeout(8s) actually fires.
-          await Future<void>.delayed(const Duration(seconds: 9));
+          // Real-time wait so .timeout(15s) actually fires.
+          await Future<void>.delayed(const Duration(seconds: 16));
         });
         // Pump to flush widget updates after timeout's setState/snackbar.
         await tester.pump();
         await tester.pump();
 
         expect(
-          find.text('Location accuracy is low. Showing your approximate position.'),
+          find.text(
+            'Location accuracy is low. Showing your approximate position.',
+          ),
           findsOneWidget,
         );
         expect(renderer.cameraTargetHistory, hasLength(1));
@@ -224,7 +383,7 @@ void main() {
         });
         expect(find.byIcon(Icons.my_location), findsOneWidget);
 
-        await controller.close();
+        await tester.runAsync(controller.close);
       },
     );
   });

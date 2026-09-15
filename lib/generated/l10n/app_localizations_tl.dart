@@ -21,7 +21,7 @@ class AppLocalizationsTl extends AppLocalizations {
   String get retryAction => 'Subukan muli';
 
   @override
-  String get uploadsTitle => 'Mga upload';
+  String get uploadsTitle => 'Status ng mga upload';
 
   @override
   String get formRulesTitle => 'Mga panuntunan ng form';
@@ -76,7 +76,8 @@ class AppLocalizationsTl extends AppLocalizations {
   String get uploadData => 'I-upload ang Datos';
 
   @override
-  String get uploadDataSubtitle => 'Ipadala ang tapos na gawa';
+  String get uploadDataSubtitle =>
+      'Suriin ang iyong gawain, saka simulan ang pag-upload';
 
   @override
   String get getMapsTitle => 'Kumuha ng Mapa';
@@ -190,7 +191,7 @@ class AppLocalizationsTl extends AppLocalizations {
   String get followMe => 'Sundan';
 
   @override
-  String get newFeaturePlaceholder => '+ Bagong Feature (P3)';
+  String get newFeaturePlaceholder => '+ Bagong Feature';
 
   @override
   String get featureTooFarTitle => 'Masyadong malayo';
@@ -940,7 +941,7 @@ class AppLocalizationsTl extends AppLocalizations {
   }
 
   @override
-  String get reviewTitle => 'Suriin at I-upload';
+  String get reviewTitle => 'Suriin bago i-upload';
 
   @override
   String get submittedBadge => 'Naipasa na ✓';
@@ -994,6 +995,14 @@ class AppLocalizationsTl extends AppLocalizations {
 
   @override
   String get locationSnackbarOpenSettings => 'Open settings';
+
+  @override
+  String get locationSnackbarUnavailable =>
+      'Hindi makuha ang kasalukuyan mong lokasyon. Pumunta sa bukas na lugar at subukan muli.';
+
+  @override
+  String get locationSnackbarServicesOff =>
+      'Naka-off ang lokasyon ng device. I-on ang Location sa settings ng iyong telepono, pagkatapos ay subukan muli.';
 
   @override
   String get locationSnackbarLowAccuracy =>
@@ -1241,7 +1250,7 @@ class AppLocalizationsTl extends AppLocalizations {
   String get homeGetMaps => 'Kumuha ng mapa';
 
   @override
-  String get homeReviewUpload => 'Suriin at i-upload';
+  String get homeReviewUpload => 'Suriin bago i-upload';
 
   @override
   String get homeSurveyed => 'na-survey na feature';
@@ -1351,18 +1360,18 @@ class AppLocalizationsTl extends AppLocalizations {
   String get designImportOptions => 'Mga opsyon sa pag-import';
 
   @override
-  String get designUploadsTitle => 'Mga nakapilang upload';
+  String get designUploadsTitle => 'Subaybayan ang mga upload';
 
   @override
   String get designUploadsBody =>
-      'Suriin ang mga naka-save na file at ipadala kapag handa ka na.';
+      'Makikita rito ang mga nakapila at nabigong upload. Pumunta sa Suriin bago i-upload upang ihanda ang iyong gawain para sa pag-upload.';
 
   @override
   String get designReviewTitle => 'Suriin ang iyong gawain';
 
   @override
   String get designReviewBody =>
-      'Suriin lamang ang mga na-edit o bagong idinagdag na feature bago i-upload.';
+      'Suriin ang mga na-edit at bagong feature sa ibaba, saka pindutin ang Simulan ang Pag-upload. Makikita sa Status ng mga upload ang progreso at maaari mong subukang muli ang mga nabigong upload.';
 
   @override
   String get designSummaryTitle => 'Buod ng mga na-edit na feature';

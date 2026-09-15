@@ -49,7 +49,7 @@ void main() {
     );
     expect(button.onPressed, isNull);
     expect(find.text('No maps downloaded'), findsOneWidget);
-    expect(find.byTooltip('Uploads'), findsOneWidget);
+    expect(find.byTooltip('Upload progress'), findsOneWidget);
   });
 
   testWidgets('home fits a narrow phone with enlarged text', (tester) async {
@@ -80,7 +80,7 @@ void main() {
 
     expect(find.text('Start survey'), findsOneWidget);
     expect(find.text('Get maps'), findsOneWidget);
-    expect(find.text('Review & upload'), findsOneWidget);
+    expect(find.text('Review before upload'), findsOneWidget);
   });
 
   testWidgets('renders populated progress counts', (tester) async {

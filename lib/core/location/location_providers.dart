@@ -6,7 +6,7 @@ final locationServiceProvider = Provider<LocationService>((ref) {
   return const GeolocatorLocationService();
 });
 
-/// Re-emits whenever device position changes (filtered at 3m).
-final currentPositionProvider = StreamProvider<Position>((ref) {
+/// Keeps current fixes available, including accuracy updates while stationary.
+final currentPositionProvider = StreamProvider.autoDispose<Position>((ref) {
   return ref.watch(locationServiceProvider).positionStream();
 });

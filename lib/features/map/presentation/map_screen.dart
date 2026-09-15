@@ -898,103 +898,180 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     });
   }
 
-  Future<void> _onRecenterTap() async {
-    if (_recenterState != RecenterButtonState.idle) return;
-    if (_rationaleVisible) return;
+  // Cached fixes must still represent where the user is now.
+  bool _usableRecenterPosition(Position p) {
+    final age = DateTime.now().difference(p.timestamp);
+    return age >= Duration.zero &&
+        age <= const Duration(seconds: 30) &&
+        p.latitude.isFinite &&
+        p.latitude.abs() <= 90 &&
+        p.longitude.isFinite &&
+        p.longitude.abs() <= 180 &&
+        p.accuracy.isFinite &&
+        p.accuracy >= 0;
+  }
 
-    // Single increment per tap — used both for slow-path supersedence
-    // detection AND as the CameraTarget.requestId for renderer dedup.
+  Future<void> _onRecenterTap() async {
+    if (_recenterState != RecenterButtonState.idle || _rationaleVisible) return;
     final seq = ++_cameraRequestSeq;
     final analytics = ref.read(analyticsServiceProvider);
     final locationService = ref.read(locationServiceProvider);
+    setState(() => _recenterState = RecenterButtonState.loading);
+    StreamSubscription<Position>? subscription;
+    try {
+      var perm = await locationService.checkPermission();
+      if (!mounted) return;
 
-    var perm = await locationService.checkPermission();
+      if (perm == LocationPermission.denied) {
+        final allow = await _showLocationRationale();
+        if (allow != true) {
+          analytics.track(
+            'map.recenter.tapped',
+            properties: {
+              'outcome': 'permission_rationale_dismissed',
+            },
+          );
+          return;
+        }
+        perm = await locationService.requestPermission();
+        if (!mounted) return;
+        ref.invalidate(currentPositionProvider);
+      }
 
-    if (perm == LocationPermission.denied) {
-      final allow = await _showLocationRationale();
-      if (allow != true) {
+      if (perm == LocationPermission.deniedForever ||
+          perm == LocationPermission.unableToDetermine) {
+        _showSettingsShortcutSnackbar(locationService);
         analytics.track(
           'map.recenter.tapped',
           properties: {
-            'outcome': 'permission_rationale_dismissed',
+            'outcome': 'permission_denied_forever',
           },
         );
         return;
       }
-      perm = await locationService.requestPermission();
-    }
 
-    if (perm == LocationPermission.deniedForever ||
-        perm == LocationPermission.unableToDetermine) {
-      _showSettingsShortcutSnackbar(locationService);
-      analytics.track(
-        'map.recenter.tapped',
-        properties: {
-          'outcome': 'permission_denied_forever',
-        },
-      );
-      return;
-    }
-
-    if (perm == LocationPermission.denied) {
-      analytics.track(
-        'map.recenter.tapped',
-        properties: {
-          'outcome': 'permission_denied',
-        },
-      );
-      return;
-    }
-
-    if (seq != _cameraRequestSeq) return;
-
-    final cached = ref.read(currentPositionProvider).valueOrNull;
-    if (cached != null && cached.accuracy <= 100.0) {
-      _flyTo(cached, seq: seq);
-      analytics.track(
-        'map.recenter.tapped',
-        properties: {
-          'outcome': 'recentered_from_cache',
-          'accuracy_m': cached.accuracy.round(),
-        },
-      );
-      return;
-    }
-
-    setState(() => _recenterState = RecenterButtonState.loading);
-
-    try {
-      final accurate = await locationService
-          .positionStream()
-          .firstWhere((p) => p.accuracy <= 100.0)
-          .timeout(const Duration(seconds: 8));
+      if (perm == LocationPermission.denied) {
+        analytics.track(
+          'map.recenter.tapped',
+          properties: {
+            'outcome': 'permission_denied',
+          },
+        );
+        return;
+      }
 
       if (!mounted || seq != _cameraRequestSeq) return;
-      _flyTo(accurate, seq: seq);
-      analytics.track(
-        'map.recenter.tapped',
-        properties: {
-          'outcome': 'recentered_after_wait',
-          'accuracy_m': accurate.accuracy.round(),
-        },
-      );
-    } on TimeoutException {
+      if (!await locationService.isLocationServiceEnabled()) {
+        if (!mounted) return;
+        _showLocationRetrySnackbar(
+          AppLocalizations.of(context)!.locationSnackbarServicesOff,
+        );
+        analytics.track(
+          'map.recenter.tapped',
+          properties: {'outcome': 'services_disabled'},
+        );
+        return;
+      }
       if (!mounted || seq != _cameraRequestSeq) return;
-      final best = ref.read(currentPositionProvider).valueOrNull;
-      if (best != null) _flyTo(best, seq: seq);
-      _showLowAccuracySnackbar();
-      analytics.track(
-        'map.recenter.tapped',
-        properties: {
-          'outcome': 'low_accuracy_timeout',
-          'accuracy_m': best?.accuracy.round(),
+      final cached = ref.read(currentPositionProvider).valueOrNull;
+      var best =
+          cached != null && _usableRecenterPosition(cached) ? cached : null;
+      if (best != null && best.accuracy <= 100) {
+        _flyTo(best, seq: seq);
+        analytics.track(
+          'map.recenter.tapped',
+          properties: {
+            'outcome': 'recentered_from_cache',
+            'accuracy_m': best.accuracy.round(),
+          },
+        );
+        return;
+      }
+
+      final fix = Completer<Position>();
+      // Receive accuracy improvements even while the user stands still.
+      subscription = locationService.positionStream().listen(
+        (p) {
+          if (!_usableRecenterPosition(p)) return;
+          if (best == null ||
+              !_usableRecenterPosition(best!) ||
+              p.accuracy <= best!.accuracy) {
+            best = p;
+          }
+          if (p.accuracy <= 100 && !fix.isCompleted) fix.complete(p);
+        },
+        onError: (Object error, StackTrace stack) {
+          if (!fix.isCompleted) fix.completeError(error, stack);
+        },
+        onDone: () {
+          if (!fix.isCompleted) {
+            fix.completeError(TimeoutException('Location stream ended'));
+          }
         },
       );
-    } finally {
+      try {
+        final accurate = await fix.future.timeout(const Duration(seconds: 15));
+        if (!mounted || seq != _cameraRequestSeq) return;
+        _flyTo(accurate, seq: seq);
+        analytics.track(
+          'map.recenter.tapped',
+          properties: {
+            'outcome': 'recentered_after_wait',
+            'accuracy_m': accurate.accuracy.round(),
+          },
+        );
+      } on TimeoutException {
+        if (!mounted || seq != _cameraRequestSeq) return;
+        final fallback = best;
+        if (fallback != null && _usableRecenterPosition(fallback)) {
+          _flyTo(fallback, seq: seq);
+          _showLowAccuracySnackbar();
+          analytics.track(
+            'map.recenter.tapped',
+            properties: {
+              'outcome': 'low_accuracy_timeout',
+              'accuracy_m': fallback.accuracy.round(),
+            },
+          );
+        } else {
+          _showLocationRetrySnackbar(
+            AppLocalizations.of(context)!.locationSnackbarUnavailable,
+          );
+          analytics.track(
+            'map.recenter.tapped',
+            properties: {'outcome': 'location_unavailable'},
+          );
+        }
+      }
+    } on Object {
       if (mounted && seq == _cameraRequestSeq) {
+        _showLocationRetrySnackbar(
+          AppLocalizations.of(context)!.locationSnackbarUnavailable,
+        );
+        analytics.track(
+          'map.recenter.tapped',
+          properties: {'outcome': 'location_error'},
+        );
+      }
+    } finally {
+      if (mounted) {
         setState(() => _recenterState = RecenterButtonState.idle);
       }
+      await subscription?.cancel();
     }
+  }
+
+  void _showLocationRetrySnackbar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        action: SnackBarAction(
+          label: AppLocalizations.of(context)!.retryAction,
+          onPressed: _onRecenterTap,
+        ),
+      ),
+    );
   }
 
   @override

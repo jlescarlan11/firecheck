@@ -101,7 +101,7 @@ class _UploadQueueScreenState extends ConsumerState<UploadQueueScreen> {
     final totalMb = (state.totalPendingBytes / 1024 / 1024).toStringAsFixed(1);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Uploads')),
+      appBar: AppBar(title: Text(l.uploadsTitle)),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

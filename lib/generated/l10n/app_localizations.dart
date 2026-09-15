@@ -125,7 +125,7 @@ abstract class AppLocalizations {
   /// No description provided for @uploadsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Uploads'**
+  /// **'Upload progress'**
   String get uploadsTitle;
 
   /// No description provided for @formRulesTitle.
@@ -227,7 +227,7 @@ abstract class AppLocalizations {
   /// No description provided for @uploadDataSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Send completed work'**
+  /// **'Check your work, then start uploading'**
   String get uploadDataSubtitle;
 
   /// No description provided for @getMapsTitle.
@@ -437,7 +437,7 @@ abstract class AppLocalizations {
   /// No description provided for @newFeaturePlaceholder.
   ///
   /// In en, this message translates to:
-  /// **'+ New Feature (P3)'**
+  /// **'+ New Feature'**
   String get newFeaturePlaceholder;
 
   /// No description provided for @featureTooFarTitle.
@@ -1781,7 +1781,7 @@ abstract class AppLocalizations {
   /// No description provided for @reviewTitle.
   ///
   /// In en, this message translates to:
-  /// **'Review & Upload'**
+  /// **'Review before upload'**
   String get reviewTitle;
 
   /// No description provided for @submittedBadge.
@@ -1879,6 +1879,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open settings'**
   String get locationSnackbarOpenSettings;
+
+  /// No description provided for @locationSnackbarUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not get your current location. Move to an open area and try again.'**
+  String get locationSnackbarUnavailable;
+
+  /// No description provided for @locationSnackbarServicesOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Device location is turned off. Turn on Location in your phone settings, then try again.'**
+  String get locationSnackbarServicesOff;
 
   /// No description provided for @locationSnackbarLowAccuracy.
   ///
@@ -2291,7 +2303,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeReviewUpload.
   ///
   /// In en, this message translates to:
-  /// **'Review & upload'**
+  /// **'Review before upload'**
   String get homeReviewUpload;
 
   /// No description provided for @homeSurveyed.
@@ -2411,13 +2423,13 @@ abstract class AppLocalizations {
   /// No description provided for @designUploadsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Your upload queue'**
+  /// **'Track your uploads'**
   String get designUploadsTitle;
 
   /// No description provided for @designUploadsBody.
   ///
   /// In en, this message translates to:
-  /// **'Review saved files and send them when you are ready.'**
+  /// **'Pending files and failed uploads appear here. Check your work in Review before upload to prepare an upload.'**
   String get designUploadsBody;
 
   /// No description provided for @designReviewTitle.
@@ -2429,7 +2441,7 @@ abstract class AppLocalizations {
   /// No description provided for @designReviewBody.
   ///
   /// In en, this message translates to:
-  /// **'Review only edited or newly added features before uploading.'**
+  /// **'Check edited and newly added features below, then tap Start Upload. You can track files and retry failures in Upload progress.'**
   String get designReviewBody;
 
   /// No description provided for @designSummaryTitle.

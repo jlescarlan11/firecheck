@@ -140,7 +140,7 @@ void main() {
       router.go('/');
       await tester.pumpAndSettle();
     }
-    await tester.tap(find.byTooltip('Uploads'));
+    await tester.tap(find.byTooltip('Upload progress'));
     await tester.pumpAndSettle();
     expect(find.text('Destination /uploads'), findsOneWidget);
   });
@@ -150,14 +150,14 @@ void main() {
     when(() => biometric.authenticate(reason: any(named: 'reason')))
         .thenAnswer((_) async => false);
     await pumpHome(tester);
-    await tester.ensureVisible(find.text('Review & upload'));
-    await tester.tap(find.text('Review & upload'));
+    await tester.ensureVisible(find.text('Review before upload'));
+    await tester.tap(find.text('Review before upload'));
     await tester.pumpAndSettle();
     expect(find.text('Destination /review'), findsNothing);
     expect(find.byType(SnackBar), findsOneWidget);
     when(() => biometric.authenticate(reason: any(named: 'reason')))
         .thenAnswer((_) async => true);
-    await tester.tap(find.text('Review & upload'));
+    await tester.tap(find.text('Review before upload'));
     await tester.pumpAndSettle();
     expect(find.text('Destination /review'), findsOneWidget);
   });
@@ -166,8 +166,8 @@ void main() {
       (tester) async {
     when(() => biometric.isAvailable()).thenAnswer((_) async => false);
     await pumpHome(tester);
-    await tester.ensureVisible(find.text('Review & upload'));
-    await tester.tap(find.text('Review & upload'));
+    await tester.ensureVisible(find.text('Review before upload'));
+    await tester.tap(find.text('Review before upload'));
     await tester.pumpAndSettle();
     expect(find.text('Destination /review'), findsOneWidget);
     verifyNever(() => biometric.authenticate(reason: any(named: 'reason')));
@@ -226,10 +226,10 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     await pumpHome(tester, locale: const Locale('tl'));
-    await tester.ensureVisible(find.text('Suriin at i-upload'));
+    await tester.ensureVisible(find.text('Suriin bago i-upload'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
-    await tester.tap(find.text('Suriin at i-upload'));
+    await tester.tap(find.text('Suriin bago i-upload'));
     await tester.pumpAndSettle();
     expect(find.text('Destination /review'), findsOneWidget);
   });
