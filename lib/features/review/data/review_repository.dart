@@ -51,8 +51,9 @@ class ReviewRepository {
     // Opening a feature creates an empty draft. Only fetch features with
     // saved fieldwork (or newly added geometry), before loading related rows
     // and building validation widgets for potentially thousands of features.
-    final features = await _db.customSelect(
-      ''' 
+    final features = await _db
+        .customSelect(
+          '''
       SELECT f.* FROM features f
       WHERE f.assignment_id = ? AND f.merged_into_id IS NULL
       AND (f.is_new = 1 OR EXISTS (
@@ -68,16 +69,18 @@ class ReviewRepository {
         )
       ))
       ''',
-      variables: [Variable.withString(assignmentId)],
-      readsFrom: {
-        _db.features,
-        _db.submissions,
-        _db.buildingAttributes,
-        _db.roadAttributes,
-        _db.householdSurveys,
-        _db.photos,
-      },
-    ).map((row) => _db.features.map(row.data)).get();
+          variables: [Variable.withString(assignmentId)],
+          readsFrom: {
+            _db.features,
+            _db.submissions,
+            _db.buildingAttributes,
+            _db.roadAttributes,
+            _db.householdSurveys,
+            _db.photos,
+          },
+        )
+        .map((row) => _db.features.map(row.data))
+        .get();
     final featureIds = features.map((f) => f.id).toList();
 
     final submissions = featureIds.isEmpty
