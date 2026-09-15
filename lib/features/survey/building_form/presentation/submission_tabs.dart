@@ -41,13 +41,12 @@ class SubmissionTabs extends StatelessWidget {
                   key: const Key('submission-tabs.add'),
                   onTap: canAddMore ? onAdd : null,
                   child: const Padding(
-                    padding:
-                        EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     child: Text(
                       '+',
                       style: TextStyle(
                         fontSize: 16,
-                        color: Color(0xFF3B82F6),
+                        color: Color(0xFFB93228),
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -73,20 +72,20 @@ class _Tab extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(
               width: 2,
-              color: active ? const Color(0xFFC94A23) : Colors.transparent,
+              color: active ? const Color(0xFFB93228) : Colors.transparent,
             ),
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 11,
-            color: active ? const Color(0xFFC94A23) : Colors.grey.shade700,
+            fontSize: 14,
+            color: active ? const Color(0xFFB93228) : Colors.grey.shade700,
             fontWeight: active ? FontWeight.w700 : FontWeight.w500,
           ),
         ),

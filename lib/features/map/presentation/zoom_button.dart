@@ -31,14 +31,18 @@ class ZoomButton extends StatelessWidget {
       width: 48,
       height: 48,
       child: Material(
-        color: colors.primary,
-        shape: const CircleBorder(),
-        elevation: 2,
+        color: colors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: BorderSide(color: colors.outlineVariant),
+        ),
+        elevation: 1,
         child: InkWell(
-          customBorder: const CircleBorder(),
+          customBorder:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           onTap: isInteractive ? onTap : null,
           child: Center(
-            child: Icon(icon, color: colors.onPrimary, size: 24),
+            child: Icon(icon, color: colors.onSurface, size: 24),
           ),
         ),
       ),

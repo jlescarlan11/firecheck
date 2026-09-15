@@ -141,4 +141,21 @@ void main() {
       ['parking'],
     );
   });
+
+  test('tab disposal flushes a pending road edit', () async {
+    const key = RoadFormKey(submissionId: 's1', featureId: 'f1');
+    final subscription = container.listen(
+      roadFormNotifierProvider(key),
+      (_, __) {},
+    );
+    container
+        .read(roadFormNotifierProvider(key).notifier)
+        .update((s) => s.copyWith(roadName: 'Saved on tab switch'));
+
+    subscription.close();
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+
+    final persisted = await RoadAttributesRepository(db).findBySubmission('s1');
+    expect(persisted?.roadName, 'Saved on tab switch');
+  });
 }

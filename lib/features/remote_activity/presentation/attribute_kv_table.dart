@@ -40,18 +40,18 @@ class AttributeKvTable extends StatelessWidget {
       children: [
         if (title != null) ...[
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            child: Text(title!,
-                style: const TextStyle(fontWeight: FontWeight.w700)),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            child: Text(
+              title!,
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
           ),
         ],
         Table(
           columnWidths: const {
-            0: IntrinsicColumnWidth(),
+            0: FlexColumnWidth(),
             1: FlexColumnWidth(),
           },
-          defaultVerticalAlignment: TableCellVerticalAlignment.top,
           children: [
             for (final e in entries)
               TableRow(
@@ -61,7 +61,9 @@ class AttributeKvTable extends StatelessWidget {
                 children: [
                   Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
                     child: Text(
                       e.key,
                       style: TextStyle(
@@ -72,7 +74,9 @@ class AttributeKvTable extends StatelessWidget {
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
                     child: Text(
                       _format(e.value),
                       style: const TextStyle(fontWeight: FontWeight.w600),

@@ -149,6 +149,8 @@ class CostSection extends ConsumerWidget {
             )
           else
             DropdownButtonFormField<String>(
+              isExpanded: true,
+              itemHeight: null,
               initialValue: state.costEstimateRange,
               decoration: InputDecoration(
                 labelText: requiredLabel(

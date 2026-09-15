@@ -1,6 +1,7 @@
 // lib/core/drive/google_drive_api.dart
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:firecheck/core/drive/drive_api.dart';
 import 'package:firecheck/core/drive/drive_assignment.dart';
@@ -199,14 +200,14 @@ class GoogleDriveApi implements DriveApi {
             ),
             operation: 'Drive assignment metadata download',
           ) as gdrive.Media;
-          final bytes = <int>[];
+          final bytes = BytesBuilder();
           await for (final chunk in _boundedStream(
             media.stream,
             operation: 'Drive assignment metadata download',
           )) {
-            bytes.addAll(chunk);
+            bytes.add(chunk);
           }
-          final raw = utf8.decode(bytes).trim().toLowerCase();
+          final raw = utf8.decode(bytes.takeBytes()).trim().toLowerCase();
           if (_uuidPattern.hasMatch(raw)) pinnedLocalId = raw;
         } catch (_) {}
       }
@@ -262,16 +263,16 @@ class GoogleDriveApi implements DriveApi {
         operation: 'Drive map download',
       ) as gdrive.Media;
 
-      final chunks = <int>[];
+      final chunks = BytesBuilder();
       await for (final chunk in _boundedStream(
         media.stream,
         operation: 'Drive map download',
       )) {
-        chunks.addAll(chunk);
+        chunks.add(chunk);
         downloaded += chunk.length;
         yield DriveDownloadProgress(downloaded: downloaded, total: total);
       }
-      result[entry.key] = Uint8List.fromList(chunks);
+      result[entry.key] = chunks.takeBytes();
     }
 
     yield DriveDownloadComplete(result, _md5Cache[assignmentId] ?? {});
@@ -309,14 +310,14 @@ class GoogleDriveApi implements DriveApi {
       ),
       operation: 'Drive requirements download',
     ) as gdrive.Media;
-    final chunks = <int>[];
+    final chunks = BytesBuilder();
     await for (final chunk in _boundedStream(
       media.stream,
       operation: 'Drive requirements download',
     )) {
-      chunks.addAll(chunk);
+      chunks.add(chunk);
     }
-    return Uint8List.fromList(chunks);
+    return chunks.takeBytes();
   }
 
   @override

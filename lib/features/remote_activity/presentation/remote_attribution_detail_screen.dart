@@ -1,3 +1,4 @@
+import 'package:firecheck/core/theme/app_layout.dart';
 import 'package:firecheck/features/remote_activity/domain/remote_attribution_flatten.dart';
 import 'package:firecheck/features/remote_activity/presentation/attribute_kv_table.dart';
 import 'package:firecheck/features/remote_activity/presentation/remote_activity_providers.dart';
@@ -14,8 +15,7 @@ class RemoteAttributionDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final viewAsync =
-        ref.watch(remoteAttributionForFeatureProvider(featureId));
+    final viewAsync = ref.watch(remoteAttributionForFeatureProvider(featureId));
 
     return Scaffold(
       appBar: AppBar(title: const Text('Their answers')),
@@ -28,7 +28,7 @@ class RemoteAttributionDetailScreen extends ConsumerWidget {
           }
           final values = flattenRemoteAttributionForDisplay(view);
           return ListView(
-            padding: const EdgeInsets.symmetric(vertical: 12),
+            padding: appPageInsets(context),
             children: [
               _Header(
                 featureId: view.featureId,
@@ -39,7 +39,6 @@ class RemoteAttributionDetailScreen extends ConsumerWidget {
               const SizedBox(height: 12),
               Material(
                 color: Theme.of(context).colorScheme.surface,
-                elevation: 0,
                 child: AttributeKvTable(values: values),
               ),
               const SizedBox(height: 12),
@@ -80,20 +79,16 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: featureType == 'building'
-                ? Colors.blueGrey.shade100
-                : Colors.brown.shade100,
+            backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
             child: Icon(
               featureType == 'building'
                   ? Icons.home_work_outlined
                   : Icons.alt_route_outlined,
-              color: featureType == 'building'
-                  ? Colors.blueGrey.shade700
-                  : Colors.brown.shade700,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(width: 12),
@@ -120,8 +115,7 @@ class _Header extends StatelessWidget {
     );
   }
 
-  String _shortId(String id) =>
-      id.length <= 8 ? id : id.substring(0, 8);
+  String _shortId(String id) => id.length <= 8 ? id : id.substring(0, 8);
 
   String _capitalize(String s) =>
       s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}';

@@ -72,4 +72,29 @@ void main() {
     expect(gps.lat, isNull);
     expect(gps.lng, isNull);
   });
+
+  test('worker decode failures propagate without creating an output', () async {
+    final source = File(p.join(tempDir.path, 'invalid.jpg'));
+    await source.writeAsString('not an image');
+    final destination = File(p.join(tempDir.path, 'invalid_out.jpg'));
+
+    await expectLater(
+      const ImageProcessor().resizeAndCopyExif(
+        sourcePath: source.path,
+        destPath: destination.path,
+      ),
+      throwsA(isA<ImageProcessingException>()),
+    );
+    expect(destination.existsSync(), isFalse);
+  });
+
+  test('worker file failures propagate to the capture caller', () async {
+    await expectLater(
+      const ImageProcessor().resizeAndCopyExif(
+        sourcePath: p.join(tempDir.path, 'missing.jpg'),
+        destPath: p.join(tempDir.path, 'missing_out.jpg'),
+      ),
+      throwsA(isA<FileSystemException>()),
+    );
+  });
 }

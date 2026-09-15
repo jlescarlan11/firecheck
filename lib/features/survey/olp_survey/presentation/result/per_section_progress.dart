@@ -36,22 +36,23 @@ class PerSectionProgress extends StatelessWidget {
     required int max,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+      padding: const EdgeInsets.symmetric(vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Expanded(
-                child: Text(label, style: const TextStyle(fontSize: 12)),
+                child: Text(label, style: const TextStyle(fontSize: 14)),
               ),
               Text(
                 '$score / $max',
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                style:
+                    const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 10),
           LinearProgressIndicator(value: max == 0 ? 0 : score / max),
         ],
       ),

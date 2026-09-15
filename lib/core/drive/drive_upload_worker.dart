@@ -39,9 +39,9 @@ class DriveUploadWorker {
     try {
       await repo.resetStuckUploadingToPending();
       while (true) {
-        final jobs = await repo.getPendingJobs();
+        final jobs = await repo.getPendingJobs(limit: _maxConcurrent);
         if (jobs.isEmpty) return;
-        await Future.wait(jobs.take(_maxConcurrent).map(_processOne));
+        await Future.wait(jobs.map(_processOne));
       }
     } finally {
       _running = false;

@@ -17,6 +17,35 @@ class _SpyRule extends ShapefileValidationRule {
 }
 
 void main() {
+  test('a download with no map geometry cannot be imported', () {
+    final report = ShapefileValidator().validate({}, {}, relaxedMode: true);
+    expect(report.hasFatals, isTrue);
+  });
+
+  test(
+      'readable mode still rejects corrupt geometry under an arbitrary layer name',
+      () {
+    final report = ShapefileValidator()
+        .validate({'custom_parcels.shp': Uint8List(12)}, {}, relaxedMode: true);
+    expect(report.hasFatals, isTrue);
+    expect(report.fatal!.ruleName, 'header_integrity');
+  });
+  test(
+      'readable mode allows missing survey columns but rejects damaged attributes',
+      () {
+    final schema = ShapefileValidator(rules: [
+      _SpyRule(const RuleFatal(
+          ruleName: 'attribute_schema', userMessage: 'Missing columns'))
+    ]).validate({}, {}, relaxedMode: true);
+    expect(schema.hasFatals, isFalse);
+    expect(schema.hasWarnings, isTrue);
+    final damaged = ShapefileValidator(rules: [
+      _SpyRule(const RuleFatal(
+          ruleName: 'attribute_integrity', userMessage: 'Corrupt table'))
+    ]).validate({}, {}, relaxedMode: true);
+    expect(damaged.hasFatals, isTrue);
+  });
+
   test('fail-fast: first RuleFatal stops remaining rules', () {
     final fatal =
         _SpyRule(const RuleFatal(ruleName: 'test', userMessage: 'err'));
@@ -57,8 +86,13 @@ void main() {
     expect(report.hasFatals, isTrue); // R2 should fatal: missing files
   });
 
-  test('relaxed mode demotes an incomplete bundle to a visible warning', () {
-    final report = ShapefileValidator().validate({}, {}, relaxedMode: true);
+  test('relaxed mode demotes missing layers to a visible warning', () {
+    final shp = Uint8List(100);
+    final header = ByteData.sublistView(shp);
+    header.setUint32(0, 9994, Endian.big);
+    header.setUint32(24, 50, Endian.big);
+    final report = ShapefileValidator()
+        .validate({'custom.shp': shp}, {}, relaxedMode: true);
 
     expect(report.hasFatals, isFalse);
     expect(report.warnings, isNotEmpty);

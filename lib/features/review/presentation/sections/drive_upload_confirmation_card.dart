@@ -1,3 +1,4 @@
+import 'package:firecheck/core/theme/app_layout.dart';
 import 'package:firecheck/features/review/domain/drive_upload_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -53,12 +54,20 @@ class _SuccessCard extends StatelessWidget {
 
   String _formatDate(DateTime dt) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
-    final h = dt.hour > 12
-        ? dt.hour - 12
-        : (dt.hour == 0 ? 12 : dt.hour);
+    final h = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
     final m = dt.minute.toString().padLeft(2, '0');
     final ampm = dt.hour >= 12 ? 'PM' : 'AM';
     return '${months[dt.month - 1]} ${dt.day} · $h:$m $ampm';
@@ -66,163 +75,50 @@ class _SuccessCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      label:
-          'Upload successful. Remote path: $folderPath. Reference ID: $referenceId.',
-      excludeSemantics: true,
-      child: Card(
-        color: const Color(0xFFF0FDF4),
-        shape: RoundedRectangleBorder(
-          side: const BorderSide(color: Color(0xFF16A34A), width: 1.5),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    final colors = Theme.of(context).colorScheme;
+    return AppSection(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
             children: [
-              const Row(
-                children: [
-                  Icon(Icons.check_circle, color: Color(0xFF15803D), size: 20),
-                  SizedBox(width: 8),
-                  Text(
-                    'Submitted to Google Drive',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF15803D),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFDCFCE7),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'REMOTE PATH',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF166534),
-                        letterSpacing: 0.06,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            folderPath,
-                            style: const TextStyle(
-                              fontFamily: 'monospace',
-                              fontSize: 12,
-                              color: Color(0xFF14532D),
-                            ),
-                          ),
-                        ),
-                        Semantics(
-                          label: 'Copy remote path to clipboard',
-                          child: TextButton(
-                            onPressed: () => Clipboard.setData(
-                              ClipboardData(text: folderUrl),
-                            ),
-                            style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              backgroundColor: const Color(0xFF16A34A),
-                              foregroundColor: Colors.white,
-                            ),
-                            child: const Text(
-                              'Copy',
-                              style: TextStyle(fontSize: 11),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  Expanded(
-                    child: _InfoBox(label: 'REFERENCE ID', value: referenceId),
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: _InfoBox(
-                      label: 'CONFIRMED',
-                      value: _formatDate(confirmedAt),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              GestureDetector(
-                onTap: () async {
-                  final uri = Uri.parse(folderUrl);
-                  await launchUrl(uri, mode: LaunchMode.externalApplication);
-                },
-                child: const Center(
-                  child: Text(
-                    'Open in Google Drive →',
-                    style: TextStyle(
-                      color: Color(0xFF16A34A),
-                      fontSize: 12,
-                      decoration: TextDecoration.underline,
-                    ),
-                  ),
-                ),
+              Icon(Icons.check_circle_outline, color: colors.secondary),
+              const SizedBox(width: 12),
+              Expanded(
+                  child: Text('Submitted to Google Drive',
+                      style: Theme.of(context).textTheme.titleLarge)),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Text('Remote path', style: Theme.of(context).textTheme.labelLarge),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(child: SelectableText(folderPath)),
+              IconButton(
+                tooltip: 'Copy Google Drive link',
+                onPressed: () =>
+                    Clipboard.setData(ClipboardData(text: folderUrl)),
+                icon: const Icon(Icons.copy_outlined),
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _InfoBox extends StatelessWidget {
-  const _InfoBox({required this.label, required this.value});
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFDCFCE7),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF166534),
-              letterSpacing: 0.06,
-            ),
-          ),
-          const SizedBox(height: 3),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 11,
-              color: Color(0xFF14532D),
-            ),
+          const Divider(height: 32),
+          Text('Reference ID', style: Theme.of(context).textTheme.labelLarge),
+          const SizedBox(height: 8),
+          SelectableText(referenceId),
+          const SizedBox(height: 20),
+          Text('Confirmed', style: Theme.of(context).textTheme.labelLarge),
+          const SizedBox(height: 8),
+          Text(_formatDate(confirmedAt)),
+          const SizedBox(height: 24),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.open_in_new),
+            onPressed: () async {
+              await launchUrl(Uri.parse(folderUrl),
+                  mode: LaunchMode.externalApplication);
+            },
+            label: const Text('Open in Google Drive'),
           ),
         ],
       ),
@@ -243,58 +139,28 @@ class _FailureCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      label:
-          'Upload failed. $message.${canRetry ? ' Retry button available.' : ''}',
-      excludeSemantics: true,
-      child: Card(
-        color: const Color(0xFFFEF2F2),
-        shape: RoundedRectangleBorder(
-          side: const BorderSide(color: Color(0xFFDC2626), width: 1.5),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    final colors = Theme.of(context).colorScheme;
+    return AppSection(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
             children: [
-              const Row(
-                children: [
-                  Icon(Icons.error, color: Color(0xFFDC2626), size: 20),
-                  SizedBox(width: 8),
-                  Text(
-                    'Upload Failed',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFFDC2626),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                message,
-                style: const TextStyle(
-                  color: Color(0xFF7F1D1D),
-                  fontSize: 13,
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: canRetry ? onRetry : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFDC2626),
-                    foregroundColor: Colors.white,
-                  ),
-                  child: Text(canRetry ? 'Retry Upload' : 'Re-authenticate'),
-                ),
-              ),
+              Icon(Icons.error_outline, color: colors.error),
+              const SizedBox(width: 12),
+              Expanded(
+                  child: Text('Upload Failed',
+                      style: Theme.of(context).textTheme.titleLarge)),
             ],
           ),
-        ),
+          const SizedBox(height: 16),
+          Text(message, style: TextStyle(color: colors.error, height: 1.5)),
+          const SizedBox(height: 24),
+          FilledButton(
+            onPressed: canRetry ? onRetry : null,
+            child: Text(canRetry ? 'Retry Upload' : 'Re-authenticate'),
+          ),
+        ],
       ),
     );
   }

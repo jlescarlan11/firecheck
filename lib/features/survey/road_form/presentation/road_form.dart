@@ -1,8 +1,9 @@
+import 'package:firecheck/core/forms/constraint_hints.dart';
 import 'package:firecheck/core/forms/form_definition.dart';
 import 'package:firecheck/core/forms/form_definition_providers.dart';
-import 'package:firecheck/core/forms/constraint_hints.dart';
 import 'package:firecheck/core/forms/geometry_signal.dart';
 import 'package:firecheck/core/forms/geometry_signal_providers.dart';
+import 'package:firecheck/core/theme/app_layout.dart';
 import 'package:firecheck/features/survey/road_form/domain/road_form_context.dart';
 import 'package:firecheck/features/survey/road_form/presentation/road_form_providers.dart';
 import 'package:firecheck/features/survey/road_form/presentation/road_remaining_questions_badge.dart';
@@ -45,14 +46,15 @@ class RoadForm extends ConsumerWidget {
         definition.isVisible('road.section.$section', formContext);
 
     return ListView(
-      padding: const EdgeInsets.all(12),
+      padding: appPageInsets(context),
       children: [
         Container(
-          padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xFFFFF8ED),
-            border: Border.all(color: const Color(0xFFF6D68E)),
-            borderRadius: BorderRadius.circular(6),
+            color: state.doesNotExist
+                ? Theme.of(context).colorScheme.errorContainer
+                : Theme.of(context).colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
             children: [
@@ -70,8 +72,8 @@ class RoadForm extends ConsumerWidget {
                     Text(
                       l.doesNotExistHelper,
                       style: const TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFF888888),
+                        fontSize: 13,
+                        color: Color(0xFF596166),
                       ),
                     ),
                   ],

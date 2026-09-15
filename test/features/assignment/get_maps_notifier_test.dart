@@ -50,7 +50,8 @@ class _NoopImporter extends ShapefileImporter {
             id: Value(assignmentId),
             enumeratorId: Value(enumeratorId),
             campaignId: Value(assignmentId),
-            boundaryPolygonGeojson: Value('{"type":"Polygon","coordinates":[[[0,0],[0,1],[1,1],[1,0],[0,0]]]}'),
+            boundaryPolygonGeojson: Value(
+                '{"type":"Polygon","coordinates":[[[0,0],[0,1],[1,1],[1,0],[0,0]]]}'),
             downloadedAt: Value(DateTime.now()),
             driveModifiedTime: Value(driveModifiedTime),
             driveFolderId: Value(driveFolderId),
@@ -65,7 +66,8 @@ class _SpyRule extends ShapefileValidationRule {
   const _SpyRule(this._outcome);
   final RuleOutcome _outcome;
   @override
-  RuleOutcome check(Map<String, Uint8List> files, Map<String, String> expectedMd5s) =>
+  RuleOutcome check(
+          Map<String, Uint8List> files, Map<String, String> expectedMd5s) =>
       _outcome;
 }
 
@@ -75,6 +77,19 @@ const _brgy001 = DriveAssignment(
   inputZipModifiedTime: '2026-04-28T10:00:00Z',
   driveFolderId: 'folder-1',
 );
+
+class _FailsThenListsDriveApi extends FakeDriveApi {
+  _FailsThenListsDriveApi() : super(assignments: [_brgy001]);
+
+  int listCalls = 0;
+
+  @override
+  Future<List<DriveAssignment>> listAssignments() async {
+    listCalls++;
+    if (listCalls == 1) throw Exception('timed out');
+    return super.listAssignments();
+  }
+}
 
 GetMapsNotifier _makeNotifier({
   List<DriveAssignment>? assignments,
@@ -102,13 +117,23 @@ GetMapsNotifier _makeNotifier({
     googleAuthRepo: FakeGoogleAuthRepository(),
     shapefileImporter: importer ?? _NoopImporter(database),
     storageChecker: FakeStorageChecker(availableBytes: availableBytes),
-    validator: validator ?? ShapefileValidator(rules: [const _SpyRule(RulePassed())]),
+    validator:
+        validator ?? ShapefileValidator(rules: [const _SpyRule(RulePassed())]),
     reporter: reporter ?? FakeValidationFailureReporter(),
   );
 }
 
 void main() {
-  test('empty assignment list → GetMapsError with NoAssignmentsFailure', () async {
+  test('Drive reconnection is an auth error without an automatic retry', () async {
+    final n = _makeNotifier(listError: const AuthFailure('Reconnect Drive'));
+    await n.start();
+    final error = n.state as GetMapsError;
+    expect(error.failure, isA<AuthFailure>());
+    expect(error.failure.message, 'Reconnect Drive');
+    expect(error.isRetryable, isFalse);
+  });
+  test('empty assignment list → GetMapsError with NoAssignmentsFailure',
+      () async {
     final n = _makeNotifier(assignments: []);
     await n.start();
     expect(n.state, isA<GetMapsError>());
@@ -119,6 +144,32 @@ void main() {
     final n = _makeNotifier(listError: Exception('network'));
     await n.start();
     expect(n.state, isA<GetMapsError>());
+  });
+
+  test('retryDownload retries assignment discovery when none is selected',
+      () async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    final drive = _FailsThenListsDriveApi();
+    final notifier = GetMapsNotifier(
+      assignmentRepo: AssignmentRepository(db: db),
+      packRepo: OfflineTilePackRepository(db),
+      packAdapter: FakeOfflinePackAdapter(),
+      featureRepo: FeatureRepository(db),
+      driveApi: drive,
+      googleAuthRepo: FakeGoogleAuthRepository(),
+      shapefileImporter: _NoopImporter(db),
+      storageChecker: FakeStorageChecker(availableBytes: 100 * 1024 * 1024),
+      validator: ShapefileValidator(rules: [const _SpyRule(RulePassed())]),
+      reporter: FakeValidationFailureReporter(),
+    );
+    addTearDown(db.close);
+
+    await notifier.start();
+    expect(notifier.state, isA<GetMapsError>());
+    await notifier.retryDownload();
+
+    expect(drive.listCalls, 2);
+    expect(notifier.state, isA<PickingAssignment>());
   });
 
   test('start → PickingAssignment with one assignment', () async {
@@ -143,7 +194,9 @@ void main() {
     expect((n.state as PickingAssignment).selectedId, 'brgy-002');
   });
 
-  test('confirmDownload emits PreparingDownload immediately before any network call (US-20)', () async {
+  test(
+      'confirmDownload emits PreparingDownload immediately before any network call (US-20)',
+      () async {
     final n = _makeNotifier();
     await n.start();
     expect(n.state, isA<PickingAssignment>());
@@ -164,7 +217,9 @@ void main() {
     expect(n.state, isA<InsufficientStorage>());
   });
 
-  test('confirmDownload happy path → transitions through import to DownloadingTiles', () async {
+  test(
+      'confirmDownload happy path → transitions through import to DownloadingTiles',
+      () async {
     final db = AppDatabase.forTesting(NativeDatabase.memory());
     final imp = _NoopImporter(db);
     final n = _makeNotifier(db: db, importer: imp);
@@ -181,7 +236,8 @@ void main() {
             id: const Value('brgy-001'),
             enumeratorId: const Value('e'),
             campaignId: const Value('brgy-001'),
-            boundaryPolygonGeojson: const Value('{"type":"Polygon","coordinates":[[[0,0],[0,1],[1,1],[1,0],[0,0]]]}'),
+            boundaryPolygonGeojson: const Value(
+                '{"type":"Polygon","coordinates":[[[0,0],[0,1],[1,1],[1,0],[0,0]]]}'),
             driveModifiedTime: const Value('2026-04-28T10:00:00Z'),
             createdAt: Value(DateTime.now()),
           ),
@@ -203,7 +259,8 @@ void main() {
             id: const Value('brgy-001'),
             enumeratorId: const Value('e'),
             campaignId: const Value('brgy-001'),
-            boundaryPolygonGeojson: const Value('{"type":"Polygon","coordinates":[[[0,0],[0,1],[1,1],[1,0],[0,0]]]}'),
+            boundaryPolygonGeojson: const Value(
+                '{"type":"Polygon","coordinates":[[[0,0],[0,1],[1,1],[1,0],[0,0]]]}'),
             driveModifiedTime: const Value('2026-04-28T10:00:00Z'),
             createdAt: Value(DateTime.now()),
           ),
@@ -257,16 +314,21 @@ void main() {
   });
 
   group('US-19 shapefile validation', () {
-    test('state sequence includes ValidatingShapefiles then GetMapsError(isRetryable: false) on fatal validation', () async {
+    test(
+        'state sequence includes ValidatingShapefiles then GetMapsError(isRetryable: false) on fatal validation',
+        () async {
       final fakeReporter = FakeValidationFailureReporter();
       final fatalValidator = ShapefileValidator(
-        rules: [_SpyRule(const RuleFatal(ruleName: 'checksum', userMessage: 'Damaged.'))],
+        rules: [
+          _SpyRule(
+              const RuleFatal(ruleName: 'header_integrity', userMessage: 'Damaged.'))
+        ],
       );
       final notifier = _makeNotifier(
         assignments: [_brgy001],
         validator: fatalValidator,
         reporter: fakeReporter,
-      )..setUnrestricted(value: false);
+      );
       final states = <GetMapsState>[];
       notifier.addListener(states.add);
 
@@ -277,12 +339,14 @@ void main() {
       final errorState = states.whereType<GetMapsError>().last;
       expect(errorState.isRetryable, isFalse);
       expect(errorState.failure, isA<ShapefileValidationFailure>());
-      expect((errorState.failure as ShapefileValidationFailure).ruleName, 'checksum');
+      expect((errorState.failure as ShapefileValidationFailure).ruleName,
+          'header_integrity');
       expect(fakeReporter.calls, hasLength(1));
-      expect(fakeReporter.calls.first['failedRule'], 'checksum');
+      expect(fakeReporter.calls.first['failedRule'], 'header_integrity');
     });
 
-    test('state reaches ShapefileWarning when validation has warnings only', () async {
+    test('state reaches ShapefileWarning when validation has warnings only',
+        () async {
       final warningValidator = ShapefileValidator(
         rules: [_SpyRule(const RuleWarning(userMessage: 'Large file.'))],
       );
@@ -300,7 +364,9 @@ void main() {
       expect((states.last as ShapefileWarning).warnings, hasLength(1));
     });
 
-    test('acknowledgeWarning proceeds to ImportingShapefiles after ShapefileWarning', () async {
+    test(
+        'acknowledgeWarning proceeds to ImportingShapefiles after ShapefileWarning',
+        () async {
       final db = AppDatabase.forTesting(NativeDatabase.memory());
       final importer = _NoopImporter(db);
       final warningValidator = ShapefileValidator(

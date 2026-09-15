@@ -19,8 +19,7 @@ class ScoredSectionWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context)!;
-    final key =
-        OlpFormKey(submissionId: submissionId, featureId: featureId);
+    final key = OlpFormKey(submissionId: submissionId, featureId: featureId);
     final state = ref.watch(olpSectionNotifierProvider(key));
     final notifier = ref.read(olpSectionNotifierProvider(key).notifier);
     final items = OlpRubric.items.where((i) => i.section == section).toList();
@@ -32,8 +31,8 @@ class ScoredSectionWidget extends ConsumerWidget {
           _sectionLabel(l, section),
           style: const TextStyle(
             fontWeight: FontWeight.w600,
-            fontSize: 13,
-            letterSpacing: 0.5,
+            fontSize: 17,
+            letterSpacing: 0,
           ),
         ),
         const SizedBox(height: 4),
@@ -44,7 +43,7 @@ class ScoredSectionWidget extends ConsumerWidget {
             value: state.checkedCodes.contains(item.code),
             onChanged: (_) => notifier.toggleItem(item.code),
             contentPadding: EdgeInsets.zero,
-            dense: true,
+            dense: false,
           ),
       ],
     );

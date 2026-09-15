@@ -26,12 +26,10 @@ class ShapefileValidator {
 
   /// Runs every rule against the candidate file set.
   ///
-  /// [relaxedMode] (Issue #46): when true, fatal rule outcomes are demoted
-  /// to warnings so the import proceeds regardless of source format,
-  /// projection, or file-set completeness. The GIS specialist still sees
-  /// the warning list — they just aren't blocked from continuing. The
-  /// default (false) preserves the strict-shapefile pipeline used by the
-  /// Google Drive path.
+  /// In [relaxedMode], missing layers, nonstandard survey columns, and
+  /// projection differences produce warnings. Corrupt headers, indexes,
+  /// and attribute tables still stop the import. The app always uses this
+  /// policy; strict mode remains available for validation diagnostics.
   ValidationReport validate(
     Map<String, Uint8List> files,
     Map<String, String> expectedMd5s, {
@@ -44,11 +42,15 @@ class ShapefileValidator {
         case RulePassed():
           continue;
         case RuleFatal():
-          if (relaxedMode) {
+          if (relaxedMode &&
+              !const {
+                'header_integrity',
+                'index_consistency',
+                'attribute_integrity',
+              }.contains(outcome.ruleName)) {
             warnings.add(
               RuleWarning(
-                userMessage:
-                    '${outcome.userMessage} (allowed by unrestricted mode)',
+                userMessage: outcome.userMessage,
               ),
             );
             continue;

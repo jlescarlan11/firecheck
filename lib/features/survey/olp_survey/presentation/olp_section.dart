@@ -20,11 +20,14 @@ class OlpSurveySection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context)!;
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8),
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
       child: ExpansionTile(
-        title: Text(l.olpSectionTitle),
-        childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        title: Text(
+          l.olpSectionTitle,
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
+        childrenPadding: const EdgeInsets.only(bottom: 24),
         children: [
           DisclaimerCallout(submissionId: submissionId, featureId: featureId),
           const SizedBox(height: 12),

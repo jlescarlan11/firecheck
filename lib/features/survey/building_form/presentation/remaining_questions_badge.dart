@@ -50,9 +50,9 @@ class RemainingQuestionsChip extends StatelessWidget {
       key: const Key('form.remainingQuestionsBadge'),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: allDone ? const Color(0xFFE9F7EF) : const Color(0xFFEFF4FA),
+        color: allDone ? const Color(0xFFF0F7F5) : const Color(0xFFFAFAFA),
         border: Border.all(
-          color: allDone ? const Color(0xFF6CC080) : const Color(0xFFB7C7DC),
+          color: const Color(0xFFE7EAEA),
         ),
         borderRadius: BorderRadius.circular(6),
       ),
@@ -61,14 +61,16 @@ class RemainingQuestionsChip extends StatelessWidget {
           Icon(
             allDone ? Icons.check_circle : Icons.help_outline,
             size: 18,
-            color: allDone ? const Color(0xFF2F855A) : const Color(0xFF2B6CB0),
+            color: allDone ? const Color(0xFF2F855A) : const Color(0xFF596166),
           ),
           const SizedBox(width: 8),
-          Text(
-            allDone
-                ? l.remainingQuestionsAllDone
-                : l.remainingQuestionsRemaining(remaining),
-            style: const TextStyle(fontWeight: FontWeight.w600),
+          Expanded(
+            child: Text(
+              allDone
+                  ? l.remainingQuestionsAllDone
+                  : l.remainingQuestionsRemaining(remaining),
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
           ),
         ],
       ),

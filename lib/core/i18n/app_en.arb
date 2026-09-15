@@ -1,6 +1,15 @@
 {
   "@@locale": "en",
   "appTitle": "FireCheck",
+  "fieldWorkspace": "Field workspace",
+  "noLocalMaps": "No maps downloaded",
+  "retryAction": "Try again",
+  "uploadsTitle": "Uploads",
+  "formRulesTitle": "Form rules",
+  "homeLoadError": "Couldn't load your field work.",
+  "accountLoadError": "Couldn't load your account.",
+  "signInIdentity": "Bureau of Fire Protection",
+  "signInPurpose": "Field surveys",
   "signIn": "Sign in",
   "email": "Email",
   "password": "Password",
@@ -414,11 +423,108 @@
   "accountSignOutConfirmBody": "You'll need to sign in again to continue.",
   "accountSignOutCancel": "Cancel",
   "accountSignOutError": "Couldn't sign out. Try again.",
-  "appTitle": "FireCheck",
   "homeErrorPrefix": "Error: {error}",
   "@homeErrorPrefix": {
     "placeholders": {
       "error": {"type": "String"}
     }
-  }
+  },
+  "homeFieldwork": "Your fieldwork",
+  "homeIntro": "Everything you need for this assignment.",
+  "homeContinueSurvey": "Continue survey",
+  "homeStartSurvey": "Start survey",
+  "homeViewMap": "View map",
+  "homeManageData": "Manage data",
+  "homeGetMaps": "Get maps",
+  "homeReviewUpload": "Review & upload",
+  "homeSurveyed": "features surveyed",
+  "homeProgressCount": "{completed} / {total}",
+  "@homeProgressCount": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "homePercentComplete": "{percent}% complete",
+  "@homePercentComplete": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "homeRemaining": "{count} remaining",
+  "@homeRemaining": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeLocalSaveHint": "Survey changes are saved on this device.",
+  "homeEmptyHint": "Download an assignment to start surveying.",
+  "homeMoreActions": "More actions",
+  "homePendingFiles": "{count, plural, =1{1 file pending upload} other{{count} files pending upload}}",
+  "@homePendingFiles": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeUploadingFiles": "{count, plural, =1{Uploading 1 file} other{Uploading {count} files}}",
+  "@homeUploadingFiles": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeFailedFiles": "{count, plural, =1{1 file needs a retry} other{{count} files need a retry}}",
+  "@homeFailedFiles": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeSyncAttention": "{count, plural, =1{1 survey sync needs attention} other{{count} survey syncs need attention}}",
+  "@homeSyncAttention": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeSyncPending": "{count, plural, =1{1 survey sync pending} other{{count} survey syncs pending}}",
+  "@homeSyncPending": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "designSignInTitle": "Ready for fieldwork.",
+  "designSignInBody": "Sign in to download your assignment and continue your surveys.",
+  "designAccountBody": "Your profile and fieldwork tools.",
+  "designMapsTitle": "Take your work offline.",
+  "designMapsBody": "Download an assignment before heading into the field.",
+  "designDownloadSource": "Download source",
+  "designImportOptions": "Import options",
+  "designUploadsTitle": "Your upload queue",
+  "designUploadsBody": "Review saved files and send them when you are ready.",
+  "designReviewTitle": "Review your fieldwork",
+  "designReviewBody": "Check your completed surveys before uploading.",
+  "designSummaryTitle": "Assignment summary",
+  "designActivityTitle": "Team activity",
+  "designActivityBody": "See the latest surveys shared by other enumerators.",
+  "designConflictsTitle": "Resolve changes",
+  "designConflictsBody": "Review overlapping updates before continuing.",
+  "designFormRulesBody": "Preview the questions and rules used in your surveys.",
+  "downloadProgressUnknown": "Calculating progress…",
+  "uploadLoadMore": "Load more changes"
 }

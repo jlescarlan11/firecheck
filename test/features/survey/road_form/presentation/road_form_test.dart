@@ -53,10 +53,10 @@ void main() {
     );
     await tester.pump();
 
-    // SectionCard renders titles via .toUpperCase() — match actual rendered text.
-    expect(find.text('ROAD IDENTITY'), findsOneWidget);
-    expect(find.text('DIMENSIONS'), findsOneWidget);
-    expect(find.text('FEATURES'), findsOneWidget);
+    // Survey sections use readable sentence-case headings.
+    expect(find.text('Road identity'), findsOneWidget);
+    expect(find.text('Dimensions'), findsOneWidget);
+    expect(find.text('Features'), findsOneWidget);
     expect(find.text('This road does not exist'), findsOneWidget);
 
     // Drain pending debounce timer so the test framework doesn't complain.

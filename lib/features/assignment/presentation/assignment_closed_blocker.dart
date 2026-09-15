@@ -14,22 +14,23 @@ class AssignmentClosedBlocker extends ConsumerWidget {
     final lock = ref.watch(assignmentLockStateProvider).value;
     if (lock is! ClosedRemotely) return const SizedBox.shrink();
     return Scaffold(
-      backgroundColor: Colors.black54,
+      backgroundColor: Colors.white,
       body: Center(
-        child: Card(
-          margin: const EdgeInsets.all(32),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.lock_outline, size: 48, color: Color(0xFFC53030)),
+                const Icon(Icons.lock_outline,
+                    size: 48, color: Color(0xFFC53030)),
                 const SizedBox(height: 12),
                 Text(
                   l.assignmentClosedTitle,
                   style: const TextStyle(
                     fontWeight: FontWeight.w600,
-                    fontSize: 18,
+                    fontSize: 28,
                   ),
                 ),
                 const SizedBox(height: 8),

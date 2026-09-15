@@ -31,27 +31,26 @@ class ReviewRepository {
   /// constant SELECT 1 with a `readsFrom` set drives the stream cadence;
   /// each emission triggers a fan-in fetch of the actual rows.
   Stream<ReviewSourceData> streamForAssignment(String assignmentId) {
-    final trigger = _db
-        .customSelect(
-          'SELECT 1',
-          readsFrom: {
-            _db.features,
-            _db.submissions,
-            _db.buildingAttributes,
-            _db.roadAttributes,
-            _db.householdSurveys,
-            _db.photos,
-            _db.syncJobs,
-          },
-        )
-        .watch();
+    final trigger = _db.customSelect(
+      'SELECT 1',
+      readsFrom: {
+        _db.features,
+        _db.submissions,
+        _db.buildingAttributes,
+        _db.roadAttributes,
+        _db.householdSurveys,
+        _db.photos,
+        _db.syncJobs,
+      },
+    ).watch();
 
     return trigger.asyncMap((_) async => _snapshot(assignmentId));
   }
 
   Future<ReviewSourceData> _snapshot(String assignmentId) async {
     final features = await (_db.select(_db.features)
-          ..where((t) => t.assignmentId.equals(assignmentId)))
+          ..where((t) =>
+              t.assignmentId.equals(assignmentId) & t.mergedIntoId.isNull()))
         .get();
     final featureIds = features.map((f) => f.id).toList();
 

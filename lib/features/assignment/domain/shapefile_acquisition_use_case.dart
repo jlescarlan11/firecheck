@@ -66,10 +66,9 @@ class AcquisitionImported extends ShapefileAcquisitionEvent {
   const AcquisitionImported();
 }
 
-/// Import threw. Treated as non-fatal upstream: the user can still open
-/// the map without imported features. Caller decides terminal state.
 class AcquisitionImportFailed extends ShapefileAcquisitionEvent {
-  const AcquisitionImportFailed();
+  const AcquisitionImportFailed(this.failure);
+  final Failure failure;
 }
 
 class AcquisitionFailed extends ShapefileAcquisitionEvent {
@@ -270,7 +269,11 @@ class ShapefileAcquisitionUseCase {
             : null,
       );
     } catch (_) {
-      yield const AcquisitionImportFailed();
+      yield const AcquisitionImportFailed(
+        StorageFailure(
+          'Could not import this map data. Check the source files and try again.',
+        ),
+      );
       return;
     }
 

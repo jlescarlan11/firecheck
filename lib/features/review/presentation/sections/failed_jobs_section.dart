@@ -1,3 +1,4 @@
+import 'package:firecheck/core/theme/app_layout.dart';
 import 'package:firecheck/features/review/domain/review_state.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -18,10 +19,9 @@ class FailedJobsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     if (deadJobs.isEmpty) return const SizedBox.shrink();
     final l = AppLocalizations.of(context)!;
-    return Card(
-      color: const Color(0xFFFFF5F5),
+    return AppSection(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.zero,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -59,8 +59,8 @@ class FailedJobsSection extends StatelessWidget {
                           Text(
                             j.lastError,
                             style: const TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey,
+                              fontSize: 13,
+                              color: Color(0xFF596166),
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,

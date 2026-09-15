@@ -144,4 +144,57 @@ void main() {
     expect(await pendingStore.read(), isNull);
     expect(await db.select(db.photos).get(), isEmpty);
   });
+
+  test('retains a recovered source when durable persistence fails', () async {
+    await pendingStore.save(
+      const PendingPhotoCapture(
+        submissionId: 'missing-submission',
+        featureId: 'feat-1',
+      ),
+    );
+    final controller = PhotoCaptureController(
+      camera: FakeCameraService(scriptedLostPath: srcPath),
+      processor: const ImageProcessor(),
+      storage: storage,
+      repo: PhotoRepository(db: db, storage: storage),
+      pendingStore: pendingStore,
+    );
+
+    await expectLater(
+      controller.recoverPendingCapture(),
+      throwsA(isA<Object>()),
+    );
+
+    final retained = await pendingStore.read();
+    expect(retained?.recoveredSourcePath, srcPath);
+  });
+
+  test('a later capture completes retained recovery before opening camera',
+      () async {
+    await pendingStore.save(
+      PendingPhotoCapture(
+        submissionId: submissionId,
+        featureId: 'feat-1',
+        recoveredSourcePath: srcPath,
+      ),
+    );
+    final camera = FakeCameraService();
+    final controller = PhotoCaptureController(
+      camera: camera,
+      processor: const ImageProcessor(),
+      storage: storage,
+      repo: PhotoRepository(db: db, storage: storage),
+      pendingStore: pendingStore,
+    );
+
+    final id = await controller.capture(
+      submissionId: submissionId,
+      featureId: 'feat-1',
+    );
+
+    expect(id, isNotNull);
+    expect(camera.callCount, 0);
+    expect(await pendingStore.read(), isNull);
+    expect(await db.select(db.photos).get(), hasLength(1));
+  });
 }

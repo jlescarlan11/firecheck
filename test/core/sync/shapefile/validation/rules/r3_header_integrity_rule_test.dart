@@ -55,7 +55,7 @@ void main() {
     expect(outcome, isA<RuleFatal>());
   });
 
-  test('RulePassed when files map has no .shp keys (presence handled by R2)', () {
-    expect(rule.check({}, {}), isA<RulePassed>());
+  test('RuleFatal when no geometry layer can be read', () {
+    expect(rule.check({}, {}), isA<RuleFatal>());
   });
 }

@@ -1,7 +1,7 @@
 name: firecheck
 description: FireCheck Mobile — attribution and household survey for fire-risk modeling.
 publish_to: 'none'
-version: 0.1.0+1
+version: 0.1.1+2
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
@@ -37,6 +37,7 @@ dependencies:
   flutter_secure_storage: ^9.2.2
   # google
   google_sign_in: ^7.1.0
+  google_sign_in_platform_interface: 3.1.0
   googleapis: ^13.2.0
   googleapis_auth: ^2.3.0
   http: ^1.2.0
@@ -61,6 +62,7 @@ dependencies:
   archive: ^3.4.0
   share_plus: ^12.0.2
 
+  rxdart: any
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -77,6 +79,7 @@ flutter:
   uses-material-design: true
   generate: true
   assets:
+    - assets/icon/app_icon.png
     - .env
     - assets/form_variants.json
     - assets/form_definition.json

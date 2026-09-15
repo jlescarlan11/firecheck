@@ -1,0 +1,72 @@
+{
+  "version": 2,
+  "title": "FireCheck Drive gateway",
+  "diagrams": [
+    {
+      "id": "drive_gateway",
+      "title": "Files remain in Google Drive",
+      "kind": "flowchart",
+      "data": {
+        "direction": "LR",
+        "nodes": [
+          {
+            "id": "phone",
+            "label": "Fieldworker app and offline maps"
+          },
+          {
+            "id": "auth",
+            "label": "Supabase Auth"
+          },
+          {
+            "id": "gateway",
+            "label": "FireCheck file server on Cloud Run"
+          },
+          {
+            "id": "db",
+            "label": "Supabase assignment permissions and transfer records"
+          },
+          {
+            "id": "drive",
+            "label": "Workspace Shared Drive input and output folders"
+          },
+          {
+            "id": "admin",
+            "label": "Supervisor"
+          }
+        ],
+        "edges": [
+          {
+            "from": "phone",
+            "to": "auth",
+            "label": "Login and session renewal"
+          },
+          {
+            "from": "phone",
+            "to": "gateway",
+            "label": "Download and upload with app session"
+          },
+          {
+            "from": "gateway",
+            "to": "db",
+            "label": "Check assignment membership"
+          },
+          {
+            "from": "gateway",
+            "to": "drive",
+            "label": "Dedicated service account"
+          },
+          {
+            "from": "admin",
+            "to": "drive",
+            "label": "Prepare map files"
+          },
+          {
+            "from": "admin",
+            "to": "gateway",
+            "label": "Publish maps and assign workers"
+          }
+        ]
+      }
+    }
+  ]
+}

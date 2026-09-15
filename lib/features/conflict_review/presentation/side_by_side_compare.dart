@@ -42,55 +42,60 @@ class _SideBySideCompareState extends State<SideBySideCompare> {
     final defaultHide = identicalCount >= widget.hideThreshold;
     final hide = _hideIdentical ?? defaultHide;
 
-    final visibleKeys = hide
-        ? allKeys.where(widget.differingKeys.contains).toList()
-        : allKeys;
+    final visibleKeys =
+        hide ? allKeys.where(widget.differingKeys.contains).toList() : allKeys;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               _DiffSummaryChip(
                 differing: widget.differingKeys.length,
                 total: allKeys.length,
               ),
-              const Spacer(),
               if (identicalCount > 0)
                 TextButton.icon(
                   key: const Key('conflict-review.hide-identical-toggle'),
                   icon: Icon(hide ? Icons.visibility : Icons.visibility_off),
-                  label: Text(hide
-                      ? 'Show identical fields'
-                      : 'Hide identical fields'),
-                  onPressed: () =>
-                      setState(() => _hideIdentical = !hide),
+                  label: Text(
+                    hide ? 'Show identical fields' : 'Hide identical fields',
+                  ),
+                  onPressed: () => setState(() => _hideIdentical = !hide),
                 ),
             ],
           ),
         ),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: _Column(
-                title: widget.mineLabel,
-                values: _onlyKeys(widget.mine, visibleKeys),
-                highlightKeys: widget.differingKeys,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _Column(
-                title: widget.theirsLabel,
-                values: _onlyKeys(widget.theirs, visibleKeys),
-                highlightKeys: widget.differingKeys,
-              ),
-            ),
-          ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final mine = _Column(
+              title: widget.mineLabel,
+              values: _onlyKeys(widget.mine, visibleKeys),
+              highlightKeys: widget.differingKeys,
+            );
+            final theirs = _Column(
+              title: widget.theirsLabel,
+              values: _onlyKeys(widget.theirs, visibleKeys),
+              highlightKeys: widget.differingKeys,
+            );
+            if (constraints.maxWidth < 560) {
+              return Column(
+                  children: [mine, const SizedBox(height: 20), theirs]);
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: mine),
+                const SizedBox(width: 16),
+                Expanded(child: theirs),
+              ],
+            );
+          },
         ),
       ],
     );
@@ -134,19 +139,16 @@ class _DiffSummaryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = differing == 0
-        ? 'Identical'
-        : '$differing of $total fields differ';
-    final color = differing == 0
-        ? Colors.green.shade100
-        : Colors.amber.shade100;
-    final fg =
-        differing == 0 ? Colors.green.shade900 : Colors.amber.shade900;
+    final label =
+        differing == 0 ? 'Identical' : '$differing of $total fields differ';
+    final color =
+        differing == 0 ? Colors.green.shade100 : Colors.amber.shade100;
+    final fg = differing == 0 ? Colors.green.shade900 : Colors.amber.shade900;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
         label,

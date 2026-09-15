@@ -12,6 +12,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appTitle => 'FireCheck';
 
   @override
+  String get fieldWorkspace => 'Field workspace';
+
+  @override
+  String get noLocalMaps => 'No maps downloaded';
+
+  @override
+  String get retryAction => 'Try again';
+
+  @override
+  String get uploadsTitle => 'Uploads';
+
+  @override
+  String get formRulesTitle => 'Form rules';
+
+  @override
+  String get homeLoadError => 'Couldn\'t load your field work.';
+
+  @override
+  String get accountLoadError => 'Couldn\'t load your account.';
+
+  @override
+  String get signInIdentity => 'Bureau of Fire Protection';
+
+  @override
+  String get signInPurpose => 'Field surveys';
+
+  @override
   String get signIn => 'Sign in';
 
   @override
@@ -1164,4 +1191,174 @@ class AppLocalizationsEn extends AppLocalizations {
   String homeErrorPrefix(String error) {
     return 'Error: $error';
   }
+
+  @override
+  String get homeFieldwork => 'Your fieldwork';
+
+  @override
+  String get homeIntro => 'Everything you need for this assignment.';
+
+  @override
+  String get homeContinueSurvey => 'Continue survey';
+
+  @override
+  String get homeStartSurvey => 'Start survey';
+
+  @override
+  String get homeViewMap => 'View map';
+
+  @override
+  String get homeManageData => 'Manage data';
+
+  @override
+  String get homeGetMaps => 'Get maps';
+
+  @override
+  String get homeReviewUpload => 'Review & upload';
+
+  @override
+  String get homeSurveyed => 'features surveyed';
+
+  @override
+  String homeProgressCount(int completed, int total) {
+    return '$completed / $total';
+  }
+
+  @override
+  String homePercentComplete(int percent) {
+    return '$percent% complete';
+  }
+
+  @override
+  String homeRemaining(int count) {
+    return '$count remaining';
+  }
+
+  @override
+  String get homeLocalSaveHint => 'Survey changes are saved on this device.';
+
+  @override
+  String get homeEmptyHint => 'Download an assignment to start surveying.';
+
+  @override
+  String get homeMoreActions => 'More actions';
+
+  @override
+  String homePendingFiles(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files pending upload',
+      one: '1 file pending upload',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String homeUploadingFiles(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Uploading $count files',
+      one: 'Uploading 1 file',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String homeFailedFiles(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files need a retry',
+      one: '1 file needs a retry',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String homeSyncAttention(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count survey syncs need attention',
+      one: '1 survey sync needs attention',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String homeSyncPending(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count survey syncs pending',
+      one: '1 survey sync pending',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get designSignInTitle => 'Ready for fieldwork.';
+
+  @override
+  String get designSignInBody =>
+      'Sign in to download your assignment and continue your surveys.';
+
+  @override
+  String get designAccountBody => 'Your profile and fieldwork tools.';
+
+  @override
+  String get designMapsTitle => 'Take your work offline.';
+
+  @override
+  String get designMapsBody =>
+      'Download an assignment before heading into the field.';
+
+  @override
+  String get designDownloadSource => 'Download source';
+
+  @override
+  String get designImportOptions => 'Import options';
+
+  @override
+  String get designUploadsTitle => 'Your upload queue';
+
+  @override
+  String get designUploadsBody =>
+      'Review saved files and send them when you are ready.';
+
+  @override
+  String get designReviewTitle => 'Review your fieldwork';
+
+  @override
+  String get designReviewBody =>
+      'Check your completed surveys before uploading.';
+
+  @override
+  String get designSummaryTitle => 'Assignment summary';
+
+  @override
+  String get designActivityTitle => 'Team activity';
+
+  @override
+  String get designActivityBody =>
+      'See the latest surveys shared by other enumerators.';
+
+  @override
+  String get designConflictsTitle => 'Resolve changes';
+
+  @override
+  String get designConflictsBody =>
+      'Review overlapping updates before continuing.';
+
+  @override
+  String get designFormRulesBody =>
+      'Preview the questions and rules used in your surveys.';
+
+  @override
+  String get downloadProgressUnknown => 'Calculating progress…';
+
+  @override
+  String get uploadLoadMore => 'Load more changes';
 }

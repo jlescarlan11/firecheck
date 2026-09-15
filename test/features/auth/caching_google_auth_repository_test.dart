@@ -1,4 +1,5 @@
 // test/features/auth/caching_google_auth_repository_test.dart
+import 'package:firecheck/core/errors/failure.dart';
 import 'package:firecheck/core/security/secure_storage.dart';
 import 'package:firecheck/features/auth/data/caching_google_auth_repository.dart';
 import 'package:firecheck/features/auth/data/fake_google_auth_repository.dart';
@@ -46,6 +47,29 @@ void main() {
     );
     await repo.signOut();
     expect(await cache.read(), isNull);
+  });
+
+  test('a saved token cannot be used after the app session signs out',
+      () async {
+    await cache.save(
+        'old-token', DateTime.now().toUtc().add(const Duration(hours: 1)),);
+    await inner.signOut();
+    await expectLater(repo.getAccessToken(), throwsA(isA<AuthFailure>()));
+    expect(await cache.read(), isNull);
+  });
+
+  test('a new login clears tokens belonging to the previous account', () async {
+    await cache.save(
+        'old-token', DateTime.now().toUtc().add(const Duration(hours: 1)),);
+    await repo.signIn();
+    expect(await cache.read(), isNull);
+  });
+
+  test('expired cache gets a fresh access token', () async {
+    await cache.save('expired-token',
+        DateTime.now().toUtc().subtract(const Duration(hours: 1)),);
+    expect(await repo.getAccessToken(), 'fake-access-token');
+    expect(await cache.read(), 'fake-access-token');
   });
 
   test('non-cached methods pass through to the inner repo', () async {

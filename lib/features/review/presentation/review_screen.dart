@@ -1,5 +1,6 @@
 import 'package:firecheck/core/auth/current_user_provider.dart';
 import 'package:firecheck/core/drive/drive_upload_audit_repository.dart';
+import 'package:firecheck/core/theme/app_layout.dart';
 import 'package:firecheck/features/review/domain/drive_upload_state.dart';
 import 'package:firecheck/features/review/domain/review_state.dart';
 import 'package:firecheck/features/review/domain/upload_confirmer.dart';
@@ -59,8 +60,12 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
           final inProgressOrCompleted =
               state.upload is InProgress || state.upload is Completed;
           return ListView(
-            padding: const EdgeInsets.all(12),
+            padding: appPageInsets(context),
             children: [
+              AppPageIntro(
+                title: l.designReviewTitle,
+                subtitle: l.designReviewBody,
+              ),
               if (inProgressOrCompleted)
                 UploadProgressSection(
                   progress: state.upload,
@@ -70,7 +75,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                 )
               else ...[
                 SummaryCard(summary: state.summary),
-                const SizedBox(height: 8),
+                const SizedBox(height: 16),
                 FailedJobsSection(
                   deadJobs: state.deadJobs,
                   onRetryAll: () =>
@@ -78,14 +83,14 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                   onRetryOne: (id) =>
                       ref.read(retryDeadUseCaseProvider).retryOne(id),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 16),
                 ValidationSection(
                   issues: state.blockers,
                   severity: ReviewSeverity.blocker,
                   onGoToFeature: (id) =>
                       context.push('/feature/${Uri.encodeComponent(id)}'),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 16),
                 ValidationSection(
                   issues: state.warnings,
                   severity: ReviewSeverity.warning,
@@ -98,7 +103,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                       driveUpload is! DriveUploadInProgress,
                   onPressed: () => _runUpload(context, ref, state),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 16),
                 DriveUploadConfirmationCard(
                   state: driveUpload,
                   onRetry: () => _runUpload(context, ref, state),

@@ -15,10 +15,11 @@ class AttributeIntegrityRule extends ShapefileValidationRule {
     Map<String, Uint8List> files,
     Map<String, String> expectedMd5s,
   ) {
-    for (final layer in ['boundary', 'buildings', 'roads']) {
-      final dbf = files['$layer.dbf'];
+    for (final entry in files.entries.where((e) => e.key.endsWith('.dbf'))) {
+      final layer = entry.key.substring(0, entry.key.length - 4);
+      final dbf = entry.value;
       final shp = files['$layer.shp'];
-      if (dbf == null || shp == null) continue; // R2 handles missing files
+      if (shp == null) continue; // R2 handles missing files
 
       if (dbf.length < 32) {
         return const RuleFatal(
@@ -67,8 +68,9 @@ class AttributeIntegrityRule extends ShapefileValidationRule {
       for (final col in required) {
         if (!fieldNames.contains(col)) {
           return const RuleFatal(
-            ruleName: 'attribute_integrity',
-            userMessage: 'Map attribute table is corrupted or mismatched.',
+            ruleName: 'attribute_schema',
+            userMessage:
+                'Some standard survey columns are missing. You can fill them in during the survey.',
           );
         }
       }

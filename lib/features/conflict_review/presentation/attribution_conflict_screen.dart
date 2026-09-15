@@ -1,4 +1,5 @@
 import 'package:firecheck/core/sync/domain/resolution_decision.dart';
+import 'package:firecheck/core/theme/app_layout.dart';
 import 'package:firecheck/features/conflict_review/domain/local_attribution_flatten.dart';
 import 'package:firecheck/features/conflict_review/presentation/conflict_review_providers.dart';
 import 'package:firecheck/features/conflict_review/presentation/side_by_side_compare.dart';
@@ -39,7 +40,8 @@ class _AttributionConflictScreenState
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (subs) {
-          final sub = subs.where((s) => s.id == widget.submissionId).firstOrNull;
+          final sub =
+              subs.where((s) => s.id == widget.submissionId).firstOrNull;
           if (sub == null) {
             return const Center(
               child: Padding(
@@ -56,18 +58,18 @@ class _AttributionConflictScreenState
             remoteAttributionForFeatureProvider(sub.featureId),
           );
           return mineAsync.when(
-            loading: () =>
-                const Center(child: CircularProgressIndicator()),
+            loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => Center(child: Text('Error: $e')),
             data: (mine) => theirsAsync.when(
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
+              loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(child: Text('Error: $e')),
               data: (theirsView) {
                 if (theirsView == null) {
                   return ListView(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 24,),
+                      horizontal: 16,
+                      vertical: 24,
+                    ),
                     children: [
                       const Text(
                         "Theirs is no longer available — the other "
@@ -93,18 +95,15 @@ class _AttributionConflictScreenState
                     ],
                   );
                 }
-                final theirs =
-                    flattenRemoteAttributionForDisplay(theirsView);
+                final theirs = flattenRemoteAttributionForDisplay(theirsView);
                 final differing = diffAttributionKeys(mine, theirs);
                 return ListView(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: appPageInsets(context),
                   children: [
                     SideBySideCompare(
                       mine: mine,
                       theirs: theirs,
                       differingKeys: differing,
-                      mineLabel: 'Yours',
-                      theirsLabel: 'Theirs',
                     ),
                     const SizedBox(height: 16),
                     Padding(
@@ -117,7 +116,8 @@ class _AttributionConflictScreenState
                             onPressed: _busy
                                 ? null
                                 : () => _resolve(
-                                    AttributionDecision.keepTheirs),
+                                      AttributionDecision.keepTheirs,
+                                    ),
                             child: const Text('Keep theirs'),
                           ),
                           const SizedBox(height: 8),
@@ -126,14 +126,14 @@ class _AttributionConflictScreenState
                             onPressed: _busy
                                 ? null
                                 : () => _resolve(
-                                    AttributionDecision.forceOverwrite),
+                                      AttributionDecision.forceOverwrite,
+                                    ),
                             child: const Text('Use mine'),
                           ),
                           const SizedBox(height: 8),
                           TextButton(
                             key: const Key('conflict-review.skip'),
-                            onPressed:
-                                _busy ? null : () => context.pop(),
+                            onPressed: _busy ? null : () => context.pop(),
                             child: const Text('Skip — decide later'),
                           ),
                         ],

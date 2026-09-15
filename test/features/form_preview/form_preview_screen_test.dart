@@ -1,3 +1,4 @@
+import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:firecheck/core/forms/form_definition.dart';
 import 'package:firecheck/core/forms/form_definition_providers.dart';
 import 'package:firecheck/features/form_preview/presentation/form_preview_screen.dart';
@@ -30,7 +31,10 @@ void main() {
         overrides: [
           currentFormDefinitionProvider.overrideWith((ref) => definition),
         ],
-        child: const MaterialApp(home: FormPreviewScreen()),
+        child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: FormPreviewScreen()),
       ),
     );
     await tester.pumpAndSettle();

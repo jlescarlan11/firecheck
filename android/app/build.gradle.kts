@@ -52,13 +52,9 @@ android {
 
     buildTypes {
         release {
-            // Use release signing config if key.properties is present;
-            // otherwise fall back to debug so `flutter run --release` still works locally.
-            signingConfig = if (rootProject.file("key.properties").exists()) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")
-            }
+            // Release builds must use the dedicated key in android/key.properties.
+            // Gradle's signing validation fails if that key is not configured.
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }

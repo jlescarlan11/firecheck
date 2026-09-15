@@ -1,3 +1,4 @@
+import 'package:firecheck/generated/l10n/app_localizations.dart';
 import 'package:firecheck/features/remote_activity/domain/remote_attribution_view.dart';
 import 'package:firecheck/features/remote_activity/presentation/remote_activity_chip.dart';
 import 'package:firecheck/features/remote_activity/presentation/remote_activity_list_screen.dart';
@@ -44,6 +45,8 @@ void main() {
       ProviderScope(
         overrides: [_stub(const [])],
         child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: RemoteActivityChip()),
         ),
       ),
@@ -57,8 +60,12 @@ void main() {
       (tester) async {
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [_stub([_view('s1', featureId: 'f1')])],
+        overrides: [
+          _stub([_view('s1', featureId: 'f1')])
+        ],
         child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: RemoteActivityChip()),
         ),
       ),
@@ -69,8 +76,7 @@ void main() {
     expect(find.textContaining('1 feature edited by others'), findsOneWidget);
   });
 
-  testWidgets('chip counts distinct features, not submissions',
-      (tester) async {
+  testWidgets('chip counts distinct features, not submissions', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -81,6 +87,8 @@ void main() {
           ]),
         ],
         child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: RemoteActivityChip()),
         ),
       ),
@@ -94,7 +102,10 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [_stub(const [])],
-        child: const MaterialApp(home: RemoteActivityListScreen()),
+        child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: RemoteActivityListScreen()),
       ),
     );
     await tester.pump();
@@ -112,7 +123,10 @@ void main() {
             _view('s2', featureId: 'f2'),
           ]),
         ],
-        child: const MaterialApp(home: RemoteActivityListScreen()),
+        child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: RemoteActivityListScreen()),
       ),
     );
     await tester.pump();

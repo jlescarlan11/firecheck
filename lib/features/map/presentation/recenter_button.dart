@@ -24,11 +24,15 @@ class RecenterButton extends StatelessWidget {
       width: 48,
       height: 48,
       child: Material(
-        color: colors.primary,
-        shape: const CircleBorder(),
-        elevation: 2,
+        color: colors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: BorderSide(color: colors.outlineVariant),
+        ),
+        elevation: 1,
         child: InkWell(
-          customBorder: const CircleBorder(),
+          customBorder:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           onTap: isInteractive ? onTap : null,
           child: Center(
             child: isLoading
@@ -37,10 +41,11 @@ class RecenterButton extends StatelessWidget {
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(colors.onPrimary),
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(colors.onSurface),
                     ),
                   )
-                : Icon(Icons.my_location, color: colors.onPrimary, size: 24),
+                : Icon(Icons.my_location, color: colors.onSurface, size: 24),
           ),
         ),
       ),

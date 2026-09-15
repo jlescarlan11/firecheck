@@ -41,8 +41,9 @@ class _PhotoRecoveryBootstrapState
             '/feature/$featureId?submissionId=$submissionId',
           );
     } on Object {
-      // Recovery must never prevent app startup. Capture/processing errors are
-      // surfaced on the next explicit camera attempt.
+      // Recovery must never prevent app startup. The controller retains the
+      // recovered source path until persistence succeeds, so this attempt is
+      // retried on the next bootstrap rather than being discarded.
     }
   }
 

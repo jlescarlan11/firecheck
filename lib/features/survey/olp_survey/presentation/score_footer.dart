@@ -20,8 +20,7 @@ class ScoreFooter extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context)!;
-    final key =
-        OlpFormKey(submissionId: submissionId, featureId: featureId);
+    final key = OlpFormKey(submissionId: submissionId, featureId: featureId);
     final state = ref.watch(olpSectionNotifierProvider(key));
     final result = computeOlpScore(state);
     final color = _badgeColor(result.classification);
@@ -33,7 +32,10 @@ class ScoreFooter extends ConsumerWidget {
         color: Colors.white,
         border: Border(top: BorderSide(color: Colors.grey.shade300)),
       ),
-      child: Row(
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           Text(
             l.olpScoreFraction(result.totalScore, OlpRubric.items.length),
@@ -46,19 +48,18 @@ class ScoreFooter extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(10),
+              color: color.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
               label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 11,
+              style: TextStyle(
+                color: color,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
             ),
           ),
-          const Spacer(),
           TextButton(
             onPressed: () => context.push(
               '/feature/${Uri.encodeComponent(featureId)}/olp/result?submissionId=$submissionId',

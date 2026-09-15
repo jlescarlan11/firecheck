@@ -3,19 +3,26 @@ import 'dart:async';
 import 'package:firecheck/core/analytics/analytics_providers.dart';
 import 'package:firecheck/core/auth/current_user_provider.dart';
 import 'package:firecheck/core/db/database.dart';
-import 'package:firecheck/core/geo/centroid.dart';
-import 'package:firecheck/core/geo/polygon_bounds.dart';
-import 'package:firecheck/core/geo/polygon_validator.dart';
-import 'package:firecheck/core/geo/point_in_polygon.dart';
-import 'package:firecheck/core/geo/geometry_operations.dart';
-import 'package:firecheck/core/geo/polyline_midpoint.dart';
 import 'package:firecheck/core/forms/form_definition.dart';
 import 'package:firecheck/core/forms/form_definition_providers.dart';
+import 'package:firecheck/core/geo/centroid.dart';
+import 'package:firecheck/core/geo/geometry_operations.dart';
+import 'package:firecheck/core/geo/point_in_polygon.dart';
+import 'package:firecheck/core/geo/polygon_bounds.dart';
+import 'package:firecheck/core/geo/polygon_validator.dart';
+import 'package:firecheck/core/geo/polyline_midpoint.dart';
 import 'package:firecheck/core/location/distance.dart';
 import 'package:firecheck/core/location/location_providers.dart';
 import 'package:firecheck/core/location/location_service.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_lock_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
+import 'package:firecheck/features/map/geometry_editor/domain/geometry_editor_state.dart';
+import 'package:firecheck/features/map/geometry_editor/domain/reshape_op.dart';
+import 'package:firecheck/features/map/geometry_editor/presentation/geometry_editor_banner.dart';
+import 'package:firecheck/features/map/geometry_editor/presentation/geometry_editor_overlay.dart';
+import 'package:firecheck/features/map/geometry_editor/presentation/geometry_editor_providers.dart';
+import 'package:firecheck/features/map/geometry_editor/presentation/reshape_action_sheet.dart';
+import 'package:firecheck/features/map/geometry_editor/presentation/sketch_error_messages.dart';
 import 'package:firecheck/features/map/presentation/camera_target.dart';
 import 'package:firecheck/features/map/presentation/map_providers.dart';
 import 'package:firecheck/features/map/presentation/map_renderer.dart';
@@ -24,15 +31,8 @@ import 'package:firecheck/features/map/presentation/recenter_button_state.dart';
 import 'package:firecheck/features/map/presentation/zoom_button.dart';
 import 'package:firecheck/features/map/presentation/zoom_button_state.dart';
 import 'package:firecheck/features/map/presentation/zoom_direction.dart';
-import 'package:firecheck/features/remote_activity/presentation/remote_activity_chip.dart';
-import 'package:firecheck/features/map/geometry_editor/domain/geometry_editor_state.dart';
-import 'package:firecheck/features/map/geometry_editor/domain/reshape_op.dart';
-import 'package:firecheck/features/map/geometry_editor/presentation/reshape_action_sheet.dart';
-import 'package:firecheck/features/map/geometry_editor/presentation/geometry_editor_banner.dart';
-import 'package:firecheck/features/map/geometry_editor/presentation/geometry_editor_overlay.dart';
-import 'package:firecheck/features/map/geometry_editor/presentation/geometry_editor_providers.dart';
-import 'package:firecheck/features/map/geometry_editor/presentation/sketch_error_messages.dart';
 import 'package:firecheck/features/new_feature/presentation/feature_type_picker.dart';
+import 'package:firecheck/features/remote_activity/presentation/remote_activity_chip.dart';
 import 'package:firecheck/features/survey/building_form/presentation/building_form_providers.dart';
 import 'package:firecheck/features/survey/building_form/presentation/override_reason_dialog.dart';
 import 'package:firecheck/generated/l10n/app_localizations.dart';
@@ -134,14 +134,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     initialCameraTarget: initialCameraTarget,
                     cameraTarget: _cameraTarget,
                     onPolygonLongPress: _handlePolygonLongPress,
-                    // The CustomPaint preview inside GeometryEditorOverlay is
-                    // now the single source of truth for the live working
-                    // shape (both sketch and reshape). Keeping the Mapbox-
-                    // annotation preview as well caused phantom trails: each
-                    // drag fires an async delete+create on the polygon
-                    // manager and the creates can land before earlier
-                    // deletes, leaving stacked polygons. Always-null here.
-                    reshapeWorkingPolygonGeojson: null,
                     reshapingFeatureId:
                         reshapeActive ? editorState.originalFeature?.id : null,
                     onProjectionReady: (p) {
@@ -601,7 +593,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   items: [
                     for (var index = 0; index < ring.length; index++)
                       DropdownMenuItem(
-                          value: index, child: Text('${index + 1}')),
+                        value: index,
+                        child: Text('${index + 1}'),
+                      ),
                   ],
                   onChanged: (value) =>
                       setDialogState(() => first = value ?? first),
@@ -616,7 +610,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   items: [
                     for (var index = 0; index < ring.length; index++)
                       DropdownMenuItem(
-                          value: index, child: Text('${index + 1}')),
+                        value: index,
+                        child: Text('${index + 1}'),
+                      ),
                   ],
                   onChanged: (value) =>
                       setDialogState(() => second = value ?? second),
@@ -675,7 +671,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       }
       try {
         mergeAdjacentPolygons(
-            feature.geometryGeojson, candidate.geometryGeojson);
+          feature.geometryGeojson,
+          candidate.geometryGeojson,
+        );
         candidates.add(candidate);
       } on FormatException {
         // Only polygons sharing a complete edge are eligible.
@@ -1126,18 +1124,21 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     bool disabled = false,
     VoidCallback? onTap,
   }) {
-    final color = on ? const Color(0xFF3B82F6) : const Color(0xFFEEEEEE);
-    final fg = on ? Colors.white : const Color(0xFF555555);
+    final colors = Theme.of(context).colorScheme;
+    final color = on ? colors.onPrimaryContainer : colors.primary;
+    final fg = colors.onPrimary;
     return Opacity(
       key: key,
       opacity: disabled ? 0.5 : 1,
       child: GestureDetector(
         onTap: disabled ? null : onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          constraints: const BoxConstraints(minHeight: 52),
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           decoration: BoxDecoration(
             color: color,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
             label,

@@ -28,11 +28,12 @@ class ScoreHero extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 24),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             '$score / ${OlpRubric.items.length}',
             style: const TextStyle(
-              fontSize: 56,
+              fontSize: 44,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -40,13 +41,13 @@ class ScoreHero extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(12),
+              color: color.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
               label,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: color,
                 fontWeight: FontWeight.w600,
               ),
             ),
