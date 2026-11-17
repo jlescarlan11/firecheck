@@ -23,7 +23,9 @@ Flutter test captures using sample data.
 
 ## Install the demo APK
 
-Use the signed `FireCheck-0.1.3-arm64-v8a.apk`, distributed separately from the source repository. Transfer it to an ARM64 phone running Android 8.0 or later and open it to install. If Android prompts you, allow installation from the app you used to open the APK.
+[Download the signed FireCheck 0.1.3 demo APK (ARM64)](https://github.com/jlescarlan11/firecheck/releases/download/v0.1.3/FireCheck-0.1.3-arm64-v8a.apk).
+
+Download the APK on an ARM64 phone running Android 8.0 or later and open it to install. If Android prompts you, allow installation from the app you used to open the APK.
 
 The project team needs to enroll your Google sign-in account in a published sample assignment before you can download the demo map. [Android release guide](docs/ANDROID_RELEASE.md)
 
