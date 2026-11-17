@@ -1,166 +1,115 @@
 # FireCheck Mobile
 
-Offline-first Flutter Android app for the **Philippine Bureau of Fire Protection (BFP)** — replaces two legacy paper-and-tablet apps (Attribution + Household Survey) with one tool that an enumerator can use in the field, fully offline, then upload everything when back on Wi-Fi.
+FireCheck Mobile is an Android field survey app for enumerators working on Philippine Bureau of Fire Protection (BFP) assessments. Enumerators download an assigned map, collect building, road, and household survey data offline, then review and upload it when they reconnect.
 
-**Status:** MVP shipped. Tag `phase-4b-upload-flow`. Pilot-ready for internal testing. See [the phase history](#phase-history) for what's already in.
+**MVP for academic evaluation · Android 0.1.3**
 
----
+## Features
 
-## What it does
+| Feature | What it supports |
+| --- | --- |
+| Offline fieldwork | Download assignment data and map tiles, then use the map and save survey edits without connectivity. |
+| Building and road surveys | Capture building construction and fire load details, road width and surface material, and photos. Add a building or road missing from the map. |
+| Household fire vulnerability | Complete the Oplan Ligtas na Pamayanan (OLP) household survey and view its *Lebel ng Kahinaan* score. |
+| Review and upload | Review edited and newly added features before submitting. Track the upload and retry failed transfers. |
 
-| Capability | What the user does |
-|---|---|
-| **Offline-first** | Download an assignment + map tiles once. After that, every screen works without network. |
-| **Building survey** | Tap a polygon on the map → fill the form (Identity, Construction, Cost, Fire-fighting, Fire load) → take a photo → done. Multi-tab support if a polygon hosts more than one structure. |
-| **Road survey** | Tap a road polyline → fill width/features/material → photo → done. |
-| **OLP (Household survey)** | For residential buildings, fills the *Lebel ng Kahinaan* household section with live vulnerability scoring. |
-| **Add new feature** | Long-press anywhere inside the assignment boundary to add a missing building or road. Server gets it on next upload. |
-| **Sync engine** | Outbox pattern, two-phase photo upload, retry/backoff with WorkManager background ticks, 401 refresh, 409 bundle-export fallback. |
-| **Review + Upload** | Pre-submit review screen lists summary, blockers, warnings, dead jobs. Biometric-gated. After upload, assignment locks and form goes read-only. |
+## Screenshots
 
----
+Flutter test captures using sample data.
+
+| Home | Building survey | Upload review |
+| --- | --- | --- |
+| ![Home screen with survey progress](docs/design/2026-09-15-app/app-home-390.png) | ![Building survey form](docs/design/2026-09-15-app/app-building-390.png) | ![Upload review screen](docs/design/2026-09-15-app/app-review-390.png) |
+
+## Install the demo APK
+
+Use the signed `FireCheck-0.1.3-arm64-v8a.apk`, distributed separately from the source repository. Transfer it to an ARM64 phone running Android 8.0 or later and open it to install. If Android prompts you, allow installation from the app you used to open the APK.
+
+The project team needs to enroll your Google sign-in account in a published sample assignment before you can download the demo map. [Android release guide](docs/ANDROID_RELEASE.md)
+
+## Try the app
+
+1. While online, sign in, select **Get Maps**, download the assigned map, and select **Open map**.
+2. Turn off network access, select a building polygon, fill out the survey, add a photo, and save. Reopen the survey to confirm the data persisted.
+3. Reconnect, choose **Upload Data**, review the edited or newly added features, and select **Start Upload**. Check the upload progress and confirm that the submission completes.
+
+## Run from source
+
+Install Flutter and the Android SDK. The evaluation checks used Flutter 3.41.9 and Dart 3.11.5.
+
+1. Clone the repository and open its root in Android Studio with the Flutter plugin installed.
+
+   ```bash
+   git clone https://github.com/jlescarlan11/firecheck.git
+   cd firecheck
+   cp .env.example .env
+   flutter pub get
+   flutter gen-l10n
+   ```
+
+2. Set your Supabase URL and publishable key, public Mapbox token, Google web OAuth client ID, and gateway URL in `.env`. Place the matching Firebase Android configuration at `android/app/google-services.json` and register the SHA-1 of the signing key used for the build. The app bundles `.env`, so use public client configuration there. [Independent setup guide](docs/SELF_HOSTED_SETUP.md)
+3. Start an Android emulator or connect a phone with USB debugging enabled. Run `lib/main.dart` from Android Studio or use `flutter run` in the project root.
+
+## Set up Google Drive for a demo
+
+The evaluation APK uses the original project's hosted gateway. For that demo, ask the project team to enroll your Google sign-in account in a published sample assignment. To use Drive folders and accounts you control, deploy your own gateway and build the Android app with your project settings. [Independent setup guide](docs/SELF_HOSTED_SETUP.md)
+
+### Folder and file layout
+
+A supervisor can create this structure under a shared folder in the owner's My Drive:
+
+```text
+firecheck/
+├── input/
+│   └── demo-area/
+│       ├── boundary.shp, boundary.shx, boundary.dbf, boundary.prj
+│       ├── buildings.shp, buildings.shx, buildings.dbf, buildings.prj
+│       └── roads.shp, roads.shx, roads.dbf, roads.prj
+├── published/
+└── output/
+```
+
+- Place the actual files directly in the assignment folder. Each row above lists four separate files with the same base name. Use the lowercase names shown for a standard demo.
+- Use an area polygon for `boundary`, building polygons for `buildings`, and road lines for `roads`. Export the demo layers in WGS 84 / UTM zone 51N (EPSG:32651). For the standard survey schema, include `feat_id`, `bldg_use`, and `bldg_type` in the building attributes, and `feat_id` and `road_type` in the road attributes.
+- If the demo uses a custom survey, place `form_definition.json` and/or `field_requirements.txt` alongside the shapefile components. The app has bundled defaults for a demo that uses the standard survey.
+- The gateway copies input files to `published/` when the supervisor publishes an assignment. Update the files under `input/` and publish again to release a new version. The gateway creates upload folders under `output/` as surveys are submitted.
+
+### Connect, publish, and enroll
+
+For a new deployment, configure the gateway with the three Drive folder IDs and authorize the designated Drive owner's account using server-side OAuth. Follow the gateway guide for database setup, owner authorization, and deployment. [Drive gateway setup](server/drive-gateway/README.md)
+
+From `server/drive-gateway/`, use the supervisor CLI to register the exact Drive ID of `demo-area/`, publish the map, and grant the evaluator access. This requires a Supabase assignment record and the evaluator's Supabase user UUID. If you need to create the assignment, the CLI's `create` command accepts a JSON file with `id`, `name`, `campaignId`, and a WGS 84 GeoJSON Polygon in `boundary`. Use the configured gateway URL and the supervisor's FireCheck session token in the CLI environment.
+
+```bash
+npm run admin -- source ASSIGNMENT_UUID DRIVE_INPUT_SUBFOLDER_ID
+npm run admin -- publish ASSIGNMENT_UUID
+npm run admin -- enroll ASSIGNMENT_UUID EVALUATOR_USER_UUID
+```
+
+The evaluator can then sign in and open **Get Maps**. If the map is missing, check that the supervisor published a version and enrolled the same account the evaluator used to sign in.
 
 ## Tech stack
 
-- **Flutter** 3.22+ / Dart 3.4+
-- **State** — Riverpod 2.5
-- **Routing** — go_router 14
-- **Local DB** — Drift (SQLite) at schema v5
-- **Map** — Mapbox Maps SDK 2.22 with offline tile packs
-- **Backend** — Supabase (Postgres + PostGIS + Auth + Storage)
-- **Background work** — workmanager 0.5
-- **Biometric** — local_auth 2.2
-- **Lints** — very_good_analysis
+- Dart and Flutter for the Android app, with Riverpod for state management.
+- Drift and SQLite for offline data and the upload queue.
+- Mapbox Maps SDK for maps and offline tiles.
+- Supabase Auth, Postgres/PostGIS, and Storage for sign-in, survey records, and photos.
+- A Supabase Edge Function gateway for downloading maps from and uploading shapefile exports to Google Drive.
 
----
+## Validation
 
-## Quick start
+| Check | Result for source revision `94b6713` |
+| --- | --- |
+| `flutter test` | 920 passed, 2 skipped |
+| `flutter analyze` | 0 errors, 16 warnings, and 637 informational diagnostics |
+| Android APK | Verified the ARM64 APK signature and confirmed package `ph.gov.bfp.firecheck`, version 0.1.3 |
+| Live Android walkthrough | Sign-in, map download, and upload still need to be verified together on a device |
 
-### 1. Prerequisites
+## Architecture and documentation
 
-- Flutter `>=3.22.0` (stable channel)
-- Android Studio + an Android 13+ emulator (Pixel 7 recommended)
-- A Supabase project with the migrations in `supabase/migrations/` applied (ask the team for credentials)
-- A Mapbox public access token (`pk.…`) — sign up free at mapbox.com
+- [`lib/features`](lib/features/) contains the assignment, map, survey, review, and upload screens and workflows.
+- [`lib/core`](lib/core/) handles shared services. Drift and SQLite store work locally, Mapbox renders maps, and a local upload queue tracks work until it can be sent.
+- [`supabase`](supabase/) contains the backend schema and migrations for Supabase and PostGIS. The [Drive gateway](server/drive-gateway/) handles hosted Google Drive operations.
+- [`test`](test/) contains Flutter unit and widget tests. The [design specification](docs/superpowers/specs/2026-04-24-firecheck-mobile-design.md) explains the original architecture and sync model.
 
-### 2. Clone + install deps
-
-```bash
-git clone https://github.com/jlescarlan11/firecheck.git
-cd firecheck
-flutter pub get
-dart run build_runner build --delete-conflicting-outputs   # Drift codegen
-flutter gen-l10n                                            # i18n codegen
-```
-
-### 3. Configure environment
-
-```bash
-cp .env.example .env
-# fill in SUPABASE_URL, SUPABASE_ANON_KEY, MAPBOX_ACCESS_TOKEN
-```
-
-### 4. Run
-
-```bash
-flutter run -d emulator-5554
-```
-
-Sign in with the test admin account (ask the team), tap **Get Maps**, then survey a polygon.
-
-### 5. Run the test suite
-
-```bash
-flutter analyze     # should be clean
-flutter test        # 294 tests passing as of Phase 4b
-```
-
-For the full happy-path walkthrough, see [`docs/ONBOARDING.md`](docs/ONBOARDING.md).
-
----
-
-## Project structure
-
-```
-lib/
-  core/                     # cross-feature primitives
-    auth/                   # AuthState + currentUserIdProvider
-    db/                     # Drift schema, tables, migrations
-    geo/                    # GeoJSON decode, polygon/polyline math
-    i18n/                   # ARB sources (gen-l10n target)
-    location/               # geolocator wrappers
-    mapbox/                 # offline tile-pack adapter
-    photos/                 # camera + image processor + storage
-    router/                 # go_router config + auth/lock redirects
-    security/               # BiometricGate
-    supabase/               # client provider
-    sync/                   # outbox, worker, retry, bundle export, providers
-  features/
-    assignment/             # Get Maps + assignment lock state
-    auth/                   # login + AuthStateNotifier
-    home/                   # home screen + progress card
-    map/                    # MapScreen + Mapbox renderer
-    new_feature/            # add-new pin/polygon flow
-    review/                 # ReviewScreen + use cases (Phase 4b)
-    survey/
-      building_form/        # building survey + sections + autosave
-      road_form/            # road survey + sections + autosave
-      olp_survey/           # household survey + scoring
-      photo_capture/        # photo strip + capture flow
-  generated/l10n/           # generated AppLocalizations (do not edit)
-  main.dart                 # entry point + ProviderScope wiring
-  app.dart                  # MaterialApp.router + theme + l10n delegates
-
-supabase/
-  migrations/               # 010 SQL migrations through Phase 4b
-  seed/                     # ra_9514_types reference data
-
-docs/superpowers/
-  specs/                    # phase design docs (one per phase)
-  plans/                    # phase implementation plans (TDD-style)
-
-test/                       # 294 tests, mirrors lib/ structure
-```
-
----
-
-## Phase history
-
-The app shipped in 7 phases. See `docs/superpowers/specs/` for the design behind each.
-
-| Phase | Tag | What landed |
-|---|---|---|
-| 0 — Foundations | `phase-0-foundations` | Flutter scaffold, Drift, Supabase, auth, biometric infra |
-| 1 — Map + Get Maps | `phase-1-map` | Assignment download, Mapbox, offline tiles, GPS pin |
-| 2 — Building form | `phase-2-form` | Tap-polygon → form, autosave, photos, multi-tab |
-| 3a — Roads + Add-new | `phase-3a-roads-and-add-new` | Road form, long-press-to-add |
-| 3b — OLP | `phase-3b-olp` | Household survey + Lebel ng Kahinaan scoring |
-| 4a — Sync engine | `phase-4a-sync-engine` | Outbox, worker, retry, WorkManager, 409 bundle |
-| 4b — Upload flow | `phase-4b-upload-flow` | Review screen, Upload Data, biometric gate, lock state |
-
----
-
-## Documentation
-
-- **Master spec** — `docs/superpowers/specs/2026-04-24-firecheck-mobile-design.md` (architecture, schema, sync model, validation rules, phased plan)
-- **Per-phase specs** — `docs/superpowers/specs/2026-04-2*-firecheck-phase-*-design.md`
-- **Per-phase plans** — `docs/superpowers/plans/2026-04-2*-firecheck-phase-*.md` (TDD-style, one task at a time)
-- **Onboarding for new contributors** — [`docs/ONBOARDING.md`](docs/ONBOARDING.md)
-
----
-
-## Contributing
-
-Read [`docs/ONBOARDING.md`](docs/ONBOARDING.md) first. Then, in order:
-
-1. Open a team discussion to scope the new feature or phase.
-2. Write a design spec in `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md` and get team review.
-3. Write a TDD-style implementation plan in `docs/superpowers/plans/YYYY-MM-DD-<feature>.md`.
-4. Implement task-by-task; commit per task with a descriptive message.
-5. Tag the new phase, push, open a PR against the previous phase's snapshot branch.
-
----
-
-## License
-
-Project for an academic group. License TBD by the team.
+FireCheck Mobile is available under the [MIT License](LICENSE).
