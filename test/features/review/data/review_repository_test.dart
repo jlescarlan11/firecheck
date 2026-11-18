@@ -36,6 +36,53 @@ void main() {
         );
   }
 
+  test('review snapshot loads only its assignment boundary', () async {
+    await seedAssignmentAndFeature();
+    final source = await repo.streamForAssignment('a-1').first;
+    expect(source.assignmentId, 'a-1');
+    expect(source.assignmentBoundaryGeojson, '{}');
+    final missing = await repo.streamForAssignment('other').first;
+    expect(missing.assignmentBoundaryGeojson, isNull);
+  });
+
+  test('surfaces failed geometry jobs only for their map', () async {
+    await seedAssignmentAndFeature();
+    await db.into(db.featureGeometryRevisions).insert(
+          FeatureGeometryRevisionsCompanion.insert(
+            id: 'geom',
+            featureId: 'f-1',
+            prevGeojson: '{}',
+            newGeojson: '{}',
+            editedBy: 'e-1',
+            editedAt: DateTime(2026),
+            createdAt: DateTime(2026),
+            syncStatus: const Value('ready_to_upload'),
+          ),
+        );
+    await db.into(db.syncJobs).insert(
+          SyncJobsCompanion.insert(
+            id: 'geometry-job',
+            entityType: 'feature_geometry_update',
+            entityId: 'geom',
+            status: const Value('dead'),
+            lastError: const Value('missing RPC'),
+            createdAt: DateTime(2026),
+          ),
+        );
+    final source = await repo.streamForAssignment('a-1').first;
+    expect(source.deadJobs.single.jobId, 'geometry-job');
+    expect(source.deadJobs.single.lastError, 'missing RPC');
+    expect((await repo.streamForAssignment('other').first).deadJobs, isEmpty);
+    await (db.update(db.featureGeometryRevisions)
+          ..where((r) => r.id.equals('geom')))
+        .write(
+      const FeatureGeometryRevisionsCompanion(
+        syncStatus: Value('discarded'),
+      ),
+    );
+    expect((await repo.streamForAssignment('a-1').first).deadJobs, isEmpty);
+  });
+
   test('excludes untouched assigned features', () async {
     await seedAssignmentAndFeature();
 

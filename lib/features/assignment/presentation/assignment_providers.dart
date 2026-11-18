@@ -1,3 +1,5 @@
+import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
+import 'package:firecheck/core/sync/data/shared_map_sync.dart';
 // lib/features/assignment/presentation/assignment_providers.dart
 import 'dart:async';
 
@@ -33,7 +35,9 @@ import 'package:uuid/uuid.dart';
 // ── base providers ──────────────────────────────────────────────────────────
 
 final assignmentRepositoryProvider = Provider<AssignmentRepository>((ref) {
-  return AssignmentRepository(db: ref.watch(appDatabaseProvider));
+  return AssignmentRepository(
+      db: ref.watch(appDatabaseProvider),
+      userId: ref.watch(currentUserIdProvider));
 });
 
 final offlineTilePackRepositoryProvider =
@@ -134,6 +138,7 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
   bool _cancelled = false;
   DriveAssignment? _selectedAssignment;
   String? _enumeratorId;
+  String? _importedAssignmentId;
 
   Future<void> start() async {
     _cancelled = false;
@@ -158,16 +163,19 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
       return;
     }
 
-    // Delta check: mark assignments whose modifiedTime matches stored value.
+    // Local availability survives exports and shared-sync updates. Version
+    // equality only decides whether an explicitly requested import can be skipped.
     final assignments = await Future.wait(
       rawAssignments.map((a) async {
-        final stored = await assignmentRepo.getDriveModifiedTime(
+        final imported = await assignmentRepo.getImportedAssignment(
           a.localAssignmentId,
-          driveFolderId: a.driveFolderId,
+          a.driveFolderId,
         );
-        return stored == a.inputZipModifiedTime
-            ? a.copyWith(alreadyDownloaded: true)
-            : a;
+        return a.copyWith(
+          downloadedAssignmentId: imported?.id,
+          alreadyDownloaded: imported != null &&
+              imported.driveModifiedTime == a.inputZipModifiedTime,
+        );
       }),
     );
 
@@ -194,6 +202,7 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
     final selected =
         s.assignments.firstWhere((a) => a.assignmentId == s.selectedId);
     _selectedAssignment = selected;
+    _importedAssignmentId = null;
 
     // Resolve the transport once. The factory throws if FTP credentials
     // are incomplete — route to a retryable error so the user can fix the
@@ -215,10 +224,25 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
     if (selected.alreadyDownloaded) {
       _enumeratorId = await googleAuthRepo.getEnumeratorId();
       if (!mounted) return;
-      await _useCase.refreshSidecar(
-        source: source,
-        assignmentId: selected.assignmentId,
-      );
+      final imported = await assignmentRepo.getImportedAssignment(
+          selected.localAssignmentId, selected.driveFolderId);
+      if (imported == null) {
+        state = const GetMapsError(
+            StorageFailure('Map is unavailable. Download it again.'));
+        return;
+      }
+      try {
+        await _useCase.refreshSidecar(
+            source: source,
+            assignmentId: selected.assignmentId,
+            localAssignmentId: imported.id);
+      } catch (error) {
+        if (mounted)
+          state = GetMapsError(
+              StorageFailure('Could not refresh form settings: $error'),
+              isRetryable: true);
+        return;
+      }
       if (!mounted) return;
       await _startTileDownload();
       return;
@@ -340,7 +364,8 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
           return;
         case AcquisitionImporting():
           state = const ImportingShapefiles();
-        case AcquisitionImported():
+        case AcquisitionImported(:final assignmentId):
+          _importedAssignmentId = assignmentId;
           if (!mounted) return;
           await _startTileDownload();
           return;
@@ -359,7 +384,15 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
 
   Future<void> _startTileDownload() async {
     if (!mounted) return;
-    final assignment = await assignmentRepo.getCurrentAssignment();
+    final selected = _selectedAssignment;
+    final assignment = _importedAssignmentId != null
+        ? await assignmentRepo.getAssignment(_importedAssignmentId!)
+        : selected == null
+            ? null
+            : await assignmentRepo.getImportedAssignment(
+                selected.localAssignmentId,
+                selected.driveFolderId,
+              );
     if (!mounted) return;
     if (assignment == null) {
       state = const GetMapsError(
@@ -404,8 +437,10 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
             final currentTotal = state is DownloadingTiles
                 ? (state as DownloadingTiles).totalBytes
                 : 0;
-            state =
-                Ready(featureCount: features.length, totalBytes: currentTotal);
+            state = Ready(
+                assignmentId: assignment.id,
+                featureCount: features.length,
+                totalBytes: currentTotal);
             return;
           case OfflinePackError(:final message):
             await packRepo.markError(packId, message);
@@ -413,7 +448,10 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
             final features = await featureRepo
                 .watchFeaturesForAssignment(assignment.id)
                 .first;
-            state = Ready(featureCount: features.length, totalBytes: 0);
+            state = Ready(
+                assignmentId: assignment.id,
+                featureCount: features.length,
+                totalBytes: 0);
             return;
         }
       }
@@ -421,7 +459,10 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
       if (!mounted) return;
       final features =
           await featureRepo.watchFeaturesForAssignment(assignment.id).first;
-      state = Ready(featureCount: features.length, totalBytes: 0);
+      state = Ready(
+          assignmentId: assignment.id,
+          featureCount: features.length,
+          totalBytes: 0);
     }
   }
 
@@ -435,6 +476,7 @@ class GetMapsNotifier extends StateNotifier<GetMapsState> {
   void reset() {
     _cancelled = false;
     _selectedAssignment = null;
+    _importedAssignmentId = null;
     _enumeratorId = null;
     state = const Idle();
   }
@@ -472,6 +514,14 @@ final transportSourceFactoryProvider = Provider<TransportSourceFactory>((ref) {
 final shapefileAcquisitionUseCaseProvider =
     Provider<ShapefileAcquisitionUseCase>((ref) {
   return ShapefileAcquisitionUseCase(
+    importSharedSnapshot: (snapshot, account) async {
+      final sync = SharedMapSync(
+          db: ref.read(appDatabaseProvider),
+          accountId: account,
+          fetch: SharedMapSync.supabase(Supabase.instance.client));
+      await sync.installSnapshot(snapshot);
+      await sync.pull(snapshot['assignment_id'] as String);
+    },
     shapefileImporter: ref.watch(shapefileImporterProvider),
     validator: ref.watch(shapefileValidatorProvider),
     reporter: ref.watch(validationFailureReporterProvider),

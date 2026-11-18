@@ -19,6 +19,10 @@ void main() {
 
   setUp(() {
     auth = _MockGoTrueClient();
+    final user = _MockUser();
+    when(() => user.id).thenReturn('uuid-123');
+    when(() => auth.currentUser).thenReturn(user);
+    when(() => auth.currentSession).thenReturn(_MockSession());
     cache = SecureStorageGoogleAccessTokenCache(InMemorySecureStorage());
   });
 
@@ -49,6 +53,7 @@ void main() {
     await cache.save(
       'cached-tok',
       DateTime.now().toUtc().add(const Duration(hours: 1)),
+      accountId: 'uuid-123',
     );
     final source = CachedTokenSource(auth: auth, cache: cache);
     expect(await source.getAccessToken(), 'cached-tok');
@@ -64,6 +69,7 @@ void main() {
     await cache.save(
       'expired-tok',
       DateTime.now().toUtc().subtract(const Duration(minutes: 5)),
+      accountId: 'uuid-123',
     );
     final source = CachedTokenSource(auth: auth, cache: cache);
     expect(source.getAccessToken(), throwsA(isA<AuthFailure>()));

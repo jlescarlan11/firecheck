@@ -1,3 +1,4 @@
+import 'package:firecheck/features/assignment/data/assignment_geometry_guard.dart';
 import 'package:drift/drift.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:uuid/uuid.dart';
@@ -15,15 +16,18 @@ class NewFeatureRepository {
     required String featureType,
     required String geometryGeojson,
   }) {
-    return _db.into(_db.features).insertReturning(
-          FeaturesCompanion.insert(
-            id: _uuid.v4(),
-            assignmentId: assignmentId,
-            featureType: featureType,
-            geometryGeojson: geometryGeojson,
-            isNew: const Value(true),
-            createdAt: DateTime.now(),
-          ),
-        );
+    return _db.transaction(() async {
+      await validateAssignmentGeometry(_db, assignmentId, geometryGeojson);
+      return _db.into(_db.features).insertReturning(
+            FeaturesCompanion.insert(
+              id: _uuid.v4(),
+              assignmentId: assignmentId,
+              featureType: featureType,
+              geometryGeojson: geometryGeojson,
+              isNew: const Value(true),
+              createdAt: DateTime.now(),
+            ),
+          );
+    });
   }
 }

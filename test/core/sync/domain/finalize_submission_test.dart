@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:firecheck/core/db/database.dart';
@@ -64,23 +65,43 @@ void main() {
     expect(jobs.first.status, SyncJobStatus.pending);
   });
 
+  test(
+      'completion freezes the operation; later local writes cannot change its retry',
+      () async {
+    await useCase.execute('s1');
+    final first = (await db.select(db.syncJobs).get()).single;
+    await (db.update(db.submissions)..where((t) => t.id.equals('s1')))
+        .write(const SubmissionsCompanion(remarks: Value('later local write')));
+    await useCase.execute('s1');
+    final jobs = await db.select(db.syncJobs).get();
+    expect(jobs, hasLength(1));
+    expect(jobs.single.payloadJson, first.payloadJson);
+    final frozen = jsonDecode(first.payloadJson!) as Map<String, dynamic>;
+    expect(frozen['operation_id'], first.id);
+    expect((frozen['submission'] as Map)['remarks'], isNull);
+  });
+
   test('execute writes a sync_job per photo with blocks_on_submission_id',
       () async {
     final now = DateTime.now();
-    await db.into(db.photos).insert(PhotosCompanion.insert(
-          id: 'ph1',
-          submissionId: 's1',
-          localPath: '/tmp/a.jpg',
-          capturedAt: now,
-          createdAt: now,
-        ),);
-    await db.into(db.photos).insert(PhotosCompanion.insert(
-          id: 'ph2',
-          submissionId: 's1',
-          localPath: '/tmp/b.jpg',
-          capturedAt: now,
-          createdAt: now,
-        ),);
+    await db.into(db.photos).insert(
+          PhotosCompanion.insert(
+            id: 'ph1',
+            submissionId: 's1',
+            localPath: '/tmp/a.jpg',
+            capturedAt: now,
+            createdAt: now,
+          ),
+        );
+    await db.into(db.photos).insert(
+          PhotosCompanion.insert(
+            id: 'ph2',
+            submissionId: 's1',
+            localPath: '/tmp/b.jpg',
+            capturedAt: now,
+            createdAt: now,
+          ),
+        );
 
     final r = await useCase.execute('s1');
     expect(r.photoCount, 2);

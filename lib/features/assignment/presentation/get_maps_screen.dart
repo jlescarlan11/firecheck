@@ -214,12 +214,42 @@ class _DiscoveringView extends StatelessWidget {
   }
 }
 
-class _PickingAssignmentView extends ConsumerWidget {
+class _PickingAssignmentView extends ConsumerStatefulWidget {
   const _PickingAssignmentView({required this.state});
   final PickingAssignment state;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_PickingAssignmentView> createState() =>
+      _PickingAssignmentViewState();
+}
+
+class _PickingAssignmentViewState
+    extends ConsumerState<_PickingAssignmentView> {
+  bool _opening = false;
+  PickingAssignment get state => widget.state;
+
+  Future<void> _openMap(String id) async {
+    setState(() => _opening = true);
+    try {
+      await ref.read(assignmentRepositoryProvider).selectAssignment(id);
+      if (!mounted) return;
+      ref.invalidate(currentAssignmentProvider);
+      await ref.read(currentAssignmentProvider.future);
+      if (mounted) context.pushReplacement('/map');
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Could not open this map. Please try again.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _opening = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     if (state.assignments.isEmpty) {
       return Padding(
@@ -251,6 +281,10 @@ class _PickingAssignmentView extends ConsumerWidget {
         ),
       );
     }
+    final selectedAssignment = state.assignments.firstWhere(
+      (a) => a.assignmentId == state.selectedId,
+    );
+    final downloadedId = selectedAssignment.downloadedAssignmentId;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -267,9 +301,11 @@ class _PickingAssignmentView extends ConsumerWidget {
               final a = state.assignments[i];
               final selected = a.assignmentId == state.selectedId;
               return InkWell(
-                onTap: () => ref
-                    .read(getMapsNotifierProvider.notifier)
-                    .selectAssignment(a.assignmentId),
+                onTap: _opening
+                    ? null
+                    : () => ref
+                        .read(getMapsNotifierProvider.notifier)
+                        .selectAssignment(a.assignmentId),
                 child: Container(
                   padding:
                       const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
@@ -293,7 +329,8 @@ class _PickingAssignmentView extends ConsumerWidget {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              a.alreadyDownloaded
+                              a.downloadedAssignmentId != null ||
+                                      a.alreadyDownloaded
                                   ? l.alreadyDownloadedBadge
                                   : l.notDownloadedBadge,
                               style: Theme.of(context).textTheme.bodySmall,
@@ -319,10 +356,25 @@ class _PickingAssignmentView extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         FilledButton(
-          onPressed: () =>
-              ref.read(getMapsNotifierProvider.notifier).confirmDownload(),
-          child: Text(l.downloadSelected),
+          onPressed: _opening
+              ? null
+              : downloadedId != null
+                  ? () => _openMap(downloadedId)
+                  : () => ref
+                      .read(getMapsNotifierProvider.notifier)
+                      .confirmDownload(),
+          child: Text(
+              downloadedId != null ? 'Work on this map' : l.downloadSelected),
         ),
+        if (downloadedId != null)
+          TextButton(
+            onPressed: _opening
+                ? null
+                : () => ref
+                    .read(getMapsNotifierProvider.notifier)
+                    .confirmDownload(),
+            child: const Text('Refresh download'),
+          ),
       ],
     );
   }
@@ -371,12 +423,14 @@ class _DownloadingShapefilesView extends ConsumerWidget {
   const _DownloadingShapefilesView({required this.state});
   final DownloadingShapefiles state;
 
+  double? get _progress => state.total <= 0
+      ? null
+      : (state.downloaded / state.total).clamp(0.0, 0.99);
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context)!;
-    final progress = state.total <= 0
-        ? null
-        : (state.downloaded / state.total).clamp(0.0, 1.0);
+    final progress = _progress;
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -459,12 +513,12 @@ class _ProgressView extends ConsumerWidget {
   }
 }
 
-class _ReadyView extends StatelessWidget {
+class _ReadyView extends ConsumerWidget {
   const _ReadyView({required this.state});
   final Ready state;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context)!;
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -479,13 +533,24 @@ class _ReadyView extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         FilledButton(
-          onPressed: () => context.pushReplacement('/map'),
-          child: Text(l.openMap),
+          onPressed: () async {
+            final id = state.assignmentId;
+            if (id == null) {
+              context.pushReplacement('/my-maps');
+              return;
+            }
+            await ref.read(assignmentRepositoryProvider).selectAssignment(id);
+            if (!context.mounted) return;
+            ref.invalidate(currentAssignmentProvider);
+            await ref.read(currentAssignmentProvider.future);
+            if (context.mounted) context.pushReplacement('/map');
+          },
+          child: const Text('Work on this map'),
         ),
         const SizedBox(height: 8),
         TextButton(
-          onPressed: () => context.go('/'),
-          child: Text(l.backToHome),
+          onPressed: () => context.pushReplacement('/my-maps'),
+          child: const Text('Back to My Maps'),
         ),
       ],
     );

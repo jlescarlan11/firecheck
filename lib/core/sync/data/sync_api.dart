@@ -19,9 +19,11 @@ abstract class SyncApi {
   Future<SyncOutcome> markPhotoUploaded({
     required String photoId,
     required String storagePath,
+    required DateTime capturedAt,
   });
 
-  Future<SyncOutcome> uploadFeatureGeometryUpdate(FeatureGeometryRevision revision);
+  Future<SyncOutcome> uploadFeatureGeometryUpdate(
+      FeatureGeometryRevision revision);
 
   // -------- Conflict-aware upload + resolution -------------------------
 

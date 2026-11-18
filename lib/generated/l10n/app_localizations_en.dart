@@ -9,6 +9,13 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get surveySaveFailed =>
+      'Could not save this survey. Please try again.';
+
+  @override
+  String get surveySavedLocally => 'Changes saved on this device.';
+
+  @override
   String get appTitle => 'FireCheck';
 
   @override
@@ -22,9 +29,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get uploadsTitle => 'Upload progress';
-
-  @override
-  String get formRulesTitle => 'Form rules';
 
   @override
   String get homeLoadError => 'Couldn\'t load your field work.';
@@ -202,10 +206,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String metersAway(int distance) {
     return '$distance m away';
   }
-
-  @override
-  String get phase2FormNote =>
-      'Form coming in Phase 2 — the full attribution form will open from this sheet.';
 
   @override
   String get close => 'Close';
@@ -875,6 +875,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get issuePhotoRequired => 'At least one photo required';
 
   @override
+  String get issueCbmsRequired => 'CBMS ID is required';
+
+  @override
+  String get issueFireFightingFacilitiesRequired =>
+      'Fire-fighting facilities answer is required';
+
+  @override
   String get issueRa9514Required => 'RA 9514 type not selected';
 
   @override
@@ -914,14 +921,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reviewTitle => 'Review before upload';
-
-  @override
-  String get submittedBadge => 'Submitted ✓';
-
-  @override
-  String submittedAt(String date) {
-    return 'Submitted on $date';
-  }
 
   @override
   String get readOnlyBanner => 'This assignment was submitted. Read-only.';
@@ -1243,9 +1242,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get homeLocalSaveHint => 'Survey changes are saved on this device.';
-
-  @override
   String get homeEmptyHint => 'Download an assignment to start surveying.';
 
   @override
@@ -1361,12 +1357,34 @@ class AppLocalizationsEn extends AppLocalizations {
       'Review overlapping updates before continuing.';
 
   @override
-  String get designFormRulesBody =>
-      'Preview the questions and rules used in your surveys.';
-
-  @override
   String get downloadProgressUnknown => 'Calculating progress…';
 
   @override
   String get uploadLoadMore => 'Load more changes';
+
+  @override
+  String get dedupOfflineComparison => 'Cached geometry · available offline';
+
+  @override
+  String get dedupComparisonMap => 'Both features shown at the same scale';
+
+  @override
+  String get dedupMine => 'Mine — solid line, round markers';
+
+  @override
+  String get dedupExisting => 'Existing feature — square markers';
+
+  @override
+  String get dedupUnavailable => 'Comparison unavailable';
+
+  @override
+  String get dedupUnavailableDetail =>
+      'Select the original downloaded map and ensure both current features are cached. Decisions are disabled until both geometries can be compared. You can skip and return later.';
+
+  @override
+  String get dedupRetry => 'Retry comparison';
+
+  @override
+  String get dedupQueueFailed =>
+      'Could not save your decision. Please try again.';
 }

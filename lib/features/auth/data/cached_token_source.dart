@@ -31,7 +31,12 @@ class CachedTokenSource implements GoogleTokenSource {
 
   @override
   Future<String> getAccessToken() async {
-    final token = await _cache.read();
+    final accountId = await getEnumeratorId();
+    if (!await isSignedIn()) throw const AuthFailure('Not signed in');
+    final token = await _cache.read(accountId: accountId);
+    if (!await isSignedIn() || await getEnumeratorId() != accountId) {
+      throw const AuthFailure('Your account changed. Please try again.');
+    }
     if (token == null) {
       throw const AuthFailure(
         'No cached Google access token. Refresh from the foreground app.',

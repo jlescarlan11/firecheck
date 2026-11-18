@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:drift/drift.dart';
+import 'package:firecheck/features/assignment/data/assignment_repository.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/sync/data/realtime_subscriber.dart';
 import 'package:firecheck/core/sync/data/remote_attributions_pull_service.dart';
@@ -29,6 +29,7 @@ class RealtimeSyncController {
     required RealtimeSubscriber subscriber,
     required RemoteAttributionsPullService pullService,
     required AppDatabase db,
+    this.userId,
     Duration backgroundUnsubscribeAfter = const Duration(minutes: 2),
     Duration eventDebounce = const Duration(milliseconds: 250),
   })  : _subscriber = subscriber,
@@ -40,6 +41,7 @@ class RealtimeSyncController {
   final RealtimeSubscriber _subscriber;
   final RemoteAttributionsPullService _pullService;
   final AppDatabase _db;
+  final String? userId;
   final Duration _backgroundUnsubscribeAfter;
   final Duration _eventDebounce;
 
@@ -229,13 +231,9 @@ class RealtimeSyncController {
   String? _lastPullError;
 
   Future<String?> _currentAssignmentId() async {
-    // Newest assignment by createdAt — matches the rest of the codebase's
-    // notion of "current assignment" (AssignmentRepository.getCurrentAssignment).
-    final rows = await (_db.select(_db.assignments)
-          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])
-          ..limit(1))
-        .get();
-    return rows.firstOrNull?.id;
+    return (await AssignmentRepository(db: _db, userId: userId)
+            .getCurrentAssignment())
+        ?.id;
   }
 
   void _transitionTo(RealtimeConnectionState next) {

@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:firecheck/core/db/tables/shared_map_state.dart';
+import 'package:firecheck/core/db/tables/assignment_selections.dart';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
@@ -26,8 +28,11 @@ part 'database.g.dart';
 
 @DriftDatabase(
   tables: [
+    SharedMapFeatures,
+    SharedMapCursors,
     Enumerators,
     Assignments,
+    AssignmentSelections,
     Features,
     FeatureGeometryRevisions,
     Submissions,
@@ -52,7 +57,12 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 17;
+  int get schemaVersion => 20;
+
+  Future<void> _addDriveAccountBindings(Migrator m) async {
+    await m.addColumn(driveUploadJobs, driveUploadJobs.ownerId);
+    await m.addColumn(driveUploadJobs, driveUploadJobs.batchId);
+  }
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -60,9 +70,46 @@ class AppDatabase extends _$AppDatabase {
           await m.createAll();
         },
         onUpgrade: (m, from, to) async {
+          if (from < 20) {
+            final hasDriveJobs = await customSelect(
+              "SELECT 1 FROM sqlite_master WHERE type='table' AND name='drive_upload_jobs'",
+            ).getSingleOrNull();
+            if (hasDriveJobs != null) {
+              await m.addColumn(
+                driveUploadJobs,
+                driveUploadJobs.claimProcessIdentity,
+              );
+            }
+          }
+          if (from < 19) {
+            await m.createTable(sharedMapFeatures);
+            await m.createTable(sharedMapCursors);
+            final hasSubmissions = await customSelect(
+                    "SELECT 1 FROM sqlite_master WHERE type='table' AND name='submissions'")
+                .getSingleOrNull();
+            if (hasSubmissions != null)
+              await m.addColumn(
+                  submissions, submissions.isAdditionalObservation);
+            final hasSyncJobs = await customSelect(
+                    "SELECT 1 FROM sqlite_master WHERE type='table' AND name='sync_jobs'")
+                .getSingleOrNull();
+            if (hasSyncJobs != null) {
+              await m.addColumn(syncJobs, syncJobs.payloadJson);
+              // Recover claims made by the pre-upgrade app, which had no lease.
+              await customStatement(
+                  "UPDATE sync_jobs SET status='pending' WHERE status='in_progress'");
+            }
+          }
+          if (from < 18) {
+            await m.createTable(assignmentSelections);
+            final hasAssignments = await customSelect(
+                    "SELECT 1 FROM sqlite_master WHERE type='table' AND name='assignments'")
+                .getSingleOrNull();
+            if (hasAssignments != null)
+              await m.addColumn(assignments, assignments.boundarySource);
+          }
           if (from >= 8 && from < 17) {
-            await m.addColumn(driveUploadJobs, driveUploadJobs.ownerId);
-            await m.addColumn(driveUploadJobs, driveUploadJobs.batchId);
+            await _addDriveAccountBindings(m);
           }
           if (from < 2) {
             // v1 → v2:

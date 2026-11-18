@@ -1,3 +1,4 @@
+import 'package:firecheck/features/assignment/data/assignment_geometry_guard.dart';
 import 'package:drift/drift.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:uuid/uuid.dart';
@@ -23,6 +24,10 @@ class FeatureGeometryRevisionsRepository {
     required String? overrideReason,
   }) async {
     await _db.transaction(() async {
+      final feature = await (_db.select(_db.features)
+            ..where((t) => t.id.equals(featureId)))
+          .getSingle();
+      await validateAssignmentGeometry(_db, feature.assignmentId, newGeojson);
       await (_db.update(_db.features)..where((t) => t.id.equals(featureId)))
           .write(FeaturesCompanion(geometryGeojson: Value(newGeojson)));
 
@@ -62,6 +67,8 @@ class FeatureGeometryRevisionsRepository {
   }) async {
     final secondId = _uuid.v4();
     await _db.transaction(() async {
+      await validateAssignmentGeometry(_db, source.assignmentId, firstGeojson);
+      await validateAssignmentGeometry(_db, source.assignmentId, secondGeojson);
       await (_db.update(_db.features)..where((t) => t.id.equals(source.id)))
           .write(FeaturesCompanion(geometryGeojson: Value(firstGeojson)));
       await _db.into(_db.features).insert(
@@ -106,6 +113,8 @@ class FeatureGeometryRevisionsRepository {
           'Only same-type features in one assignment can merge');
     }
     await _db.transaction(() async {
+      await validateAssignmentGeometry(
+          _db, primary.assignmentId, mergedGeojson);
       await (_db.update(_db.features)..where((t) => t.id.equals(primary.id)))
           .write(FeaturesCompanion(geometryGeojson: Value(mergedGeojson)));
       await (_db.update(_db.features)..where((t) => t.id.equals(secondary.id)))

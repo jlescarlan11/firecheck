@@ -17,8 +17,6 @@ import 'package:firecheck/core/sync/worker/workmanager_dispatcher.dart';
 import 'package:firecheck/core/validation/supabase_validation_failure_reporter.dart';
 import 'package:firecheck/features/assignment/data/assignment_name_resolver.dart';
 import 'package:firecheck/features/assignment/data/canonical_feature_publisher.dart';
-import 'package:firecheck/features/assignment/presentation/assignment_lock_providers.dart';
-import 'package:firecheck/features/assignment/presentation/assignment_lock_state.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
 import 'package:firecheck/features/auth/data/caching_google_auth_repository.dart';
 import 'package:firecheck/features/auth/data/google_access_token_cache.dart';
@@ -158,19 +156,6 @@ class _DriveUploadBootstrapState extends ConsumerState<_DriveUploadBootstrap> {
   Future<void> _boot() async {
     final controller = ref.read(driveUploadControllerProvider);
     await controller.start();
-    _watchForCompletion();
-  }
-
-  void _watchForCompletion() {
-    ref.read(assignmentLockStateProvider.stream).listen((state) async {
-      if (state is! Submitted) return;
-      final repo = ref.read(assignmentRepositoryProvider);
-      final assignment = await repo.getCurrentAssignment();
-      if (assignment == null) return;
-      await ref.read(enqueueAssignmentUseCaseProvider).execute(
-            assignmentId: assignment.id,
-          );
-    });
   }
 
   @override
@@ -188,13 +173,16 @@ class _SyncBootstrap extends ConsumerStatefulWidget {
 class _SyncBootstrapState extends ConsumerState<_SyncBootstrap> {
   StreamSubscription<AuthState>? _authSub;
   bool _remoteStarted = false;
+  int _remoteGeneration = 0;
+  StreamSubscription<dynamic>? _submittedSub;
+  Future<void> _selectionChange = Future.value();
+  String? _observedAssignmentId;
 
   @override
   void initState() {
     super.initState();
     Future.microtask(() async {
       await ref.read(syncControllerProvider).start();
-      _attachSubmittedLock();
       _wireRemoteSyncToAuth();
     });
   }
@@ -202,6 +190,7 @@ class _SyncBootstrapState extends ConsumerState<_SyncBootstrap> {
   @override
   void dispose() {
     _authSub?.cancel();
+    _submittedSub?.cancel();
     super.dispose();
   }
 
@@ -227,14 +216,20 @@ class _SyncBootstrapState extends ConsumerState<_SyncBootstrap> {
   Future<void> _startRemoteSync() async {
     if (_remoteStarted) return;
     _remoteStarted = true;
-    await ref.read(remoteCacheControllerProvider).start();
-    ref.read(realtimeWiringProvider).start();
-    await ref.read(realtimeSyncControllerProvider).start();
+    final generation = ++_remoteGeneration;
+    final cache = ref.read(remoteCacheControllerProvider);
+    final wiring = ref.read(realtimeWiringProvider);
+    final realtime = ref.read(realtimeSyncControllerProvider);
+    await cache.start();
+    if (!mounted || generation != _remoteGeneration) return;
+    wiring.start();
+    await realtime.start();
   }
 
   void _stopRemoteSync() {
     if (!_remoteStarted) return;
     _remoteStarted = false;
+    _remoteGeneration++;
     // Invalidate so the controllers' onDispose hooks (which call stop())
     // run, and the next sign-in starts from fresh instances.
     ref
@@ -243,18 +238,28 @@ class _SyncBootstrapState extends ConsumerState<_SyncBootstrap> {
       ..invalidate(remoteCacheControllerProvider);
   }
 
-  void _attachSubmittedLock() {
-    Future.microtask(() async {
-      final repo = ref.read(assignmentRepositoryProvider);
-      final assignment = await repo.getCurrentAssignment();
-      if (assignment == null) return;
-      ref
-          .read(submittedAssignmentLockProvider)
-          .watchAndStamp(assignment.id)
-          .listen((_) {});
-    });
-  }
-
   @override
-  Widget build(BuildContext context) => widget.child;
+  Widget build(BuildContext context) {
+    ref.listen(currentAssignmentProvider, (_, next) {
+      if (next.isLoading) return;
+      final id = next.valueOrNull?.id;
+      if (id == _observedAssignmentId) return;
+      _observedAssignmentId = id;
+      _selectionChange = _selectionChange.then((_) async {
+        if (!mounted) return;
+        await _submittedSub?.cancel();
+        _submittedSub = null;
+        _stopRemoteSync();
+        if (id == null) return;
+        _submittedSub = ref
+            .read(submittedAssignmentLockProvider)
+            .watchAndStamp(id)
+            .listen((_) {});
+        await _startRemoteSync();
+      }).catchError((Object error) {
+        debugPrint("Could not refresh selected map: $error");
+      });
+    });
+    return widget.child;
+  }
 }

@@ -5,6 +5,7 @@ import { randomUUID, createHash } from "node:crypto";
 import pg from "pg";
 import { buildApp } from "../src/app.js";
 import { Database } from "../src/db.js";
+import { publicationReferences } from "../src/orphan-inventory.js";
 import { ApiError, validateMap } from "../src/domain.js";
 import type { Drive, DriveFile } from "../src/drive.js";
 
@@ -35,16 +36,29 @@ class FakeDrive implements Drive {
   async children(id: string) {
     return [...this.files.values()].filter((f) => f.parents?.includes(id));
   }
-  async folder(parent: string, name: string) {
+  async folder(parent: string, name: string, key?: string) {
     const id = randomUUID();
     this.files.set(id, {
       id,
       name,
+      ...(key ? { appProperties: { firecheckOutputKey: key } } : {}),
       mimeType: "application/vnd.google-apps.folder",
       parents: [parent],
       driveId: "shared",
     });
     return id;
+  }
+  async managedFolder(parent: string, name: string, key: string) {
+    const existing = (await this.children(parent)).find(
+      (f) => f.appProperties?.firecheckOutputKey === key,
+    );
+    if (existing) return existing;
+    const id = await this.folder(parent, name);
+    this.files.get(id)!.appProperties = { firecheckOutputKey: key };
+    return this.metadata(id);
+  }
+  async relocate(id: string, parent: string, name: string) {
+    Object.assign(this.files.get(id)!, { name, parents: [parent] });
   }
   put(parent: string, name: string, bytes: Buffer) {
     const id = randomUUID();
@@ -165,7 +179,7 @@ before(async () => {
     if not exists(select 1 from pg_roles where rolname='authenticated') then create role authenticated;end if;
     end $$;
     create schema auth; create function auth.uid() returns uuid language sql as $$ select null::uuid $$;
-    create table public.enumerators(id uuid primary key);
+    create table public.enumerators(id uuid primary key,display_name text default 'Surveyor');
     create table public.assignments(id uuid primary key,name text,closed_remotely boolean default false);
     create table public.assignment_members(assignment_id uuid references public.assignments(id),enumerator_id uuid references public.enumerators(id),role text,primary key(assignment_id,enumerator_id));
     create table public.drive_uploads(id uuid primary key,assignment_id uuid,uploaded_by uuid,drive_folder_path text,drive_folder_url text,file_count int);
@@ -428,6 +442,87 @@ test("incomplete upload never becomes complete", async () => {
     409,
   );
 });
+test("one map output keeps collaborators separate and archives superseded batches", async () => {
+  await pool.query(
+    "update public.enumerators set display_name='Alex' where id=$1",
+    [admin],
+  );
+  await pool.query(
+    "update public.enumerators set display_name='Sam' where id=$1",
+    [worker],
+  );
+  await call(
+    "PUT",
+    `/v1/admin/assignments/${assignment}/members/${admin}`,
+    admin,
+  );
+  async function create(who: string) {
+    const id = randomUUID(),
+      file = randomUUID(),
+      bytes = Buffer.from(id);
+    const r = await call("POST", `/v1/assignments/${assignment}/uploads`, who, {
+      id,
+      files: [
+        {
+          id: file,
+          name: "buildings.dbf",
+          size: bytes.length,
+          md5: md5(bytes),
+        },
+      ],
+    });
+    assert.equal(r.statusCode, 200, r.body);
+    const row = (
+      await pool.query("select * from firecheck_gateway.uploads where id=$1", [
+        id,
+      ])
+    ).rows[0];
+    return { id, file, bytes, who, folder: row.folder_id };
+  }
+  async function finish(batch: Awaited<ReturnType<typeof create>>) {
+    const r = await call(
+      "PUT",
+      `/v1/uploads/${batch.id}/files/${batch.file}/chunks`,
+      batch.who,
+      batch.bytes,
+      { "content-type": "application/octet-stream", "upload-offset": "0" },
+    );
+    assert.equal(r.statusCode, 200, r.body);
+    const done = await call(
+      "POST",
+      `/v1/uploads/${batch.id}/complete`,
+      batch.who,
+    );
+    assert.equal(done.statusCode, 200, done.body);
+    return done.json();
+  }
+  const old = await create(worker);
+  const recent = await create(worker);
+  const colleague = await create(admin);
+  await finish(recent);
+  await finish(colleague);
+  await finish(old); // A late old upload must not replace newer work.
+  const top = await drive.children("output");
+  assert.equal(top.length, 1);
+  assert.equal(top[0]!.name, "Cebu");
+  const current = await drive.children(top[0]!.id);
+  const archive = current.find((f) => f.name === "Archive")!;
+  assert.ok(
+    current.some((f) => f.id === recent.folder && f.name.startsWith("Sam")),
+  );
+  assert.ok(
+    current.some((f) => f.id === colleague.folder && f.name.startsWith("Alex")),
+  );
+  assert.ok(!current.some((f) => f.id === old.folder));
+  assert.ok(
+    (await drive.children(archive.id)).some((f) => f.id === old.folder),
+  );
+  const oldFile = (await drive.children(old.folder))[0]!;
+  assert.deepEqual(drive.bytes.get(oldFile.id), old.bytes);
+  const receipt = (await call("GET", `/v1/uploads/${old.id}`, worker)).json();
+  assert.ok(receipt.folderPath.includes("/Archive/"));
+  assert.ok(receipt.folderUrl.endsWith(old.folder));
+});
 test("closed assignment rejects new batches", async () => {
   await pool.query(
     "update public.assignments set closed_remotely=true where id=$1",
@@ -472,4 +567,210 @@ test("map publication validation rejects partial component sets", () => {
       ]),
     ApiError,
   );
+});
+
+test("failed copies and source mutation preserve last good publication; retry creates a fresh complete version", async () => {
+  const before = (
+    await pool.query(
+      "select current_version from firecheck_gateway.sources where assignment_id=$1",
+      [assignment],
+    )
+  ).rows[0].current_version;
+  const count = Number(
+    (await pool.query("select count(*) from firecheck_gateway.versions"))
+      .rows[0].count,
+  );
+  const copy = drive.copy.bind(drive);
+  let copied = 0;
+  drive.copy = async (id, parent) => {
+    if (copied++ === 1) throw new Error("controlled copy failure");
+    return copy(id, parent);
+  };
+  try {
+    assert.equal(
+      (await call("POST", `/v1/admin/assignments/${assignment}/publish`, admin))
+        .statusCode,
+      503,
+    );
+    assert.equal(
+      (
+        await pool.query(
+          "select current_version from firecheck_gateway.sources where assignment_id=$1",
+          [assignment],
+        )
+      ).rows[0].current_version,
+      before,
+    );
+    assert.equal(
+      Number(
+        (await pool.query("select count(*) from firecheck_gateway.versions"))
+          .rows[0].count,
+      ),
+      count,
+    );
+  } finally {
+    drive.copy = copy;
+  }
+  const source = (
+    await pool.query(
+      "select folder_id from firecheck_gateway.sources where assignment_id=$1",
+      [assignment],
+    )
+  ).rows[0].folder_id;
+  const file = (await drive.children(source))[0]!;
+  const checksum = file.md5Checksum;
+  drive.copy = async (id, parent) => {
+    const result = await copy(id, parent);
+    drive.files.get(file.id)!.md5Checksum = "f".repeat(32);
+    return result;
+  };
+  try {
+    const failed = await call(
+      "POST",
+      `/v1/admin/assignments/${assignment}/publish`,
+      admin,
+    );
+    assert.equal(failed.statusCode, 409, failed.body);
+    assert.equal(failed.json().code, "SOURCE_CHANGED_DURING_PUBLICATION");
+    assert.equal(
+      (
+        await pool.query(
+          "select current_version from firecheck_gateway.sources where assignment_id=$1",
+          [assignment],
+        )
+      ).rows[0].current_version,
+      before,
+    );
+  } finally {
+    drive.copy = copy;
+    drive.files.get(file.id)!.md5Checksum = checksum;
+  }
+  const retry = await call(
+    "POST",
+    `/v1/admin/assignments/${assignment}/publish`,
+    admin,
+  );
+  assert.equal(retry.statusCode, 200, retry.body);
+  assert.notEqual(retry.json().version, before);
+  assert.equal(retry.json().files.length, 4);
+  assert.equal(
+    (
+      await pool.query(
+        "select current_version from firecheck_gateway.sources where assignment_id=$1",
+        [assignment],
+      )
+    ).rows[0].current_version,
+    retry.json().version,
+  );
+  assert.equal(
+    (
+      await call(
+        "GET",
+        `/v1/assignments/${assignment}/versions/${version}/files/${artifact}`,
+      )
+    ).statusCode,
+    200,
+  );
+});
+
+test("ordinary members cannot create, publish, enroll, remove, or register sources", async () => {
+  for (const [method, path, body] of [
+    ["POST", "/v1/admin/assignments", {}],
+    ["POST", `/v1/admin/assignments/${assignment}/publish`, undefined],
+    [
+      "PUT",
+      `/v1/admin/assignments/${assignment}/members/${outsider}`,
+      undefined,
+    ],
+    [
+      "DELETE",
+      `/v1/admin/assignments/${assignment}/members/${worker}`,
+      undefined,
+    ],
+    [
+      "PUT",
+      `/v1/admin/assignments/${assignment}/source`,
+      { folderId: "input" },
+    ],
+  ] as const) {
+    const response = await call(method, path, worker, body);
+    assert.equal(
+      response.statusCode,
+      403,
+      `${method} ${path}: ${response.body}`,
+    );
+    assert.equal(response.json().code, "SUPERVISOR_REQUIRED");
+  }
+  assert.equal(
+    (
+      await pool.query(
+        "select 1 from public.assignment_members where assignment_id=$1 and enumerator_id=$2",
+        [assignment, outsider],
+      )
+    ).rowCount,
+    0,
+  );
+});
+
+test("publication marks a fresh folder without listing the historical published root", async () => {
+  const children = drive.children.bind(drive);
+  drive.children = async (id) => {
+    if (id === "published") throw new ApiError(413, "TOO_MANY_FILES");
+    return children(id);
+  };
+  try {
+    const result = await call(
+      "POST",
+      `/v1/admin/assignments/${assignment}/publish`,
+      admin,
+    );
+    assert.equal(result.statusCode, 200, result.body);
+    const folder = [...drive.files.values()].find(
+      (f) => f.name === `${assignment}_${result.json().version}`,
+    )!;
+    assert.equal(
+      folder.appProperties?.firecheckOutputKey,
+      `source-publication:${assignment}:${result.json().version}`,
+    );
+  } finally {
+    drive.children = children;
+  }
+});
+
+test("reference snapshots retain incomplete resumable uploads and every historical version", async () => {
+  const roots = ["input", "output", "published"];
+  const snapshot = await publicationReferences(new Database(pool), roots);
+  const uploads = (
+    await pool.query("select folder_id from firecheck_gateway.uploads")
+  ).rows;
+  const versions = (
+    await pool.query("select id from firecheck_gateway.versions")
+  ).rows;
+  assert.ok(uploads.length > 0);
+  assert.ok(versions.length > 1);
+  assert.ok(uploads.every((row) => snapshot.folderIds.includes(row.folder_id)));
+  assert.ok(versions.every((row) => snapshot.versionIds.includes(row.id)));
+  const repeated = await publicationReferences(new Database(pool), roots);
+  assert.equal(snapshot.fingerprint, repeated.fingerprint);
+  const source = (
+    await pool.query(
+      "select current_version from firecheck_gateway.sources where assignment_id=$1",
+      [assignment],
+    )
+  ).rows[0];
+  await pool.query(
+    "update firecheck_gateway.sources set current_version=$2 where assignment_id=$1",
+    [assignment, version],
+  );
+  try {
+    assert.notEqual(
+      (await publicationReferences(new Database(pool), roots)).fingerprint,
+      snapshot.fingerprint,
+    );
+  } finally {
+    await pool.query(
+      "update firecheck_gateway.sources set current_version=$2 where assignment_id=$1",
+      [assignment, source.current_version],
+    );
+  }
 });

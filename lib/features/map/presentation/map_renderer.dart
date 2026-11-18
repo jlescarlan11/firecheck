@@ -4,7 +4,10 @@ import 'dart:convert';
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/geo/point_in_polygon.dart';
 import 'package:firecheck/core/geo/polyline_midpoint.dart';
+import 'package:firecheck/features/map/presentation/annotation_style_lifecycle.dart';
+import 'package:firecheck/features/map/presentation/boundary_outline.dart';
 import 'package:firecheck/features/map/presentation/camera_target.dart';
+import 'package:firecheck/features/map/presentation/map_geometry.dart';
 import 'package:flutter/material.dart';
 // Hide Feature because the Drift-generated row class (imported above) shares
 // the same name with `mapbox_maps_flutter`'s GeoJSON Feature wrapper.
@@ -171,7 +174,7 @@ class _IdentityProjection implements MapProjection {
 // flutter_tester.
 
 /// Real renderer backed by `mapbox_maps_flutter` 2.22. Renders an actual map
-/// with polygon annotation managers for features + boundary, a point
+/// with polygon annotations for features and a dashed boundary outline, a point
 /// annotation manager for is_new=true features (blue pins), and a location
 /// component pinned to GPS via [LocationSettings].
 class MapboxMapRenderer implements MapRenderer {
@@ -247,7 +250,13 @@ class _MapboxMapView extends StatefulWidget {
 
 class _MapboxMapViewState extends State<_MapboxMapView> {
   PolygonAnnotationManager? _featureManager;
-  PolygonAnnotationManager? _boundaryManager;
+  PolylineAnnotationManager? _boundaryManager;
+  BoundaryOutline? _boundaryOutline;
+  late final _styleLifecycle = AnnotationStyleLifecycle<MapboxMap>(
+    isCurrent: (map) => mounted && _mapboxMap == map,
+    initialize: _initializeAnnotations,
+    replayWorkingGeometry: _rerenderReshapeWorkingPolygon,
+  );
   PolylineAnnotationManager? _roadManager;
   PointAnnotationManager? _pointManager;
   MapboxMap? _mapboxMap;
@@ -296,6 +305,8 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
 
   @override
   void dispose() {
+    _boundaryOutline?.dispose();
+    _mapboxMap = null;
     _boundaryManager = null;
     _featureManager = null;
     _roadManager = null;
@@ -333,6 +344,12 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
           // because no style is loaded.
           styleUri: 'mapbox://styles/mapbox/streets-v12',
           onMapCreated: _onMapCreated,
+          onStyleLoadedListener: (_) {
+            // Initial setup also handles the first style. Subsequent style
+            // loads need fresh managers and annotation handles.
+            final map = _mapboxMap;
+            if (map != null) unawaited(_scheduleStyleReload(map));
+          },
           // mapbox_maps_flutter 2.22 exposes a single-tap callback via
           // MapWidget.onTapListener (OnMapTapListener typedef on the widget).
           onTapListener: (MapContentGestureContext ctx) {
@@ -432,44 +449,7 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
       // Non-fatal — gesture settings are a hardening measure, not load-bearing.
     }
 
-    // GL context reset (e.g., app evicted from background): null any
-    // annotation references from a prior context so they're not double-deleted.
-    _reshapeWorkingAnnotation = null;
-
-    // Boundary manager FIRST so it sits BENEATH features in the layer stack.
-    // Mapbox stacks annotation managers by creation order: later managers
-    // render on top. Features must be on top so polygon taps hit them
-    // (Bug 13 — caught manually). The boundary's polygon is fully
-    // transparent, but Mapbox still hit-tests it; if it sat on top, every
-    // tap inside the assignment area would land on the (listener-less)
-    // boundary polygon and never reach the feature manager.
-    _boundaryManager = await map.annotations.createPolygonAnnotationManager();
-    _featureManager = await map.annotations.createPolygonAnnotationManager();
-    // Road manager above building fills; point manager topmost above roads.
-    _roadManager = await map.annotations.createPolylineAnnotationManager();
-    _pointManager = await map.annotations.createPointAnnotationManager();
-
-    await _renderBoundary();
-    await _renderFeatures();
-    await _renderRoads();
-    await _renderNewFeatures();
-
-    // ignore: deprecated_member_use
-    _featureManager!.addOnPolygonAnnotationClickListener(
-      _FeatureClickHandler(
-        annotationToFeature: _annotationToFeature,
-        onTap: widget.onFeatureTap,
-        sketchActive: widget.sketchActive,
-      ),
-    );
-    // ignore: deprecated_member_use
-    _roadManager!.addOnPolylineAnnotationClickListener(
-      _RoadClickHandler(
-        annotationToFeature: _annotationToFeature,
-        onTap: widget.onFeatureTap,
-        sketchActive: widget.sketchActive,
-      ),
-    );
+    await _scheduleStyleReload(map);
 
     // Replay any cameraTarget that arrived BEFORE the map was ready. On
     // cold start the user can tap recenter while Mapbox is still booting:
@@ -509,12 +489,95 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
       // Layout hasn't run yet. Defer to the next LayoutBuilder pass.
       _projectionReadyPending = true;
     }
+  }
 
-    // Render any working polygon supplied before the map booted.
-    if (widget.reshapeWorkingPolygonGeojson != null &&
-        widget.reshapeWorkingPolygonGeojson!.isNotEmpty) {
-      unawaited(_rerenderReshapeWorkingPolygon());
+  Future<void> _scheduleStyleReload(MapboxMap map) {
+    _boundaryOutline?.dispose();
+    return _styleLifecycle.reload(map).catchError((Object error) {
+      debugPrint('[MapRenderer] annotation style reload failed: $error');
+    });
+  }
+
+  Future<void> _initializeAnnotations(MapboxMap map) async {
+    if (!mounted) return;
+    // GL context reset (e.g., app evicted from background): null any
+    // annotation references from a prior context so they're not double-deleted.
+    _reshapeWorkingAnnotation = null;
+
+    _boundaryOutline?.dispose();
+    final previousManagers = [
+      _boundaryManager,
+      _featureManager,
+      _roadManager,
+      _pointManager,
+    ];
+    _boundaryManager = null;
+    _featureManager = null;
+    _roadManager = null;
+    _pointManager = null;
+    await _rerenderChain;
+    for (final manager in previousManagers) {
+      if (manager == null) continue;
+      try {
+        await map.annotations.removeAnnotationManager(manager);
+      } on Object {
+        // A replaced style can already have removed its native manager.
+      }
     }
+    if (!mounted) return;
+    _annotationToFeature.clear();
+    _polygonByFeatureId.clear();
+    _roadByFeatureId.clear();
+    _fingerprintByFeatureId.clear();
+    // Create below all survey annotations. No boundary click listener: the
+    // outline never participates in feature selection or geofencing.
+    final boundary = await map.annotations.createPolylineAnnotationManager();
+    if (!mounted) return;
+    _boundaryManager = boundary;
+    await boundary.setLineDasharray([3, 2]);
+    _boundaryOutline = BoundaryOutline(
+      clear: boundary.deleteAll,
+      draw: (ring) async {
+        await boundary.create(
+          PolylineAnnotationOptions(
+            geometry: LineString(
+              coordinates: ring.map((p) => Position(p.dx, p.dy)).toList(),
+            ),
+            lineColor: 0xFFD97706,
+            lineWidth: 3,
+            lineOpacity: 1,
+          ),
+        );
+      },
+    );
+    _featureManager = await map.annotations.createPolygonAnnotationManager();
+    // Road manager above building fills; point manager topmost above roads.
+    _roadManager = await map.annotations.createPolylineAnnotationManager();
+    _pointManager = await map.annotations.createPointAnnotationManager();
+    if (!mounted || _mapboxMap != map) return;
+
+    await _renderBoundary();
+    await _renderFeatures();
+    await _renderRoads();
+    await _renderNewFeatures();
+    if (!mounted || _mapboxMap != map) return;
+
+    // ignore: deprecated_member_use
+    _featureManager!.addOnPolygonAnnotationClickListener(
+      _FeatureClickHandler(
+        annotationToFeature: _annotationToFeature,
+        onTap: widget.onFeatureTap,
+        sketchActive: widget.sketchActive,
+      ),
+    );
+    // ignore: deprecated_member_use
+    _roadManager!.addOnPolylineAnnotationClickListener(
+      _RoadClickHandler(
+        annotationToFeature: _annotationToFeature,
+        onTap: widget.onFeatureTap,
+        sketchActive: widget.sketchActive,
+      ),
+    );
   }
 
   @override
@@ -531,8 +594,10 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
     if ((featuresChanged || reshapingChanged) && _featureManager != null) {
       unawaited(_scheduleRerender());
     }
-    if (boundaryChanged && _boundaryManager != null) {
-      unawaited(_rerenderBoundary());
+    if (boundaryChanged) {
+      if (_boundaryManager != null) unawaited(_rerenderBoundary());
+      final target = widget.initialCameraTarget;
+      if (target != null) unawaited(_flyToCameraTarget(target));
     }
     if (!featuresChanged &&
         oldWidget.reshapeWorkingPolygonGeojson !=
@@ -554,7 +619,7 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
     }
     final geojson = widget.reshapeWorkingPolygonGeojson;
     if (geojson == null || geojson.isEmpty) return;
-    final polygon = _decodePolygon(geojson);
+    final polygon = decodeMapPolygon(geojson);
     if (polygon == null) return;
     _reshapeWorkingAnnotation = await manager.create(
       PolygonAnnotationOptions(
@@ -647,7 +712,7 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
       _annotationToFeature.remove(existing.id);
       await manager.delete(existing);
     }
-    final polygon = _decodePolygon(f.geometryGeojson);
+    final polygon = decodeMapPolygon(f.geometryGeojson);
     if (polygon == null) return;
     final created = await manager.create(
       PolygonAnnotationOptions(
@@ -681,12 +746,7 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
     _annotationToFeature[created.id] = f;
   }
 
-  Future<void> _rerenderBoundary() async {
-    final manager = _boundaryManager;
-    if (manager == null) return;
-    await manager.deleteAll();
-    await _renderBoundary();
-  }
+  Future<void> _rerenderBoundary() => _renderBoundary();
 
   Future<void> _renderFeatures() async {
     final manager = _featureManager;
@@ -700,7 +760,7 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
       // While reshape mode is active for this feature, suppress its static
       // snapshot — the working overlay shows the live shape instead.
       if (widget.reshapingFeatureId == f.id) continue;
-      final polygon = _decodePolygon(f.geometryGeojson);
+      final polygon = decodeMapPolygon(f.geometryGeojson);
       if (polygon == null) continue;
       final created = await manager.create(
         PolygonAnnotationOptions(
@@ -716,22 +776,11 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
   }
 
   Future<void> _renderBoundary() async {
-    final manager = _boundaryManager;
-    if (manager == null) return;
-    if (widget.boundaryGeojson.isEmpty) return;
-    final polygon = _decodePolygon(widget.boundaryGeojson);
-    if (polygon == null) return;
-    await manager.create(
-      PolygonAnnotationOptions(
-        geometry: polygon,
-        // Transparent fill — the boundary is invisible today. A dashed
-        // orange outline requires a custom LineLayer and is deferred to a
-        // later polish pass; PolygonAnnotationOptions doesn't expose a
-        // dashed-stroke knob in mapbox_maps_flutter 2.22.
-        fillColor: 0x00D97706,
-        fillOpacity: 0,
-      ),
-    );
+    try {
+      await _boundaryOutline?.replace(widget.boundaryGeojson);
+    } on Object catch (error) {
+      debugPrint('[MapRenderer] boundary update failed: $error');
+    }
   }
 
   Future<void> _renderRoads() async {
@@ -786,33 +835,6 @@ class _MapboxMapViewState extends State<_MapboxMapView> {
               'marker', // built-in default; if missing, the dot is invisible
         ),
       );
-    }
-  }
-
-  Polygon? _decodePolygon(String geojson) {
-    if (geojson.isEmpty) return null;
-    try {
-      final decoded = jsonDecode(geojson);
-      if (decoded is! Map<String, Object?>) return null;
-      final coordsNested = decoded['coordinates'];
-      if (coordsNested is! List<Object?>) return null;
-      final rings = <List<Position>>[];
-      for (final ring in coordsNested) {
-        if (ring is! List<Object?>) return null;
-        final points = <Position>[];
-        for (final p in ring) {
-          if (p is! List<Object?>) return null;
-          if (p.length < 2) return null;
-          final lng = p[0];
-          final lat = p[1];
-          if (lng is! num || lat is! num) return null;
-          points.add(Position(lng.toDouble(), lat.toDouble()));
-        }
-        rings.add(points);
-      }
-      return Polygon(coordinates: rings);
-    } on Object {
-      return null;
     }
   }
 

@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   Submission s(String id) => Submission(
+        isAdditionalObservation: false,
         id: id,
         featureId: 'f1',
         doesNotExist: false,

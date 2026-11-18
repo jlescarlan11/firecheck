@@ -9,6 +9,14 @@ class AppLocalizationsTl extends AppLocalizations {
   AppLocalizationsTl([String locale = 'tl']) : super(locale);
 
   @override
+  String get surveySaveFailed =>
+      'Hindi na-save ang sarbey na ito. Pakisubukang muli.';
+
+  @override
+  String get surveySavedLocally =>
+      'Naka-save sa device na ito ang mga pagbabago.';
+
+  @override
   String get appTitle => 'FireCheck';
 
   @override
@@ -22,9 +30,6 @@ class AppLocalizationsTl extends AppLocalizations {
 
   @override
   String get uploadsTitle => 'Status ng mga upload';
-
-  @override
-  String get formRulesTitle => 'Mga panuntunan ng form';
 
   @override
   String get homeLoadError => 'Hindi ma-load ang iyong gawain.';
@@ -205,10 +210,6 @@ class AppLocalizationsTl extends AppLocalizations {
   String metersAway(int distance) {
     return '$distance m ang layo';
   }
-
-  @override
-  String get phase2FormNote =>
-      'Darating ang form sa Phase 2 — ang buong attribution form ay bubukas mula rito.';
 
   @override
   String get close => 'Isara';
@@ -901,6 +902,13 @@ class AppLocalizationsTl extends AppLocalizations {
   String get issuePhotoRequired => 'Kailangan ng kahit isang larawan';
 
   @override
+  String get issueCbmsRequired => 'Kailangan ang CBMS ID';
+
+  @override
+  String get issueFireFightingFacilitiesRequired =>
+      'Kailangan ang sagot tungkol sa mga pasilidad sa pag-apula ng sunog';
+
+  @override
   String get issueRa9514Required => 'Hindi pa napipili ang uri ng RA 9514';
 
   @override
@@ -942,14 +950,6 @@ class AppLocalizationsTl extends AppLocalizations {
 
   @override
   String get reviewTitle => 'Suriin bago i-upload';
-
-  @override
-  String get submittedBadge => 'Naipasa na ✓';
-
-  @override
-  String submittedAt(String date) {
-    return 'Naipasa noong $date';
-  }
 
   @override
   String get readOnlyBanner => 'Naipasa na ang takda. Read-only.';
@@ -1271,10 +1271,6 @@ class AppLocalizationsTl extends AppLocalizations {
   }
 
   @override
-  String get homeLocalSaveHint =>
-      'Naka-save sa device na ito ang mga pagbabago sa survey.';
-
-  @override
   String get homeEmptyHint =>
       'Mag-download ng takda para makapagsimula ng survey.';
 
@@ -1391,12 +1387,35 @@ class AppLocalizationsTl extends AppLocalizations {
       'Suriin ang magkakasalungat na update bago magpatuloy.';
 
   @override
-  String get designFormRulesBody =>
-      'Tingnan ang mga tanong at panuntunan sa iyong mga survey.';
-
-  @override
   String get downloadProgressUnknown => 'Kinakalkula ang progreso…';
 
   @override
   String get uploadLoadMore => 'Ipakita ang higit pang pagbabago';
+
+  @override
+  String get dedupOfflineComparison =>
+      'Naka-cache na hugis · magagamit offline';
+
+  @override
+  String get dedupComparisonMap => 'Parehong feature sa iisang sukat';
+
+  @override
+  String get dedupMine => 'Akin — solidong linya, bilog na marka';
+
+  @override
+  String get dedupExisting => 'Kasalukuyang feature — parisukat na marka';
+
+  @override
+  String get dedupUnavailable => 'Hindi magagamit ang paghahambing';
+
+  @override
+  String get dedupUnavailableDetail =>
+      'Piliin ang orihinal na na-download na mapa at tiyaking naka-cache ang parehong kasalukuyang feature. Hindi magagamit ang mga pasya hangga’t maihahambing ang parehong hugis. Maaari munang laktawan at bumalik mamaya.';
+
+  @override
+  String get dedupRetry => 'Subukang muli ang paghahambing';
+
+  @override
+  String get dedupQueueFailed =>
+      'Hindi na-save ang iyong pasya. Pakisubukang muli.';
 }

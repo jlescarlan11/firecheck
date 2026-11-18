@@ -42,7 +42,7 @@ void main() {
     final db = AppDatabase.forTesting(NativeDatabase.memory());
     addTearDown(db.close);
 
-    // Seed a complete building feature
+    // Seed a completed building observation; private drafts are not exportable.
     await db.into(db.assignments).insert(AssignmentsCompanion.insert(
       id: 'a1', enumeratorId: 'e1', campaignId: 'c1',
       boundaryPolygonGeojson: '{}', createdAt: DateTime(2026),
@@ -54,7 +54,7 @@ void main() {
       createdAt: DateTime(2026),
     ));
     await db.into(db.submissions).insert(SubmissionsCompanion.insert(
-      id: 's1', featureId: 'f1', createdAt: DateTime(2026), updatedAt: DateTime(2026),
+      id: 's1', featureId: 'f1', syncStatus: const Value('ready_to_upload'), createdAt: DateTime(2026), updatedAt: DateTime(2026),
     ));
     await db.into(db.buildingAttributes).insert(BuildingAttributesCompanion.insert(
       submissionId: 's1',
@@ -93,7 +93,7 @@ void main() {
       createdAt: DateTime(2026),
     ));
     await db.into(db.submissions).insert(SubmissionsCompanion.insert(
-      id: 's1', featureId: 'f1', createdAt: DateTime(2026), updatedAt: DateTime(2026),
+      id: 's1', featureId: 'f1', syncStatus: const Value('ready_to_upload'), createdAt: DateTime(2026), updatedAt: DateTime(2026),
     ));
     await db.into(db.buildingAttributes).insert(BuildingAttributesCompanion.insert(
       submissionId: 's1',

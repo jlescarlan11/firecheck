@@ -19,6 +19,10 @@ class ValidationSection extends StatelessWidget {
     switch (key) {
       case 'issuePhotoRequired':
         return l.issuePhotoRequired;
+      case 'issueCbmsRequired':
+        return l.issueCbmsRequired;
+      case 'issueFireFightingFacilitiesRequired':
+        return l.issueFireFightingFacilitiesRequired;
       case 'issueRa9514Required':
         return l.issueRa9514Required;
       case 'issueWidthRequired':

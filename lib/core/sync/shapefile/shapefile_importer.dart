@@ -1,3 +1,4 @@
+import 'package:firecheck/core/geo/polygon_bounds.dart';
 // lib/core/sync/shapefile/shapefile_importer.dart
 import 'dart:convert';
 import 'dart:typed_data';
@@ -36,7 +37,8 @@ class ShapefileImporter {
   final _shpParser = const ShpParser();
 
   // Find a file by preferred exact key, falling back to any file with the extension.
-  Uint8List? _findFile(Map<String, Uint8List> files, String preferred, String ext) {
+  Uint8List? _findFile(
+      Map<String, Uint8List> files, String preferred, String ext) {
     if (files.containsKey(preferred)) return files[preferred];
     for (final entry in files.entries) {
       if (entry.key.endsWith(ext)) return entry.value;
@@ -45,7 +47,8 @@ class ShapefileImporter {
   }
 
   // Find DBF with the same stem as a given SHP key.
-  Uint8List? _dbfForShp(Map<String, Uint8List> files, String preferred, String shpKey) {
+  Uint8List? _dbfForShp(
+      Map<String, Uint8List> files, String preferred, String shpKey) {
     final dbfKey = shpKey.replaceFirst(RegExp(r'\.shp$'), '.dbf');
     if (files.containsKey(dbfKey)) return files[dbfKey];
     if (files.containsKey(preferred)) return files[preferred];
@@ -89,10 +92,13 @@ class ShapefileImporter {
     final roadDbfData = files['roads.dbf'];
 
     // Parse geometries — boundary and roads are optional.
-    final buildingGeoms = buildingShp != null ? _shpParser.parse(buildingShp) : <ShpGeometry>[];
-    final roadGeoms = roadShp != null ? _shpParser.parse(roadShp) : <ShpGeometry>[];
+    final buildingGeoms =
+        buildingShp != null ? _shpParser.parse(buildingShp) : <ShpGeometry>[];
+    final roadGeoms =
+        roadShp != null ? _shpParser.parse(roadShp) : <ShpGeometry>[];
 
-    final buildingDbf = buildingDbfData != null ? dbfParser.parse(buildingDbfData) : null;
+    final buildingDbf =
+        buildingDbfData != null ? dbfParser.parse(buildingDbfData) : null;
     final roadDbf = roadDbfData != null ? dbfParser.parse(roadDbfData) : null;
 
     final buildingRecords = buildingDbf?.records ?? [];
@@ -116,6 +122,12 @@ class ShapefileImporter {
     final boundaryGeojsonStr =
         boundaryGeojson == null ? '' : jsonEncode(boundaryGeojson);
 
+    if (boundaryShp != null &&
+        polygonBoundsFromGeojson(boundaryGeojsonStr) == null) {
+      throw const FormatException(
+          'The supplied study boundary is not a supported polygon.');
+    }
+
     // Capture a single timestamp for all rows written in this import
     final now = DateTime.now();
 
@@ -133,6 +145,11 @@ class ShapefileImporter {
               campaignId: Value(assignmentId),
               name: Value(assignmentDisplayName),
               boundaryPolygonGeojson: Value(boundaryGeojsonStr),
+              boundarySource: Value(boundaryShp != null
+                  ? "supplied"
+                  : buildingGeoms.isNotEmpty
+                      ? "building_extent"
+                      : "absent"),
               downloadedAt: Value(now),
               driveModifiedTime: Value(driveModifiedTime),
               driveFolderId: Value(driveFolderId),
@@ -207,8 +224,7 @@ class ShapefileImporter {
     final prefix = '$assignmentId/';
     final legacy = await (db.select(db.features)
           ..where(
-            (t) =>
-                t.assignmentId.equals(assignmentId) & t.id.like('$prefix%'),
+            (t) => t.assignmentId.equals(assignmentId) & t.id.like('$prefix%'),
           ))
         .get();
     if (legacy.isEmpty) return;

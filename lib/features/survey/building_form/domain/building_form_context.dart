@@ -22,3 +22,15 @@ FormEvaluationContext buildingFormContext(
         'building.fireLoad': state.fireLoad,
       },
     );
+
+/// Uses the same section target and answer context as the rendered building form.
+bool isBuildingSectionVisible(
+  FormDefinition definition,
+  BuildingFormState state,
+  GeometrySignal geometry,
+  String section,
+) =>
+    definition.isVisible(
+      'building.section.$section',
+      buildingFormContext(state, geometry),
+    );

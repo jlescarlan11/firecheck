@@ -1,3 +1,4 @@
+import 'package:firecheck/core/drive/upload_transfer_progress.dart';
 import 'package:firecheck/core/drive/drive_upload_providers.dart';
 import 'package:firecheck/core/gateway/gateway_client.dart';
 import 'package:firecheck/core/gateway/gateway_upload_runner.dart';
@@ -22,6 +23,7 @@ final gatewayUploadRunnerProvider = Provider<GatewayUploadRunner?>((ref) {
   if (client == null) return null;
   return GatewayUploadRunner(
     client: client,
+    progress: ref.watch(uploadTransferProgressProvider.notifier),
     repo: ref.watch(driveUploadRepoProvider),
   );
 });

@@ -22,13 +22,16 @@ class UploadProgressSection extends StatelessWidget {
     return switch (progress) {
       Idle() => const SizedBox.shrink(),
       Locked() => const SizedBox.shrink(),
-      InProgress(:final done, :final total) => AppSection(
+      InProgress(:final done, :final total, :final label) => AppSection(
           child: Padding(
             padding: EdgeInsets.zero,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(l.uploadProgressLabel(done, total)),
+                Text(label ??
+                    (total == 0
+                        ? 'Preparing upload…'
+                        : l.uploadProgressLabel(done, total))),
                 const SizedBox(height: 8),
                 LinearProgressIndicator(
                   value: total == 0 ? null : done / total,

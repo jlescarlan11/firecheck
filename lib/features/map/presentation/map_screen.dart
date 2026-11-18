@@ -1,3 +1,5 @@
+import 'package:firecheck/core/forms/field_requirements_providers.dart';
+import 'package:firecheck/features/map/geometry_editor/domain/sketch_validation_error.dart';
 import 'dart:async';
 
 import 'package:firecheck/core/analytics/analytics_providers.dart';
@@ -69,6 +71,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   int _projectionEpoch = 0;
 
   bool _lockBlockerShown = false;
+  Assignment? _sketchAssignment;
 
   @override
   Widget build(BuildContext context) {
@@ -116,151 +119,174 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           )
         : null;
 
-    return Scaffold(
-      appBar: AppBar(title: Text(l.mapTitle)),
-      body: Stack(
-        children: [
-          SizedBox.expand(
-            child: !mapReady
-                ? const Center(child: CircularProgressIndicator())
-                : renderer.build(
-                    context,
-                    features: features ?? [],
-                    boundaryGeojson: assignment?.boundaryPolygonGeojson ?? '',
-                    onFeatureTap: _handleFeatureTap,
-                    onCameraChanged: _onCameraChanged,
-                    sketchActive: sketchActive,
-                    onMapTap: _onSketchTap,
-                    initialCameraTarget: initialCameraTarget,
-                    cameraTarget: _cameraTarget,
-                    onPolygonLongPress: _handlePolygonLongPress,
-                    reshapingFeatureId:
-                        reshapeActive ? editorState.originalFeature?.id : null,
-                    onProjectionReady: (p) {
-                      // Always rebuild on every camera change — the
-                      // renderer reuses the same projection instance and
-                      // mutates its internal state on refresh, so identity
-                      // equality would always be true and the overlay
-                      // would never reproject as the user pans/zooms.
-                      setState(() {
-                        _reshapeProjection = p;
-                        _projectionEpoch++;
-                      });
-                    },
+    return PopScope(
+        canPop: !editorState.isActive,
+        onPopInvokedWithResult: (didPop, _) async {
+          if (didPop) return;
+          if (await _confirmLeaveDrawing() && context.mounted) context.pop();
+        },
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text(l.mapTitle),
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(48),
+              child: TextButton.icon(
+                onPressed: _switchMap,
+                icon: const Icon(Icons.arrow_drop_down),
+                label: Text(
+                    'Working on: ${assignment?.name ?? assignment?.id ?? "Choose a map"}${isLocked ? " · Closed" : ""}'),
+              ),
+            ),
+          ),
+          body: Stack(
+            children: [
+              SizedBox.expand(
+                child: !mapReady
+                    ? const Center(child: CircularProgressIndicator())
+                    : renderer.build(
+                        context,
+                        features: features ?? [],
+                        boundaryGeojson:
+                            assignment?.boundaryPolygonGeojson ?? '',
+                        onFeatureTap: _handleFeatureTap,
+                        onCameraChanged: _onCameraChanged,
+                        sketchActive: sketchActive,
+                        onMapTap: _onSketchTap,
+                        initialCameraTarget: initialCameraTarget,
+                        cameraTarget: _cameraTarget,
+                        onPolygonLongPress: _handlePolygonLongPress,
+                        reshapingFeatureId: reshapeActive
+                            ? editorState.originalFeature?.id
+                            : null,
+                        onProjectionReady: (p) {
+                          // Always rebuild on every camera change — the
+                          // renderer reuses the same projection instance and
+                          // mutates its internal state on refresh, so identity
+                          // equality would always be true and the overlay
+                          // would never reproject as the user pans/zooms.
+                          setState(() {
+                            _reshapeProjection = p;
+                            _projectionEpoch++;
+                          });
+                        },
+                      ),
+              ),
+              if ((reshapeActive || sketchActive) && _reshapeProjection != null)
+                Positioned.fill(
+                  child: GeometryEditorOverlay(
+                    key: ValueKey('editor-overlay-$_projectionEpoch'),
+                    projection: _reshapeProjection!,
                   ),
-          ),
-          if ((reshapeActive || sketchActive) && _reshapeProjection != null)
-            Positioned.fill(
-              child: GeometryEditorOverlay(
-                key: ValueKey('editor-overlay-$_projectionEpoch'),
-                projection: _reshapeProjection!,
+                ),
+              // Shows "👥 N edited by others" when the remote_attributions_cache
+              // has rows from other enumerators. Hidden when count is zero. Sits
+              // below the AppBar.
+              if (!reshapeActive && !sketchActive)
+                const Positioned(
+                  left: 12,
+                  top: 12,
+                  child: RemoteActivityChip(),
+                ),
+              Positioned(
+                right: 16,
+                bottom: 84,
+                child: RecenterButton(
+                  state: _recenterState,
+                  onTap: _onRecenterTap,
+                ),
               ),
-            ),
-          // Shows "👥 N edited by others" when the remote_attributions_cache
-          // has rows from other enumerators. Hidden when count is zero. Sits
-          // below the AppBar.
-          if (!reshapeActive && !sketchActive)
-            const Positioned(
-              left: 12,
-              top: 12,
-              child: RemoteActivityChip(),
-            ),
-          Positioned(
-            right: 16,
-            bottom: 84,
-            child: RecenterButton(
-              state: _recenterState,
-              onTap: _onRecenterTap,
-            ),
-          ),
-          Positioned(
-            right: 16,
-            bottom: 144,
-            child: ZoomButton(
-              key: const Key('map.zoom-out-button'),
-              direction: ZoomDirection.zoomOut,
-              state: _zoomOutState(),
-              onTap: _onZoomOut,
-            ),
-          ),
-          Positioned(
-            right: 16,
-            bottom: 204,
-            child: ZoomButton(
-              key: const Key('map.zoom-in-button'),
-              direction: ZoomDirection.zoomIn,
-              state: _zoomInState(),
-              onTap: _onZoomIn,
-            ),
-          ),
-          if (!reshapeActive)
-            Positioned(
-              left: 12,
-              right: 12,
-              bottom: 18,
-              child: Row(
-                children: [
-                  // Scoped Consumer so lock-state stream emissions don't
-                  // rebuild the whole map (which would re-mount the Mapbox
-                  // renderer and lose its tap handlers — Bug 11, surfaced
-                  // during the first manual happy path).
-                  Expanded(
-                    child: Consumer(
-                      builder: (context, ref2, _) {
-                        final isLocked = ref2.watch(isAssignmentLockedProvider);
-                        return _pill(
-                          sketchActive
-                              ? l.addModePillActiveLabel
-                              : l.newFeaturePlaceholder,
-                          on: sketchActive,
-                          disabled: sketchActive || reshapeActive || isLocked,
-                          key: const Key('map.add-feature-pill'),
-                          onTap: _onPlusPressed,
-                        );
-                      },
-                    ),
+              Positioned(
+                right: 16,
+                bottom: 144,
+                child: ZoomButton(
+                  key: const Key('map.zoom-out-button'),
+                  direction: ZoomDirection.zoomOut,
+                  state: _zoomOutState(),
+                  onTap: _onZoomOut,
+                ),
+              ),
+              Positioned(
+                right: 16,
+                bottom: 204,
+                child: ZoomButton(
+                  key: const Key('map.zoom-in-button'),
+                  direction: ZoomDirection.zoomIn,
+                  state: _zoomInState(),
+                  onTap: _onZoomIn,
+                ),
+              ),
+              if (!reshapeActive)
+                Positioned(
+                  left: 12,
+                  right: 12,
+                  bottom: 18,
+                  child: Row(
+                    children: [
+                      // Scoped Consumer so lock-state stream emissions don't
+                      // rebuild the whole map (which would re-mount the Mapbox
+                      // renderer and lose its tap handlers — Bug 11, surfaced
+                      // during the first manual happy path).
+                      Expanded(
+                        child: Consumer(
+                          builder: (context, ref2, _) {
+                            final isLocked =
+                                ref2.watch(isAssignmentLockedProvider);
+                            return _pill(
+                              sketchActive
+                                  ? l.addModePillActiveLabel
+                                  : l.newFeaturePlaceholder,
+                              on: sketchActive,
+                              disabled:
+                                  sketchActive || reshapeActive || isLocked,
+                              key: const Key('map.add-feature-pill'),
+                              onTap: _onPlusPressed,
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-          if (reshapeActive)
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: GeometryEditorBanner(
-                editCount: editorState.undoStack.length,
-                undoEnabled: editorState.isDirty && !editorState.saving,
-                saveEnabled: editorState.isDirty && !editorState.saving,
-                // Disable Cancel while saving — the async commit transaction
-                // would otherwise still complete in the background after the
-                // UI exits edit mode, producing surprising state transitions.
-                onCancel: editorState.saving ? null : _onReshapeCancel,
-                onUndo: () =>
-                    ref.read(geometryEditorControllerProvider.notifier).undo(),
-                onSave: _onReshapeSave,
-              ),
-            ),
-          if (sketchActive)
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: GeometryEditorBanner(
-                editCount: editorState.workingRings.isNotEmpty
-                    ? editorState.workingRings[0].length
-                    : 0,
-                undoEnabled: editorState.undoStack.isNotEmpty,
-                saveEnabled: _sketchFinishEnabled(editorState),
-                onCancel: _onSketchCancel,
-                onUndo: () =>
-                    ref.read(geometryEditorControllerProvider.notifier).undo(),
-                onSave: _onSketchFinish,
-              ),
-            ),
-        ],
-      ),
-    );
+                ),
+              if (reshapeActive)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: GeometryEditorBanner(
+                    editCount: editorState.undoStack.length,
+                    undoEnabled: editorState.isDirty && !editorState.saving,
+                    saveEnabled: editorState.isDirty && !editorState.saving,
+                    // Disable Cancel while saving — the async commit transaction
+                    // would otherwise still complete in the background after the
+                    // UI exits edit mode, producing surprising state transitions.
+                    onCancel: editorState.saving ? null : _onReshapeCancel,
+                    onUndo: () => ref
+                        .read(geometryEditorControllerProvider.notifier)
+                        .undo(),
+                    onSave: _onReshapeSave,
+                  ),
+                ),
+              if (sketchActive)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: GeometryEditorBanner(
+                    editCount: editorState.workingRings.isNotEmpty
+                        ? editorState.workingRings[0].length
+                        : 0,
+                    undoEnabled: editorState.undoStack.isNotEmpty,
+                    saveEnabled: _sketchFinishEnabled(editorState),
+                    onCancel: _onSketchCancel,
+                    onUndo: () => ref
+                        .read(geometryEditorControllerProvider.notifier)
+                        .undo(),
+                    onSave: _onSketchFinish,
+                  ),
+                ),
+            ],
+          ),
+        ));
   }
 
   void _onReshapeCancel() {
@@ -303,8 +329,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final l = AppLocalizations.of(context)!;
     final ctrl = ref.read(geometryEditorControllerProvider.notifier);
     final s = ref.read(geometryEditorControllerProvider);
-    final assignment = ref.read(currentAssignmentProvider).value;
-    if (s.originalFeature == null || assignment == null) return;
+    final feature = s.originalFeature;
+    if (feature == null) return;
+    final assignment = ref.read(currentAssignmentProvider).valueOrNull;
+    if (assignment == null ||
+        assignment.id != feature.assignmentId ||
+        assignment.closedRemotely) return;
 
     // Distance overrides never override the assignment's hard boundary.
     if (s.isClosed) {
@@ -392,6 +422,35 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     };
   }
 
+  Future<bool> _confirmLeaveDrawing() async {
+    final editor = ref.read(geometryEditorControllerProvider);
+    if (editor.isActive) {
+      final discard = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+                title: const Text('Switch maps?'),
+                content:
+                    const Text('Your unfinished drawing will be discarded.'),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Keep working')),
+                  FilledButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('Discard drawing and switch')),
+                ],
+              ));
+      if (discard != true || !mounted) return false;
+      ref.read(geometryEditorControllerProvider.notifier).cancel();
+    }
+    return true;
+  }
+
+  Future<void> _switchMap() async {
+    if (await _confirmLeaveDrawing() && mounted)
+      context.pushReplacement('/my-maps');
+  }
+
   Future<void> _onPlusPressed() async {
     final l = AppLocalizations.of(context)!;
     final assignment = ref.read(currentAssignmentProvider).value;
@@ -401,6 +460,18 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       );
       return;
     }
+    if (assignment.closedRemotely) return;
+    try {
+      await ref.read(currentFormDefinitionProvider.future);
+      await ref.read(fieldRequirementsConfigProvider.future);
+    } catch (error) {
+      if (mounted)
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('$error')));
+      return;
+    }
+    if (!mounted) return;
+    _sketchAssignment = assignment;
     final type = await showFeatureTypePicker(context);
     if (type == null) return;
     ref
@@ -435,8 +506,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   Future<void> _onSketchFinish() async {
     final l = AppLocalizations.of(context)!;
-    final assignment = ref.read(currentAssignmentProvider).value;
-    if (assignment == null) return;
+    final assignment = _sketchAssignment;
+    if (assignment == null || assignment.closedRemotely) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('This map is unavailable or closed.')));
+      return;
+    }
     final ctrl = ref.read(geometryEditorControllerProvider.notifier);
     final state = ref.read(geometryEditorControllerProvider);
     final type = state.pendingFeatureType;
@@ -447,7 +522,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
     if (err != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(sketchErrorMessage(err, l))),
+        SnackBar(
+            content: Text(err == SketchValidationError.vertexOutsideBoundary
+                ? 'This drawing is outside ${assignment.name ?? "this map"}’s study area.'
+                : sketchErrorMessage(err, l)),
+            action: SnackBarAction(label: 'Switch map', onPressed: _switchMap)),
       );
       ref.read(analyticsServiceProvider).track(
         'map.sketch.validation_failed',
@@ -463,11 +542,19 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         : ctrl.serializeWorking();
 
     final repo = ref.read(newFeatureRepositoryProvider);
-    final feature = await repo.createFeature(
-      assignmentId: assignment.id,
-      featureType: type,
-      geometryGeojson: geom,
-    );
+    final Feature feature;
+    try {
+      feature = await repo.createFeature(
+          assignmentId: assignment.id,
+          featureType: type,
+          geometryGeojson: geom);
+    } catch (error) {
+      if (mounted)
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('$error')));
+      return;
+    }
+    if (!mounted) return;
 
     ref.read(analyticsServiceProvider).track(
       'map.sketch.completed',
@@ -815,22 +902,36 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     }
 
     if (!mounted) return;
+    if (reason == null) {
+      context.push('/feature/${Uri.encodeComponent(f.id)}');
+      return;
+    }
     final submissionRepo = ref.read(submissionRepositoryProvider);
     final userId = ref.read(currentUserIdProvider);
     if (userId == null) {
       throw StateError('Map tap without authenticated user');
     }
+    if (ref.read(isAssignmentLockedProvider)) {
+      context.push('/feature/${Uri.encodeComponent(f.id)}');
+      return;
+    }
+    final FormDefinition definition;
+    try {
+      definition = await ref.read(currentFormDefinitionProvider.future);
+      await ref.read(fieldRequirementsConfigProvider.future);
+    } catch (error) {
+      if (mounted)
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('$error')));
+      return;
+    }
     final submission = await submissionRepo.ensureDraftForFeature(
       featureId: f.id,
       enumeratorId: userId,
-      formVersion:
-          ref.read(currentFormDefinitionProvider).valueOrNull?.version ??
-              'legacy-v1',
+      formVersion: definition.version,
     );
 
-    if (reason != null) {
-      await submissionRepo.updateOverrideReason(submission.id, reason.trim());
-    }
+    await submissionRepo.updateOverrideReason(submission.id, reason.trim());
 
     if (!mounted) return;
     context.push('/feature/${Uri.encodeComponent(f.id)}');

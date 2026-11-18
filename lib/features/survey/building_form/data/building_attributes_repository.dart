@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 import 'package:firecheck/core/db/database.dart';
+import 'package:firecheck/features/survey/building_form/data/submission_repository.dart';
 
 class BuildingAttributesRepository {
   BuildingAttributesRepository(this._db);
@@ -26,22 +27,22 @@ class BuildingAttributesRepository {
     List<String> fireFightingFacilities = const [],
     List<String> fireLoad = const [],
   }) {
-    return _db.into(_db.buildingAttributes).insertOnConflictUpdate(
-          BuildingAttributesCompanion.insert(
-            submissionId: submissionId,
-            cbmsId: Value(cbmsId),
-            buildingName: Value(buildingName),
-            ra9514Type: Value(ra9514Type),
-            storeys: Value(storeys),
-            material: Value(material),
-            costIsExact: Value(costIsExact),
-            costAmount: Value(costAmount),
-            costEstimateRange: Value(costEstimateRange),
-            fireFightingFacilitiesJson:
-                Value(jsonEncode(fireFightingFacilities)),
-            fireLoadJson: Value(jsonEncode(fireLoad)),
-          ),
-        );
+    final attributes = BuildingAttributesCompanion.insert(
+      submissionId: submissionId,
+      cbmsId: Value(cbmsId),
+      buildingName: Value(buildingName),
+      ra9514Type: Value(ra9514Type),
+      storeys: Value(storeys),
+      material: Value(material),
+      costIsExact: Value(costIsExact),
+      costAmount: Value(costAmount),
+      costEstimateRange: Value(costEstimateRange),
+      fireFightingFacilitiesJson: Value(jsonEncode(fireFightingFacilities)),
+      fireLoadJson: Value(jsonEncode(fireLoad)),
+    );
+    return SubmissionRepository(_db).persistEdit(submissionId, () async {
+      await _db.into(_db.buildingAttributes).insertOnConflictUpdate(attributes);
+    });
   }
 
   /// Decodes a JSON-encoded list of strings (used for fire_fighting_facilities

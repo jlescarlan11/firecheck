@@ -66,7 +66,11 @@ class CachingGoogleAuthRepository implements GoogleAuthRepository {
     // A valid persisted token is sufficient for Drive and avoids invoking
     // Android Credential Manager during every process recreation. Only fall
     // back to google_sign_in when the cache is absent or near expiry.
-    final cached = await _cache.read();
+    final cached = await _cache.read(accountId: userId);
+    if (!await _inner.isSignedIn() ||
+        await _inner.getEnumeratorId() != userId) {
+      throw const AuthFailure('Your account changed. Please try again.');
+    }
     if (cached != null) return cached;
     final token = await _inner.getAccessToken();
     if (!await _inner.isSignedIn() ||
@@ -74,7 +78,15 @@ class CachingGoogleAuthRepository implements GoogleAuthRepository {
       throw const AuthFailure('Your account changed. Please try again.');
     }
     if (token.isNotEmpty) {
-      await _cache.save(token, DateTime.now().toUtc().add(_ttl));
+      await _cache.save(
+        token,
+        DateTime.now().toUtc().add(_ttl),
+        accountId: userId,
+      );
+      if (!await _inner.isSignedIn() ||
+          await _inner.getEnumeratorId() != userId) {
+        throw const AuthFailure('Your account changed. Please try again.');
+      }
     }
     return token;
   }

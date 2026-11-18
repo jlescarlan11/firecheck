@@ -124,13 +124,6 @@ class AccountScreen extends ConsumerWidget {
                   onTap: () => context.push('/uploads'),
                 ),
                 const Divider(),
-                ListTile(
-                  leading: const Icon(Icons.rule_outlined),
-                  title: Text(l.formRulesTitle),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/form-preview'),
-                ),
-                const Divider(),
                 const SizedBox(height: 20),
                 ListTile(
                   leading: Icon(

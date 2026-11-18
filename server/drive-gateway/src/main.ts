@@ -19,6 +19,7 @@ const app = buildApp({
   database: new Database(pool),
   drive: await driveFromEnvironment(),
   config: {
+    exportWorkerToken: process.env.EXPORT_WORKER_TOKEN,
     inputRoot: required("DRIVE_INPUT_ROOT"),
     outputRoot: required("DRIVE_OUTPUT_ROOT"),
     publishedRoot: required("DRIVE_PUBLISHED_ROOT"),

@@ -1,3 +1,6 @@
+import 'package:firecheck/features/upload/presentation/upload_transfer_widgets.dart';
+import 'package:firecheck/features/assignment/presentation/assignment_lock_providers.dart';
+import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
 import 'package:firecheck/core/auth/current_user_provider.dart';
 import 'package:firecheck/core/drive/drive_upload_audit_repository.dart';
 import 'package:firecheck/core/theme/app_layout.dart';
@@ -27,6 +30,8 @@ class ReviewScreen extends ConsumerStatefulWidget {
 }
 
 class _ReviewScreenState extends ConsumerState<ReviewScreen> {
+  String get _assignmentId =>
+      ref.read(currentAssignmentProvider).valueOrNull?.id ?? "";
   @override
   void deactivate() {
     // Clear lingering Completed state so re-entering the screen shows the
@@ -37,9 +42,10 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     // We capture the notifier synchronously (ref.read is invalid after the
     // element is disposed) and the non-autoDispose provider guarantees it
     // outlives the deferred call.
-    final progress = ref.read(uploadProgressControllerProvider);
+    final progress = ref.read(uploadProgressControllerProvider(_assignmentId));
     if (progress is Completed) {
-      final controller = ref.read(uploadProgressControllerProvider.notifier);
+      final controller =
+          ref.read(uploadProgressControllerProvider(_assignmentId).notifier);
       Future.microtask(controller.reset);
     }
     super.deactivate();
@@ -50,9 +56,18 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     final l = AppLocalizations.of(context)!;
     final stateAsync = ref.watch(reviewStateProvider);
     final driveUpload = ref.watch(driveUploadNotifierProvider);
+    final sharedMap = ref.watch(sharedMapModeProvider).valueOrNull ?? false;
 
     return Scaffold(
-      appBar: AppBar(title: Text(l.reviewTitle)),
+      appBar: AppBar(
+          title: Text(sharedMap ? 'Review and sync' : l.reviewTitle),
+          bottom: _assignmentId.isEmpty
+              ? null
+              : PreferredSize(
+                  preferredSize: const Size.fromHeight(32),
+                  child: Text(
+                      ref.watch(currentAssignmentProvider).valueOrNull?.name ??
+                          _assignmentId))),
       body: stateAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
@@ -64,13 +79,16 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
             children: [
               AppPageIntro(
                 title: l.designReviewTitle,
-                subtitle: l.designReviewBody,
+                subtitle: sharedMap
+                    ? 'Completed work syncs automatically when connected. Drafts stay on this phone. The combined map export updates in the background.'
+                    : l.designReviewBody,
               ),
               if (inProgressOrCompleted)
                 UploadProgressSection(
                   progress: state.upload,
                   onReset: () => ref
-                      .read(uploadProgressControllerProvider.notifier)
+                      .read(uploadProgressControllerProvider(_assignmentId)
+                          .notifier)
                       .reset(),
                 )
               else ...[
@@ -99,16 +117,23 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                 ),
                 const SizedBox(height: 16),
                 StartUploadButton(
+                  sharedMap: sharedMap,
+                  alreadyUploaded: !state.hasChangesToUpload &&
+                      (sharedMap || driveUpload is DriveUploadSuccess),
                   enabled: state.canStartUpload &&
+                      !ref.watch(isAssignmentLockedProvider) &&
                       driveUpload is! DriveUploadInProgress,
                   onPressed: () => _runUpload(context, ref, state),
                 ),
                 const SizedBox(height: 16),
-                DriveUploadConfirmationCard(
-                  state: driveUpload,
-                  onRetry: () => _runUpload(context, ref, state),
-                ),
+                if (!sharedMap)
+                  DriveUploadConfirmationCard(
+                    state: driveUpload,
+                    onRetry: () => _runUpload(context, ref, state),
+                  ),
               ],
+              if (state.upload is InProgress)
+                AssignmentTransferProgress(assignmentId: _assignmentId),
             ],
           );
         },
@@ -145,6 +170,22 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
         messenger.showSnackBar(
           const SnackBar(content: Text('Upload failed. Please try again.')),
         );
+      case UploadFlowSynced(
+          :final pending,
+          :final conflicts,
+          :final pendingPhotos,
+          :final pendingGeometry
+        ):
+        messenger.showSnackBar(SnackBar(
+            content: Text(conflicts > 0
+                ? '$conflicts changes need review.'
+                : pending > 0
+                    ? '$pending changes waiting to sync.'
+                    : pendingGeometry > 0
+                        ? '$pendingGeometry geometry edits still need sync or review.'
+                        : pendingPhotos > 0
+                            ? 'Changes synced; $pendingPhotos photos still pending.'
+                            : 'Changes synced. The shared export updates automatically.')));
       case UploadFlowEmpty():
       case UploadFlowIncomplete():
       case UploadFlowSucceeded():
@@ -175,6 +216,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
           'No files found to upload. Complete your field data first.',
           canRetry: false,
         );
+      case UploadFlowSynced():
       case UploadFlowNoAssignment():
       case UploadFlowCancelled():
       case UploadFlowSupabaseFailed():

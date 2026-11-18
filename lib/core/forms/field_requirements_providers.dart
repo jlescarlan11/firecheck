@@ -1,3 +1,5 @@
+import 'package:firecheck/core/forms/assignment_form_store.dart';
+import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
 // lib/core/forms/field_requirements_providers.dart
 //
 // Riverpod providers that load the [FieldRequirements] (Issue #43).
@@ -8,7 +10,6 @@
 //   3. [FieldRequirements.allRequired] — safe fallback so a misconfigured
 //      deploy can't silently weaken validation.
 import 'package:firecheck/core/forms/field_requirements.dart';
-import 'package:firecheck/core/forms/field_requirements_store.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -25,7 +26,9 @@ final fieldRequirementsConfigProvider =
     FutureProvider<FieldRequirements>((ref) async {
   ref.watch(fieldRequirementsRevisionProvider);
   // 1. Imported-from-assignment file.
-  final downloaded = await readFieldRequirements();
+  final id = ref.watch(currentAssignmentProvider).valueOrNull?.id;
+  final downloaded =
+      id == null ? null : await readAssignmentForm(id, requirements: true);
   if (downloaded != null) {
     return parseFieldRequirements(downloaded);
   }

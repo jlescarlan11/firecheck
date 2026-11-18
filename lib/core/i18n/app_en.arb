@@ -1,11 +1,12 @@
 {
+  "surveySaveFailed": "Could not save this survey. Please try again.",
+  "surveySavedLocally": "Changes saved on this device.",
   "@@locale": "en",
   "appTitle": "FireCheck",
   "fieldWorkspace": "Field workspace",
   "noLocalMaps": "No maps downloaded",
   "retryAction": "Try again",
   "uploadsTitle": "Upload progress",
-  "formRulesTitle": "Form rules",
   "homeLoadError": "Couldn't load your field work.",
   "accountLoadError": "Couldn't load your account.",
   "signInIdentity": "Bureau of Fire Protection",
@@ -91,7 +92,6 @@
   "@metersAway": {
     "placeholders": {"distance": {"type": "int"}}
   },
-  "phase2FormNote": "Form coming in Phase 2 — the full attribution form will open from this sheet.",
   "close": "Close",
   "featureTypeBuilding": "Building",
   "featureTypeRoad": "Road",
@@ -313,6 +313,8 @@
   "@validationWarningsTitle": { "placeholders": { "n": {"type": "int"} } },
   "goToFeature": "Go to feature",
   "issuePhotoRequired": "At least one photo required",
+  "issueCbmsRequired": "CBMS ID is required",
+  "issueFireFightingFacilitiesRequired": "Fire-fighting facilities answer is required",
   "issueRa9514Required": "RA 9514 type not selected",
   "issueWidthRequired": "Width must be greater than 0 m",
   "issueOlpResidential": "OLP household survey not completed",
@@ -327,9 +329,6 @@
   "uploadCompleteWithFailures": "{n} items failed. Check Failed section.",
   "@uploadCompleteWithFailures": { "placeholders": { "n": {"type": "int"} } },
   "reviewTitle": "Review before upload",
-  "submittedBadge": "Submitted ✓",
-  "submittedAt": "Submitted on {date}",
-  "@submittedAt": { "placeholders": { "date": {"type": "String"} } },
   "readOnlyBanner": "This assignment was submitted. Read-only.",
   "readOnlyBannerClosed": "Assignment closed remotely. Read-only.",
   "biometricGateReason": "Verify it's you to upload",
@@ -467,7 +466,6 @@
       }
     }
   },
-  "homeLocalSaveHint": "Survey changes are saved on this device.",
   "homeEmptyHint": "Download an assignment to start surveying.",
   "homeMoreActions": "More actions",
   "homePendingFiles": "{count, plural, =1{1 file pending upload} other{{count} files pending upload}}",
@@ -526,7 +524,14 @@
   "designActivityBody": "See the latest surveys shared by other enumerators.",
   "designConflictsTitle": "Resolve changes",
   "designConflictsBody": "Review overlapping updates before continuing.",
-  "designFormRulesBody": "Preview the questions and rules used in your surveys.",
   "downloadProgressUnknown": "Calculating progress…",
-  "uploadLoadMore": "Load more changes"
+  "uploadLoadMore": "Load more changes",
+  "dedupOfflineComparison": "Cached geometry · available offline",
+  "dedupComparisonMap": "Both features shown at the same scale",
+  "dedupMine": "Mine — solid line, round markers",
+  "dedupExisting": "Existing feature — square markers",
+  "dedupUnavailable": "Comparison unavailable",
+  "dedupUnavailableDetail": "Select the original downloaded map and ensure both current features are cached. Decisions are disabled until both geometries can be compared. You can skip and return later.",
+  "dedupRetry": "Retry comparison",
+  "dedupQueueFailed": "Could not save your decision. Please try again."
 }

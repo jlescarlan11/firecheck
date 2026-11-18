@@ -9,24 +9,67 @@ import 'package:googleapis_auth/googleapis_auth.dart' as gauth;
 import 'package:http/http.dart' as http;
 
 class GoogleDriveUploadApi implements DriveUploadApi {
-  GoogleDriveUploadApi({required GoogleTokenSource googleAuthRepo})
-      : _googleAuthRepo = googleAuthRepo;
+  GoogleDriveUploadApi({
+    required GoogleTokenSource googleAuthRepo,
+    http.Client? httpClient,
+  })  : _googleAuthRepo = googleAuthRepo,
+        _httpClient = httpClient;
+
+  final http.Client? _httpClient;
 
   final GoogleTokenSource _googleAuthRepo;
 
-  Future<gdrive.DriveApi> _api() async {
-    final token = await _googleAuthRepo.getAccessToken();
-    final credentials = gauth.AccessCredentials(
-      gauth.AccessToken(
-        'Bearer',
-        token,
-        DateTime.now().toUtc().add(const Duration(hours: 1)),
-      ),
-      null,
-      [GoogleTokenSource.driveFileScope],
-    );
-    return gdrive.DriveApi(gauth.authenticatedClient(http.Client(), credentials));
+  gdrive.DriveApi? _boundApi;
+  String? _boundAccount;
+
+  Future<void> _checkAccount(String accountId) async {
+    try {
+      if (!await _googleAuthRepo.isSignedIn() ||
+          await _googleAuthRepo.getEnumeratorId() != accountId) {
+        throw const DriveAccountChanged();
+      }
+    } on AuthFailure {
+      throw const DriveAccountChanged();
+    }
   }
+
+  @override
+  Future<DriveUploadApi> forAccount(String accountId) async {
+    await _checkAccount(accountId);
+    final token = await _googleAuthRepo.getAccessToken();
+    await _checkAccount(accountId);
+    final authenticated = gauth.authenticatedClient(
+      _httpClient ?? http.Client(),
+      _credentials(token),
+    );
+    return GoogleDriveUploadApi(
+      googleAuthRepo: _googleAuthRepo,
+      httpClient: _httpClient,
+    )
+      .._boundAccount = accountId
+      .._boundApi = gdrive.DriveApi(
+        _AccountCheckedClient(authenticated, () => _checkAccount(accountId)),
+      );
+  }
+
+  Future<gdrive.DriveApi> _api() async {
+    final account = _boundAccount;
+    if (account == null || _boundApi == null) {
+      throw StateError('Bind the Drive account before uploading.');
+    }
+    await _checkAccount(account);
+    return _boundApi!;
+  }
+
+  gauth.AccessCredentials _credentials(String token) => gauth.AccessCredentials(
+        gauth.AccessToken(
+          'Bearer',
+          token,
+          DateTime.now().toUtc().add(const Duration(hours: 1)),
+        ),
+        null,
+        [GoogleTokenSource.driveFileScope],
+      );
 
   @override
   Future<String> findOrCreateFirecheckRoot() async {
@@ -54,7 +97,9 @@ class GoogleDriveUploadApi implements DriveUploadApi {
     );
     final folderId = folder.id;
     if (folderId == null) {
-      throw NetworkFailure('Drive did not return id for created firecheck root');
+      throw const NetworkFailure(
+        'Drive did not return id for created firecheck root',
+      );
     }
     return folderId;
   }
@@ -69,7 +114,7 @@ class GoogleDriveUploadApi implements DriveUploadApi {
       q: "name = '$escapedName' "
           "and mimeType = 'application/vnd.google-apps.folder' "
           "and '$escapedParent' in parents "
-          "and trashed = false",
+          'and trashed = false',
       spaces: 'drive',
       $fields: 'files(id)',
     );
@@ -111,8 +156,14 @@ class GoogleDriveUploadApi implements DriveUploadApi {
             ? 'image/png'
             : 'application/octet-stream';
 
+    var sent = 0;
+    onProgress?.call(0, fileSize);
     final media = gdrive.Media(
-      file.openRead(),
+      file.openRead().map((chunk) {
+        sent += chunk.length;
+        onProgress?.call(sent, fileSize);
+        return chunk;
+      }),
       fileSize,
       contentType: mimeType,
     );
@@ -123,8 +174,7 @@ class GoogleDriveUploadApi implements DriveUploadApi {
     // documented "last upload wins" contract on [DriveApi]. Photos are
     // expected to use unique filenames, so the lookup is a no-op for them
     // in practice.
-    final escapedName =
-        fileName.replaceAll(r'\', r'\\').replaceAll("'", r"\'");
+    final escapedName = fileName.replaceAll(r'\', r'\\').replaceAll("'", r"\'");
     final escapedParent =
         driveParentId.replaceAll(r'\', r'\\').replaceAll("'", r"\'");
     final existing = await api.files.list(
@@ -157,11 +207,26 @@ class GoogleDriveUploadApi implements DriveUploadApi {
       fileId = created.id;
     }
     if (fileId == null) {
-      throw NetworkFailure('Drive did not return id for uploaded file: $fileName');
+      throw NetworkFailure(
+        'Drive did not return id for uploaded file: $fileName',
+      );
     }
-    // googleapis does not expose a progress stream for media uploads;
-    // onProgress fires once on completion.
+    // The worker marks completion only after this server response.
     onProgress?.call(fileSize, fileSize);
     return fileId;
   }
+}
+
+class _AccountCheckedClient extends http.BaseClient {
+  _AccountCheckedClient(this._inner, this._check);
+  final http.Client _inner;
+  final Future<void> Function() _check;
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    await _check();
+    return _inner.send(request);
+  }
+
+  @override
+  void close() => _inner.close();
 }

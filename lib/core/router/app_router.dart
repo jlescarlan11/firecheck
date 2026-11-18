@@ -1,13 +1,13 @@
+import 'package:firecheck/features/assignment/presentation/my_maps_screen.dart';
+import 'package:firecheck/features/assignment/presentation/assignment_providers.dart';
 // lib/core/router/app_router.dart
 import 'package:firecheck/features/assignment/presentation/assignment_closed_blocker.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_lock_providers.dart';
-import 'package:firecheck/features/assignment/presentation/assignment_lock_state.dart';
 import 'package:firecheck/features/account/presentation/account_screen.dart';
 import 'package:firecheck/features/assignment/presentation/get_maps_screen.dart';
 import 'package:firecheck/features/auth/presentation/auth_providers.dart';
 import 'package:firecheck/features/auth/presentation/sign_in_screen.dart';
 import 'package:firecheck/features/home/presentation/home_screen.dart';
-import 'package:firecheck/features/form_preview/presentation/form_preview_screen.dart';
 import 'package:firecheck/features/conflict_review/presentation/attribution_conflict_screen.dart';
 import 'package:firecheck/features/conflict_review/presentation/conflict_review_list_screen.dart';
 import 'package:firecheck/features/conflict_review/presentation/dedup_review_screen.dart';
@@ -25,7 +25,6 @@ import 'package:go_router/go_router.dart';
 final appRouterProvider = Provider<GoRouter>((ref) {
   // Seed from current provider values so redirect has data on first evaluation.
   var sessionAsync = ref.read(supabaseAuthStateProvider);
-  var lock = ref.read(assignmentLockStateProvider).value;
 
   // ValueNotifier drives GoRouter re-evaluation without any ref call in redirect.
   final notifier = ValueNotifier<int>(0);
@@ -36,10 +35,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   });
 
   ref.listen(assignmentLockStateProvider, (_, next) {
-    lock = next.value;
     notifier.value++;
   });
 
+  ref.listen(currentAssignmentProvider, (_, next) {
+    notifier.value++;
+  });
   ref.onDispose(notifier.dispose);
 
   return GoRouter(
@@ -49,16 +50,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final session = sessionAsync.valueOrNull;
       final loc = state.matchedLocation;
       final onSignIn = loc == '/sign-in';
-      final onBlocker = loc == '/blocker';
 
       if (sessionAsync.isLoading) return null;
       if (session == null && !onSignIn) return '/sign-in';
       if (session != null && onSignIn) return '/';
-      if (lock is ClosedRemotely && !onSignIn && !onBlocker) return '/blocker';
+      if (loc == '/map' || loc == '/review') {
+        final selection = ref.read(currentAssignmentProvider);
+        if (!selection.isLoading && selection.valueOrNull == null)
+          return '/my-maps';
+      }
 
       return null;
     },
     routes: [
+      GoRoute(
+          path: '/my-maps', builder: (context, state) => const MyMapsScreen()),
       GoRoute(
         path: '/sign-in',
         builder: (context, state) => const SignInScreen(),
@@ -88,10 +94,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/map',
         builder: (context, state) => const MapScreen(),
-      ),
-      GoRoute(
-        path: '/form-preview',
-        builder: (context, state) => const FormPreviewScreen(),
       ),
       GoRoute(
         path: '/feature/:featureId',

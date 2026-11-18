@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:drift/drift.dart';
@@ -5,6 +6,7 @@ import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/sync/data/submission_payload_builder.dart';
 import 'package:firecheck/core/sync/data/sync_api.dart';
 import 'package:firecheck/core/sync/data/sync_jobs_repository.dart';
+import 'package:firecheck/core/sync/domain/finalize_submission.dart';
 import 'package:firecheck/core/sync/domain/resolution_decision.dart';
 import 'package:firecheck/core/sync/domain/retry_schedule.dart';
 import 'package:firecheck/core/sync/domain/submission_sync_status.dart';
@@ -47,15 +49,16 @@ class SyncWorker {
     _running = true;
     debugPrint('[StartUpload] drain started');
     try {
+      // Recover completion interrupted before enqueue, only for enabled maps.
+      final ready = await db.customSelect("""
+        SELECT s.id FROM submissions s JOIN features f ON f.id=s.feature_id
+        JOIN shared_map_cursors c ON c.assignment_id=f.assignment_id AND c.account_id=s.submitted_by
+        WHERE s.sync_status='ready_to_upload'
+      """).get();
+      for (final row in ready) {
+        await FinalizeSubmissionUseCase(db).execute(row.read<String>('id'));
+      }
       while (true) {
-        // limit(1) guards against StateError when >1 assignment row exists.
-        final assignmentRow =
-            await (db.select(db.assignments)..limit(1)).getSingleOrNull();
-        if (assignmentRow != null && assignmentRow.closedRemotely) {
-          debugPrint('[StartUpload] assignment closed remotely — halting drain');
-          return;
-        }
-
         final claimed = await jobs.claimUpToN(_maxConcurrent);
         if (claimed.isEmpty) {
           debugPrint('[StartUpload] no claimable jobs — drain complete');
@@ -85,7 +88,7 @@ class SyncWorker {
         case SyncEntityType.featureGeometryUpdate:
           return await _executeFeatureGeometryUpdate(job.entityId);
         case SyncEntityType.attributionUpload:
-          return await _executeAttributionUpload(job.entityId);
+          return await _executeAttributionUpload(job);
         case SyncEntityType.attributionResolve:
           return await _executeAttributionResolve(job.entityId);
         case SyncEntityType.newFeatureUpload:
@@ -119,6 +122,7 @@ class SyncWorker {
     final mark = await api.markPhotoUploaded(
       photoId: photoId,
       storagePath: upload.storagePath!,
+      capturedAt: photo.capturedAt,
     );
     if (mark is Success) {
       await (db.update(db.photos)..where((t) => t.id.equals(photoId))).write(
@@ -154,50 +158,71 @@ class SyncWorker {
   ///                     handled separately)
   ///   - conflict      → submission parked in awaiting_user_resolution
   ///                     with pendingTheirsId set; review UI takes over
-  Future<SyncOutcome> _executeAttributionUpload(String submissionId) async {
+  Future<SyncOutcome> _executeAttributionUpload(SyncJob job) async {
+    final submissionId = job.entityId;
     final sub = await (db.select(db.submissions)
           ..where((t) => t.id.equals(submissionId)))
         .getSingleOrNull();
     if (sub == null) {
       return const PermanentFailure('submission missing');
     }
-    final json = await payload.build(submissionId);
+    final json = job.payloadJson == null
+        ? await payload.build(submissionId)
+        : Map<String, dynamic>.from(jsonDecode(job.payloadJson!) as Map);
     final response = await api.submitAttribution(payload: json);
     if (response.outcome is! Success) {
       return response.outcome;
     }
-    final result = response.result!;
-    switch (result) {
-      case AttributionCommitted():
-        await (db.update(db.submissions)
-              ..where((t) => t.id.equals(submissionId)))
-            .write(
-          const SubmissionsCompanion(
-            syncStatus: Value(SubmissionSyncStatus.uploaded),
-            pendingTheirsId: Value(null),
-          ),
-        );
-      case AttributionAgreedSkip():
-        // Server's canonical wins identical values; our row is a duplicate.
-        await (db.update(db.submissions)
-              ..where((t) => t.id.equals(submissionId)))
-            .write(
-          const SubmissionsCompanion(
-            syncStatus: Value(SubmissionSyncStatus.withdrawn),
-            pendingTheirsId: Value(null),
-          ),
-        );
-      case AttributionConflict(:final theirSubmissionId):
-        await (db.update(db.submissions)
-              ..where((t) => t.id.equals(submissionId)))
-            .write(
-          SubmissionsCompanion(
-            syncStatus: const Value(SubmissionSyncStatus.awaitingUserResolution),
-            pendingTheirsId: Value(theirSubmissionId),
-          ),
-        );
-    }
-    return const Success();
+    return db.transaction(() async {
+      final result = response.result!;
+      // A receipt acknowledges its frozen operation, not later local edits.
+      // Keep the operation successful while leaving a newer draft/revision pending.
+      final latest = await jobs.findByEntity(job.entityType, submissionId);
+      final current = await (db.select(db.submissions)
+            ..where((t) => t.id.equals(submissionId)))
+          .getSingle();
+      if (job.payloadJson != null &&
+          (latest?.id != job.id ||
+              current.syncStatus != 'queued' ||
+              !SubmissionPayloadBuilder.sameRevision(
+                json,
+                await payload.build(submissionId),
+              ))) {
+        return const Success();
+      }
+      switch (result) {
+        case AttributionCommitted():
+          await (db.update(db.submissions)
+                ..where((t) => t.id.equals(submissionId)))
+              .write(
+            const SubmissionsCompanion(
+              syncStatus: Value(SubmissionSyncStatus.uploaded),
+              pendingTheirsId: Value(null),
+            ),
+          );
+        case AttributionAgreedSkip():
+          // Server's canonical wins identical values; our row is a duplicate.
+          await (db.update(db.submissions)
+                ..where((t) => t.id.equals(submissionId)))
+              .write(
+            const SubmissionsCompanion(
+              syncStatus: Value(SubmissionSyncStatus.withdrawn),
+              pendingTheirsId: Value(null),
+            ),
+          );
+        case AttributionConflict(:final theirSubmissionId):
+          await (db.update(db.submissions)
+                ..where((t) => t.id.equals(submissionId)))
+              .write(
+            SubmissionsCompanion(
+              syncStatus:
+                  const Value(SubmissionSyncStatus.awaitingUserResolution),
+              pendingTheirsId: Value(theirSubmissionId),
+            ),
+          );
+      }
+      return const Success();
+    });
   }
 
   /// Calls `submit_new_feature_with_dedup_check`. dedup_pending leaves the
@@ -232,8 +257,7 @@ class SyncWorker {
         // the feature and the user can pick a resolution. Without this,
         // a dedup_pending response looks identical to committed and the
         // user never sees the prompt.
-        await (db.update(db.features)
-              ..where((t) => t.id.equals(featureId)))
+        await (db.update(db.features)..where((t) => t.id.equals(featureId)))
             .write(
           FeaturesCompanion(pendingDedupOf: Value(possibleDuplicateOf)),
         );
@@ -246,8 +270,10 @@ class SyncWorker {
   /// queued row.
   Future<SyncOutcome> _executeAttributionResolve(String submissionId) async {
     final res = await (db.select(db.pendingResolutions)
-          ..where((t) =>
-              t.targetId.equals(submissionId) & t.kind.equals('attribution'),))
+          ..where(
+            (t) =>
+                t.targetId.equals(submissionId) & t.kind.equals('attribution'),
+          ))
         .getSingleOrNull();
     if (res == null) {
       return const PermanentFailure('no queued resolution');
@@ -264,8 +290,7 @@ class SyncWorker {
     if (outcome is! Success) return outcome;
 
     await db.transaction(() async {
-      await (db.update(db.submissions)
-            ..where((t) => t.id.equals(submissionId)))
+      await (db.update(db.submissions)..where((t) => t.id.equals(submissionId)))
           .write(
         SubmissionsCompanion(
           syncStatus: Value(
@@ -277,9 +302,11 @@ class SyncWorker {
         ),
       );
       await (db.delete(db.pendingResolutions)
-            ..where((t) =>
-                t.targetId.equals(submissionId) &
-                t.kind.equals('attribution'),))
+            ..where(
+              (t) =>
+                  t.targetId.equals(submissionId) &
+                  t.kind.equals('attribution'),
+            ))
           .go();
     });
     return const Success();
@@ -287,8 +314,9 @@ class SyncWorker {
 
   Future<SyncOutcome> _executeNewFeatureResolve(String featureId) async {
     final res = await (db.select(db.pendingResolutions)
-          ..where((t) =>
-              t.targetId.equals(featureId) & t.kind.equals('new_feature'),))
+          ..where(
+            (t) => t.targetId.equals(featureId) & t.kind.equals('new_feature'),
+          ))
         .getSingleOrNull();
     if (res == null) {
       return const PermanentFailure('no queued resolution');
@@ -308,12 +336,13 @@ class SyncWorker {
       // Clear the local pendingDedupOf marker so the review list stops
       // surfacing this feature. The server has now consolidated state
       // via the audit log + supersede chain.
-      await (db.update(db.features)
-            ..where((t) => t.id.equals(featureId)))
+      await (db.update(db.features)..where((t) => t.id.equals(featureId)))
           .write(const FeaturesCompanion(pendingDedupOf: Value(null)));
       await (db.delete(db.pendingResolutions)
-            ..where((t) =>
-                t.targetId.equals(featureId) & t.kind.equals('new_feature'),))
+            ..where(
+              (t) =>
+                  t.targetId.equals(featureId) & t.kind.equals('new_feature'),
+            ))
           .go();
     });
     return const Success();
@@ -354,8 +383,12 @@ class SyncWorker {
             '[StartUpload] ~ ${job.entityType}:${job.id.substring(0, 8)} '
             'transient (attempt $attempts), retry at $next — $error',
           );
-          await jobs.markPendingRetry(job.id,
-              attempts: attempts, lastError: error, nextRetryAt: next,);
+          await jobs.markPendingRetry(
+            job.id,
+            attempts: attempts,
+            lastError: error,
+            nextRetryAt: next,
+          );
         }
       case PermanentFailure(:final error):
         debugPrint(
@@ -394,11 +427,15 @@ class SyncWorker {
     }
     final retry = await _execute(job);
     await _applyOutcome(
-        job, retry is AuthExpired ? const TransientFailure('repeat 401') : retry,);
+      job,
+      retry is AuthExpired ? const TransientFailure('repeat 401') : retry,
+    );
   }
 
   Future<void> _handleAssignmentClosed(
-      SyncJob job, String assignmentId,) async {
+    SyncJob job,
+    String assignmentId,
+  ) async {
     await lock.markClosed(assignmentId);
     if (bundle != null) {
       try {

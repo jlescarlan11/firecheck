@@ -1,3 +1,4 @@
+import 'package:firecheck/features/assignment/data/assignment_repository.dart';
 import 'dart:async';
 
 import 'package:drift/native.dart';
@@ -112,6 +113,7 @@ void main() {
       subscriber: subscriber,
       pullService: pull,
       db: db,
+      userId: "me",
       eventDebounce: const Duration(milliseconds: 10),
       backgroundUnsubscribeAfter: const Duration(milliseconds: 30),
     );
@@ -126,6 +128,8 @@ void main() {
           ),
         );
   });
+
+  setUp(() => AssignmentRepository(db: db, userId: "me").selectAssignment("a1"));
 
   tearDown(() async {
     await controller.stop();
@@ -295,7 +299,7 @@ void main() {
     expect(sub.closed, isTrue);
   });
 
-  test('with multiple assignments, picks the newest by createdAt',
+  test('with multiple assignments, uses the explicit selection',
       () async {
     // Insert an older sibling.
     await db.into(db.assignments).insert(
@@ -325,6 +329,7 @@ void main() {
   });
 
   test('start with no assignment stays offline (no subscribe)', () async {
+    await db.delete(db.assignmentSelections).go();
     await db.delete(db.assignments).go();
     await controller.start();
     await _pump();

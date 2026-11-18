@@ -1,6 +1,9 @@
+import { publishSource } from "./source-publication.js";
+import { exportSharedMap } from "./shared-map-export.js";
+import { outputLayout, organizeOutput, archivedName } from "./output-layout.js";
 import Fastify, { type FastifyRequest } from "fastify";
 import rateLimit from "@fastify/rate-limit";
-import { randomUUID } from "node:crypto";
+import { randomUUID, createHash, timingSafeEqual } from "node:crypto";
 import { Buffer } from "node:buffer";
 import { Database, member, supervisor, type Db } from "./db.js";
 import {
@@ -9,7 +12,6 @@ import {
   uuid,
   hash,
   uploadSpecs,
-  validateMap,
   CHUNK_SIZE,
   boundaryPolygon,
   type Artifact,
@@ -21,6 +23,7 @@ export interface Configuration {
   publishedRoot: string;
   sharedDrive?: string;
   routePrefix?: string;
+  exportWorkerToken?: string;
 }
 export interface Dependencies {
   database: Database;
@@ -78,6 +81,23 @@ export function buildApp({
   const users = new WeakMap<FastifyRequest, string>();
   app.addHook("preHandler", async (req) => {
     if (req.routeOptions.url === "/healthz") return;
+    if (req.routeOptions.url === "/v1/internal/shared-map-exports/run") {
+      const supplied = req.headers.authorization ?? "";
+      const expected = config.exportWorkerToken
+        ? `Bearer ${config.exportWorkerToken}`
+        : "";
+      assert(
+        expected &&
+          timingSafeEqual(
+            createHash("sha256").update(supplied).digest(),
+            createHash("sha256").update(expected).digest(),
+          ),
+        401,
+        "WORKER_UNAUTHORIZED",
+      );
+      await database.ready();
+      return;
+    }
     const match = /^Bearer (\S+)$/.exec(req.headers.authorization ?? "");
     assert(match, 401, "SESSION_EXPIRED");
     users.set(req, uuid(await authenticate(match[1]!)));
@@ -92,6 +112,112 @@ export function buildApp({
   });
   const params = (req: FastifyRequest) => req.params as Record<string, string>;
   app.get("/healthz", async () => ({ ok: true }));
+  app.post("/v1/internal/shared-map-exports/run", async () => ({
+    processed: await exportSharedMap(database, drive, config.outputRoot),
+  }));
+  app.post("/v1/admin/assignments/:assignment/shared-baseline", async (req) =>
+    database.transaction(async (db) => {
+      await supervisor(db, user(req));
+      const id = uuid(params(req).assignment);
+      const source = await db.query(
+        "select 1 from firecheck_gateway.sources where assignment_id=$1",
+        [id],
+      );
+      assert(source.rowCount, 409, "SOURCE_NOT_REGISTERED");
+      const body = req.body as {
+        features?: Array<{ id: string; type: string; geometry: unknown }>;
+        expectedFeatureCount?: number;
+      };
+      assert(
+        Array.isArray(body?.features) &&
+          body.features.length > 0 &&
+          body.features.length <= 10000,
+        400,
+        "INVALID_BASELINE",
+      );
+      assert(
+        body.expectedFeatureCount === body.features.length,
+        400,
+        "BASELINE_COUNT_MISMATCH",
+      );
+      await db.query(
+        "insert into firecheck_sync.maps(assignment_id) values($1) on conflict do nothing",
+        [id],
+      );
+      const { rows } = await db.query(
+        "select enabled from firecheck_sync.maps where assignment_id=$1 for update",
+        [id],
+      );
+      assert(!rows[0]?.enabled, 409, "SHARED_MAP_ALREADY_ACTIVATED");
+      // Explicit stable IDs supplied by the import manifest; never derive from names.
+      assert(
+        new Set(body.features.map((f) => f.id)).size === body.features.length,
+        400,
+        "DUPLICATE_FEATURE_ID",
+      );
+      for (const f of body.features) {
+        uuid(f.id);
+        assert(
+          ["building", "road"].includes(f.type),
+          400,
+          "INVALID_FEATURE_TYPE",
+        );
+        const { rows: valid } = await db.query(
+          `select st_isvalid(g.geom) and st_srid(g.geom)=4326
+          and st_coveredby(g.geom,a.boundary_polygon::geometry)
+          and geometrytype(g.geom)=any($3::text[]) as ok
+          from public.assignments a cross join lateral
+          (select st_setsrid(st_geomfromgeojson($2),4326) geom) g where a.id=$1`,
+          [
+            id,
+            JSON.stringify(f.geometry),
+            f.type === "building"
+              ? ["POLYGON", "MULTIPOLYGON"]
+              : ["LINESTRING", "MULTILINESTRING"],
+          ],
+        );
+        assert(valid[0]?.ok, 400, "INVALID_BASELINE_GEOMETRY");
+        const { rows: existing } = await db.query(
+          "select assignment_id from public.features where id=$1",
+          [f.id],
+        );
+        assert(
+          !existing[0] || existing[0].assignment_id === id,
+          409,
+          "FEATURE_ID_COLLISION",
+        );
+        await db.query(
+          `insert into public.features(id,assignment_id,feature_type,geometry)
+          values($1,$2,$3,st_setsrid(st_geomfromgeojson($4),4326)::geography) on conflict(id) do nothing`,
+          [f.id, id, f.type, JSON.stringify(f.geometry)],
+        );
+      }
+      // Existing fieldwork and geometry win over source data. Baseline import is
+      // additive, never a replacement or deletion of accepted work.
+      await db.query("select firecheck_sync.activate($1)", [id]);
+      return { enabled: true, imported: body.features.length };
+    }),
+  );
+  app.post("/v1/admin/shared-map-exports/run", async (req) => {
+    await database.transaction((db) => supervisor(db, user(req)));
+    return {
+      processed: await exportSharedMap(database, drive, config.outputRoot),
+    };
+  });
+  app.get("/v1/assignments/:assignment/shared-status", async (req) =>
+    database.transaction(async (db) => {
+      const id = uuid(params(req).assignment);
+      await member(db, user(req), id);
+      const { rows } = await db.query(
+        `select m.enabled,m.revision,m.export_revision,j.last_error
+        from firecheck_sync.maps m left join firecheck_sync.export_jobs j using(assignment_id)
+        where m.assignment_id=$1`,
+        [id],
+      );
+      return rows[0] ?? { enabled: false };
+    }),
+  );
+
   app.get("/v1/assignments", async (req) =>
     database.transaction(async (db) => {
       const q = req.query as { after?: string };
@@ -193,9 +319,18 @@ export function buildApp({
         return receipt(db, existing);
       }
       assert(!a.closed_remotely, 409, "ASSIGNMENT_CLOSED");
-      // The batch folder uses authenticated IDs, never a client destination path.
-      const label = `${who}_${assignment}_${id}`;
-      const folder = await drive.folder(config.outputRoot, label);
+      await db.query("select pg_advisory_xact_lock(hashtextextended($1,0))", [
+        `output:${assignment}`,
+      ]);
+      const layout = await outputLayout(
+        db,
+        drive,
+        config.outputRoot,
+        assignment,
+        who,
+      );
+      const label = archivedName({ id, created_at: new Date() }, layout.person);
+      const folder = await drive.folder(layout.archive.id, label);
       await db.query(
         `insert into firecheck_gateway.uploads(id,assignment_id,user_id,manifest_hash,folder_id,folder_path) values($1,$2,$3,$4,$5,$6)`,
         [
@@ -204,7 +339,7 @@ export function buildApp({
           who,
           fingerprint,
           folder,
-          `firecheck/output/${label}/`,
+          `${layout.path}Archive/${label}/`,
         ],
       );
       for (const f of files) {
@@ -341,6 +476,8 @@ export function buildApp({
         "update firecheck_gateway.uploads set complete=true,completed_at=now() where id=$1",
         [u.id],
       );
+      u.complete = true;
+      await organizeOutput(db, drive, config.outputRoot, u);
       await db.query(
         `insert into public.drive_uploads(id,assignment_id,uploaded_by,drive_folder_path,drive_folder_url,file_count) values($1,$2,$3,$4,$5,$6) on conflict(id) do nothing`,
         [
@@ -462,65 +599,12 @@ export function buildApp({
     database.transaction(async (db) => {
       await supervisor(db, user(req));
       const id = uuid(params(req).assignment);
-      const source = (
-        await db.query(
-          "select * from firecheck_gateway.sources where assignment_id=$1 for update",
-          [id],
-        )
-      ).rows[0];
-      assert(source, 404, "SOURCE_NOT_REGISTERED");
-      await descendant(
+      const { version, files } = await publishSource(
+        db,
         drive,
-        source.folder_id,
-        config.inputRoot,
-        config.sharedDrive,
-      );
-      const list = async () =>
-        (await drive.children(source.folder_id))
-          .filter(
-            (f) =>
-              /\.(shp|shx|dbf|prj)$/i.test(f.name) ||
-              ["field_requirements.txt", "form_definition.json"].includes(
-                f.name.toLowerCase(),
-              ),
-          )
-          .sort((a, b) => a.id.localeCompare(b.id));
-      const before = await list();
-      for (const f of before)
-        assert(
-          f.mimeType !== "application/vnd.google-apps.shortcut",
-          400,
-          "SHORTCUT_NOT_ALLOWED",
-        );
-      validateMap(before.map(artifact));
-      const version = randomUUID();
-      const folder = await drive.folder(
-        config.publishedRoot,
-        `${id}_${version}`,
-      );
-      const files: Artifact[] = [];
-      for (const f of before)
-        files.push(artifact(await drive.copy(f.id, folder)));
-      validateMap(files);
-      assert(
-        hash(before) === hash(await list()),
-        409,
-        "SOURCE_CHANGED_DURING_PUBLICATION",
-      );
-      for (let i = 0; i < files.length; i++)
-        assert(
-          files[i]!.md5 === before[i]!.md5Checksum &&
-            files[i]!.size === Number(before[i]!.size),
-          409,
-          "SOURCE_CHANGED_DURING_PUBLICATION",
-        );
-      await db.query(
-        "insert into firecheck_gateway.versions(id,assignment_id,manifest,manifest_hash,published_by) values($1,$2,$3,$4,$5)",
-        [version, id, JSON.stringify(files), hash(files), user(req)],
-      );
-      await db.query(
-        "update firecheck_gateway.sources set current_version=$2 where assignment_id=$1",
-        [id, version],
+        config,
+        id,
+        user(req),
       );
       await event(db, user(req), "publish", id, { version });
       return { version, files: publicArtifacts(files) };

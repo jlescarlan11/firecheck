@@ -2,6 +2,23 @@ import 'package:firecheck/core/forms/field_requirements.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('new fields default optional across legacy and malformed sidecars', () {
+    for (final body in [
+      '',
+      '# legacy',
+      'bad line',
+      'building.buildingName=required',
+    ]) {
+      final requirements = parseFieldRequirements(body);
+      expect(requirements.isRequired('building.cbmsId'), isFalse);
+      expect(
+        requirements.isRequired('building.fireFightingFacilities'),
+        isFalse,
+      );
+      expect(requirements.isRequired('building.buildingName'), isTrue);
+    }
+  });
+
   group('parseFieldRequirements', () {
     test('empty body falls back to allRequired', () {
       final r = parseFieldRequirements('');
@@ -40,7 +57,8 @@ road.widthMeters = optional
     });
 
     test('ignores lines without = and empty keys', () {
-      final r = parseFieldRequirements('not a config line\n = required\nx=optional');
+      final r =
+          parseFieldRequirements('not a config line\n = required\nx=optional');
       expect(r.isRequired('x'), isFalse);
     });
   });

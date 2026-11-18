@@ -1,0 +1,29 @@
+{
+  "version": 2,
+  "title": "Shared map architecture",
+  "diagrams": [{
+    "id": "shared_map",
+    "title": "One shared map, with background exports",
+    "kind": "flowchart",
+    "data": {
+      "direction": "LR",
+      "nodes": [
+        {"id": "phone", "label": "Phone: private drafts and durable pending changes"},
+        {"id": "commit", "label": "Server: validate, deduplicate, resolve conflicts"},
+        {"id": "records", "label": "Supabase: accepted shared map and revisions"},
+        {"id": "peers", "label": "Other phones: fetch changes, preserve drafts"},
+        {"id": "worker", "label": "Background job: freeze and build a map version"},
+        {"id": "download", "label": "Get Maps: snapshot plus newer changes"},
+        {"id": "drive", "label": "Drive: one current combined export per map"}
+      ],
+      "edges": [
+        {"from": "phone", "to": "commit", "label": "Completed work"},
+        {"from": "commit", "to": "records", "label": "Atomic acceptance"},
+        {"from": "records", "to": "peers", "label": "Ordered changes"},
+        {"from": "records", "to": "worker", "label": "Durable job"},
+        {"from": "worker", "to": "download"},
+        {"from": "worker", "to": "drive"}
+      ]
+    }
+  }]
+}

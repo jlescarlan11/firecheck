@@ -19,6 +19,9 @@ async function main() {
     await readFile(join(here, ".secrets/database.env"), "utf8"),
   );
   const ca = await readFile(join(here, ".secrets/supabase-ca.crt"));
+  const worker = parseEnv(
+    await readFile(join(here, ".secrets/export-worker.env"), "utf8"),
+  );
   const values: Record<string, string> = {
     FIRECHECK_DRIVE_OAUTH: JSON.stringify(oauth),
     FIRECHECK_DATABASE_URL: database.FIRECHECK_DATABASE_URL!,
@@ -26,6 +29,7 @@ async function main() {
     DRIVE_INPUT_ROOT: folders.DRIVE_INPUT_ROOT,
     DRIVE_OUTPUT_ROOT: folders.DRIVE_OUTPUT_ROOT,
     DRIVE_PUBLISHED_ROOT: folders.DRIVE_PUBLISHED_ROOT,
+    EXPORT_WORKER_TOKEN: worker.EXPORT_WORKER_TOKEN!,
   };
   for (const value of Object.values(values))
     if (!value || /[\r\n]/.test(value))

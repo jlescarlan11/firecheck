@@ -1,3 +1,5 @@
+import 'package:drift/drift.dart';
+import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/drive/drive_upload_audit_repository.dart';
 import 'package:firecheck/core/drive/drive_upload_repository.dart';
 import 'package:firecheck/core/drive/drive_upload_worker.dart';
@@ -32,6 +34,7 @@ class ExecuteAssignmentUploadUseCase {
     required DriveUploadWorker driveUploadWorker,
     required FinalizeAssignmentUploadUseCase finalizeAssignmentUploadUseCase,
     required UploadProgressController progressController,
+    this.sharedDb,
   })  : _assignmentRepository = assignmentRepository,
         _auditRepository = auditRepository,
         _startUploadUseCase = startUploadUseCase,
@@ -41,6 +44,7 @@ class ExecuteAssignmentUploadUseCase {
         _finalizeAssignmentUploadUseCase = finalizeAssignmentUploadUseCase,
         _progressController = progressController;
 
+  final AppDatabase? sharedDb;
   final AssignmentRepository _assignmentRepository;
   final DriveUploadAuditRepository _auditRepository;
   final StartUploadUseCase _startUploadUseCase;
@@ -55,12 +59,42 @@ class ExecuteAssignmentUploadUseCase {
     required String? currentUserId,
     required UploadConfirmer confirmer,
   }) async {
-    final assignment = await _assignmentRepository.getCurrentAssignment();
+    final id = state.assignmentId;
+    final assignment =
+        id == null ? null : await _assignmentRepository.getAssignment(id);
     if (assignment == null) {
       debugPrint('[Upload] no current assignment — aborting');
       return const UploadFlowNoAssignment();
     }
 
+    if (assignment.closedRemotely) {
+      return UploadFlowSupabaseFailed(StateError('This map is closed.'));
+    }
+    final db = sharedDb;
+    if (db != null && currentUserId != null) {
+      final capability = await (db.select(db.sharedMapCursors)
+            ..where(
+              (t) =>
+                  t.accountId.equals(currentUserId) &
+                  t.assignmentId.equals(assignment.id),
+            ))
+          .getSingleOrNull();
+      if (capability != null) {
+        try {
+          final failed = await _runSupabasePhase(assignment.id);
+          if (failed != null) return failed;
+          return await _syncState(db, assignment.id);
+        } finally {
+          _progressController.reset();
+        }
+      }
+    }
+    if (!await _assignmentRepository.hasChangesToUpload(assignment.id)) {
+      return UploadFlowSucceeded(
+        folderPath: assignment.driveFolderPath ?? '',
+        confirmedAt: assignment.driveUploadConfirmedAt!,
+      );
+    }
     final cancellation = await _runConfirmations(
       state: state,
       assignmentId: assignment.id,
@@ -69,12 +103,104 @@ class ExecuteAssignmentUploadUseCase {
     );
     if (cancellation != null) return cancellation;
 
-    final supabase = await _runSupabasePhase(assignment.id);
-    if (supabase != null) return supabase;
+    final latest = await _assignmentRepository.getAssignment(assignment.id);
+    if (latest == null || latest.closedRemotely) {
+      return UploadFlowSupabaseFailed(
+        StateError('This map is unavailable or closed.'),
+      );
+    }
+    try {
+      final supabase = await _runSupabasePhase(assignment.id);
+      if (supabase != null) return supabase;
+      if (db != null) {
+        final sync = await _syncState(db, assignment.id);
+        if (sync.pending > 0 ||
+            sync.conflicts > 0 ||
+            sync.pendingPhotos > 0 ||
+            sync.pendingGeometry > 0) {
+          return UploadFlowSupabaseFailed(
+            StateError('Some changes are still pending sync or review.'),
+          );
+        }
+      }
+      _progressController.beginDriveUpload();
+      return await _runDrivePhase(
+        assignmentId: assignment.id,
+        currentUserId: currentUserId,
+      );
+    } finally {
+      // Drive completion is independent of sync_jobs. Always leave the
+      // progress view so success, retry, and empty results are visible.
+      _progressController.reset();
+    }
+  }
 
-    return _runDrivePhase(
-      assignmentId: assignment.id,
-      currentUserId: currentUserId,
+  Future<UploadFlowSynced> _syncState(
+    AppDatabase db,
+    String assignmentId,
+  ) async {
+    final rows = await (db.select(db.submissions).join([
+      innerJoin(
+        db.features,
+        db.features.id.equalsExp(db.submissions.featureId),
+      ),
+    ])
+          ..where(db.features.assignmentId.equals(assignmentId)))
+        .map((r) => r.readTable(db.submissions))
+        .get();
+    final photos = await (db.select(db.photos).join([
+      innerJoin(
+        db.submissions,
+        db.submissions.id.equalsExp(db.photos.submissionId),
+      ),
+      innerJoin(
+        db.features,
+        db.features.id.equalsExp(db.submissions.featureId),
+      ),
+    ])
+          ..where(
+            db.features.assignmentId.equals(assignmentId) &
+                db.photos.uploadStatus.equals('uploaded').not() &
+                db.submissions.syncStatus.isIn([
+                  'ready_to_upload',
+                  'queued',
+                  'uploaded',
+                  'awaiting_user_resolution',
+                ]),
+          ))
+        .get();
+    final geometry = await (db.select(db.featureGeometryRevisions).join([
+      innerJoin(
+        db.features,
+        db.features.id.equalsExp(db.featureGeometryRevisions.featureId),
+      ),
+    ])
+          ..where(
+            db.features.assignmentId.equals(assignmentId) &
+                db.featureGeometryRevisions.syncStatus
+                    .isNotIn(['uploaded', 'discarded']),
+          ))
+        .get();
+    final frozen = await (db.select(db.syncJobs)
+          ..where(
+            (t) =>
+                t.entityType.equals('attribution_upload') &
+                t.entityId.isIn(rows.map((s) => s.id).toList()),
+          ))
+        .get();
+    final finalizedIds = frozen.map((job) => job.entityId).toSet();
+    return UploadFlowSynced(
+      pendingGeometry: geometry.length,
+      pendingPhotos: photos.length,
+      pending: rows
+          .where(
+            (s) =>
+                {'ready_to_upload', 'queued'}.contains(s.syncStatus) ||
+                (s.syncStatus == 'in_progress' && finalizedIds.contains(s.id)),
+          )
+          .length,
+      conflicts:
+          rows.where((s) => s.syncStatus == 'awaiting_user_resolution').length,
     );
   }
 
@@ -141,7 +267,8 @@ class ExecuteAssignmentUploadUseCase {
   }
 
   Future<UploadFlowSupabaseFailed?> _runSupabasePhase(
-      String assignmentId,) async {
+    String assignmentId,
+  ) async {
     debugPrint('[Upload] supabase phase begin');
     _progressController.beginUpload();
     try {
@@ -164,6 +291,7 @@ class ExecuteAssignmentUploadUseCase {
     debugPrint('[Upload] drive phase begin');
     final enqueued = await _enqueueAssignmentUseCase.execute(
       assignmentId: assignmentId,
+      expectedOwnerId: currentUserId,
     );
     debugPrint('[Upload] drive enqueued $enqueued new job(s)');
 

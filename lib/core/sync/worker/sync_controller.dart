@@ -13,8 +13,11 @@ class SyncController {
   final SyncWorker _worker;
   ConnectivityListener? _connectivity;
   SyncLifecycleListener? _lifecycle;
+  Timer? _timer;
 
   Future<void> start() async {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 30), (_) => triggerNow());
     _connectivity = ConnectivityListener(onConnect: triggerNow)..start();
     _lifecycle = SyncLifecycleListener(onResume: triggerNow)..start();
     await triggerNow();
@@ -23,6 +26,7 @@ class SyncController {
   Future<void> triggerNow() => _worker.drain();
 
   Future<void> stop() async {
+    _timer?.cancel();
     await _connectivity?.dispose();
     _lifecycle?.dispose();
   }

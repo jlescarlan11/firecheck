@@ -1,7 +1,9 @@
+import 'dart:convert';
+import 'package:firecheck/core/forms/assignment_form_store.dart';
 // lib/features/assignment/domain/shapefile_acquisition_use_case.dart
 //
 // Coordinates the multi-step shapefile acquisition pipeline:
-//   download → persist sidecar → validate → import → publish canonical
+//   download → stage sidecar → validate → import → publish canonical
 // features. Emits ShapefileAcquisitionEvents so the calling notifier can
 // map them onto its state machine without owning the pipeline itself.
 //
@@ -63,7 +65,8 @@ class AcquisitionImporting extends ShapefileAcquisitionEvent {
 /// Import + canonical publish completed. Caller transitions to the
 /// next stage (typically offline tile download).
 class AcquisitionImported extends ShapefileAcquisitionEvent {
-  const AcquisitionImported();
+  const AcquisitionImported({this.assignmentId});
+  final String? assignmentId;
 }
 
 class AcquisitionImportFailed extends ShapefileAcquisitionEvent {
@@ -84,6 +87,7 @@ class ShapefileAcquisitionUseCase {
     required this.reporter,
     AssignmentNameResolver? assignmentNameResolver,
     CanonicalFeaturePublisher? canonicalFeaturePublisher,
+    this.importSharedSnapshot,
     this.onRequirementsUpdated,
     this.onFormDefinitionUpdated,
   })  : assignmentNameResolver =
@@ -91,6 +95,8 @@ class ShapefileAcquisitionUseCase {
         canonicalFeaturePublisher =
             canonicalFeaturePublisher ?? const NoopCanonicalFeaturePublisher();
 
+  final Future<void> Function(Map<String, dynamic>, String)?
+      importSharedSnapshot;
   final ShapefileImporter shapefileImporter;
   final ShapefileValidator validator;
   final ValidationFailureReporter reporter;
@@ -99,7 +105,7 @@ class ShapefileAcquisitionUseCase {
   final void Function()? onRequirementsUpdated;
   final void Function()? onFormDefinitionUpdated;
 
-  /// Full path: download the assignment, persist any sidecar, validate,
+  /// Full path: download the assignment, stage its sidecars, validate,
   /// and — if validation passes without warnings — import + publish.
   /// Stream terminates with one of: [AcquisitionImported],
   /// [AcquisitionImportFailed], [AcquisitionWarning], or [AcquisitionFailed].
@@ -118,8 +124,16 @@ class ShapefileAcquisitionUseCase {
       await for (final event
           in source.downloadShapefiles(assignment.assignmentId)) {
         switch (event) {
-          case DriveDownloadProgress(:final downloaded, :final total):
-            yield AcquisitionProgress(downloaded: downloaded, total: total);
+          case DriveDownloadProgress(
+              :final downloaded,
+              :final total,
+              :final verifying
+            ):
+            if (verifying) {
+              yield const AcquisitionValidating();
+            } else {
+              yield AcquisitionProgress(downloaded: downloaded, total: total);
+            }
           case DriveDownloadComplete(:final files, :final expectedMd5s):
             shapefiles = files;
             shapeMd5s = expectedMd5s;
@@ -141,11 +155,38 @@ class ShapefileAcquisitionUseCase {
       return;
     }
 
+    if (shapefiles.containsKey('shared-map.json')) {
+      yield const AcquisitionImporting();
+      try {
+        if (importSharedSnapshot == null)
+          throw StateError('Shared map importer unavailable');
+        final snapshot = jsonDecode(utf8.decode(shapefiles['shared-map.json']!))
+            as Map<String, dynamic>;
+        if (snapshot['assignment_id'] != assignment.localAssignmentId) {
+          throw const FormatException('Downloaded map identity mismatch');
+        }
+        await importSharedSnapshot!(snapshot, enumeratorId);
+        await writeAssignmentForms(assignment.localAssignmentId,
+            requirements: shapefiles[fieldRequirementsFilename],
+            definition: shapefiles[formDefinitionFilename]);
+        await markAssignmentFormsPending(assignment.localAssignmentId,
+            pending: false);
+        onRequirementsUpdated?.call();
+        onFormDefinitionUpdated?.call();
+        yield AcquisitionImported(assignmentId: assignment.localAssignmentId);
+      } catch (e) {
+        yield AcquisitionImportFailed(
+            StorageFailure('Could not import the shared map: $e'));
+      }
+      return;
+    }
+
     // Pull `field_requirements.txt` out of the download bundle before
     // validation runs (FileSetRule would otherwise flag it as extra) and
-    // persist it so the form layer can re-read updated rules. Skipping
+    // stage it until import establishes the assignment identity. Skipping
     // a missing sidecar is fine — the form falls back to the bundled
     // asset.
+    final sidecars = <String, Uint8List>{};
     final configKey = shapefiles.keys.firstWhere(
       (k) => k.toLowerCase() == fieldRequirementsFilename,
       orElse: () => '',
@@ -153,7 +194,7 @@ class ShapefileAcquisitionUseCase {
     if (configKey.isNotEmpty) {
       final bytes = shapefiles.remove(configKey);
       shapeMd5s.remove(configKey);
-      if (bytes != null) await _persistFieldRequirements(bytes);
+      if (bytes != null) sidecars[fieldRequirementsFilename] = bytes;
     }
 
     final definitionKey = shapefiles.keys.firstWhere(
@@ -163,7 +204,7 @@ class ShapefileAcquisitionUseCase {
     if (definitionKey.isNotEmpty) {
       final bytes = shapefiles.remove(definitionKey);
       shapeMd5s.remove(definitionKey);
-      if (bytes != null) await _persistFormDefinition(bytes);
+      if (bytes != null) sidecars[formDefinitionFilename] = bytes;
     }
 
     yield const AcquisitionValidating();
@@ -197,7 +238,7 @@ class ShapefileAcquisitionUseCase {
     if (report.hasWarnings) {
       yield AcquisitionWarning(
         warnings: report.warnings.map((w) => w.userMessage).toList(),
-        pendingFiles: shapefiles,
+        pendingFiles: {...shapefiles, ...sidecars},
         expectedMd5s: shapeMd5s,
       );
       return;
@@ -206,7 +247,7 @@ class ShapefileAcquisitionUseCase {
     yield* _importAndPublish(
       assignment: assignment,
       enumeratorId: enumeratorId,
-      files: shapefiles,
+      files: {...shapefiles, ...sidecars},
     );
   }
 
@@ -227,20 +268,20 @@ class ShapefileAcquisitionUseCase {
   /// Delta-skip path: the assignment is already on disk, but we still
   /// want to refresh the `field_requirements.txt` sidecar because Drive
   /// doesn't reliably bump the folder modifiedTime when only the sidecar
-  /// changes. Errors are swallowed — the caller should always proceed to
-  /// the next stage regardless.
+  /// changes. Errors are surfaced so the caller can offer a refresh retry.
   Future<void> refreshSidecar({
     required DriveApi source,
     required String assignmentId,
+    required String localAssignmentId,
   }) async {
-    try {
-      final bytes = await source.fetchFieldRequirementsSidecar(assignmentId);
-      if (bytes != null) await _persistFieldRequirements(bytes);
-      final definition = await source.fetchFormDefinitionSidecar(assignmentId);
-      if (definition != null) await _persistFormDefinition(definition);
-    } catch (_) {
-      // Non-fatal.
-    }
+    final requirements =
+        await source.fetchFieldRequirementsSidecar(assignmentId);
+    final definition = await source.fetchFormDefinitionSidecar(assignmentId);
+    await writeAssignmentForms(localAssignmentId,
+        requirements: requirements, definition: definition);
+    await markAssignmentFormsPending(localAssignmentId, pending: false);
+    onRequirementsUpdated?.call();
+    onFormDefinitionUpdated?.call();
   }
 
   Stream<ShapefileAcquisitionEvent> _importAndPublish({
@@ -258,8 +299,11 @@ class ShapefileAcquisitionUseCase {
             assignment.localAssignmentId;
 
     try {
+      await markAssignmentFormsPending(resolvedId, pending: true);
       await shapefileImporter.importShapefiles(
-        files,
+        Map.of(files)
+          ..remove(fieldRequirementsFilename)
+          ..remove(formDefinitionFilename),
         resolvedId,
         assignment.inputZipModifiedTime,
         assignment.driveFolderId,
@@ -270,6 +314,9 @@ class ShapefileAcquisitionUseCase {
                 : null),
       );
     } catch (_) {
+      try {
+        await markAssignmentFormsPending(resolvedId, pending: false);
+      } catch (_) {/* Keep import failure actionable. */}
       yield const AcquisitionImportFailed(
         StorageFailure(
           'Could not import this map data. Check the source files and try again.',
@@ -284,24 +331,18 @@ class ShapefileAcquisitionUseCase {
     // enumerators. Publisher swallows its own errors.
     await canonicalFeaturePublisher.publish(resolvedId);
 
-    yield const AcquisitionImported();
-  }
-
-  Future<void> _persistFieldRequirements(Uint8List bytes) async {
     try {
-      await writeFieldRequirements(bytes);
+      await writeAssignmentForms(resolvedId,
+          requirements: files[fieldRequirementsFilename],
+          definition: files[formDefinitionFilename]);
+      await markAssignmentFormsPending(resolvedId, pending: false);
       onRequirementsUpdated?.call();
-    } catch (_) {
-      // Non-fatal — the form falls back to the bundled asset.
-    }
-  }
-
-  Future<void> _persistFormDefinition(Uint8List bytes) async {
-    try {
-      await writeFormDefinition(bytes);
       onFormDefinitionUpdated?.call();
-    } on Object {
-      // Non-fatal — the form falls back to the bundled legacy definition.
+    } catch (_) {
+      yield const AcquisitionImportFailed(StorageFailure(
+          'Map imported, but form settings could not be saved. Retry the download before gathering.'));
+      return;
     }
+    yield AcquisitionImported(assignmentId: resolvedId);
   }
 }

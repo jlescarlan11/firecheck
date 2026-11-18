@@ -53,9 +53,9 @@ class DriveUploadNotifier extends StateNotifier<DriveUploadState> {
     required String folderPath,
     required DateTime confirmedAt,
   }) {
-    final referenceId = _assignmentId != null
-        ? _formatReferenceId(_assignmentId!)
-        : '';
+    if (!mounted) return;
+    final referenceId =
+        _assignmentId != null ? _formatReferenceId(_assignmentId!) : '';
     state = DriveUploadSuccess(
       folderPath: folderPath,
       folderUrl: '',
@@ -65,6 +65,7 @@ class DriveUploadNotifier extends StateNotifier<DriveUploadState> {
   }
 
   void applyQueueFailure(String message, {bool canRetry = true}) {
+    if (!mounted) return;
     state = DriveUploadFailure(message: message, canRetry: canRetry);
   }
 

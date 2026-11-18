@@ -15,3 +15,9 @@ python3 tool/check_apk_size.py \
   build/app/outputs/flutter-apk/app-x86_64-release.apk \
   --report "$symbol_dir/apk-size-report.json"
 printf 'Archive APKs and matching symbols from %s together.\n' "$symbol_dir"
+
+# When configured on this checkout, publish the tested ARM64 build to Drive.
+# Set FIRECHECK_UPLOAD_APK=0 for a local-only build.
+if [[ "${FIRECHECK_UPLOAD_APK:-1}" != "0" && -f server/drive-gateway/.secrets/apk-release.json ]]; then
+  server/drive-gateway/node_modules/.bin/tsx server/drive-gateway/tools/publish-apk.ts --apply
+fi

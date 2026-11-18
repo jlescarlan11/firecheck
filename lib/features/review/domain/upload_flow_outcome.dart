@@ -56,3 +56,16 @@ final class UploadFlowSucceeded extends UploadFlowOutcome {
   final String folderPath;
   final DateTime confirmedAt;
 }
+
+/// Records are independent from asynchronous export/media preparation.
+final class UploadFlowSynced extends UploadFlowOutcome {
+  const UploadFlowSynced(
+      {required this.pending,
+      required this.conflicts,
+      this.pendingPhotos = 0,
+      this.pendingGeometry = 0});
+  final int pending;
+  final int conflicts;
+  final int pendingPhotos;
+  final int pendingGeometry;
+}

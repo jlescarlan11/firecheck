@@ -21,31 +21,54 @@ void main() {
 
   Future<AppDatabase> seedDb() async {
     final db = AppDatabase.forTesting(NativeDatabase.memory());
-    await db.into(db.assignments).insert(AssignmentsCompanion.insert(
-      id: 'a1', enumeratorId: 'e1', campaignId: 'c1',
-      boundaryPolygonGeojson: '{}', createdAt: DateTime(2026),
-    ));
-    await db.into(db.features).insert(FeaturesCompanion.insert(
-      id: 'f1', assignmentId: 'a1', featureType: 'building',
-      geometryGeojson: '{"type":"Polygon","coordinates":[[[0,0],[1,0],[1,1],[0,1],[0,0]]]}',
-      status: const Value('complete'), createdAt: DateTime(2026),
-    ));
-    await db.into(db.submissions).insert(SubmissionsCompanion.insert(
-      id: 's1', featureId: 'f1', createdAt: DateTime(2026), updatedAt: DateTime(2026),
-    ));
-    await db.into(db.buildingAttributes).insert(BuildingAttributesCompanion.insert(
-      submissionId: 's1',
-      fireFightingFacilitiesJson: const Value('[]'),
-      fireLoadJson: const Value('[]'),
-      costIsExact: const Value(false),
-    ));
+    await db.into(db.assignments).insert(
+          AssignmentsCompanion.insert(
+            id: 'a1',
+            enumeratorId: 'e1',
+            campaignId: 'c1',
+            boundaryPolygonGeojson: '{}',
+            createdAt: DateTime(2026),
+          ),
+        );
+    await db.into(db.features).insert(
+          FeaturesCompanion.insert(
+            id: 'f1',
+            assignmentId: 'a1',
+            featureType: 'building',
+            geometryGeojson:
+                '{"type":"Polygon","coordinates":[[[0,0],[1,0],[1,1],[0,1],[0,0]]]}',
+            status: const Value('complete'),
+            createdAt: DateTime(2026),
+          ),
+        );
+    await db.into(db.submissions).insert(
+          SubmissionsCompanion.insert(
+            id: 's1',
+            featureId: 'f1',
+            syncStatus: const Value('ready_to_upload'),
+            createdAt: DateTime(2026),
+            updatedAt: DateTime(2026),
+          ),
+        );
+    await db.into(db.buildingAttributes).insert(
+          BuildingAttributesCompanion.insert(
+            submissionId: 's1',
+            fireFightingFacilitiesJson: const Value('[]'),
+            fireLoadJson: const Value('[]'),
+            costIsExact: const Value(false),
+          ),
+        );
     // Photo seeded but not expected to enqueue — photos ship to Supabase
     // Storage only; Drive uploads are shapefile-components-only.
-    await db.into(db.photos).insert(PhotosCompanion.insert(
-      id: 'ph1', submissionId: 's1',
-      localPath: '${tempDir.path}/photo1.jpg',
-      capturedAt: DateTime(2026), createdAt: DateTime(2026),
-    ));
+    await db.into(db.photos).insert(
+          PhotosCompanion.insert(
+            id: 'ph1',
+            submissionId: 's1',
+            localPath: '${tempDir.path}/photo1.jpg',
+            capturedAt: DateTime(2026),
+            createdAt: DateTime(2026),
+          ),
+        );
     await File('${tempDir.path}/photo1.jpg').writeAsBytes([0xFF, 0xD8]);
     return db;
   }
@@ -78,7 +101,9 @@ void main() {
         .toSet();
     expect(
       shapefileNames,
-      equals({'buildings.shp', 'buildings.shx', 'buildings.dbf', 'buildings.prj'}),
+      equals(
+        {'buildings.shp', 'buildings.shx', 'buildings.dbf', 'buildings.prj'},
+      ),
     );
   });
 
@@ -87,7 +112,8 @@ void main() {
     addTearDown(db.close);
     final repo = DriveUploadRepository(db);
     final exporter = ShapefileExporter(db: db, tempDirOverride: tempDir);
-    final useCase = EnqueueAssignmentUseCase(db: db, repo: repo, exporter: exporter);
+    final useCase =
+        EnqueueAssignmentUseCase(db: db, repo: repo, exporter: exporter);
 
     await useCase.execute(assignmentId: 'a1');
     final secondCount = await useCase.execute(assignmentId: 'a1');

@@ -1,3 +1,7 @@
+import 'package:firecheck/core/forms/form_definition.dart';
+import 'package:firecheck/core/forms/form_definition_providers.dart';
+import 'package:firecheck/core/forms/field_requirements.dart';
+import 'package:firecheck/core/forms/field_requirements_providers.dart';
 import 'dart:convert';
 
 import 'package:drift/native.dart';
@@ -64,6 +68,9 @@ Future<({ProviderContainer container, AppDatabase db, GoRouter router})>
     routes: [
       GoRoute(path: '/map', builder: (_, __) => const MapScreen()),
       GoRoute(
+          path: '/my-maps',
+          builder: (_, __) => const Scaffold(body: Text('Map chooser'))),
+      GoRoute(
         path: '/feature/:featureId',
         builder: (_, state) => Scaffold(
           key: const Key('feature-detail-sentinel'),
@@ -78,16 +85,22 @@ Future<({ProviderContainer container, AppDatabase db, GoRouter router})>
 
   final container = ProviderContainer(
     overrides: [
+      currentFormDefinitionProvider
+          .overrideWith((_) async => FormDefinition.legacy),
+      fieldRequirementsConfigProvider
+          .overrideWith((_) async => FieldRequirements.allRequired),
       mapRendererProvider.overrideWithValue(renderer),
       appDatabaseProvider.overrideWithValue(db),
       currentUserIdProvider.overrideWithValue('admin'),
       currentFeaturesProvider.overrideWith((_) => Stream.value(features)),
-      currentAssignmentProvider.overrideWith((_) => Stream.value(_assignment())),
+      currentAssignmentProvider
+          .overrideWith((_) => Stream.value(_assignment())),
       assignmentLockStateProvider
           .overrideWith((_) => Stream.value(const Unlocked())),
       // Avoid the real geolocator plugin (MissingPluginException in widget
       // tests). MapScreen subscribes to currentPositionProvider on mount.
-      currentPositionProvider.overrideWith((_) => const Stream<Position>.empty()),
+      currentPositionProvider
+          .overrideWith((_) => const Stream<Position>.empty()),
       othersRemoteAttributionsProvider.overrideWith(
         (_) => Stream.value(const []),
       ),
@@ -120,6 +133,33 @@ Future<void> _enterSketchViaPill(WidgetTester tester, String type) async {
 }
 
 void main() {
+  testWidgets(
+      'switching maps preserves an unfinished drawing until discard is chosen',
+      (tester) async {
+    final fake = FakeMapRenderer();
+    final h = await _pumpSketchHarness(tester, renderer: fake);
+    await _enterSketchViaPill(tester, 'building');
+    await fake.simulateMapTap(1, 1);
+    await tester.pump();
+    await tester.tap(find.textContaining('Working on:'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Keep working'));
+    await tester.pumpAndSettle();
+    expect(
+        h.container.read(geometryEditorControllerProvider).workingRings.first,
+        hasLength(1));
+    expect(find.text('Map chooser'), findsNothing);
+    await tester.tap(find.textContaining('Working on:'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Discard drawing and switch'));
+    await tester.pumpAndSettle();
+    expect(find.text('Map chooser'), findsOneWidget);
+    expect(
+        h.container.read(geometryEditorControllerProvider).isActive, isFalse);
+    expect(
+        await tester.runAsync(() => h.db.select(h.db.features).get()), isEmpty);
+  });
+
   group('sketch flow — Building', () {
     testWidgets('happy path: 3 vertices → Finish → navigate + Polygon row',
         (tester) async {
@@ -147,7 +187,8 @@ void main() {
       expect(find.byKey(const Key('feature-detail-sentinel')), findsOneWidget);
 
       // DB has exactly one feature, polygon-shaped, closed ring.
-      final rows = await tester.runAsync(() => h.db.select(h.db.features).get());
+      final rows =
+          await tester.runAsync(() => h.db.select(h.db.features).get());
       expect(rows, hasLength(1));
       final f = rows!.first;
       expect(f.featureType, 'building');
@@ -186,7 +227,8 @@ void main() {
       // State preserved — banner still shows 3 vertices.
       expect(find.text('3 vertices · building'), findsOneWidget);
       // No DB row inserted.
-      final rows = await tester.runAsync(() => h.db.select(h.db.features).get());
+      final rows =
+          await tester.runAsync(() => h.db.select(h.db.features).get());
       expect(rows, isEmpty);
     });
 
@@ -212,7 +254,8 @@ void main() {
       }
 
       expect(find.textContaining('cross'), findsWidgets);
-      final rows = await tester.runAsync(() => h.db.select(h.db.features).get());
+      final rows =
+          await tester.runAsync(() => h.db.select(h.db.features).get());
       expect(rows, isEmpty);
     });
   });
@@ -239,7 +282,8 @@ void main() {
 
       expect(find.byKey(const Key('feature-detail-sentinel')), findsOneWidget);
 
-      final rows = await tester.runAsync(() => h.db.select(h.db.features).get());
+      final rows =
+          await tester.runAsync(() => h.db.select(h.db.features).get());
       expect(rows, hasLength(1));
       final f = rows!.first;
       expect(f.featureType, 'road');
@@ -267,7 +311,8 @@ void main() {
 
       // reshapeErrorZeroLengthEdge: "Adjacent corners cannot be on the same spot".
       expect(find.textContaining('same spot'), findsWidgets);
-      final rows = await tester.runAsync(() => h.db.select(h.db.features).get());
+      final rows =
+          await tester.runAsync(() => h.db.select(h.db.features).get());
       expect(rows, isEmpty);
     });
   });
@@ -282,6 +327,7 @@ void main() {
       final fake = FakeMapRenderer();
       final h = await _pumpSketchHarness(tester, renderer: fake);
 
+      await _enterSketchViaPill(tester, 'building');
       h.container
           .read(geometryEditorControllerProvider.notifier)
           .enterSketch(featureType: 'point');
@@ -300,7 +346,8 @@ void main() {
 
       expect(find.byKey(const Key('feature-detail-sentinel')), findsOneWidget);
 
-      final rows = await tester.runAsync(() => h.db.select(h.db.features).get());
+      final rows =
+          await tester.runAsync(() => h.db.select(h.db.features).get());
       expect(rows, hasLength(1));
       final f = rows!.first;
       expect(f.featureType, 'point');
@@ -315,6 +362,7 @@ void main() {
       final fake = FakeMapRenderer();
       final h = await _pumpSketchHarness(tester, renderer: fake);
 
+      await _enterSketchViaPill(tester, 'building');
       h.container
           .read(geometryEditorControllerProvider.notifier)
           .enterSketch(featureType: 'point');
@@ -337,7 +385,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final rows = await tester.runAsync(() => h.db.select(h.db.features).get());
+      final rows =
+          await tester.runAsync(() => h.db.select(h.db.features).get());
       expect(rows, hasLength(1));
       final geom =
           jsonDecode(rows!.first.geometryGeojson) as Map<String, dynamic>;

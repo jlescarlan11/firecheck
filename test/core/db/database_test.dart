@@ -44,14 +44,17 @@ void main() {
       expect(db.schemaVersion, greaterThanOrEqualTo(3));
     });
 
-    test('the DB registers exactly the 17 expected tables', () {
+    test('the DB registers exactly the 20 expected tables', () {
       final names = db.allTables.map((t) => t.actualTableName).toSet();
-      expect(names, hasLength(17));
+      expect(names, hasLength(20));
       expect(
         names,
         equals({
+          'shared_map_features',
+          'shared_map_cursors',
           'enumerators',
           'assignments',
+          'assignment_selections',
           'features',
           'submissions',
           'building_attributes',

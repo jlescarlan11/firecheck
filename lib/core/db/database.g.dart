@@ -3,6 +3,611 @@
 part of 'database.dart';
 
 // ignore_for_file: type=lint
+class $SharedMapFeaturesTable extends SharedMapFeatures
+    with TableInfo<$SharedMapFeaturesTable, SharedMapFeature> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SharedMapFeaturesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _accountIdMeta =
+      const VerificationMeta('accountId');
+  @override
+  late final GeneratedColumn<String> accountId = GeneratedColumn<String>(
+      'account_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _assignmentIdMeta =
+      const VerificationMeta('assignmentId');
+  @override
+  late final GeneratedColumn<String> assignmentId = GeneratedColumn<String>(
+      'assignment_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _featureIdMeta =
+      const VerificationMeta('featureId');
+  @override
+  late final GeneratedColumn<String> featureId = GeneratedColumn<String>(
+      'feature_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _revisionMeta =
+      const VerificationMeta('revision');
+  @override
+  late final GeneratedColumn<int> revision = GeneratedColumn<int>(
+      'revision', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _pendingProjectionMeta =
+      const VerificationMeta('pendingProjection');
+  @override
+  late final GeneratedColumn<bool> pendingProjection = GeneratedColumn<bool>(
+      'pending_projection', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("pending_projection" IN (0, 1))'),
+      defaultValue: const Constant(true));
+  static const VerificationMeta _payloadJsonMeta =
+      const VerificationMeta('payloadJson');
+  @override
+  late final GeneratedColumn<String> payloadJson = GeneratedColumn<String>(
+      'payload_json', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [
+        accountId,
+        assignmentId,
+        featureId,
+        revision,
+        pendingProjection,
+        payloadJson
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'shared_map_features';
+  @override
+  VerificationContext validateIntegrity(Insertable<SharedMapFeature> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('account_id')) {
+      context.handle(_accountIdMeta,
+          accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta));
+    } else if (isInserting) {
+      context.missing(_accountIdMeta);
+    }
+    if (data.containsKey('assignment_id')) {
+      context.handle(
+          _assignmentIdMeta,
+          assignmentId.isAcceptableOrUnknown(
+              data['assignment_id']!, _assignmentIdMeta));
+    } else if (isInserting) {
+      context.missing(_assignmentIdMeta);
+    }
+    if (data.containsKey('feature_id')) {
+      context.handle(_featureIdMeta,
+          featureId.isAcceptableOrUnknown(data['feature_id']!, _featureIdMeta));
+    } else if (isInserting) {
+      context.missing(_featureIdMeta);
+    }
+    if (data.containsKey('revision')) {
+      context.handle(_revisionMeta,
+          revision.isAcceptableOrUnknown(data['revision']!, _revisionMeta));
+    } else if (isInserting) {
+      context.missing(_revisionMeta);
+    }
+    if (data.containsKey('pending_projection')) {
+      context.handle(
+          _pendingProjectionMeta,
+          pendingProjection.isAcceptableOrUnknown(
+              data['pending_projection']!, _pendingProjectionMeta));
+    }
+    if (data.containsKey('payload_json')) {
+      context.handle(
+          _payloadJsonMeta,
+          payloadJson.isAcceptableOrUnknown(
+              data['payload_json']!, _payloadJsonMeta));
+    } else if (isInserting) {
+      context.missing(_payloadJsonMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {accountId, assignmentId, featureId};
+  @override
+  SharedMapFeature map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SharedMapFeature(
+      accountId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}account_id'])!,
+      assignmentId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}assignment_id'])!,
+      featureId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}feature_id'])!,
+      revision: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}revision'])!,
+      pendingProjection: attachedDatabase.typeMapping.read(
+          DriftSqlType.bool, data['${effectivePrefix}pending_projection'])!,
+      payloadJson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}payload_json'])!,
+    );
+  }
+
+  @override
+  $SharedMapFeaturesTable createAlias(String alias) {
+    return $SharedMapFeaturesTable(attachedDatabase, alias);
+  }
+}
+
+class SharedMapFeature extends DataClass
+    implements Insertable<SharedMapFeature> {
+  final String accountId;
+  final String assignmentId;
+  final String featureId;
+  final int revision;
+  final bool pendingProjection;
+  final String payloadJson;
+  const SharedMapFeature(
+      {required this.accountId,
+      required this.assignmentId,
+      required this.featureId,
+      required this.revision,
+      required this.pendingProjection,
+      required this.payloadJson});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['account_id'] = Variable<String>(accountId);
+    map['assignment_id'] = Variable<String>(assignmentId);
+    map['feature_id'] = Variable<String>(featureId);
+    map['revision'] = Variable<int>(revision);
+    map['pending_projection'] = Variable<bool>(pendingProjection);
+    map['payload_json'] = Variable<String>(payloadJson);
+    return map;
+  }
+
+  SharedMapFeaturesCompanion toCompanion(bool nullToAbsent) {
+    return SharedMapFeaturesCompanion(
+      accountId: Value(accountId),
+      assignmentId: Value(assignmentId),
+      featureId: Value(featureId),
+      revision: Value(revision),
+      pendingProjection: Value(pendingProjection),
+      payloadJson: Value(payloadJson),
+    );
+  }
+
+  factory SharedMapFeature.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SharedMapFeature(
+      accountId: serializer.fromJson<String>(json['accountId']),
+      assignmentId: serializer.fromJson<String>(json['assignmentId']),
+      featureId: serializer.fromJson<String>(json['featureId']),
+      revision: serializer.fromJson<int>(json['revision']),
+      pendingProjection: serializer.fromJson<bool>(json['pendingProjection']),
+      payloadJson: serializer.fromJson<String>(json['payloadJson']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'accountId': serializer.toJson<String>(accountId),
+      'assignmentId': serializer.toJson<String>(assignmentId),
+      'featureId': serializer.toJson<String>(featureId),
+      'revision': serializer.toJson<int>(revision),
+      'pendingProjection': serializer.toJson<bool>(pendingProjection),
+      'payloadJson': serializer.toJson<String>(payloadJson),
+    };
+  }
+
+  SharedMapFeature copyWith(
+          {String? accountId,
+          String? assignmentId,
+          String? featureId,
+          int? revision,
+          bool? pendingProjection,
+          String? payloadJson}) =>
+      SharedMapFeature(
+        accountId: accountId ?? this.accountId,
+        assignmentId: assignmentId ?? this.assignmentId,
+        featureId: featureId ?? this.featureId,
+        revision: revision ?? this.revision,
+        pendingProjection: pendingProjection ?? this.pendingProjection,
+        payloadJson: payloadJson ?? this.payloadJson,
+      );
+  SharedMapFeature copyWithCompanion(SharedMapFeaturesCompanion data) {
+    return SharedMapFeature(
+      accountId: data.accountId.present ? data.accountId.value : this.accountId,
+      assignmentId: data.assignmentId.present
+          ? data.assignmentId.value
+          : this.assignmentId,
+      featureId: data.featureId.present ? data.featureId.value : this.featureId,
+      revision: data.revision.present ? data.revision.value : this.revision,
+      pendingProjection: data.pendingProjection.present
+          ? data.pendingProjection.value
+          : this.pendingProjection,
+      payloadJson:
+          data.payloadJson.present ? data.payloadJson.value : this.payloadJson,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SharedMapFeature(')
+          ..write('accountId: $accountId, ')
+          ..write('assignmentId: $assignmentId, ')
+          ..write('featureId: $featureId, ')
+          ..write('revision: $revision, ')
+          ..write('pendingProjection: $pendingProjection, ')
+          ..write('payloadJson: $payloadJson')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(accountId, assignmentId, featureId, revision,
+      pendingProjection, payloadJson);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SharedMapFeature &&
+          other.accountId == this.accountId &&
+          other.assignmentId == this.assignmentId &&
+          other.featureId == this.featureId &&
+          other.revision == this.revision &&
+          other.pendingProjection == this.pendingProjection &&
+          other.payloadJson == this.payloadJson);
+}
+
+class SharedMapFeaturesCompanion extends UpdateCompanion<SharedMapFeature> {
+  final Value<String> accountId;
+  final Value<String> assignmentId;
+  final Value<String> featureId;
+  final Value<int> revision;
+  final Value<bool> pendingProjection;
+  final Value<String> payloadJson;
+  final Value<int> rowid;
+  const SharedMapFeaturesCompanion({
+    this.accountId = const Value.absent(),
+    this.assignmentId = const Value.absent(),
+    this.featureId = const Value.absent(),
+    this.revision = const Value.absent(),
+    this.pendingProjection = const Value.absent(),
+    this.payloadJson = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SharedMapFeaturesCompanion.insert({
+    required String accountId,
+    required String assignmentId,
+    required String featureId,
+    required int revision,
+    this.pendingProjection = const Value.absent(),
+    required String payloadJson,
+    this.rowid = const Value.absent(),
+  })  : accountId = Value(accountId),
+        assignmentId = Value(assignmentId),
+        featureId = Value(featureId),
+        revision = Value(revision),
+        payloadJson = Value(payloadJson);
+  static Insertable<SharedMapFeature> custom({
+    Expression<String>? accountId,
+    Expression<String>? assignmentId,
+    Expression<String>? featureId,
+    Expression<int>? revision,
+    Expression<bool>? pendingProjection,
+    Expression<String>? payloadJson,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (accountId != null) 'account_id': accountId,
+      if (assignmentId != null) 'assignment_id': assignmentId,
+      if (featureId != null) 'feature_id': featureId,
+      if (revision != null) 'revision': revision,
+      if (pendingProjection != null) 'pending_projection': pendingProjection,
+      if (payloadJson != null) 'payload_json': payloadJson,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SharedMapFeaturesCompanion copyWith(
+      {Value<String>? accountId,
+      Value<String>? assignmentId,
+      Value<String>? featureId,
+      Value<int>? revision,
+      Value<bool>? pendingProjection,
+      Value<String>? payloadJson,
+      Value<int>? rowid}) {
+    return SharedMapFeaturesCompanion(
+      accountId: accountId ?? this.accountId,
+      assignmentId: assignmentId ?? this.assignmentId,
+      featureId: featureId ?? this.featureId,
+      revision: revision ?? this.revision,
+      pendingProjection: pendingProjection ?? this.pendingProjection,
+      payloadJson: payloadJson ?? this.payloadJson,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (accountId.present) {
+      map['account_id'] = Variable<String>(accountId.value);
+    }
+    if (assignmentId.present) {
+      map['assignment_id'] = Variable<String>(assignmentId.value);
+    }
+    if (featureId.present) {
+      map['feature_id'] = Variable<String>(featureId.value);
+    }
+    if (revision.present) {
+      map['revision'] = Variable<int>(revision.value);
+    }
+    if (pendingProjection.present) {
+      map['pending_projection'] = Variable<bool>(pendingProjection.value);
+    }
+    if (payloadJson.present) {
+      map['payload_json'] = Variable<String>(payloadJson.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SharedMapFeaturesCompanion(')
+          ..write('accountId: $accountId, ')
+          ..write('assignmentId: $assignmentId, ')
+          ..write('featureId: $featureId, ')
+          ..write('revision: $revision, ')
+          ..write('pendingProjection: $pendingProjection, ')
+          ..write('payloadJson: $payloadJson, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SharedMapCursorsTable extends SharedMapCursors
+    with TableInfo<$SharedMapCursorsTable, SharedMapCursor> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SharedMapCursorsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _accountIdMeta =
+      const VerificationMeta('accountId');
+  @override
+  late final GeneratedColumn<String> accountId = GeneratedColumn<String>(
+      'account_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _assignmentIdMeta =
+      const VerificationMeta('assignmentId');
+  @override
+  late final GeneratedColumn<String> assignmentId = GeneratedColumn<String>(
+      'assignment_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _revisionMeta =
+      const VerificationMeta('revision');
+  @override
+  late final GeneratedColumn<int> revision = GeneratedColumn<int>(
+      'revision', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  @override
+  List<GeneratedColumn> get $columns => [accountId, assignmentId, revision];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'shared_map_cursors';
+  @override
+  VerificationContext validateIntegrity(Insertable<SharedMapCursor> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('account_id')) {
+      context.handle(_accountIdMeta,
+          accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta));
+    } else if (isInserting) {
+      context.missing(_accountIdMeta);
+    }
+    if (data.containsKey('assignment_id')) {
+      context.handle(
+          _assignmentIdMeta,
+          assignmentId.isAcceptableOrUnknown(
+              data['assignment_id']!, _assignmentIdMeta));
+    } else if (isInserting) {
+      context.missing(_assignmentIdMeta);
+    }
+    if (data.containsKey('revision')) {
+      context.handle(_revisionMeta,
+          revision.isAcceptableOrUnknown(data['revision']!, _revisionMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {accountId, assignmentId};
+  @override
+  SharedMapCursor map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SharedMapCursor(
+      accountId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}account_id'])!,
+      assignmentId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}assignment_id'])!,
+      revision: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}revision'])!,
+    );
+  }
+
+  @override
+  $SharedMapCursorsTable createAlias(String alias) {
+    return $SharedMapCursorsTable(attachedDatabase, alias);
+  }
+}
+
+class SharedMapCursor extends DataClass implements Insertable<SharedMapCursor> {
+  final String accountId;
+  final String assignmentId;
+  final int revision;
+  const SharedMapCursor(
+      {required this.accountId,
+      required this.assignmentId,
+      required this.revision});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['account_id'] = Variable<String>(accountId);
+    map['assignment_id'] = Variable<String>(assignmentId);
+    map['revision'] = Variable<int>(revision);
+    return map;
+  }
+
+  SharedMapCursorsCompanion toCompanion(bool nullToAbsent) {
+    return SharedMapCursorsCompanion(
+      accountId: Value(accountId),
+      assignmentId: Value(assignmentId),
+      revision: Value(revision),
+    );
+  }
+
+  factory SharedMapCursor.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SharedMapCursor(
+      accountId: serializer.fromJson<String>(json['accountId']),
+      assignmentId: serializer.fromJson<String>(json['assignmentId']),
+      revision: serializer.fromJson<int>(json['revision']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'accountId': serializer.toJson<String>(accountId),
+      'assignmentId': serializer.toJson<String>(assignmentId),
+      'revision': serializer.toJson<int>(revision),
+    };
+  }
+
+  SharedMapCursor copyWith(
+          {String? accountId, String? assignmentId, int? revision}) =>
+      SharedMapCursor(
+        accountId: accountId ?? this.accountId,
+        assignmentId: assignmentId ?? this.assignmentId,
+        revision: revision ?? this.revision,
+      );
+  SharedMapCursor copyWithCompanion(SharedMapCursorsCompanion data) {
+    return SharedMapCursor(
+      accountId: data.accountId.present ? data.accountId.value : this.accountId,
+      assignmentId: data.assignmentId.present
+          ? data.assignmentId.value
+          : this.assignmentId,
+      revision: data.revision.present ? data.revision.value : this.revision,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SharedMapCursor(')
+          ..write('accountId: $accountId, ')
+          ..write('assignmentId: $assignmentId, ')
+          ..write('revision: $revision')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(accountId, assignmentId, revision);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SharedMapCursor &&
+          other.accountId == this.accountId &&
+          other.assignmentId == this.assignmentId &&
+          other.revision == this.revision);
+}
+
+class SharedMapCursorsCompanion extends UpdateCompanion<SharedMapCursor> {
+  final Value<String> accountId;
+  final Value<String> assignmentId;
+  final Value<int> revision;
+  final Value<int> rowid;
+  const SharedMapCursorsCompanion({
+    this.accountId = const Value.absent(),
+    this.assignmentId = const Value.absent(),
+    this.revision = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SharedMapCursorsCompanion.insert({
+    required String accountId,
+    required String assignmentId,
+    this.revision = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : accountId = Value(accountId),
+        assignmentId = Value(assignmentId);
+  static Insertable<SharedMapCursor> custom({
+    Expression<String>? accountId,
+    Expression<String>? assignmentId,
+    Expression<int>? revision,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (accountId != null) 'account_id': accountId,
+      if (assignmentId != null) 'assignment_id': assignmentId,
+      if (revision != null) 'revision': revision,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SharedMapCursorsCompanion copyWith(
+      {Value<String>? accountId,
+      Value<String>? assignmentId,
+      Value<int>? revision,
+      Value<int>? rowid}) {
+    return SharedMapCursorsCompanion(
+      accountId: accountId ?? this.accountId,
+      assignmentId: assignmentId ?? this.assignmentId,
+      revision: revision ?? this.revision,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (accountId.present) {
+      map['account_id'] = Variable<String>(accountId.value);
+    }
+    if (assignmentId.present) {
+      map['assignment_id'] = Variable<String>(assignmentId.value);
+    }
+    if (revision.present) {
+      map['revision'] = Variable<int>(revision.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SharedMapCursorsCompanion(')
+          ..write('accountId: $accountId, ')
+          ..write('assignmentId: $assignmentId, ')
+          ..write('revision: $revision, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $EnumeratorsTable extends Enumerators
     with TableInfo<$EnumeratorsTable, Enumerator> {
   @override
@@ -306,6 +911,14 @@ class $AssignmentsTable extends Assignments
   late final GeneratedColumn<String> boundaryPolygonGeojson =
       GeneratedColumn<String>('boundary_polygon_geojson', aliasedName, false,
           type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _boundarySourceMeta =
+      const VerificationMeta('boundarySource');
+  @override
+  late final GeneratedColumn<String> boundarySource = GeneratedColumn<String>(
+      'boundary_source', aliasedName, true,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('unknown'));
   static const VerificationMeta _downloadedAtMeta =
       const VerificationMeta('downloadedAt');
   @override
@@ -382,6 +995,7 @@ class $AssignmentsTable extends Assignments
         enumeratorId,
         campaignId,
         boundaryPolygonGeojson,
+        boundarySource,
         downloadedAt,
         submittedAt,
         status,
@@ -432,6 +1046,12 @@ class $AssignmentsTable extends Assignments
               data['boundary_polygon_geojson']!, _boundaryPolygonGeojsonMeta));
     } else if (isInserting) {
       context.missing(_boundaryPolygonGeojsonMeta);
+    }
+    if (data.containsKey('boundary_source')) {
+      context.handle(
+          _boundarySourceMeta,
+          boundarySource.isAcceptableOrUnknown(
+              data['boundary_source']!, _boundarySourceMeta));
     }
     if (data.containsKey('downloaded_at')) {
       context.handle(
@@ -513,6 +1133,8 @@ class $AssignmentsTable extends Assignments
       boundaryPolygonGeojson: attachedDatabase.typeMapping.read(
           DriftSqlType.string,
           data['${effectivePrefix}boundary_polygon_geojson'])!,
+      boundarySource: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}boundary_source']),
       downloadedAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}downloaded_at']),
       submittedAt: attachedDatabase.typeMapping
@@ -550,6 +1172,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
   final String enumeratorId;
   final String campaignId;
   final String boundaryPolygonGeojson;
+  final String? boundarySource;
   final DateTime? downloadedAt;
   final DateTime? submittedAt;
   final String status;
@@ -566,6 +1189,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
       required this.enumeratorId,
       required this.campaignId,
       required this.boundaryPolygonGeojson,
+      this.boundarySource,
       this.downloadedAt,
       this.submittedAt,
       required this.status,
@@ -584,6 +1208,9 @@ class Assignment extends DataClass implements Insertable<Assignment> {
     map['enumerator_id'] = Variable<String>(enumeratorId);
     map['campaign_id'] = Variable<String>(campaignId);
     map['boundary_polygon_geojson'] = Variable<String>(boundaryPolygonGeojson);
+    if (!nullToAbsent || boundarySource != null) {
+      map['boundary_source'] = Variable<String>(boundarySource);
+    }
     if (!nullToAbsent || downloadedAt != null) {
       map['downloaded_at'] = Variable<DateTime>(downloadedAt);
     }
@@ -621,6 +1248,9 @@ class Assignment extends DataClass implements Insertable<Assignment> {
       enumeratorId: Value(enumeratorId),
       campaignId: Value(campaignId),
       boundaryPolygonGeojson: Value(boundaryPolygonGeojson),
+      boundarySource: boundarySource == null && nullToAbsent
+          ? const Value.absent()
+          : Value(boundarySource),
       downloadedAt: downloadedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(downloadedAt),
@@ -658,6 +1288,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
       campaignId: serializer.fromJson<String>(json['campaignId']),
       boundaryPolygonGeojson:
           serializer.fromJson<String>(json['boundaryPolygonGeojson']),
+      boundarySource: serializer.fromJson<String?>(json['boundarySource']),
       downloadedAt: serializer.fromJson<DateTime?>(json['downloadedAt']),
       submittedAt: serializer.fromJson<DateTime?>(json['submittedAt']),
       status: serializer.fromJson<String>(json['status']),
@@ -682,6 +1313,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
       'campaignId': serializer.toJson<String>(campaignId),
       'boundaryPolygonGeojson':
           serializer.toJson<String>(boundaryPolygonGeojson),
+      'boundarySource': serializer.toJson<String?>(boundarySource),
       'downloadedAt': serializer.toJson<DateTime?>(downloadedAt),
       'submittedAt': serializer.toJson<DateTime?>(submittedAt),
       'status': serializer.toJson<String>(status),
@@ -702,6 +1334,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
           String? enumeratorId,
           String? campaignId,
           String? boundaryPolygonGeojson,
+          Value<String?> boundarySource = const Value.absent(),
           Value<DateTime?> downloadedAt = const Value.absent(),
           Value<DateTime?> submittedAt = const Value.absent(),
           String? status,
@@ -719,6 +1352,8 @@ class Assignment extends DataClass implements Insertable<Assignment> {
         campaignId: campaignId ?? this.campaignId,
         boundaryPolygonGeojson:
             boundaryPolygonGeojson ?? this.boundaryPolygonGeojson,
+        boundarySource:
+            boundarySource.present ? boundarySource.value : this.boundarySource,
         downloadedAt:
             downloadedAt.present ? downloadedAt.value : this.downloadedAt,
         submittedAt: submittedAt.present ? submittedAt.value : this.submittedAt,
@@ -751,6 +1386,9 @@ class Assignment extends DataClass implements Insertable<Assignment> {
       boundaryPolygonGeojson: data.boundaryPolygonGeojson.present
           ? data.boundaryPolygonGeojson.value
           : this.boundaryPolygonGeojson,
+      boundarySource: data.boundarySource.present
+          ? data.boundarySource.value
+          : this.boundarySource,
       downloadedAt: data.downloadedAt.present
           ? data.downloadedAt.value
           : this.downloadedAt,
@@ -787,6 +1425,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
           ..write('enumeratorId: $enumeratorId, ')
           ..write('campaignId: $campaignId, ')
           ..write('boundaryPolygonGeojson: $boundaryPolygonGeojson, ')
+          ..write('boundarySource: $boundarySource, ')
           ..write('downloadedAt: $downloadedAt, ')
           ..write('submittedAt: $submittedAt, ')
           ..write('status: $status, ')
@@ -808,6 +1447,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
       enumeratorId,
       campaignId,
       boundaryPolygonGeojson,
+      boundarySource,
       downloadedAt,
       submittedAt,
       status,
@@ -827,6 +1467,7 @@ class Assignment extends DataClass implements Insertable<Assignment> {
           other.enumeratorId == this.enumeratorId &&
           other.campaignId == this.campaignId &&
           other.boundaryPolygonGeojson == this.boundaryPolygonGeojson &&
+          other.boundarySource == this.boundarySource &&
           other.downloadedAt == this.downloadedAt &&
           other.submittedAt == this.submittedAt &&
           other.status == this.status &&
@@ -845,6 +1486,7 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
   final Value<String> enumeratorId;
   final Value<String> campaignId;
   final Value<String> boundaryPolygonGeojson;
+  final Value<String?> boundarySource;
   final Value<DateTime?> downloadedAt;
   final Value<DateTime?> submittedAt;
   final Value<String> status;
@@ -862,6 +1504,7 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
     this.enumeratorId = const Value.absent(),
     this.campaignId = const Value.absent(),
     this.boundaryPolygonGeojson = const Value.absent(),
+    this.boundarySource = const Value.absent(),
     this.downloadedAt = const Value.absent(),
     this.submittedAt = const Value.absent(),
     this.status = const Value.absent(),
@@ -880,6 +1523,7 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
     required String enumeratorId,
     required String campaignId,
     required String boundaryPolygonGeojson,
+    this.boundarySource = const Value.absent(),
     this.downloadedAt = const Value.absent(),
     this.submittedAt = const Value.absent(),
     this.status = const Value.absent(),
@@ -902,6 +1546,7 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
     Expression<String>? enumeratorId,
     Expression<String>? campaignId,
     Expression<String>? boundaryPolygonGeojson,
+    Expression<String>? boundarySource,
     Expression<DateTime>? downloadedAt,
     Expression<DateTime>? submittedAt,
     Expression<String>? status,
@@ -921,6 +1566,7 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
       if (campaignId != null) 'campaign_id': campaignId,
       if (boundaryPolygonGeojson != null)
         'boundary_polygon_geojson': boundaryPolygonGeojson,
+      if (boundarySource != null) 'boundary_source': boundarySource,
       if (downloadedAt != null) 'downloaded_at': downloadedAt,
       if (submittedAt != null) 'submitted_at': submittedAt,
       if (status != null) 'status': status,
@@ -942,6 +1588,7 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
       Value<String>? enumeratorId,
       Value<String>? campaignId,
       Value<String>? boundaryPolygonGeojson,
+      Value<String?>? boundarySource,
       Value<DateTime?>? downloadedAt,
       Value<DateTime?>? submittedAt,
       Value<String>? status,
@@ -960,6 +1607,7 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
       campaignId: campaignId ?? this.campaignId,
       boundaryPolygonGeojson:
           boundaryPolygonGeojson ?? this.boundaryPolygonGeojson,
+      boundarySource: boundarySource ?? this.boundarySource,
       downloadedAt: downloadedAt ?? this.downloadedAt,
       submittedAt: submittedAt ?? this.submittedAt,
       status: status ?? this.status,
@@ -991,6 +1639,9 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
     if (boundaryPolygonGeojson.present) {
       map['boundary_polygon_geojson'] =
           Variable<String>(boundaryPolygonGeojson.value);
+    }
+    if (boundarySource.present) {
+      map['boundary_source'] = Variable<String>(boundarySource.value);
     }
     if (downloadedAt.present) {
       map['downloaded_at'] = Variable<DateTime>(downloadedAt.value);
@@ -1039,6 +1690,7 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
           ..write('enumeratorId: $enumeratorId, ')
           ..write('campaignId: $campaignId, ')
           ..write('boundaryPolygonGeojson: $boundaryPolygonGeojson, ')
+          ..write('boundarySource: $boundarySource, ')
           ..write('downloadedAt: $downloadedAt, ')
           ..write('submittedAt: $submittedAt, ')
           ..write('status: $status, ')
@@ -1050,6 +1702,252 @@ class AssignmentsCompanion extends UpdateCompanion<Assignment> {
           ..write('driveFolderPath: $driveFolderPath, ')
           ..write('driveFolderUrl: $driveFolderUrl, ')
           ..write('driveUploadConfirmedAt: $driveUploadConfirmedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $AssignmentSelectionsTable extends AssignmentSelections
+    with TableInfo<$AssignmentSelectionsTable, AssignmentSelection> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AssignmentSelectionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+      'user_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _assignmentIdMeta =
+      const VerificationMeta('assignmentId');
+  @override
+  late final GeneratedColumn<String> assignmentId = GeneratedColumn<String>(
+      'assignment_id', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES assignments (id)'));
+  static const VerificationMeta _selectedAtMeta =
+      const VerificationMeta('selectedAt');
+  @override
+  late final GeneratedColumn<DateTime> selectedAt = GeneratedColumn<DateTime>(
+      'selected_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [userId, assignmentId, selectedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'assignment_selections';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<AssignmentSelection> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('user_id')) {
+      context.handle(_userIdMeta,
+          userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta));
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('assignment_id')) {
+      context.handle(
+          _assignmentIdMeta,
+          assignmentId.isAcceptableOrUnknown(
+              data['assignment_id']!, _assignmentIdMeta));
+    } else if (isInserting) {
+      context.missing(_assignmentIdMeta);
+    }
+    if (data.containsKey('selected_at')) {
+      context.handle(
+          _selectedAtMeta,
+          selectedAt.isAcceptableOrUnknown(
+              data['selected_at']!, _selectedAtMeta));
+    } else if (isInserting) {
+      context.missing(_selectedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {userId};
+  @override
+  AssignmentSelection map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AssignmentSelection(
+      userId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}user_id'])!,
+      assignmentId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}assignment_id'])!,
+      selectedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}selected_at'])!,
+    );
+  }
+
+  @override
+  $AssignmentSelectionsTable createAlias(String alias) {
+    return $AssignmentSelectionsTable(attachedDatabase, alias);
+  }
+}
+
+class AssignmentSelection extends DataClass
+    implements Insertable<AssignmentSelection> {
+  final String userId;
+  final String assignmentId;
+  final DateTime selectedAt;
+  const AssignmentSelection(
+      {required this.userId,
+      required this.assignmentId,
+      required this.selectedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['user_id'] = Variable<String>(userId);
+    map['assignment_id'] = Variable<String>(assignmentId);
+    map['selected_at'] = Variable<DateTime>(selectedAt);
+    return map;
+  }
+
+  AssignmentSelectionsCompanion toCompanion(bool nullToAbsent) {
+    return AssignmentSelectionsCompanion(
+      userId: Value(userId),
+      assignmentId: Value(assignmentId),
+      selectedAt: Value(selectedAt),
+    );
+  }
+
+  factory AssignmentSelection.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AssignmentSelection(
+      userId: serializer.fromJson<String>(json['userId']),
+      assignmentId: serializer.fromJson<String>(json['assignmentId']),
+      selectedAt: serializer.fromJson<DateTime>(json['selectedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'userId': serializer.toJson<String>(userId),
+      'assignmentId': serializer.toJson<String>(assignmentId),
+      'selectedAt': serializer.toJson<DateTime>(selectedAt),
+    };
+  }
+
+  AssignmentSelection copyWith(
+          {String? userId, String? assignmentId, DateTime? selectedAt}) =>
+      AssignmentSelection(
+        userId: userId ?? this.userId,
+        assignmentId: assignmentId ?? this.assignmentId,
+        selectedAt: selectedAt ?? this.selectedAt,
+      );
+  AssignmentSelection copyWithCompanion(AssignmentSelectionsCompanion data) {
+    return AssignmentSelection(
+      userId: data.userId.present ? data.userId.value : this.userId,
+      assignmentId: data.assignmentId.present
+          ? data.assignmentId.value
+          : this.assignmentId,
+      selectedAt:
+          data.selectedAt.present ? data.selectedAt.value : this.selectedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AssignmentSelection(')
+          ..write('userId: $userId, ')
+          ..write('assignmentId: $assignmentId, ')
+          ..write('selectedAt: $selectedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(userId, assignmentId, selectedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AssignmentSelection &&
+          other.userId == this.userId &&
+          other.assignmentId == this.assignmentId &&
+          other.selectedAt == this.selectedAt);
+}
+
+class AssignmentSelectionsCompanion
+    extends UpdateCompanion<AssignmentSelection> {
+  final Value<String> userId;
+  final Value<String> assignmentId;
+  final Value<DateTime> selectedAt;
+  final Value<int> rowid;
+  const AssignmentSelectionsCompanion({
+    this.userId = const Value.absent(),
+    this.assignmentId = const Value.absent(),
+    this.selectedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AssignmentSelectionsCompanion.insert({
+    required String userId,
+    required String assignmentId,
+    required DateTime selectedAt,
+    this.rowid = const Value.absent(),
+  })  : userId = Value(userId),
+        assignmentId = Value(assignmentId),
+        selectedAt = Value(selectedAt);
+  static Insertable<AssignmentSelection> custom({
+    Expression<String>? userId,
+    Expression<String>? assignmentId,
+    Expression<DateTime>? selectedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (userId != null) 'user_id': userId,
+      if (assignmentId != null) 'assignment_id': assignmentId,
+      if (selectedAt != null) 'selected_at': selectedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AssignmentSelectionsCompanion copyWith(
+      {Value<String>? userId,
+      Value<String>? assignmentId,
+      Value<DateTime>? selectedAt,
+      Value<int>? rowid}) {
+    return AssignmentSelectionsCompanion(
+      userId: userId ?? this.userId,
+      assignmentId: assignmentId ?? this.assignmentId,
+      selectedAt: selectedAt ?? this.selectedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (assignmentId.present) {
+      map['assignment_id'] = Variable<String>(assignmentId.value);
+    }
+    if (selectedAt.present) {
+      map['selected_at'] = Variable<DateTime>(selectedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AssignmentSelectionsCompanion(')
+          ..write('userId: $userId, ')
+          ..write('assignmentId: $assignmentId, ')
+          ..write('selectedAt: $selectedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2273,6 +3171,16 @@ class $SubmissionsTable extends Submissions
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
       'id', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _isAdditionalObservationMeta =
+      const VerificationMeta('isAdditionalObservation');
+  @override
+  late final GeneratedColumn<bool> isAdditionalObservation =
+      GeneratedColumn<bool>('is_additional_observation', aliasedName, false,
+          type: DriftSqlType.bool,
+          requiredDuringInsert: false,
+          defaultConstraints: GeneratedColumn.constraintIsAlways(
+              'CHECK ("is_additional_observation" IN (0, 1))'),
+          defaultValue: const Constant(false));
   static const VerificationMeta _featureIdMeta =
       const VerificationMeta('featureId');
   @override
@@ -2344,6 +3252,7 @@ class $SubmissionsTable extends Submissions
   @override
   List<GeneratedColumn> get $columns => [
         id,
+        isAdditionalObservation,
         featureId,
         submittedBy,
         doesNotExist,
@@ -2369,6 +3278,13 @@ class $SubmissionsTable extends Submissions
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     } else if (isInserting) {
       context.missing(_idMeta);
+    }
+    if (data.containsKey('is_additional_observation')) {
+      context.handle(
+          _isAdditionalObservationMeta,
+          isAdditionalObservation.isAcceptableOrUnknown(
+              data['is_additional_observation']!,
+              _isAdditionalObservationMeta));
     }
     if (data.containsKey('feature_id')) {
       context.handle(_featureIdMeta,
@@ -2439,6 +3355,9 @@ class $SubmissionsTable extends Submissions
     return Submission(
       id: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      isAdditionalObservation: attachedDatabase.typeMapping.read(
+          DriftSqlType.bool,
+          data['${effectivePrefix}is_additional_observation'])!,
       featureId: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}feature_id'])!,
       submittedBy: attachedDatabase.typeMapping
@@ -2470,6 +3389,7 @@ class $SubmissionsTable extends Submissions
 
 class Submission extends DataClass implements Insertable<Submission> {
   final String id;
+  final bool isAdditionalObservation;
   final String featureId;
   final String? submittedBy;
   final bool doesNotExist;
@@ -2482,6 +3402,7 @@ class Submission extends DataClass implements Insertable<Submission> {
   final DateTime updatedAt;
   const Submission(
       {required this.id,
+      required this.isAdditionalObservation,
       required this.featureId,
       this.submittedBy,
       required this.doesNotExist,
@@ -2496,6 +3417,7 @@ class Submission extends DataClass implements Insertable<Submission> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
+    map['is_additional_observation'] = Variable<bool>(isAdditionalObservation);
     map['feature_id'] = Variable<String>(featureId);
     if (!nullToAbsent || submittedBy != null) {
       map['submitted_by'] = Variable<String>(submittedBy);
@@ -2520,6 +3442,7 @@ class Submission extends DataClass implements Insertable<Submission> {
   SubmissionsCompanion toCompanion(bool nullToAbsent) {
     return SubmissionsCompanion(
       id: Value(id),
+      isAdditionalObservation: Value(isAdditionalObservation),
       featureId: Value(featureId),
       submittedBy: submittedBy == null && nullToAbsent
           ? const Value.absent()
@@ -2546,6 +3469,8 @@ class Submission extends DataClass implements Insertable<Submission> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Submission(
       id: serializer.fromJson<String>(json['id']),
+      isAdditionalObservation:
+          serializer.fromJson<bool>(json['isAdditionalObservation']),
       featureId: serializer.fromJson<String>(json['featureId']),
       submittedBy: serializer.fromJson<String?>(json['submittedBy']),
       doesNotExist: serializer.fromJson<bool>(json['doesNotExist']),
@@ -2563,6 +3488,8 @@ class Submission extends DataClass implements Insertable<Submission> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
+      'isAdditionalObservation':
+          serializer.toJson<bool>(isAdditionalObservation),
       'featureId': serializer.toJson<String>(featureId),
       'submittedBy': serializer.toJson<String?>(submittedBy),
       'doesNotExist': serializer.toJson<bool>(doesNotExist),
@@ -2578,6 +3505,7 @@ class Submission extends DataClass implements Insertable<Submission> {
 
   Submission copyWith(
           {String? id,
+          bool? isAdditionalObservation,
           String? featureId,
           Value<String?> submittedBy = const Value.absent(),
           bool? doesNotExist,
@@ -2590,6 +3518,8 @@ class Submission extends DataClass implements Insertable<Submission> {
           DateTime? updatedAt}) =>
       Submission(
         id: id ?? this.id,
+        isAdditionalObservation:
+            isAdditionalObservation ?? this.isAdditionalObservation,
         featureId: featureId ?? this.featureId,
         submittedBy: submittedBy.present ? submittedBy.value : this.submittedBy,
         doesNotExist: doesNotExist ?? this.doesNotExist,
@@ -2607,6 +3537,9 @@ class Submission extends DataClass implements Insertable<Submission> {
   Submission copyWithCompanion(SubmissionsCompanion data) {
     return Submission(
       id: data.id.present ? data.id.value : this.id,
+      isAdditionalObservation: data.isAdditionalObservation.present
+          ? data.isAdditionalObservation.value
+          : this.isAdditionalObservation,
       featureId: data.featureId.present ? data.featureId.value : this.featureId,
       submittedBy:
           data.submittedBy.present ? data.submittedBy.value : this.submittedBy,
@@ -2633,6 +3566,7 @@ class Submission extends DataClass implements Insertable<Submission> {
   String toString() {
     return (StringBuffer('Submission(')
           ..write('id: $id, ')
+          ..write('isAdditionalObservation: $isAdditionalObservation, ')
           ..write('featureId: $featureId, ')
           ..write('submittedBy: $submittedBy, ')
           ..write('doesNotExist: $doesNotExist, ')
@@ -2650,6 +3584,7 @@ class Submission extends DataClass implements Insertable<Submission> {
   @override
   int get hashCode => Object.hash(
       id,
+      isAdditionalObservation,
       featureId,
       submittedBy,
       doesNotExist,
@@ -2665,6 +3600,7 @@ class Submission extends DataClass implements Insertable<Submission> {
       identical(this, other) ||
       (other is Submission &&
           other.id == this.id &&
+          other.isAdditionalObservation == this.isAdditionalObservation &&
           other.featureId == this.featureId &&
           other.submittedBy == this.submittedBy &&
           other.doesNotExist == this.doesNotExist &&
@@ -2679,6 +3615,7 @@ class Submission extends DataClass implements Insertable<Submission> {
 
 class SubmissionsCompanion extends UpdateCompanion<Submission> {
   final Value<String> id;
+  final Value<bool> isAdditionalObservation;
   final Value<String> featureId;
   final Value<String?> submittedBy;
   final Value<bool> doesNotExist;
@@ -2692,6 +3629,7 @@ class SubmissionsCompanion extends UpdateCompanion<Submission> {
   final Value<int> rowid;
   const SubmissionsCompanion({
     this.id = const Value.absent(),
+    this.isAdditionalObservation = const Value.absent(),
     this.featureId = const Value.absent(),
     this.submittedBy = const Value.absent(),
     this.doesNotExist = const Value.absent(),
@@ -2706,6 +3644,7 @@ class SubmissionsCompanion extends UpdateCompanion<Submission> {
   });
   SubmissionsCompanion.insert({
     required String id,
+    this.isAdditionalObservation = const Value.absent(),
     required String featureId,
     this.submittedBy = const Value.absent(),
     this.doesNotExist = const Value.absent(),
@@ -2723,6 +3662,7 @@ class SubmissionsCompanion extends UpdateCompanion<Submission> {
         updatedAt = Value(updatedAt);
   static Insertable<Submission> custom({
     Expression<String>? id,
+    Expression<bool>? isAdditionalObservation,
     Expression<String>? featureId,
     Expression<String>? submittedBy,
     Expression<bool>? doesNotExist,
@@ -2737,6 +3677,8 @@ class SubmissionsCompanion extends UpdateCompanion<Submission> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
+      if (isAdditionalObservation != null)
+        'is_additional_observation': isAdditionalObservation,
       if (featureId != null) 'feature_id': featureId,
       if (submittedBy != null) 'submitted_by': submittedBy,
       if (doesNotExist != null) 'does_not_exist': doesNotExist,
@@ -2753,6 +3695,7 @@ class SubmissionsCompanion extends UpdateCompanion<Submission> {
 
   SubmissionsCompanion copyWith(
       {Value<String>? id,
+      Value<bool>? isAdditionalObservation,
       Value<String>? featureId,
       Value<String?>? submittedBy,
       Value<bool>? doesNotExist,
@@ -2766,6 +3709,8 @@ class SubmissionsCompanion extends UpdateCompanion<Submission> {
       Value<int>? rowid}) {
     return SubmissionsCompanion(
       id: id ?? this.id,
+      isAdditionalObservation:
+          isAdditionalObservation ?? this.isAdditionalObservation,
       featureId: featureId ?? this.featureId,
       submittedBy: submittedBy ?? this.submittedBy,
       doesNotExist: doesNotExist ?? this.doesNotExist,
@@ -2785,6 +3730,10 @@ class SubmissionsCompanion extends UpdateCompanion<Submission> {
     final map = <String, Expression>{};
     if (id.present) {
       map['id'] = Variable<String>(id.value);
+    }
+    if (isAdditionalObservation.present) {
+      map['is_additional_observation'] =
+          Variable<bool>(isAdditionalObservation.value);
     }
     if (featureId.present) {
       map['feature_id'] = Variable<String>(featureId.value);
@@ -2826,6 +3775,7 @@ class SubmissionsCompanion extends UpdateCompanion<Submission> {
   String toString() {
     return (StringBuffer('SubmissionsCompanion(')
           ..write('id: $id, ')
+          ..write('isAdditionalObservation: $isAdditionalObservation, ')
           ..write('featureId: $featureId, ')
           ..write('submittedBy: $submittedBy, ')
           ..write('doesNotExist: $doesNotExist, ')
@@ -5166,6 +6116,12 @@ class $SyncJobsTable extends SyncJobs with TableInfo<$SyncJobsTable, SyncJob> {
   late final GeneratedColumn<String> entityType = GeneratedColumn<String>(
       'entity_type', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _payloadJsonMeta =
+      const VerificationMeta('payloadJson');
+  @override
+  late final GeneratedColumn<String> payloadJson = GeneratedColumn<String>(
+      'payload_json', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _entityIdMeta =
       const VerificationMeta('entityId');
   @override
@@ -5215,6 +6171,7 @@ class $SyncJobsTable extends SyncJobs with TableInfo<$SyncJobsTable, SyncJob> {
   List<GeneratedColumn> get $columns => [
         id,
         entityType,
+        payloadJson,
         entityId,
         status,
         blocksOnSubmissionId,
@@ -5245,6 +6202,12 @@ class $SyncJobsTable extends SyncJobs with TableInfo<$SyncJobsTable, SyncJob> {
               data['entity_type']!, _entityTypeMeta));
     } else if (isInserting) {
       context.missing(_entityTypeMeta);
+    }
+    if (data.containsKey('payload_json')) {
+      context.handle(
+          _payloadJsonMeta,
+          payloadJson.isAcceptableOrUnknown(
+              data['payload_json']!, _payloadJsonMeta));
     }
     if (data.containsKey('entity_id')) {
       context.handle(_entityIdMeta,
@@ -5295,6 +6258,8 @@ class $SyncJobsTable extends SyncJobs with TableInfo<$SyncJobsTable, SyncJob> {
           .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
       entityType: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}entity_type'])!,
+      payloadJson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}payload_json']),
       entityId: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}entity_id'])!,
       status: attachedDatabase.typeMapping
@@ -5322,6 +6287,7 @@ class $SyncJobsTable extends SyncJobs with TableInfo<$SyncJobsTable, SyncJob> {
 class SyncJob extends DataClass implements Insertable<SyncJob> {
   final String id;
   final String entityType;
+  final String? payloadJson;
   final String entityId;
   final String status;
   final String? blocksOnSubmissionId;
@@ -5332,6 +6298,7 @@ class SyncJob extends DataClass implements Insertable<SyncJob> {
   const SyncJob(
       {required this.id,
       required this.entityType,
+      this.payloadJson,
       required this.entityId,
       required this.status,
       this.blocksOnSubmissionId,
@@ -5344,6 +6311,9 @@ class SyncJob extends DataClass implements Insertable<SyncJob> {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['entity_type'] = Variable<String>(entityType);
+    if (!nullToAbsent || payloadJson != null) {
+      map['payload_json'] = Variable<String>(payloadJson);
+    }
     map['entity_id'] = Variable<String>(entityId);
     map['status'] = Variable<String>(status);
     if (!nullToAbsent || blocksOnSubmissionId != null) {
@@ -5364,6 +6334,9 @@ class SyncJob extends DataClass implements Insertable<SyncJob> {
     return SyncJobsCompanion(
       id: Value(id),
       entityType: Value(entityType),
+      payloadJson: payloadJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(payloadJson),
       entityId: Value(entityId),
       status: Value(status),
       blocksOnSubmissionId: blocksOnSubmissionId == null && nullToAbsent
@@ -5386,6 +6359,7 @@ class SyncJob extends DataClass implements Insertable<SyncJob> {
     return SyncJob(
       id: serializer.fromJson<String>(json['id']),
       entityType: serializer.fromJson<String>(json['entityType']),
+      payloadJson: serializer.fromJson<String?>(json['payloadJson']),
       entityId: serializer.fromJson<String>(json['entityId']),
       status: serializer.fromJson<String>(json['status']),
       blocksOnSubmissionId:
@@ -5402,6 +6376,7 @@ class SyncJob extends DataClass implements Insertable<SyncJob> {
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'entityType': serializer.toJson<String>(entityType),
+      'payloadJson': serializer.toJson<String?>(payloadJson),
       'entityId': serializer.toJson<String>(entityId),
       'status': serializer.toJson<String>(status),
       'blocksOnSubmissionId': serializer.toJson<String?>(blocksOnSubmissionId),
@@ -5415,6 +6390,7 @@ class SyncJob extends DataClass implements Insertable<SyncJob> {
   SyncJob copyWith(
           {String? id,
           String? entityType,
+          Value<String?> payloadJson = const Value.absent(),
           String? entityId,
           String? status,
           Value<String?> blocksOnSubmissionId = const Value.absent(),
@@ -5425,6 +6401,7 @@ class SyncJob extends DataClass implements Insertable<SyncJob> {
       SyncJob(
         id: id ?? this.id,
         entityType: entityType ?? this.entityType,
+        payloadJson: payloadJson.present ? payloadJson.value : this.payloadJson,
         entityId: entityId ?? this.entityId,
         status: status ?? this.status,
         blocksOnSubmissionId: blocksOnSubmissionId.present
@@ -5440,6 +6417,8 @@ class SyncJob extends DataClass implements Insertable<SyncJob> {
       id: data.id.present ? data.id.value : this.id,
       entityType:
           data.entityType.present ? data.entityType.value : this.entityType,
+      payloadJson:
+          data.payloadJson.present ? data.payloadJson.value : this.payloadJson,
       entityId: data.entityId.present ? data.entityId.value : this.entityId,
       status: data.status.present ? data.status.value : this.status,
       blocksOnSubmissionId: data.blocksOnSubmissionId.present
@@ -5458,6 +6437,7 @@ class SyncJob extends DataClass implements Insertable<SyncJob> {
     return (StringBuffer('SyncJob(')
           ..write('id: $id, ')
           ..write('entityType: $entityType, ')
+          ..write('payloadJson: $payloadJson, ')
           ..write('entityId: $entityId, ')
           ..write('status: $status, ')
           ..write('blocksOnSubmissionId: $blocksOnSubmissionId, ')
@@ -5470,7 +6450,7 @@ class SyncJob extends DataClass implements Insertable<SyncJob> {
   }
 
   @override
-  int get hashCode => Object.hash(id, entityType, entityId, status,
+  int get hashCode => Object.hash(id, entityType, payloadJson, entityId, status,
       blocksOnSubmissionId, attempts, lastError, nextRetryAt, createdAt);
   @override
   bool operator ==(Object other) =>
@@ -5478,6 +6458,7 @@ class SyncJob extends DataClass implements Insertable<SyncJob> {
       (other is SyncJob &&
           other.id == this.id &&
           other.entityType == this.entityType &&
+          other.payloadJson == this.payloadJson &&
           other.entityId == this.entityId &&
           other.status == this.status &&
           other.blocksOnSubmissionId == this.blocksOnSubmissionId &&
@@ -5490,6 +6471,7 @@ class SyncJob extends DataClass implements Insertable<SyncJob> {
 class SyncJobsCompanion extends UpdateCompanion<SyncJob> {
   final Value<String> id;
   final Value<String> entityType;
+  final Value<String?> payloadJson;
   final Value<String> entityId;
   final Value<String> status;
   final Value<String?> blocksOnSubmissionId;
@@ -5501,6 +6483,7 @@ class SyncJobsCompanion extends UpdateCompanion<SyncJob> {
   const SyncJobsCompanion({
     this.id = const Value.absent(),
     this.entityType = const Value.absent(),
+    this.payloadJson = const Value.absent(),
     this.entityId = const Value.absent(),
     this.status = const Value.absent(),
     this.blocksOnSubmissionId = const Value.absent(),
@@ -5513,6 +6496,7 @@ class SyncJobsCompanion extends UpdateCompanion<SyncJob> {
   SyncJobsCompanion.insert({
     required String id,
     required String entityType,
+    this.payloadJson = const Value.absent(),
     required String entityId,
     this.status = const Value.absent(),
     this.blocksOnSubmissionId = const Value.absent(),
@@ -5528,6 +6512,7 @@ class SyncJobsCompanion extends UpdateCompanion<SyncJob> {
   static Insertable<SyncJob> custom({
     Expression<String>? id,
     Expression<String>? entityType,
+    Expression<String>? payloadJson,
     Expression<String>? entityId,
     Expression<String>? status,
     Expression<String>? blocksOnSubmissionId,
@@ -5540,6 +6525,7 @@ class SyncJobsCompanion extends UpdateCompanion<SyncJob> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (entityType != null) 'entity_type': entityType,
+      if (payloadJson != null) 'payload_json': payloadJson,
       if (entityId != null) 'entity_id': entityId,
       if (status != null) 'status': status,
       if (blocksOnSubmissionId != null)
@@ -5555,6 +6541,7 @@ class SyncJobsCompanion extends UpdateCompanion<SyncJob> {
   SyncJobsCompanion copyWith(
       {Value<String>? id,
       Value<String>? entityType,
+      Value<String?>? payloadJson,
       Value<String>? entityId,
       Value<String>? status,
       Value<String?>? blocksOnSubmissionId,
@@ -5566,6 +6553,7 @@ class SyncJobsCompanion extends UpdateCompanion<SyncJob> {
     return SyncJobsCompanion(
       id: id ?? this.id,
       entityType: entityType ?? this.entityType,
+      payloadJson: payloadJson ?? this.payloadJson,
       entityId: entityId ?? this.entityId,
       status: status ?? this.status,
       blocksOnSubmissionId: blocksOnSubmissionId ?? this.blocksOnSubmissionId,
@@ -5585,6 +6573,9 @@ class SyncJobsCompanion extends UpdateCompanion<SyncJob> {
     }
     if (entityType.present) {
       map['entity_type'] = Variable<String>(entityType.value);
+    }
+    if (payloadJson.present) {
+      map['payload_json'] = Variable<String>(payloadJson.value);
     }
     if (entityId.present) {
       map['entity_id'] = Variable<String>(entityId.value);
@@ -5619,6 +6610,7 @@ class SyncJobsCompanion extends UpdateCompanion<SyncJob> {
     return (StringBuffer('SyncJobsCompanion(')
           ..write('id: $id, ')
           ..write('entityType: $entityType, ')
+          ..write('payloadJson: $payloadJson, ')
           ..write('entityId: $entityId, ')
           ..write('status: $status, ')
           ..write('blocksOnSubmissionId: $blocksOnSubmissionId, ')
@@ -6110,6 +7102,12 @@ class $DriveUploadJobsTable extends DriveUploadJobs
       type: DriftSqlType.string,
       requiredDuringInsert: false,
       defaultValue: const Constant('pending'));
+  static const VerificationMeta _claimProcessIdentityMeta =
+      const VerificationMeta('claimProcessIdentity');
+  @override
+  late final GeneratedColumn<String> claimProcessIdentity =
+      GeneratedColumn<String>('claim_process_identity', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _resumableUriMeta =
       const VerificationMeta('resumableUri');
   @override
@@ -6160,6 +7158,7 @@ class $DriveUploadJobsTable extends DriveUploadJobs
         fileSizeBytes,
         capturedAt,
         status,
+        claimProcessIdentity,
         resumableUri,
         driveFileId,
         retryCount,
@@ -6236,6 +7235,12 @@ class $DriveUploadJobsTable extends DriveUploadJobs
       context.handle(_statusMeta,
           status.isAcceptableOrUnknown(data['status']!, _statusMeta));
     }
+    if (data.containsKey('claim_process_identity')) {
+      context.handle(
+          _claimProcessIdentityMeta,
+          claimProcessIdentity.isAcceptableOrUnknown(
+              data['claim_process_identity']!, _claimProcessIdentityMeta));
+    }
     if (data.containsKey('resumable_uri')) {
       context.handle(
           _resumableUriMeta,
@@ -6301,6 +7306,9 @@ class $DriveUploadJobsTable extends DriveUploadJobs
           .read(DriftSqlType.dateTime, data['${effectivePrefix}captured_at'])!,
       status: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
+      claimProcessIdentity: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}claim_process_identity']),
       resumableUri: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}resumable_uri']),
       driveFileId: attachedDatabase.typeMapping
@@ -6335,6 +7343,9 @@ class DriveUploadJob extends DataClass implements Insertable<DriveUploadJob> {
   final int fileSizeBytes;
   final DateTime capturedAt;
   final String status;
+
+  /// VM identity of an active direct-Drive claim; never a wall-clock lease.
+  final String? claimProcessIdentity;
   final String? resumableUri;
   final String? driveFileId;
   final int retryCount;
@@ -6352,6 +7363,7 @@ class DriveUploadJob extends DataClass implements Insertable<DriveUploadJob> {
       required this.fileSizeBytes,
       required this.capturedAt,
       required this.status,
+      this.claimProcessIdentity,
       this.resumableUri,
       this.driveFileId,
       required this.retryCount,
@@ -6375,6 +7387,9 @@ class DriveUploadJob extends DataClass implements Insertable<DriveUploadJob> {
     map['file_size_bytes'] = Variable<int>(fileSizeBytes);
     map['captured_at'] = Variable<DateTime>(capturedAt);
     map['status'] = Variable<String>(status);
+    if (!nullToAbsent || claimProcessIdentity != null) {
+      map['claim_process_identity'] = Variable<String>(claimProcessIdentity);
+    }
     if (!nullToAbsent || resumableUri != null) {
       map['resumable_uri'] = Variable<String>(resumableUri);
     }
@@ -6408,6 +7423,9 @@ class DriveUploadJob extends DataClass implements Insertable<DriveUploadJob> {
       fileSizeBytes: Value(fileSizeBytes),
       capturedAt: Value(capturedAt),
       status: Value(status),
+      claimProcessIdentity: claimProcessIdentity == null && nullToAbsent
+          ? const Value.absent()
+          : Value(claimProcessIdentity),
       resumableUri: resumableUri == null && nullToAbsent
           ? const Value.absent()
           : Value(resumableUri),
@@ -6439,6 +7457,8 @@ class DriveUploadJob extends DataClass implements Insertable<DriveUploadJob> {
       fileSizeBytes: serializer.fromJson<int>(json['fileSizeBytes']),
       capturedAt: serializer.fromJson<DateTime>(json['capturedAt']),
       status: serializer.fromJson<String>(json['status']),
+      claimProcessIdentity:
+          serializer.fromJson<String?>(json['claimProcessIdentity']),
       resumableUri: serializer.fromJson<String?>(json['resumableUri']),
       driveFileId: serializer.fromJson<String?>(json['driveFileId']),
       retryCount: serializer.fromJson<int>(json['retryCount']),
@@ -6461,6 +7481,7 @@ class DriveUploadJob extends DataClass implements Insertable<DriveUploadJob> {
       'fileSizeBytes': serializer.toJson<int>(fileSizeBytes),
       'capturedAt': serializer.toJson<DateTime>(capturedAt),
       'status': serializer.toJson<String>(status),
+      'claimProcessIdentity': serializer.toJson<String?>(claimProcessIdentity),
       'resumableUri': serializer.toJson<String?>(resumableUri),
       'driveFileId': serializer.toJson<String?>(driveFileId),
       'retryCount': serializer.toJson<int>(retryCount),
@@ -6481,6 +7502,7 @@ class DriveUploadJob extends DataClass implements Insertable<DriveUploadJob> {
           int? fileSizeBytes,
           DateTime? capturedAt,
           String? status,
+          Value<String?> claimProcessIdentity = const Value.absent(),
           Value<String?> resumableUri = const Value.absent(),
           Value<String?> driveFileId = const Value.absent(),
           int? retryCount,
@@ -6498,6 +7520,9 @@ class DriveUploadJob extends DataClass implements Insertable<DriveUploadJob> {
         fileSizeBytes: fileSizeBytes ?? this.fileSizeBytes,
         capturedAt: capturedAt ?? this.capturedAt,
         status: status ?? this.status,
+        claimProcessIdentity: claimProcessIdentity.present
+            ? claimProcessIdentity.value
+            : this.claimProcessIdentity,
         resumableUri:
             resumableUri.present ? resumableUri.value : this.resumableUri,
         driveFileId: driveFileId.present ? driveFileId.value : this.driveFileId,
@@ -6524,6 +7549,9 @@ class DriveUploadJob extends DataClass implements Insertable<DriveUploadJob> {
       capturedAt:
           data.capturedAt.present ? data.capturedAt.value : this.capturedAt,
       status: data.status.present ? data.status.value : this.status,
+      claimProcessIdentity: data.claimProcessIdentity.present
+          ? data.claimProcessIdentity.value
+          : this.claimProcessIdentity,
       resumableUri: data.resumableUri.present
           ? data.resumableUri.value
           : this.resumableUri,
@@ -6553,6 +7581,7 @@ class DriveUploadJob extends DataClass implements Insertable<DriveUploadJob> {
           ..write('fileSizeBytes: $fileSizeBytes, ')
           ..write('capturedAt: $capturedAt, ')
           ..write('status: $status, ')
+          ..write('claimProcessIdentity: $claimProcessIdentity, ')
           ..write('resumableUri: $resumableUri, ')
           ..write('driveFileId: $driveFileId, ')
           ..write('retryCount: $retryCount, ')
@@ -6575,6 +7604,7 @@ class DriveUploadJob extends DataClass implements Insertable<DriveUploadJob> {
       fileSizeBytes,
       capturedAt,
       status,
+      claimProcessIdentity,
       resumableUri,
       driveFileId,
       retryCount,
@@ -6595,6 +7625,7 @@ class DriveUploadJob extends DataClass implements Insertable<DriveUploadJob> {
           other.fileSizeBytes == this.fileSizeBytes &&
           other.capturedAt == this.capturedAt &&
           other.status == this.status &&
+          other.claimProcessIdentity == this.claimProcessIdentity &&
           other.resumableUri == this.resumableUri &&
           other.driveFileId == this.driveFileId &&
           other.retryCount == this.retryCount &&
@@ -6614,6 +7645,7 @@ class DriveUploadJobsCompanion extends UpdateCompanion<DriveUploadJob> {
   final Value<int> fileSizeBytes;
   final Value<DateTime> capturedAt;
   final Value<String> status;
+  final Value<String?> claimProcessIdentity;
   final Value<String?> resumableUri;
   final Value<String?> driveFileId;
   final Value<int> retryCount;
@@ -6632,6 +7664,7 @@ class DriveUploadJobsCompanion extends UpdateCompanion<DriveUploadJob> {
     this.fileSizeBytes = const Value.absent(),
     this.capturedAt = const Value.absent(),
     this.status = const Value.absent(),
+    this.claimProcessIdentity = const Value.absent(),
     this.resumableUri = const Value.absent(),
     this.driveFileId = const Value.absent(),
     this.retryCount = const Value.absent(),
@@ -6651,6 +7684,7 @@ class DriveUploadJobsCompanion extends UpdateCompanion<DriveUploadJob> {
     required int fileSizeBytes,
     required DateTime capturedAt,
     this.status = const Value.absent(),
+    this.claimProcessIdentity = const Value.absent(),
     this.resumableUri = const Value.absent(),
     this.driveFileId = const Value.absent(),
     this.retryCount = const Value.absent(),
@@ -6677,6 +7711,7 @@ class DriveUploadJobsCompanion extends UpdateCompanion<DriveUploadJob> {
     Expression<int>? fileSizeBytes,
     Expression<DateTime>? capturedAt,
     Expression<String>? status,
+    Expression<String>? claimProcessIdentity,
     Expression<String>? resumableUri,
     Expression<String>? driveFileId,
     Expression<int>? retryCount,
@@ -6696,6 +7731,8 @@ class DriveUploadJobsCompanion extends UpdateCompanion<DriveUploadJob> {
       if (fileSizeBytes != null) 'file_size_bytes': fileSizeBytes,
       if (capturedAt != null) 'captured_at': capturedAt,
       if (status != null) 'status': status,
+      if (claimProcessIdentity != null)
+        'claim_process_identity': claimProcessIdentity,
       if (resumableUri != null) 'resumable_uri': resumableUri,
       if (driveFileId != null) 'drive_file_id': driveFileId,
       if (retryCount != null) 'retry_count': retryCount,
@@ -6717,6 +7754,7 @@ class DriveUploadJobsCompanion extends UpdateCompanion<DriveUploadJob> {
       Value<int>? fileSizeBytes,
       Value<DateTime>? capturedAt,
       Value<String>? status,
+      Value<String?>? claimProcessIdentity,
       Value<String?>? resumableUri,
       Value<String?>? driveFileId,
       Value<int>? retryCount,
@@ -6735,6 +7773,7 @@ class DriveUploadJobsCompanion extends UpdateCompanion<DriveUploadJob> {
       fileSizeBytes: fileSizeBytes ?? this.fileSizeBytes,
       capturedAt: capturedAt ?? this.capturedAt,
       status: status ?? this.status,
+      claimProcessIdentity: claimProcessIdentity ?? this.claimProcessIdentity,
       resumableUri: resumableUri ?? this.resumableUri,
       driveFileId: driveFileId ?? this.driveFileId,
       retryCount: retryCount ?? this.retryCount,
@@ -6778,6 +7817,10 @@ class DriveUploadJobsCompanion extends UpdateCompanion<DriveUploadJob> {
     if (status.present) {
       map['status'] = Variable<String>(status.value);
     }
+    if (claimProcessIdentity.present) {
+      map['claim_process_identity'] =
+          Variable<String>(claimProcessIdentity.value);
+    }
     if (resumableUri.present) {
       map['resumable_uri'] = Variable<String>(resumableUri.value);
     }
@@ -6815,6 +7858,7 @@ class DriveUploadJobsCompanion extends UpdateCompanion<DriveUploadJob> {
           ..write('fileSizeBytes: $fileSizeBytes, ')
           ..write('capturedAt: $capturedAt, ')
           ..write('status: $status, ')
+          ..write('claimProcessIdentity: $claimProcessIdentity, ')
           ..write('resumableUri: $resumableUri, ')
           ..write('driveFileId: $driveFileId, ')
           ..write('retryCount: $retryCount, ')
@@ -8750,8 +9794,14 @@ class PendingResolutionsCompanion extends UpdateCompanion<PendingResolution> {
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
+  late final $SharedMapFeaturesTable sharedMapFeatures =
+      $SharedMapFeaturesTable(this);
+  late final $SharedMapCursorsTable sharedMapCursors =
+      $SharedMapCursorsTable(this);
   late final $EnumeratorsTable enumerators = $EnumeratorsTable(this);
   late final $AssignmentsTable assignments = $AssignmentsTable(this);
+  late final $AssignmentSelectionsTable assignmentSelections =
+      $AssignmentSelectionsTable(this);
   late final $FeaturesTable features = $FeaturesTable(this);
   late final $FeatureGeometryRevisionsTable featureGeometryRevisions =
       $FeatureGeometryRevisionsTable(this);
@@ -8811,8 +9861,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
+        sharedMapFeatures,
+        sharedMapCursors,
         enumerators,
         assignments,
+        assignmentSelections,
         features,
         featureGeometryRevisions,
         submissions,
@@ -8843,6 +9896,344 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       ];
 }
 
+typedef $$SharedMapFeaturesTableCreateCompanionBuilder
+    = SharedMapFeaturesCompanion Function({
+  required String accountId,
+  required String assignmentId,
+  required String featureId,
+  required int revision,
+  Value<bool> pendingProjection,
+  required String payloadJson,
+  Value<int> rowid,
+});
+typedef $$SharedMapFeaturesTableUpdateCompanionBuilder
+    = SharedMapFeaturesCompanion Function({
+  Value<String> accountId,
+  Value<String> assignmentId,
+  Value<String> featureId,
+  Value<int> revision,
+  Value<bool> pendingProjection,
+  Value<String> payloadJson,
+  Value<int> rowid,
+});
+
+class $$SharedMapFeaturesTableFilterComposer
+    extends Composer<_$AppDatabase, $SharedMapFeaturesTable> {
+  $$SharedMapFeaturesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get accountId => $composableBuilder(
+      column: $table.accountId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get assignmentId => $composableBuilder(
+      column: $table.assignmentId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get featureId => $composableBuilder(
+      column: $table.featureId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get revision => $composableBuilder(
+      column: $table.revision, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get pendingProjection => $composableBuilder(
+      column: $table.pendingProjection,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get payloadJson => $composableBuilder(
+      column: $table.payloadJson, builder: (column) => ColumnFilters(column));
+}
+
+class $$SharedMapFeaturesTableOrderingComposer
+    extends Composer<_$AppDatabase, $SharedMapFeaturesTable> {
+  $$SharedMapFeaturesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get accountId => $composableBuilder(
+      column: $table.accountId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get assignmentId => $composableBuilder(
+      column: $table.assignmentId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get featureId => $composableBuilder(
+      column: $table.featureId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get revision => $composableBuilder(
+      column: $table.revision, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get pendingProjection => $composableBuilder(
+      column: $table.pendingProjection,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get payloadJson => $composableBuilder(
+      column: $table.payloadJson, builder: (column) => ColumnOrderings(column));
+}
+
+class $$SharedMapFeaturesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SharedMapFeaturesTable> {
+  $$SharedMapFeaturesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => column);
+
+  GeneratedColumn<String> get assignmentId => $composableBuilder(
+      column: $table.assignmentId, builder: (column) => column);
+
+  GeneratedColumn<String> get featureId =>
+      $composableBuilder(column: $table.featureId, builder: (column) => column);
+
+  GeneratedColumn<int> get revision =>
+      $composableBuilder(column: $table.revision, builder: (column) => column);
+
+  GeneratedColumn<bool> get pendingProjection => $composableBuilder(
+      column: $table.pendingProjection, builder: (column) => column);
+
+  GeneratedColumn<String> get payloadJson => $composableBuilder(
+      column: $table.payloadJson, builder: (column) => column);
+}
+
+class $$SharedMapFeaturesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $SharedMapFeaturesTable,
+    SharedMapFeature,
+    $$SharedMapFeaturesTableFilterComposer,
+    $$SharedMapFeaturesTableOrderingComposer,
+    $$SharedMapFeaturesTableAnnotationComposer,
+    $$SharedMapFeaturesTableCreateCompanionBuilder,
+    $$SharedMapFeaturesTableUpdateCompanionBuilder,
+    (
+      SharedMapFeature,
+      BaseReferences<_$AppDatabase, $SharedMapFeaturesTable, SharedMapFeature>
+    ),
+    SharedMapFeature,
+    PrefetchHooks Function()> {
+  $$SharedMapFeaturesTableTableManager(
+      _$AppDatabase db, $SharedMapFeaturesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SharedMapFeaturesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SharedMapFeaturesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SharedMapFeaturesTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> accountId = const Value.absent(),
+            Value<String> assignmentId = const Value.absent(),
+            Value<String> featureId = const Value.absent(),
+            Value<int> revision = const Value.absent(),
+            Value<bool> pendingProjection = const Value.absent(),
+            Value<String> payloadJson = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              SharedMapFeaturesCompanion(
+            accountId: accountId,
+            assignmentId: assignmentId,
+            featureId: featureId,
+            revision: revision,
+            pendingProjection: pendingProjection,
+            payloadJson: payloadJson,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String accountId,
+            required String assignmentId,
+            required String featureId,
+            required int revision,
+            Value<bool> pendingProjection = const Value.absent(),
+            required String payloadJson,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              SharedMapFeaturesCompanion.insert(
+            accountId: accountId,
+            assignmentId: assignmentId,
+            featureId: featureId,
+            revision: revision,
+            pendingProjection: pendingProjection,
+            payloadJson: payloadJson,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$SharedMapFeaturesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $SharedMapFeaturesTable,
+    SharedMapFeature,
+    $$SharedMapFeaturesTableFilterComposer,
+    $$SharedMapFeaturesTableOrderingComposer,
+    $$SharedMapFeaturesTableAnnotationComposer,
+    $$SharedMapFeaturesTableCreateCompanionBuilder,
+    $$SharedMapFeaturesTableUpdateCompanionBuilder,
+    (
+      SharedMapFeature,
+      BaseReferences<_$AppDatabase, $SharedMapFeaturesTable, SharedMapFeature>
+    ),
+    SharedMapFeature,
+    PrefetchHooks Function()>;
+typedef $$SharedMapCursorsTableCreateCompanionBuilder
+    = SharedMapCursorsCompanion Function({
+  required String accountId,
+  required String assignmentId,
+  Value<int> revision,
+  Value<int> rowid,
+});
+typedef $$SharedMapCursorsTableUpdateCompanionBuilder
+    = SharedMapCursorsCompanion Function({
+  Value<String> accountId,
+  Value<String> assignmentId,
+  Value<int> revision,
+  Value<int> rowid,
+});
+
+class $$SharedMapCursorsTableFilterComposer
+    extends Composer<_$AppDatabase, $SharedMapCursorsTable> {
+  $$SharedMapCursorsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get accountId => $composableBuilder(
+      column: $table.accountId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get assignmentId => $composableBuilder(
+      column: $table.assignmentId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get revision => $composableBuilder(
+      column: $table.revision, builder: (column) => ColumnFilters(column));
+}
+
+class $$SharedMapCursorsTableOrderingComposer
+    extends Composer<_$AppDatabase, $SharedMapCursorsTable> {
+  $$SharedMapCursorsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get accountId => $composableBuilder(
+      column: $table.accountId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get assignmentId => $composableBuilder(
+      column: $table.assignmentId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get revision => $composableBuilder(
+      column: $table.revision, builder: (column) => ColumnOrderings(column));
+}
+
+class $$SharedMapCursorsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SharedMapCursorsTable> {
+  $$SharedMapCursorsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => column);
+
+  GeneratedColumn<String> get assignmentId => $composableBuilder(
+      column: $table.assignmentId, builder: (column) => column);
+
+  GeneratedColumn<int> get revision =>
+      $composableBuilder(column: $table.revision, builder: (column) => column);
+}
+
+class $$SharedMapCursorsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $SharedMapCursorsTable,
+    SharedMapCursor,
+    $$SharedMapCursorsTableFilterComposer,
+    $$SharedMapCursorsTableOrderingComposer,
+    $$SharedMapCursorsTableAnnotationComposer,
+    $$SharedMapCursorsTableCreateCompanionBuilder,
+    $$SharedMapCursorsTableUpdateCompanionBuilder,
+    (
+      SharedMapCursor,
+      BaseReferences<_$AppDatabase, $SharedMapCursorsTable, SharedMapCursor>
+    ),
+    SharedMapCursor,
+    PrefetchHooks Function()> {
+  $$SharedMapCursorsTableTableManager(
+      _$AppDatabase db, $SharedMapCursorsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SharedMapCursorsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SharedMapCursorsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SharedMapCursorsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> accountId = const Value.absent(),
+            Value<String> assignmentId = const Value.absent(),
+            Value<int> revision = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              SharedMapCursorsCompanion(
+            accountId: accountId,
+            assignmentId: assignmentId,
+            revision: revision,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String accountId,
+            required String assignmentId,
+            Value<int> revision = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              SharedMapCursorsCompanion.insert(
+            accountId: accountId,
+            assignmentId: assignmentId,
+            revision: revision,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$SharedMapCursorsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $SharedMapCursorsTable,
+    SharedMapCursor,
+    $$SharedMapCursorsTableFilterComposer,
+    $$SharedMapCursorsTableOrderingComposer,
+    $$SharedMapCursorsTableAnnotationComposer,
+    $$SharedMapCursorsTableCreateCompanionBuilder,
+    $$SharedMapCursorsTableUpdateCompanionBuilder,
+    (
+      SharedMapCursor,
+      BaseReferences<_$AppDatabase, $SharedMapCursorsTable, SharedMapCursor>
+    ),
+    SharedMapCursor,
+    PrefetchHooks Function()>;
 typedef $$EnumeratorsTableCreateCompanionBuilder = EnumeratorsCompanion
     Function({
   required String id,
@@ -9001,6 +10392,7 @@ typedef $$AssignmentsTableCreateCompanionBuilder = AssignmentsCompanion
   required String enumeratorId,
   required String campaignId,
   required String boundaryPolygonGeojson,
+  Value<String?> boundarySource,
   Value<DateTime?> downloadedAt,
   Value<DateTime?> submittedAt,
   Value<String> status,
@@ -9020,6 +10412,7 @@ typedef $$AssignmentsTableUpdateCompanionBuilder = AssignmentsCompanion
   Value<String> enumeratorId,
   Value<String> campaignId,
   Value<String> boundaryPolygonGeojson,
+  Value<String?> boundarySource,
   Value<DateTime?> downloadedAt,
   Value<DateTime?> submittedAt,
   Value<String> status,
@@ -9033,6 +10426,30 @@ typedef $$AssignmentsTableUpdateCompanionBuilder = AssignmentsCompanion
   Value<DateTime?> driveUploadConfirmedAt,
   Value<int> rowid,
 });
+
+final class $$AssignmentsTableReferences
+    extends BaseReferences<_$AppDatabase, $AssignmentsTable, Assignment> {
+  $$AssignmentsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$AssignmentSelectionsTable,
+      List<AssignmentSelection>> _assignmentSelectionsRefsTable(
+          _$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(db.assignmentSelections,
+          aliasName: $_aliasNameGenerator(
+              db.assignments.id, db.assignmentSelections.assignmentId));
+
+  $$AssignmentSelectionsTableProcessedTableManager
+      get assignmentSelectionsRefs {
+    final manager =
+        $$AssignmentSelectionsTableTableManager($_db, $_db.assignmentSelections)
+            .filter((f) => f.assignmentId.id($_item.id));
+
+    final cache =
+        $_typedResult.readTableOrNull(_assignmentSelectionsRefsTable($_db));
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: cache));
+  }
+}
 
 class $$AssignmentsTableFilterComposer
     extends Composer<_$AppDatabase, $AssignmentsTable> {
@@ -9054,6 +10471,10 @@ class $$AssignmentsTableFilterComposer
 
   ColumnFilters<String> get boundaryPolygonGeojson => $composableBuilder(
       column: $table.boundaryPolygonGeojson,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get boundarySource => $composableBuilder(
+      column: $table.boundarySource,
       builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get downloadedAt => $composableBuilder(
@@ -9093,6 +10514,28 @@ class $$AssignmentsTableFilterComposer
   ColumnFilters<DateTime> get driveUploadConfirmedAt => $composableBuilder(
       column: $table.driveUploadConfirmedAt,
       builder: (column) => ColumnFilters(column));
+
+  Expression<bool> assignmentSelectionsRefs(
+      Expression<bool> Function($$AssignmentSelectionsTableFilterComposer f)
+          f) {
+    final $$AssignmentSelectionsTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.assignmentSelections,
+        getReferencedColumn: (t) => t.assignmentId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$AssignmentSelectionsTableFilterComposer(
+              $db: $db,
+              $table: $db.assignmentSelections,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
 }
 
 class $$AssignmentsTableOrderingComposer
@@ -9116,6 +10559,10 @@ class $$AssignmentsTableOrderingComposer
 
   ColumnOrderings<String> get boundaryPolygonGeojson => $composableBuilder(
       column: $table.boundaryPolygonGeojson,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get boundarySource => $composableBuilder(
+      column: $table.boundarySource,
       builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<DateTime> get downloadedAt => $composableBuilder(
@@ -9180,6 +10627,9 @@ class $$AssignmentsTableAnnotationComposer
   GeneratedColumn<String> get boundaryPolygonGeojson => $composableBuilder(
       column: $table.boundaryPolygonGeojson, builder: (column) => column);
 
+  GeneratedColumn<String> get boundarySource => $composableBuilder(
+      column: $table.boundarySource, builder: (column) => column);
+
   GeneratedColumn<DateTime> get downloadedAt => $composableBuilder(
       column: $table.downloadedAt, builder: (column) => column);
 
@@ -9212,6 +10662,29 @@ class $$AssignmentsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get driveUploadConfirmedAt => $composableBuilder(
       column: $table.driveUploadConfirmedAt, builder: (column) => column);
+
+  Expression<T> assignmentSelectionsRefs<T extends Object>(
+      Expression<T> Function($$AssignmentSelectionsTableAnnotationComposer a)
+          f) {
+    final $$AssignmentSelectionsTableAnnotationComposer composer =
+        $composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $db.assignmentSelections,
+            getReferencedColumn: (t) => t.assignmentId,
+            builder: (joinBuilder,
+                    {$addJoinBuilderToRootComposer,
+                    $removeJoinBuilderFromRootComposer}) =>
+                $$AssignmentSelectionsTableAnnotationComposer(
+                  $db: $db,
+                  $table: $db.assignmentSelections,
+                  $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                  joinBuilder: joinBuilder,
+                  $removeJoinBuilderFromRootComposer:
+                      $removeJoinBuilderFromRootComposer,
+                ));
+    return f(composer);
+  }
 }
 
 class $$AssignmentsTableTableManager extends RootTableManager<
@@ -9223,9 +10696,9 @@ class $$AssignmentsTableTableManager extends RootTableManager<
     $$AssignmentsTableAnnotationComposer,
     $$AssignmentsTableCreateCompanionBuilder,
     $$AssignmentsTableUpdateCompanionBuilder,
-    (Assignment, BaseReferences<_$AppDatabase, $AssignmentsTable, Assignment>),
+    (Assignment, $$AssignmentsTableReferences),
     Assignment,
-    PrefetchHooks Function()> {
+    PrefetchHooks Function({bool assignmentSelectionsRefs})> {
   $$AssignmentsTableTableManager(_$AppDatabase db, $AssignmentsTable table)
       : super(TableManagerState(
           db: db,
@@ -9241,6 +10714,7 @@ class $$AssignmentsTableTableManager extends RootTableManager<
             Value<String> enumeratorId = const Value.absent(),
             Value<String> campaignId = const Value.absent(),
             Value<String> boundaryPolygonGeojson = const Value.absent(),
+            Value<String?> boundarySource = const Value.absent(),
             Value<DateTime?> downloadedAt = const Value.absent(),
             Value<DateTime?> submittedAt = const Value.absent(),
             Value<String> status = const Value.absent(),
@@ -9259,6 +10733,7 @@ class $$AssignmentsTableTableManager extends RootTableManager<
             enumeratorId: enumeratorId,
             campaignId: campaignId,
             boundaryPolygonGeojson: boundaryPolygonGeojson,
+            boundarySource: boundarySource,
             downloadedAt: downloadedAt,
             submittedAt: submittedAt,
             status: status,
@@ -9277,6 +10752,7 @@ class $$AssignmentsTableTableManager extends RootTableManager<
             required String enumeratorId,
             required String campaignId,
             required String boundaryPolygonGeojson,
+            Value<String?> boundarySource = const Value.absent(),
             Value<DateTime?> downloadedAt = const Value.absent(),
             Value<DateTime?> submittedAt = const Value.absent(),
             Value<String> status = const Value.absent(),
@@ -9295,6 +10771,7 @@ class $$AssignmentsTableTableManager extends RootTableManager<
             enumeratorId: enumeratorId,
             campaignId: campaignId,
             boundaryPolygonGeojson: boundaryPolygonGeojson,
+            boundarySource: boundarySource,
             downloadedAt: downloadedAt,
             submittedAt: submittedAt,
             status: status,
@@ -9309,9 +10786,36 @@ class $$AssignmentsTableTableManager extends RootTableManager<
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map((e) => (
+                    e.readTable(table),
+                    $$AssignmentsTableReferences(db, table, e)
+                  ))
               .toList(),
-          prefetchHooksCallback: null,
+          prefetchHooksCallback: ({assignmentSelectionsRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (assignmentSelectionsRefs) db.assignmentSelections
+              ],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (assignmentSelectionsRefs)
+                    await $_getPrefetchedData(
+                        currentTable: table,
+                        referencedTable: $$AssignmentsTableReferences
+                            ._assignmentSelectionsRefsTable(db),
+                        managerFromTypedResult: (p0) =>
+                            $$AssignmentsTableReferences(db, table, p0)
+                                .assignmentSelectionsRefs,
+                        referencedItemsForCurrentItem:
+                            (item, referencedItems) => referencedItems
+                                .where((e) => e.assignmentId == item.id),
+                        typedResults: items)
+                ];
+              },
+            );
+          },
         ));
 }
 
@@ -9324,9 +10828,259 @@ typedef $$AssignmentsTableProcessedTableManager = ProcessedTableManager<
     $$AssignmentsTableAnnotationComposer,
     $$AssignmentsTableCreateCompanionBuilder,
     $$AssignmentsTableUpdateCompanionBuilder,
-    (Assignment, BaseReferences<_$AppDatabase, $AssignmentsTable, Assignment>),
+    (Assignment, $$AssignmentsTableReferences),
     Assignment,
-    PrefetchHooks Function()>;
+    PrefetchHooks Function({bool assignmentSelectionsRefs})>;
+typedef $$AssignmentSelectionsTableCreateCompanionBuilder
+    = AssignmentSelectionsCompanion Function({
+  required String userId,
+  required String assignmentId,
+  required DateTime selectedAt,
+  Value<int> rowid,
+});
+typedef $$AssignmentSelectionsTableUpdateCompanionBuilder
+    = AssignmentSelectionsCompanion Function({
+  Value<String> userId,
+  Value<String> assignmentId,
+  Value<DateTime> selectedAt,
+  Value<int> rowid,
+});
+
+final class $$AssignmentSelectionsTableReferences extends BaseReferences<
+    _$AppDatabase, $AssignmentSelectionsTable, AssignmentSelection> {
+  $$AssignmentSelectionsTableReferences(
+      super.$_db, super.$_table, super.$_typedResult);
+
+  static $AssignmentsTable _assignmentIdTable(_$AppDatabase db) =>
+      db.assignments.createAlias($_aliasNameGenerator(
+          db.assignmentSelections.assignmentId, db.assignments.id));
+
+  $$AssignmentsTableProcessedTableManager? get assignmentId {
+    if ($_item.assignmentId == null) return null;
+    final manager = $$AssignmentsTableTableManager($_db, $_db.assignments)
+        .filter((f) => f.id($_item.assignmentId!));
+    final item = $_typedResult.readTableOrNull(_assignmentIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: [item]));
+  }
+}
+
+class $$AssignmentSelectionsTableFilterComposer
+    extends Composer<_$AppDatabase, $AssignmentSelectionsTable> {
+  $$AssignmentSelectionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get userId => $composableBuilder(
+      column: $table.userId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get selectedAt => $composableBuilder(
+      column: $table.selectedAt, builder: (column) => ColumnFilters(column));
+
+  $$AssignmentsTableFilterComposer get assignmentId {
+    final $$AssignmentsTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.assignmentId,
+        referencedTable: $db.assignments,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$AssignmentsTableFilterComposer(
+              $db: $db,
+              $table: $db.assignments,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$AssignmentSelectionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $AssignmentSelectionsTable> {
+  $$AssignmentSelectionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get userId => $composableBuilder(
+      column: $table.userId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get selectedAt => $composableBuilder(
+      column: $table.selectedAt, builder: (column) => ColumnOrderings(column));
+
+  $$AssignmentsTableOrderingComposer get assignmentId {
+    final $$AssignmentsTableOrderingComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.assignmentId,
+        referencedTable: $db.assignments,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$AssignmentsTableOrderingComposer(
+              $db: $db,
+              $table: $db.assignments,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$AssignmentSelectionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AssignmentSelectionsTable> {
+  $$AssignmentSelectionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get selectedAt => $composableBuilder(
+      column: $table.selectedAt, builder: (column) => column);
+
+  $$AssignmentsTableAnnotationComposer get assignmentId {
+    final $$AssignmentsTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.assignmentId,
+        referencedTable: $db.assignments,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$AssignmentsTableAnnotationComposer(
+              $db: $db,
+              $table: $db.assignments,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$AssignmentSelectionsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $AssignmentSelectionsTable,
+    AssignmentSelection,
+    $$AssignmentSelectionsTableFilterComposer,
+    $$AssignmentSelectionsTableOrderingComposer,
+    $$AssignmentSelectionsTableAnnotationComposer,
+    $$AssignmentSelectionsTableCreateCompanionBuilder,
+    $$AssignmentSelectionsTableUpdateCompanionBuilder,
+    (AssignmentSelection, $$AssignmentSelectionsTableReferences),
+    AssignmentSelection,
+    PrefetchHooks Function({bool assignmentId})> {
+  $$AssignmentSelectionsTableTableManager(
+      _$AppDatabase db, $AssignmentSelectionsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AssignmentSelectionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AssignmentSelectionsTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AssignmentSelectionsTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> userId = const Value.absent(),
+            Value<String> assignmentId = const Value.absent(),
+            Value<DateTime> selectedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              AssignmentSelectionsCompanion(
+            userId: userId,
+            assignmentId: assignmentId,
+            selectedAt: selectedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String userId,
+            required String assignmentId,
+            required DateTime selectedAt,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              AssignmentSelectionsCompanion.insert(
+            userId: userId,
+            assignmentId: assignmentId,
+            selectedAt: selectedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (
+                    e.readTable(table),
+                    $$AssignmentSelectionsTableReferences(db, table, e)
+                  ))
+              .toList(),
+          prefetchHooksCallback: ({assignmentId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                  T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic>>(state) {
+                if (assignmentId) {
+                  state = state.withJoin(
+                    currentTable: table,
+                    currentColumn: table.assignmentId,
+                    referencedTable: $$AssignmentSelectionsTableReferences
+                        ._assignmentIdTable(db),
+                    referencedColumn: $$AssignmentSelectionsTableReferences
+                        ._assignmentIdTable(db)
+                        .id,
+                  ) as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ));
+}
+
+typedef $$AssignmentSelectionsTableProcessedTableManager
+    = ProcessedTableManager<
+        _$AppDatabase,
+        $AssignmentSelectionsTable,
+        AssignmentSelection,
+        $$AssignmentSelectionsTableFilterComposer,
+        $$AssignmentSelectionsTableOrderingComposer,
+        $$AssignmentSelectionsTableAnnotationComposer,
+        $$AssignmentSelectionsTableCreateCompanionBuilder,
+        $$AssignmentSelectionsTableUpdateCompanionBuilder,
+        (AssignmentSelection, $$AssignmentSelectionsTableReferences),
+        AssignmentSelection,
+        PrefetchHooks Function({bool assignmentId})>;
 typedef $$FeaturesTableCreateCompanionBuilder = FeaturesCompanion Function({
   required String id,
   required String assignmentId,
@@ -9883,6 +11637,7 @@ typedef $$FeatureGeometryRevisionsTableProcessedTableManager
 typedef $$SubmissionsTableCreateCompanionBuilder = SubmissionsCompanion
     Function({
   required String id,
+  Value<bool> isAdditionalObservation,
   required String featureId,
   Value<String?> submittedBy,
   Value<bool> doesNotExist,
@@ -9898,6 +11653,7 @@ typedef $$SubmissionsTableCreateCompanionBuilder = SubmissionsCompanion
 typedef $$SubmissionsTableUpdateCompanionBuilder = SubmissionsCompanion
     Function({
   Value<String> id,
+  Value<bool> isAdditionalObservation,
   Value<String> featureId,
   Value<String?> submittedBy,
   Value<bool> doesNotExist,
@@ -9922,6 +11678,10 @@ class $$SubmissionsTableFilterComposer
   });
   ColumnFilters<String> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isAdditionalObservation => $composableBuilder(
+      column: $table.isAdditionalObservation,
+      builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get featureId => $composableBuilder(
       column: $table.featureId, builder: (column) => ColumnFilters(column));
@@ -9968,6 +11728,10 @@ class $$SubmissionsTableOrderingComposer
   ColumnOrderings<String> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<bool> get isAdditionalObservation => $composableBuilder(
+      column: $table.isAdditionalObservation,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get featureId => $composableBuilder(
       column: $table.featureId, builder: (column) => ColumnOrderings(column));
 
@@ -10013,6 +11777,9 @@ class $$SubmissionsTableAnnotationComposer
   });
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<bool> get isAdditionalObservation => $composableBuilder(
+      column: $table.isAdditionalObservation, builder: (column) => column);
 
   GeneratedColumn<String> get featureId =>
       $composableBuilder(column: $table.featureId, builder: (column) => column);
@@ -10069,6 +11836,7 @@ class $$SubmissionsTableTableManager extends RootTableManager<
               $$SubmissionsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
             Value<String> id = const Value.absent(),
+            Value<bool> isAdditionalObservation = const Value.absent(),
             Value<String> featureId = const Value.absent(),
             Value<String?> submittedBy = const Value.absent(),
             Value<bool> doesNotExist = const Value.absent(),
@@ -10083,6 +11851,7 @@ class $$SubmissionsTableTableManager extends RootTableManager<
           }) =>
               SubmissionsCompanion(
             id: id,
+            isAdditionalObservation: isAdditionalObservation,
             featureId: featureId,
             submittedBy: submittedBy,
             doesNotExist: doesNotExist,
@@ -10097,6 +11866,7 @@ class $$SubmissionsTableTableManager extends RootTableManager<
           ),
           createCompanionCallback: ({
             required String id,
+            Value<bool> isAdditionalObservation = const Value.absent(),
             required String featureId,
             Value<String?> submittedBy = const Value.absent(),
             Value<bool> doesNotExist = const Value.absent(),
@@ -10111,6 +11881,7 @@ class $$SubmissionsTableTableManager extends RootTableManager<
           }) =>
               SubmissionsCompanion.insert(
             id: id,
+            isAdditionalObservation: isAdditionalObservation,
             featureId: featureId,
             submittedBy: submittedBy,
             doesNotExist: doesNotExist,
@@ -11253,6 +13024,7 @@ typedef $$Ra9514TypesTableProcessedTableManager = ProcessedTableManager<
 typedef $$SyncJobsTableCreateCompanionBuilder = SyncJobsCompanion Function({
   required String id,
   required String entityType,
+  Value<String?> payloadJson,
   required String entityId,
   Value<String> status,
   Value<String?> blocksOnSubmissionId,
@@ -11265,6 +13037,7 @@ typedef $$SyncJobsTableCreateCompanionBuilder = SyncJobsCompanion Function({
 typedef $$SyncJobsTableUpdateCompanionBuilder = SyncJobsCompanion Function({
   Value<String> id,
   Value<String> entityType,
+  Value<String?> payloadJson,
   Value<String> entityId,
   Value<String> status,
   Value<String?> blocksOnSubmissionId,
@@ -11289,6 +13062,9 @@ class $$SyncJobsTableFilterComposer
 
   ColumnFilters<String> get entityType => $composableBuilder(
       column: $table.entityType, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get payloadJson => $composableBuilder(
+      column: $table.payloadJson, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get entityId => $composableBuilder(
       column: $table.entityId, builder: (column) => ColumnFilters(column));
@@ -11328,6 +13104,9 @@ class $$SyncJobsTableOrderingComposer
   ColumnOrderings<String> get entityType => $composableBuilder(
       column: $table.entityType, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get payloadJson => $composableBuilder(
+      column: $table.payloadJson, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get entityId => $composableBuilder(
       column: $table.entityId, builder: (column) => ColumnOrderings(column));
 
@@ -11365,6 +13144,9 @@ class $$SyncJobsTableAnnotationComposer
 
   GeneratedColumn<String> get entityType => $composableBuilder(
       column: $table.entityType, builder: (column) => column);
+
+  GeneratedColumn<String> get payloadJson => $composableBuilder(
+      column: $table.payloadJson, builder: (column) => column);
 
   GeneratedColumn<String> get entityId =>
       $composableBuilder(column: $table.entityId, builder: (column) => column);
@@ -11413,6 +13195,7 @@ class $$SyncJobsTableTableManager extends RootTableManager<
           updateCompanionCallback: ({
             Value<String> id = const Value.absent(),
             Value<String> entityType = const Value.absent(),
+            Value<String?> payloadJson = const Value.absent(),
             Value<String> entityId = const Value.absent(),
             Value<String> status = const Value.absent(),
             Value<String?> blocksOnSubmissionId = const Value.absent(),
@@ -11425,6 +13208,7 @@ class $$SyncJobsTableTableManager extends RootTableManager<
               SyncJobsCompanion(
             id: id,
             entityType: entityType,
+            payloadJson: payloadJson,
             entityId: entityId,
             status: status,
             blocksOnSubmissionId: blocksOnSubmissionId,
@@ -11437,6 +13221,7 @@ class $$SyncJobsTableTableManager extends RootTableManager<
           createCompanionCallback: ({
             required String id,
             required String entityType,
+            Value<String?> payloadJson = const Value.absent(),
             required String entityId,
             Value<String> status = const Value.absent(),
             Value<String?> blocksOnSubmissionId = const Value.absent(),
@@ -11449,6 +13234,7 @@ class $$SyncJobsTableTableManager extends RootTableManager<
               SyncJobsCompanion.insert(
             id: id,
             entityType: entityType,
+            payloadJson: payloadJson,
             entityId: entityId,
             status: status,
             blocksOnSubmissionId: blocksOnSubmissionId,
@@ -11699,6 +13485,7 @@ typedef $$DriveUploadJobsTableCreateCompanionBuilder = DriveUploadJobsCompanion
   required int fileSizeBytes,
   required DateTime capturedAt,
   Value<String> status,
+  Value<String?> claimProcessIdentity,
   Value<String?> resumableUri,
   Value<String?> driveFileId,
   Value<int> retryCount,
@@ -11719,6 +13506,7 @@ typedef $$DriveUploadJobsTableUpdateCompanionBuilder = DriveUploadJobsCompanion
   Value<int> fileSizeBytes,
   Value<DateTime> capturedAt,
   Value<String> status,
+  Value<String?> claimProcessIdentity,
   Value<String?> resumableUri,
   Value<String?> driveFileId,
   Value<int> retryCount,
@@ -11766,6 +13554,10 @@ class $$DriveUploadJobsTableFilterComposer
 
   ColumnFilters<String> get status => $composableBuilder(
       column: $table.status, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get claimProcessIdentity => $composableBuilder(
+      column: $table.claimProcessIdentity,
+      builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get resumableUri => $composableBuilder(
       column: $table.resumableUri, builder: (column) => ColumnFilters(column));
@@ -11827,6 +13619,10 @@ class $$DriveUploadJobsTableOrderingComposer
   ColumnOrderings<String> get status => $composableBuilder(
       column: $table.status, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get claimProcessIdentity => $composableBuilder(
+      column: $table.claimProcessIdentity,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get resumableUri => $composableBuilder(
       column: $table.resumableUri,
       builder: (column) => ColumnOrderings(column));
@@ -11887,6 +13683,9 @@ class $$DriveUploadJobsTableAnnotationComposer
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
 
+  GeneratedColumn<String> get claimProcessIdentity => $composableBuilder(
+      column: $table.claimProcessIdentity, builder: (column) => column);
+
   GeneratedColumn<String> get resumableUri => $composableBuilder(
       column: $table.resumableUri, builder: (column) => column);
 
@@ -11943,6 +13742,7 @@ class $$DriveUploadJobsTableTableManager extends RootTableManager<
             Value<int> fileSizeBytes = const Value.absent(),
             Value<DateTime> capturedAt = const Value.absent(),
             Value<String> status = const Value.absent(),
+            Value<String?> claimProcessIdentity = const Value.absent(),
             Value<String?> resumableUri = const Value.absent(),
             Value<String?> driveFileId = const Value.absent(),
             Value<int> retryCount = const Value.absent(),
@@ -11962,6 +13762,7 @@ class $$DriveUploadJobsTableTableManager extends RootTableManager<
             fileSizeBytes: fileSizeBytes,
             capturedAt: capturedAt,
             status: status,
+            claimProcessIdentity: claimProcessIdentity,
             resumableUri: resumableUri,
             driveFileId: driveFileId,
             retryCount: retryCount,
@@ -11981,6 +13782,7 @@ class $$DriveUploadJobsTableTableManager extends RootTableManager<
             required int fileSizeBytes,
             required DateTime capturedAt,
             Value<String> status = const Value.absent(),
+            Value<String?> claimProcessIdentity = const Value.absent(),
             Value<String?> resumableUri = const Value.absent(),
             Value<String?> driveFileId = const Value.absent(),
             Value<int> retryCount = const Value.absent(),
@@ -12000,6 +13802,7 @@ class $$DriveUploadJobsTableTableManager extends RootTableManager<
             fileSizeBytes: fileSizeBytes,
             capturedAt: capturedAt,
             status: status,
+            claimProcessIdentity: claimProcessIdentity,
             resumableUri: resumableUri,
             driveFileId: driveFileId,
             retryCount: retryCount,
@@ -12967,10 +14770,16 @@ typedef $$PendingResolutionsTableProcessedTableManager = ProcessedTableManager<
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
+  $$SharedMapFeaturesTableTableManager get sharedMapFeatures =>
+      $$SharedMapFeaturesTableTableManager(_db, _db.sharedMapFeatures);
+  $$SharedMapCursorsTableTableManager get sharedMapCursors =>
+      $$SharedMapCursorsTableTableManager(_db, _db.sharedMapCursors);
   $$EnumeratorsTableTableManager get enumerators =>
       $$EnumeratorsTableTableManager(_db, _db.enumerators);
   $$AssignmentsTableTableManager get assignments =>
       $$AssignmentsTableTableManager(_db, _db.assignments);
+  $$AssignmentSelectionsTableTableManager get assignmentSelections =>
+      $$AssignmentSelectionsTableTableManager(_db, _db.assignmentSelections);
   $$FeaturesTableTableManager get features =>
       $$FeaturesTableTableManager(_db, _db.features);
   $$FeatureGeometryRevisionsTableTableManager get featureGeometryRevisions =>

@@ -31,6 +31,7 @@ class SubmissionPayloadBuilder {
 
     return <String, dynamic>{
       'submission': _submissionToJson(submission),
+      'additional_observation': submission.isAdditionalObservation,
       'feature_type': feature.featureType,
       'building_attributes':
           building == null ? null : _buildingToJson(building),
@@ -38,6 +39,22 @@ class SubmissionPayloadBuilder {
       'household_survey':
           household == null ? null : _householdToJson(household),
     };
+  }
+
+  /// Compares survey values, excluding transport identity and write timestamps.
+  /// Used when acknowledging frozen work and completing a later edited form.
+  static bool sameRevision(
+    Map<String, dynamic> frozen,
+    Map<String, dynamic> current,
+  ) {
+    Map<String, dynamic> content(Map<String, dynamic> value) {
+      final copy = Map<String, dynamic>.from(value)..remove('operation_id');
+      copy['submission'] = Map<String, dynamic>.from(copy['submission'] as Map)
+        ..remove('updated_at');
+      return copy;
+    }
+
+    return jsonEncode(content(frozen)) == jsonEncode(content(current));
   }
 
   Map<String, dynamic> _submissionToJson(Submission s) => {

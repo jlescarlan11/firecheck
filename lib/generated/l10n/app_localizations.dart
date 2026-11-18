@@ -98,6 +98,18 @@ abstract class AppLocalizations {
     Locale('tl')
   ];
 
+  /// No description provided for @surveySaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save this survey. Please try again.'**
+  String get surveySaveFailed;
+
+  /// No description provided for @surveySavedLocally.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes saved on this device.'**
+  String get surveySavedLocally;
+
   /// No description provided for @appTitle.
   ///
   /// In en, this message translates to:
@@ -127,12 +139,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Upload progress'**
   String get uploadsTitle;
-
-  /// No description provided for @formRulesTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Form rules'**
-  String get formRulesTitle;
 
   /// No description provided for @homeLoadError.
   ///
@@ -457,12 +463,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{distance} m away'**
   String metersAway(int distance);
-
-  /// No description provided for @phase2FormNote.
-  ///
-  /// In en, this message translates to:
-  /// **'Form coming in Phase 2 — the full attribution form will open from this sheet.'**
-  String get phase2FormNote;
 
   /// No description provided for @close.
   ///
@@ -1718,6 +1718,18 @@ abstract class AppLocalizations {
   /// **'At least one photo required'**
   String get issuePhotoRequired;
 
+  /// No description provided for @issueCbmsRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'CBMS ID is required'**
+  String get issueCbmsRequired;
+
+  /// No description provided for @issueFireFightingFacilitiesRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Fire-fighting facilities answer is required'**
+  String get issueFireFightingFacilitiesRequired;
+
   /// No description provided for @issueRa9514Required.
   ///
   /// In en, this message translates to:
@@ -1783,18 +1795,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Review before upload'**
   String get reviewTitle;
-
-  /// No description provided for @submittedBadge.
-  ///
-  /// In en, this message translates to:
-  /// **'Submitted ✓'**
-  String get submittedBadge;
-
-  /// No description provided for @submittedAt.
-  ///
-  /// In en, this message translates to:
-  /// **'Submitted on {date}'**
-  String submittedAt(String date);
 
   /// No description provided for @readOnlyBanner.
   ///
@@ -2330,12 +2330,6 @@ abstract class AppLocalizations {
   /// **'{count} remaining'**
   String homeRemaining(int count);
 
-  /// No description provided for @homeLocalSaveHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Survey changes are saved on this device.'**
-  String get homeLocalSaveHint;
-
   /// No description provided for @homeEmptyHint.
   ///
   /// In en, this message translates to:
@@ -2474,12 +2468,6 @@ abstract class AppLocalizations {
   /// **'Review overlapping updates before continuing.'**
   String get designConflictsBody;
 
-  /// No description provided for @designFormRulesBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Preview the questions and rules used in your surveys.'**
-  String get designFormRulesBody;
-
   /// No description provided for @downloadProgressUnknown.
   ///
   /// In en, this message translates to:
@@ -2491,6 +2479,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Load more changes'**
   String get uploadLoadMore;
+
+  /// No description provided for @dedupOfflineComparison.
+  ///
+  /// In en, this message translates to:
+  /// **'Cached geometry · available offline'**
+  String get dedupOfflineComparison;
+
+  /// No description provided for @dedupComparisonMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Both features shown at the same scale'**
+  String get dedupComparisonMap;
+
+  /// No description provided for @dedupMine.
+  ///
+  /// In en, this message translates to:
+  /// **'Mine — solid line, round markers'**
+  String get dedupMine;
+
+  /// No description provided for @dedupExisting.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing feature — square markers'**
+  String get dedupExisting;
+
+  /// No description provided for @dedupUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Comparison unavailable'**
+  String get dedupUnavailable;
+
+  /// No description provided for @dedupUnavailableDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Select the original downloaded map and ensure both current features are cached. Decisions are disabled until both geometries can be compared. You can skip and return later.'**
+  String get dedupUnavailableDetail;
+
+  /// No description provided for @dedupRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry comparison'**
+  String get dedupRetry;
+
+  /// No description provided for @dedupQueueFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save your decision. Please try again.'**
+  String get dedupQueueFailed;
 }
 
 class _AppLocalizationsDelegate

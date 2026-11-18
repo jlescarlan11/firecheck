@@ -1,8 +1,10 @@
 import 'dart:io';
+
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/drive/drive_upload_job_status.dart';
 import 'package:firecheck/core/drive/drive_upload_repository.dart';
 import 'package:firecheck/core/sync/shapefile/export/shapefile_exporter.dart';
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
 class EnqueueAssignmentUseCase {
@@ -27,12 +29,14 @@ class EnqueueAssignmentUseCase {
   /// Storage exclusively.
   ///
   /// Returns the number of new jobs created (0 if already fully enqueued).
-  Future<int> execute({required String assignmentId}) async {
-    final ownerId = _currentUserId?.call();
+  Future<int> execute({
+    required String assignmentId,
+    String? expectedOwnerId,
+  }) async {
+    final activeOwner = _currentUserId?.call();
+    final ownerId = expectedOwnerId ?? activeOwner;
+    if (expectedOwnerId != null && activeOwner != expectedOwnerId) return 0;
     if (_currentUserId != null && ownerId == null) return 0;
-    final shapefileExists = await _repo
-        .shapefileJobExistsForAssignment(assignmentId, ownerId: ownerId);
-    if (shapefileExists) return 0;
 
     final (failure, components) =
         await _exporter.exportToFile(assignmentId: assignmentId);
@@ -40,12 +44,11 @@ class EnqueueAssignmentUseCase {
 
     if (_currentUserId != null && _currentUserId() != ownerId) return 0;
     return _db.transaction(() async {
-      if (await _repo.shapefileJobExistsForAssignment(
+      final existing = await _repo.latestUnfinishedExportBatch(
         assignmentId,
         ownerId: ownerId,
-      )) {
-        return 0;
-      }
+      );
+      if (await _sameComponents(existing, components)) return 0;
       final capturedAt = DateTime.now();
       final batchId = _uuid.v4();
       var created = 0;
@@ -67,5 +70,29 @@ class EnqueueAssignmentUseCase {
       }
       return created;
     });
+  }
+
+  Future<bool> _sameComponents(
+    List<DriveUploadJob> existing,
+    List<ShapefileComponentFile> components,
+  ) async {
+    if (existing.isEmpty || existing.length != components.length) return false;
+    final byName = {for (final job in existing) job.fileName: job};
+    for (final component in components) {
+      final job = byName[component.filename];
+      if (job == null || !File(job.filePath).existsSync()) return false;
+      final before = await File(job.filePath).readAsBytes();
+      final after = await File(component.path).readAsBytes();
+      // DBF header bytes 1..3 contain the generated update date, not answers.
+      // A retry tomorrow remains the same frozen export operation.
+      if (component.filename.endsWith('.dbf') &&
+          before.length >= 4 &&
+          after.length >= 4) {
+        before.fillRange(1, 4, 0);
+        after.fillRange(1, 4, 0);
+      }
+      if (!listEquals(before, after)) return false;
+    }
+    return true;
   }
 }

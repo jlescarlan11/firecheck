@@ -11,6 +11,9 @@ class FakeDriveUploadApi implements DriveUploadApi {
   final bool throwOnFolder;
   final String firecheckRootId;
 
+  @override
+  Future<DriveUploadApi> forAccount(String accountId) async => this;
+
   final List<String> uploadedPaths = [];
   final Map<String, String> _folderIds = {};
   int _fileCounter = 0;

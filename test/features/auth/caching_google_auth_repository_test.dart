@@ -18,10 +18,16 @@ void main() {
   });
 
   test('getAccessToken persists the inner token to the cache', () async {
-    expect(await cache.read(), isNull);
+    expect(
+      await cache.read(accountId: '00000000-0000-0000-0000-000000000001'),
+      isNull,
+    );
     final token = await repo.getAccessToken();
     expect(token, 'fake-access-token');
-    expect(await cache.read(), 'fake-access-token');
+    expect(
+      await cache.read(accountId: '00000000-0000-0000-0000-000000000001'),
+      'fake-access-token',
+    );
   });
 
   test('valid cached token avoids invoking Google account restoration',
@@ -34,6 +40,7 @@ void main() {
     await cache.save(
       'restored-token',
       DateTime.now().toUtc().add(const Duration(hours: 1)),
+      accountId: '00000000-0000-0000-0000-000000000001',
     );
 
     expect(await cachedRepo.getAccessToken(), 'restored-token');
@@ -44,32 +51,54 @@ void main() {
     await cache.save(
       'leftover-tok',
       DateTime.now().toUtc().add(const Duration(hours: 1)),
+      accountId: '00000000-0000-0000-0000-000000000001',
     );
     await repo.signOut();
-    expect(await cache.read(), isNull);
+    expect(
+      await cache.read(accountId: '00000000-0000-0000-0000-000000000001'),
+      isNull,
+    );
   });
 
   test('a saved token cannot be used after the app session signs out',
       () async {
     await cache.save(
-        'old-token', DateTime.now().toUtc().add(const Duration(hours: 1)),);
+      'old-token',
+      DateTime.now().toUtc().add(const Duration(hours: 1)),
+      accountId: '00000000-0000-0000-0000-000000000001',
+    );
     await inner.signOut();
     await expectLater(repo.getAccessToken(), throwsA(isA<AuthFailure>()));
-    expect(await cache.read(), isNull);
+    expect(
+      await cache.read(accountId: '00000000-0000-0000-0000-000000000001'),
+      isNull,
+    );
   });
 
   test('a new login clears tokens belonging to the previous account', () async {
     await cache.save(
-        'old-token', DateTime.now().toUtc().add(const Duration(hours: 1)),);
+      'old-token',
+      DateTime.now().toUtc().add(const Duration(hours: 1)),
+      accountId: '00000000-0000-0000-0000-000000000001',
+    );
     await repo.signIn();
-    expect(await cache.read(), isNull);
+    expect(
+      await cache.read(accountId: '00000000-0000-0000-0000-000000000001'),
+      isNull,
+    );
   });
 
   test('expired cache gets a fresh access token', () async {
-    await cache.save('expired-token',
-        DateTime.now().toUtc().subtract(const Duration(hours: 1)),);
+    await cache.save(
+      'expired-token',
+      DateTime.now().toUtc().subtract(const Duration(hours: 1)),
+      accountId: '00000000-0000-0000-0000-000000000001',
+    );
     expect(await repo.getAccessToken(), 'fake-access-token');
-    expect(await cache.read(), 'fake-access-token');
+    expect(
+      await cache.read(accountId: '00000000-0000-0000-0000-000000000001'),
+      'fake-access-token',
+    );
   });
 
   test('non-cached methods pass through to the inner repo', () async {
@@ -90,7 +119,10 @@ void main() {
     final emptyInner = _EmptyTokenRepo();
     final r = CachingGoogleAuthRepository(inner: emptyInner, cache: cache);
     expect(await r.getAccessToken(), isEmpty);
-    expect(await cache.read(), isNull);
+    expect(
+      await cache.read(accountId: '00000000-0000-0000-0000-000000000001'),
+      isNull,
+    );
   });
 }
 

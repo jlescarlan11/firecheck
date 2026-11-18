@@ -1,3 +1,5 @@
+import 'package:firecheck/core/drive/upload_transfer_progress.dart';
+import 'package:firecheck/features/upload/presentation/upload_transfer_widgets.dart';
 // lib/features/upload/presentation/upload_queue_screen.dart
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/drive/drive_upload_job_status.dart';
@@ -240,14 +242,16 @@ class _UploadQueueScreenState extends ConsumerState<UploadQueueScreen> {
   }
 }
 
-class _JobTile extends StatelessWidget {
+class _JobTile extends ConsumerWidget {
   const _JobTile({required this.job, required this.onRetry});
 
   final DriveUploadJob job;
   final VoidCallback? onRetry;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final transfer = ref
+        .watch(uploadTransferProgressProvider.select((items) => items[job.id]));
     final isFailed = job.status == DriveUploadJobStatus.failed ||
         job.status == DriveUploadJobStatus.dead;
 
@@ -274,14 +278,22 @@ class _JobTile extends StatelessWidget {
               job.failureReason ?? 'Upload failed · Tap to retry',
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             )
-          : Text('${job.assignmentId} · $kb KB'),
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${job.assignmentId} · $kb KB'),
+                if (transfer != null) UploadTransferBar(progress: transfer),
+              ],
+            ),
       trailing: isFailed
           ? IconButton(
               tooltip: 'Retry upload',
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
             )
-          : Text(chipText, style: Theme.of(context).textTheme.labelSmall),
+          : transfer != null
+              ? null
+              : Text(chipText, style: Theme.of(context).textTheme.labelSmall),
       onTap: isFailed ? onRetry : null,
     );
   }

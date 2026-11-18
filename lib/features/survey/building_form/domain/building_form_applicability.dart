@@ -9,7 +9,9 @@
 // the signal yet; the parameter exists so adding a geometry-dependent
 // rule is a one-line change.
 import 'package:firecheck/core/forms/field_requirements.dart';
+import 'package:firecheck/core/forms/form_definition.dart';
 import 'package:firecheck/core/forms/geometry_signal.dart';
+import 'package:firecheck/features/survey/building_form/domain/building_form_context.dart';
 import 'package:firecheck/features/survey/building_form/domain/building_form_state.dart';
 
 enum BuildingFormField {
@@ -24,14 +26,46 @@ enum BuildingFormField {
   fireLoad,
 }
 
+/// Fields hidden by either the variant or the rendered definition sections.
+/// This only controls applicability; it never clears saved answers.
+Set<BuildingFormField> effectiveHiddenBuildingFields(
+  BuildingFormState state, {
+  Set<BuildingFormField> hidden = const {},
+  FormDefinition definition = FormDefinition.legacy,
+  GeometrySignal? geometry,
+}) =>
+    {
+      ...hidden,
+      for (final entry in _sectionFields.entries)
+        if (!isBuildingSectionVisible(
+          definition,
+          state,
+          geometry ?? GeometrySignal.empty,
+          entry.key,
+        ))
+          ...entry.value,
+    };
+
+const _sectionFields = {
+  'identity': {
+    BuildingFormField.cbmsId,
+    BuildingFormField.buildingName,
+    BuildingFormField.ra9514Type,
+  },
+  'construction': {BuildingFormField.storeys, BuildingFormField.material},
+  'cost': {BuildingFormField.costAmount, BuildingFormField.costEstimateRange},
+  'fireFightingFacilities': {BuildingFormField.fireFightingFacilities},
+  'fireLoad': {BuildingFormField.fireLoad},
+};
+
 /// True when the field should be visible AND collected for the current
-/// state. Fields that are not applicable have their stored value cleared
-/// by [applyApplicability] so a stale answer cannot survive a path change.
+/// state. [applyApplicability] clears the inactive cost alternative and
+/// does-not-exist answers; visibility alone preserves existing saved values.
 ///
 /// [hidden] is the form variant's `hideBuildingFields` set. When the
 /// variant hides a field it is treated identically to a non-applicable
-/// field: the input is not rendered, the value is auto-cleared, and the
-/// remaining-questions chip skips it.
+/// field: the input is not rendered and the remaining-questions chip skips
+/// it. Existing hidden values are retained.
 bool isApplicable(
   BuildingFormState s,
   BuildingFormField f, {
@@ -61,7 +95,7 @@ bool isApplicable(
 bool isAnswered(BuildingFormState s, BuildingFormField f) {
   switch (f) {
     case BuildingFormField.cbmsId:
-      return _nonEmpty(s.cbmsId);
+      return (s.cbmsId ?? '').trim().isNotEmpty;
     case BuildingFormField.buildingName:
       return _nonEmpty(s.buildingName);
     case BuildingFormField.ra9514Type:
@@ -86,17 +120,22 @@ int remainingQuestionCount(
   Set<BuildingFormField> hidden = const {},
   GeometrySignal? geometry,
   FieldRequirements? requirements,
+  FormDefinition definition = FormDefinition.legacy,
 }) {
+  final effectiveHidden = effectiveHiddenBuildingFields(
+    s,
+    hidden: hidden,
+    definition: definition,
+    geometry: geometry,
+  );
   var n = 0;
   for (final f in BuildingFormField.values) {
-    if (!isApplicable(s, f, hidden: hidden, geometry: geometry)) continue;
+    if (!isApplicable(s, f, hidden: effectiveHidden, geometry: geometry)) {
+      continue;
+    }
     if (isAnswered(s, f)) continue;
-    // Optional fields don't count as "questions left" — the user can submit
-    // without filling them in (Issue #43, sidecar-driven validation).
-    final key = _requirementKeyFor(f);
-    if (key != null &&
-        requirements != null &&
-        !requirements.isRequired(key)) {
+    if (!(requirements ?? FieldRequirements.allRequired)
+        .isRequired(buildingRequirementKeyFor(f))) {
       continue;
     }
     n++;
@@ -104,12 +143,8 @@ int remainingQuestionCount(
   return n;
 }
 
-/// Maps each [BuildingFormField] to the requirement key the sidecar config
-/// uses. Returns null for fields that don't have a corresponding key — they
-/// always count as remaining when unanswered (today only [cbmsId] and
-/// [fireFightingFacilities] fall in this bucket; both are pre-#43 optional
-/// in spirit but not yet wired into the sidecar).
-String? _requirementKeyFor(BuildingFormField f) {
+/// Shared sidecar key mapping for labels, counts and completion validation.
+String buildingRequirementKeyFor(BuildingFormField f) {
   switch (f) {
     case BuildingFormField.buildingName:
       return FieldRequirementKeys.buildingName;
@@ -125,16 +160,15 @@ String? _requirementKeyFor(BuildingFormField f) {
     case BuildingFormField.fireLoad:
       return FieldRequirementKeys.buildingFireLoad;
     case BuildingFormField.cbmsId:
+      return FieldRequirementKeys.buildingCbmsId;
     case BuildingFormField.fireFightingFacilities:
-      return null;
+      return FieldRequirementKeys.buildingFireFightingFacilities;
   }
 }
 
-/// Returns a new state with any non-applicable field cleared. The notifier
-/// runs this after every mutation so a previously-answered field can never
-/// outlive the path it belonged to. Fields hidden by the active form
-/// variant are also cleared — a hidden field is just an always-inapplicable
-/// field from the user's perspective.
+/// Clears answers for the does-not-exist path and the inactive cost input.
+/// Variant- and definition-hidden answers remain saved; callers exclude them
+/// from visibility, remaining counts and completion validation.
 BuildingFormState applyApplicability(
   BuildingFormState s, {
   Set<BuildingFormField> hidden = const {},
@@ -159,14 +193,7 @@ BuildingFormState applyApplicability(
   if (!s.costIsExact && s.costAmount != null) {
     return s.copyWith(clearCostAmount: true);
   }
-  // Note: variant-hidden String/list fields are NOT auto-cleared here.
-  // BuildingFormState's copyWith uses the `value ?? this.value` pattern so
-  // there's no path to null out a String field, and adding per-field clear
-  // flags is out of scope for the variant-wiring fix. The hidden field is
-  // simply never rendered and never counted, so the user can't enter a value
-  // for it in the first place; a pre-existing value (from before the variant
-  // hid it) survives untouched. If/when that becomes a problem, add explicit
-  // clear flags to copyWith and call them here.
+  // Visibility changes preserve saved answers, including hidden strings/lists.
   return s;
 }
 

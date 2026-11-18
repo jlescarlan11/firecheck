@@ -17,23 +17,37 @@ void main() {
     if (tempDir.existsSync()) await tempDir.delete(recursive: true);
   });
 
-  Future<String> _seedPhoto(AppDatabase db, DriveUploadRepository repo, String id) async {
+  Future<String> seedPhoto(
+    AppDatabase db,
+    DriveUploadRepository repo,
+    String id,
+  ) async {
     final path = '${tempDir.path}/$id.jpg';
     await File(path).writeAsBytes([0xFF, 0xD8]);
     await repo.insertJob(
-      id: id, assignmentId: 'a1', filePath: path,
-      fileType: DriveFileType.photo, fileName: '$id.jpg',
-      fileSizeBytes: 2, capturedAt: DateTime(2026),
+      id: id,
+      assignmentId: 'a1',
+      ownerId: 'test-owner',
+      filePath: path,
+      fileType: DriveFileType.photo,
+      fileName: '$id.jpg',
+      fileSizeBytes: 2,
+      capturedAt: DateTime(2026),
     );
     return path;
   }
 
   // Seed the assignment row so _resolveParentFolder can find it
-  Future<void> _seedAssignment(AppDatabase db) async {
-    await db.into(db.assignments).insert(AssignmentsCompanion.insert(
-      id: 'a1', enumeratorId: 'e1', campaignId: 'c1',
-      boundaryPolygonGeojson: '{}', createdAt: DateTime(2026),
-    ));
+  Future<void> seedAssignment(AppDatabase db) async {
+    await db.into(db.assignments).insert(
+          AssignmentsCompanion.insert(
+            id: 'a1',
+            enumeratorId: 'e1',
+            campaignId: 'c1',
+            boundaryPolygonGeojson: '{}',
+            createdAt: DateTime(2026),
+          ),
+        );
   }
 
   test('drain marks job completed on successful upload', () async {
@@ -41,10 +55,11 @@ void main() {
     addTearDown(db.close);
     final repo = DriveUploadRepository(db);
     final api = FakeDriveUploadApi();
-    await _seedAssignment(db);
-    await _seedPhoto(db, repo, 'j1');
+    await seedAssignment(db);
+    await seedPhoto(db, repo, 'j1');
 
     final worker = DriveUploadWorker(
+      currentUserId: () => 'test-owner',
       api: api,
       repo: repo,
       db: db,
@@ -58,15 +73,17 @@ void main() {
     expect(api.uploadedPaths.length, 1);
   });
 
-  test('drain marks job failed on transient error (retryCount increments)', () async {
+  test('drain marks job failed on transient error (retryCount increments)',
+      () async {
     final db = AppDatabase.forTesting(NativeDatabase.memory());
     addTearDown(db.close);
     final repo = DriveUploadRepository(db);
     final api = FakeDriveUploadApi(throwOnUpload: true);
-    await _seedAssignment(db);
-    await _seedPhoto(db, repo, 'j1');
+    await seedAssignment(db);
+    await seedPhoto(db, repo, 'j1');
 
     final worker = DriveUploadWorker(
+      currentUserId: () => 'test-owner',
       api: api,
       repo: repo,
       db: db,
@@ -85,10 +102,11 @@ void main() {
     addTearDown(db.close);
     final repo = DriveUploadRepository(db);
     final api = FakeDriveUploadApi(throwOnUpload: true);
-    await _seedAssignment(db);
-    await _seedPhoto(db, repo, 'j1');
+    await seedAssignment(db);
+    await seedPhoto(db, repo, 'j1');
 
     final worker = DriveUploadWorker(
+      currentUserId: () => 'test-owner',
       api: api,
       repo: repo,
       db: db,
@@ -114,15 +132,20 @@ void main() {
     addTearDown(db.close);
     final repo = DriveUploadRepository(db);
     final api = FakeDriveUploadApi();
-    await _seedAssignment(db);
+    await seedAssignment(db);
     await repo.insertJob(
-      id: 'j1', assignmentId: 'a1',
+      id: 'j1',
+      assignmentId: 'a1',
+      ownerId: 'test-owner',
       filePath: '/nonexistent/missing.jpg',
-      fileType: DriveFileType.photo, fileName: 'missing.jpg',
-      fileSizeBytes: 0, capturedAt: DateTime(2026),
+      fileType: DriveFileType.photo,
+      fileName: 'missing.jpg',
+      fileSizeBytes: 0,
+      capturedAt: DateTime(2026),
     );
 
     final worker = DriveUploadWorker(
+      currentUserId: () => 'test-owner',
       api: api,
       repo: repo,
       db: db,

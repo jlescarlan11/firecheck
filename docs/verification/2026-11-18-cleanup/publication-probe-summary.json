@@ -1,0 +1,38 @@
+{
+  "status": "complete-development-measurement",
+  "startedAt": "2026-11-18T09:28:11.808Z",
+  "finishedAt": "2026-11-18T09:40:28.124Z",
+  "sourceUploadMilliseconds": 413445.419084,
+  "databaseCleanup": "dropped unique local probe database after preserving evidence",
+  "postgresVersion": "PostgreSQL 17.11 on aarch64-unknown-linux-gnu, compiled by gcc (GCC) 15.2.0, 64-bit",
+  "publications": [
+    {
+      "name": "first-complete",
+      "statusCode": 200,
+      "milliseconds": 105099.97666699998,
+      "copies": 100
+    },
+    {
+      "name": "controlled-failure-after-64-bytes",
+      "statusCode": 503,
+      "milliseconds": 2665.274417000008,
+      "copies": 1
+    },
+    {
+      "name": "fresh-complete-retry",
+      "statusCode": 200,
+      "milliseconds": 104766.14404100005,
+      "copies": 100
+    }
+  ],
+  "sources_count": 100,
+  "source_bytes": 1073741824,
+  "version_count": 2,
+  "failureProof": {
+    "retainedVersionDownloadStatus": 200,
+    "retainedVersionDownloadBytes": 64,
+    "committedVersionCount": 1
+  },
+  "hosted_runtime_verified": false,
+  "gis_payload_valid": false
+}

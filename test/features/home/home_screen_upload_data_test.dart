@@ -21,7 +21,7 @@ class _FakeBiometric extends BiometricGate {
 }
 
 void main() {
-  testWidgets('Submitted shows the banner but keeps Upload Data available',
+  testWidgets('Submitted keeps Upload Data available without a persistent banner',
       (tester) async {
     // Submitted is informational, not a hard lock — enumerators may
     // re-export and re-upload after a submit.
@@ -48,7 +48,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.textContaining('Submitted'), findsAtLeastNWidgets(1));
+    expect(find.textContaining('Submitted'), findsNothing);
     expect(find.text('Review before upload'), findsOneWidget);
   });
 

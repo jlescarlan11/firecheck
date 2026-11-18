@@ -3,6 +3,8 @@ import 'package:drift/drift.dart';
 @TableIndex(name: 'submissions_feature_id_idx', columns: {#featureId})
 class Submissions extends Table {
   TextColumn get id => text()();
+  BoolColumn get isAdditionalObservation =>
+      boolean().withDefault(const Constant(false))();
   TextColumn get featureId => text()();
   // Nullable to match server: `submitted_by uuid references enumerators(id)
   // on delete set null`. Preserves audit trail if the enumerator account

@@ -17,7 +17,8 @@
     "probe-drive": "tsx tools/drive-probe.ts",
     "test:oauth": "tsx --test test/oauth-connection.test.ts",
     "prepare:edge": "npm run build && tsx tools/prepare-edge.ts",
-    "deploy:edge": "npm run prepare:edge && tsx tools/deploy-edge.ts"
+    "deploy:edge": "npm run prepare:edge && tsx tools/deploy-edge.ts",
+    "test:shared-map": "tsx --test test/shared-map.test.ts"
   },
   "dependencies": {
     "@fastify/rate-limit": "11.2.0",

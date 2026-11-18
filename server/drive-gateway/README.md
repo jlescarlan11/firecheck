@@ -120,7 +120,7 @@ npm run prepare:edge
 npm run deploy:edge
 ```
 
-The deploy helper reads `.secrets/drive/oauth.json`, `.secrets/drive-folders.json`, `.secrets/database.env` and `.secrets/supabase-ca.crt`. It installs secrets and deploys only `drive-gateway`, then checks public health and rejects an unauthenticated assignment request. Worker activation remains a separate deliberate cutover.
+The deploy helper reads `.secrets/drive/oauth.json`, `.secrets/drive-folders.json`, `.secrets/database.env`, `.secrets/supabase-ca.crt`, and `.secrets/export-worker.env`. The last file must contain a strong random `EXPORT_WORKER_TOKEN` matching the scheduler's Vault secret; retain it across deployments. Keep these files private and outside version control. The helper installs secrets and deploys only `drive-gateway`, then checks public health and rejects an unauthenticated assignment request. Worker activation remains a separate deliberate cutover.
 
 Obtain the database CA through **Database → Settings → Download certificate** in the project dashboard. The current download is [Supabase production CA](https://supabase-downloads.s3-ap-southeast-1.amazonaws.com/prod/ssl/prod-ca-2021.crt). Pass its base64-encoded PEM through `FIRECHECK_DB_CA_BASE64`. For local Node checks, remove connection-string SSL overrides before specifying `ssl: { ca, rejectUnauthorized: true }`.
 
@@ -128,7 +128,7 @@ Obtain the database CA through **Database → Settings → Download certificate*
 
 A supervisor may run `npm run admin -- create assignment.json`. The file contains a fresh `id`, `name`, `campaignId` and WGS84 GeoJSON `boundary` of type `Polygon`. The server validates coordinates and PostGIS geometry validity, creates the assignment and enrolls its creator as owner. Register its Drive source with `source`, publish it, then explicitly enroll fieldworkers. The separate migration `20260915165116_gateway_supervisor_assignment_creation.sql` grants only the gateway role this insert permission.
 
-The existing schema uses a non-null campaign UUID without a campaigns table. Reuse your campaign UUID for related assignments; do not invent a geographic boundary. Derive it from the approved map or a supervisor-provided boundary.
+The existing schema uses a non-null campaign UUID without a campaigns table: `campaignId` is an externally supplied grouping identity, not an enrollment credential or server-created campaign record. A supervisor supplies the same approved UUID for related assignments. Creation enrolls only its creator as owner; fieldworkers require explicit supervisor enrollment by user UUID. Assignment membership, display names and editable profile metadata never grant supervisor rights. Do not invent a geographic boundary; derive it from the approved map or a supervisor-provided boundary.
 
 ## Optional Cloud Run deployment (not selected)
 
@@ -170,10 +170,61 @@ Setting an environment variable locally does not update a phone already running 
 
 ## Known operating limits
 
-- Mobile import still uses the existing in-memory shapefile interface: map bundles are capped at 128 MiB. Files stream to resumable temp files first; chunk-level UI updates are a follow-up (current progress updates per verified component). Server uploads cap individual files at 512 MiB and batches at 1 GiB/100 files.
-- Export destination is `firecheck/output/<user-uuid>_<assignment-uuid>_<batch-uuid>/`. This avoids mutable email/folder-name collisions. Update supervisor scripts expecting the previous nested output layout.
-- Publication and batch setup are synchronous; very large file counts/copies need a durable background publisher. Test representative maximum inputs against the 300-second request budget before rollout.
-- A failed publication/setup transaction can leave an unreferenced newly created folder in Drive. It is never advertised as a completed map/upload. Automatic orphan cleanup and old-version retention are not included; use the unique folder IDs and server metadata for a reviewed cleanup process.
+- Mobile import still uses the existing in-memory shapefile interface: map bundles are capped at 128 MiB. Files stream to resumable temp files first. Mobile consumer limits are separate from server map-publication/upload validation (512 MiB per file, 1 GiB total, 100 files).
+- Legacy shapefile uploads use the organized map/surveyor/Archive layout described below. Names are display labels; private managed keys bind map folders to assignment UUIDs, and receipt links bind to stable folder IDs. Shared-map generated exports have a separate layout and worker contract below.
+- Source publication and upload batch setup are synchronous. No durable source publisher is implemented. Metadata validation permits 100 files, 512 MiB per file and 1 GiB total; these are validation bounds, not verified synchronous capacity. Representative maximum input tests on the selected hosted runtime remain pending. See the distinct runtime boundaries below.
+- A failed publication/setup transaction can leave a newly created folder in Drive. The database current pointer and version record commit only after verified source copies; a failed attempt leaves the last good version advertised. Retrying source publication creates a fresh version UUID; this is distinct from idempotent upload batch/completion receipts. Drive itself is not transactional. Report-only inventory below never authorizes deletion; retention and grace periods require an explicit operator decision.
 - Files are stored in the configured Drive account, not a second object store. If Drive or the API is unavailable, new online transfers wait; existing downloaded maps remain offline.
 - Remote revocation cannot erase files from an offline phone. Membership is checked on every online file/chunk/completion request; an accepted upload can finish after assignment closure, but only while its owner retains membership.
 - The server validates app sessions through Supabase's authenticated `/auth/v1/user` endpoint. Do not claim immediate invalidation of every previously issued access JWT solely from sign-out; expiry and Supabase policy still apply.
+
+## Organized survey outputs
+
+Uploads are grouped as `firecheck/output/<map>/<surveyor (short ID)>/`.
+Each surveyor has one latest **completed** batch per map. Incomplete transfers
+and older batches stay under that map's `Archive/` folder, named by surveyor,
+date, and short batch ID. Completing an older transfer cannot replace a newer
+completed batch. Map folders use a private Drive property tied to the assignment
+ID and are reused under an assignment lock.
+
+This layout keeps collaborators' exports separate; it does not merge their
+shapefile records. Folder and file IDs are preserved when archiving, so receipt
+links continue to work. Existing `public.drive_uploads` audit paths describe
+the location at the time of upload; the gateway receipt returns the current path.
+
+To preview organizing existing gateway-owned uploads, run
+`npx tsx tools/organize-output.ts`. Add `--apply` to move them. Add `--archive-legacy` to preserve old email-named output folders under a top-level `Archive` as well. The tool saves a
+restricted rollback manifest in `.secrets/` first and does not delete or rewrite
+survey files. Deploy the gateway change before applying the cleanup so subsequent
+uploads use the same layout.
+
+
+## Publication runtime boundaries
+
+These boundaries measure different things; none establishes a supported publication throughput ceiling:
+
+| Boundary | Current contract |
+| --- | --- |
+| Each Google Drive HTTP call | 60-second adapter timeout; a publication makes many sequential calls. |
+| Fastify `requestTimeout` | 90 seconds to receive a request, not a handler execution deadline. See [Fastify requestTimeout](https://fastify.dev/docs/latest/Reference/Server/#requesttimeout). |
+| PostgreSQL transaction | 3-second lock timeout; 120-second idle-in-transaction timeout. A long sequence of Drive calls between SQL statements can hit the latter. |
+| Selected Supabase Free runtime | 150-second worker wall-clock duration; 2 seconds CPU per request excluding asynchronous I/O; 256 MiB memory; 150-second request idle timeout. Paid worker duration is 400 seconds. See [official Edge limits](https://supabase.com/docs/guides/functions/limits), checked November 18, 2026. |
+| Optional Cloud Run configuration | This repo recommends 300 seconds initially. The service defaults to 300 seconds and allows up to 3,600; a timed-out connection does not necessarily stop container work. See [Cloud Run request timeout](https://docs.cloud.google.com/run/docs/configuring/request-timeout). |
+
+A source publication freezes its supported-file listing, copies into a fresh folder, rechecks the source listing and each copy's MD5/size, then commits the immutable version and current pointer together. Existing versions remain referenced and readable subject to membership. New folders have `firecheckOutputKey=source-publication:<assignment UUID>:<version UUID>`; creating a fresh folder does not list the historical published root. Source listing still fails explicitly above 1,000 children instead of truncating.
+
+Local fake-Drive tests establish rollback, checksum failure and fresh retry logic. They do not measure Google latency or hosted maximum capacity. The append-only [development probe contract](docs/development-publication-probe.md) measures actual Google copies with local PostgreSQL when separately executed; its opaque maximum-size payload is not valid representative GIS data. Hosted Edge/Cloud Run maximum-input capacity and valid mobile import remain separate pending checks. No deployment is part of local `prepare:edge`.
+
+## Report-only publication inventory
+
+`npx tsx tools/inventory-publications.ts` reads explicit `DATABASE_URL`, `DRIVE_INPUT_ROOT`, `DRIVE_OUTPUT_ROOT`, `DRIVE_PUBLISHED_ROOT` and the usual server Drive credential environment. Use a trusted administrator environment and verified TLS database configuration. It inspects only immediate folders under the configured published root. There is no apply/delete/trash/move mode; mutation flags are rejected. This command has not been executed against remote Drive in the cleanup session.
+
+Every retained version, registered source/upload (including incomplete resumable uploads), known export, configured root and referenced file's actual parent ancestry is protected. Historical folders without a valid new publication marker remain protected as unknown, regardless of name. The helper reads internally consistent database snapshots before/after inspection, including active export jobs; changed references produce `inconclusive` with no candidate entries. Listing overflow, unresolved metadata or an inspection error also produces `inconclusive` without a partial list.
+
+A marked folder absent from committed references is only `review-only` / `possibly-in-flight-publication`, and the overall report remains inconclusive: an uncommitted publisher may still own it. Stable folder IDs and exclusion reasons support operator review. The tool does not infer creation dates, grace periods, historical provenance or permission to delete. Unknown folders, archives and all old versions stay protected.
+
+## Shared-map generated outputs
+
+Shared maps use the existing leased `firecheck_sync.export_jobs` worker rather than the synchronous source-publication route. A managed map folder contains `Current.geojson`; verified revision artifacts (`shared-map.json` and `map.geojson`) are retained under that map's `Archive/r<revision>/` managed folders. Export and source-version manifests retain their file/folder identities. Legacy uploads moved into Archive retain their IDs and receipt URLs. This is separate from each surveyor's latest completed legacy shapefile batch.
+
+`tools/organize-output.ts` already uses the organized layout and registered upload IDs. Its preview is read-only; its existing `--apply` / `--archive-legacy` moves are a separate operator action with a local rollback manifest. Publication inventory never invokes it. No consumer script was changed to expect the stale flat UUID path.

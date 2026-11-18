@@ -9,8 +9,12 @@ class ReviewState {
     required this.blockers,
     required this.deadJobs,
     required this.upload,
+    this.assignmentId,
+    this.hasChangesToUpload = true,
   });
 
+  final String? assignmentId;
+  final bool hasChangesToUpload;
   final ReviewSummary summary;
   final List<ReviewIssue> warnings;
   final List<ReviewIssue> blockers;
@@ -22,6 +26,7 @@ class ReviewState {
   ///  - at least one complete-or-skipped feature to upload
   ///  - we're idle (not mid-upload)
   bool get canStartUpload =>
+      hasChangesToUpload &&
       blockers.isEmpty &&
       summary.completeFeatures > 0 &&
       upload is Idle;

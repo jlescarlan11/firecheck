@@ -1,3 +1,4 @@
+import 'package:firecheck/core/auth/current_user_provider.dart';
 import 'package:firecheck/core/sync/data/submission_payload_builder.dart';
 import 'package:firecheck/core/sync/data/supabase_sync_api.dart';
 import 'package:firecheck/core/sync/data/sync_api.dart';
@@ -12,11 +13,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 
 final syncApiProvider = Provider<SyncApi>((ref) {
+  ref.watch(currentUserIdProvider);
   return SupabaseSyncApi(Supabase.instance.client);
 });
 
 final syncJobsRepositoryProvider = Provider<SyncJobsRepository>((ref) {
-  return SyncJobsRepository(ref.watch(appDatabaseProvider));
+  return SyncJobsRepository(ref.watch(appDatabaseProvider),
+      ownerId: ref.watch(currentUserIdProvider) ?? 'signed-out');
 });
 
 final assignmentLockRepositoryProvider =
@@ -46,6 +49,7 @@ final syncControllerProvider = Provider<SyncController>((ref) {
   return controller;
 });
 
-final submittedAssignmentLockProvider = Provider<SubmittedAssignmentLock>((ref) {
+final submittedAssignmentLockProvider =
+    Provider<SubmittedAssignmentLock>((ref) {
   return SubmittedAssignmentLock(ref.watch(appDatabaseProvider));
 });

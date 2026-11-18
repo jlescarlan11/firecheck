@@ -41,6 +41,7 @@ const app = buildApp({
     outputRoot: required("DRIVE_OUTPUT_ROOT"),
     publishedRoot: required("DRIVE_PUBLISHED_ROOT"),
     routePrefix: "/drive-gateway",
+    exportWorkerToken: Deno.env.get("EXPORT_WORKER_TOKEN"),
   },
   authenticate: async (token: string) => {
     const response = await fetch(new URL("/auth/v1/user", supabase), {

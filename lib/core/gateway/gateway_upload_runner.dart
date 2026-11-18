@@ -1,3 +1,4 @@
+import 'package:firecheck/core/drive/upload_transfer_progress.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:crypto/crypto.dart';
@@ -14,13 +15,16 @@ typedef GatewayUploadReceipt = ({
 });
 
 class GatewayUploadRunner {
-  GatewayUploadRunner({required this.client, required this.repo});
+  GatewayUploadRunner(
+      {required this.client, required this.repo, this.progress});
+  final UploadTransferTracker? progress;
   final GatewayClient client;
   final DriveUploadRepository repo;
   bool _running = false;
   Future<void> drain() async {
     if (_running) return;
     _running = true;
+    progress?.clear();
     try {
       final owner = client.userId();
       if (owner == null) return;
@@ -49,6 +53,7 @@ class GatewayUploadRunner {
         try {
           for (final j in jobs) {
             await repo.markUploading(j.id);
+            progress?.update(j, 0, TransferPhase.queued);
           }
           await _batch(owner, first.batchId!, first.assignmentId, jobs);
           for (final j in jobs) {
@@ -56,9 +61,12 @@ class GatewayUploadRunner {
               j.id,
               driveFileId: 'gateway:${first.batchId}:${j.id}',
             );
+            progress?.update(j, j.fileSizeBytes, TransferPhase.completed);
           }
         } catch (e) {
           for (final j in jobs) {
+            progress?.update(
+                j, progress?.sentFor(j.id) ?? 0, TransferPhase.failed);
             final attempts = j.retryCount + 1;
             if (e is StorageFailure || e is ValidationFailure || attempts > 8) {
               await repo.markDead(j.id, reason: e.toString());
@@ -119,6 +127,12 @@ class GatewayUploadRunner {
     for (final job in jobs) {
       final path = '/v1/uploads/$batch/files/${job.id}';
       var state = await client.json('GET', path, owner: owner);
+      progress?.update(
+          job,
+          (state['offset'] as num?)?.toInt() ?? 0,
+          state['complete'] == true
+              ? TransferPhase.confirming
+              : TransferPhase.uploading);
       final handle = await File(job.filePath).open();
       try {
         var stalls = 0;
@@ -128,7 +142,13 @@ class GatewayUploadRunner {
             throw const NetworkFailure('Invalid upload offset.');
           }
           await handle.setPosition(offset);
-          final data = await handle.read(8 * 1024 * 1024);
+          // Aim for roughly 20 acknowledged updates, aligned to Drive's
+          // 256 KiB non-final chunk requirement, capped at the gateway limit.
+          const unit = 256 * 1024;
+          final chunkSize =
+              (((job.fileSizeBytes + 20 * unit - 1) ~/ (20 * unit)) * unit)
+                  .clamp(unit, 8 * 1024 * 1024);
+          final data = await handle.read(chunkSize);
           if (data.isEmpty) {
             throw const StorageFailure('The export is incomplete.');
           }
@@ -137,6 +157,8 @@ class GatewayUploadRunner {
             '$path/chunks',
             owner: owner,
             bytes: data,
+            // Advance only after the server acknowledges this chunk. Reading
+            // the request body merely fills a local socket buffer.
             headers: {
               'Content-Type': 'application/octet-stream',
               'Upload-Offset': '$offset',
@@ -155,6 +177,12 @@ class GatewayUploadRunner {
           } else {
             stalls = 0;
           }
+          progress?.update(
+              job,
+              (state['offset'] as num).toInt(),
+              state['complete'] == true
+                  ? TransferPhase.confirming
+                  : TransferPhase.uploading);
         }
       } finally {
         await handle.close();

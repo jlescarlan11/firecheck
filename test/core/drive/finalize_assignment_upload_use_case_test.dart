@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/drive/drive_upload_audit_repository.dart';
@@ -44,7 +44,11 @@ class _RecordingAuditRepo extends DriveUploadAuditRepository {
 
 AppDatabase _db() => AppDatabase.forTesting(NativeDatabase.memory());
 
-Future<void> _seedAssignment(AppDatabase db, {required String id, String? name}) async {
+Future<void> _seedAssignment(
+  AppDatabase db, {
+  required String id,
+  String? name,
+}) async {
   await db.into(db.assignments).insert(
         AssignmentsCompanion.insert(
           id: id,
@@ -67,6 +71,7 @@ Future<void> _seedJob(
   await repo.insertJob(
     id: id,
     assignmentId: assignmentId,
+    ownerId: 'user-1',
     filePath: '/tmp/$id.bin',
     fileType: DriveFileType.shapefile,
     fileName: '$id.shp',
@@ -89,6 +94,39 @@ Future<void> _seedJob(
 
 void main() {
   group('FinalizeAssignmentUploadUseCase', () {
+    test('B cannot finalize another account completed job into its receipt',
+        () async {
+      final db = _db();
+      addTearDown(db.close);
+      final repo = DriveUploadRepository(db);
+      final audit = _RecordingAuditRepo();
+      await _seedAssignment(db, id: 'a1');
+      await _seedJob(
+        repo,
+        id: 'old-A',
+        assignmentId: 'a1',
+        status: DriveUploadJobStatus.completed,
+      );
+      await db
+          .update(db.driveUploadJobs)
+          .write(const DriveUploadJobsCompanion(ownerId: Value('A')));
+      final useCase = FinalizeAssignmentUploadUseCase(
+        db: db,
+        repo: repo,
+        assignmentRepo: AssignmentRepository(db: db),
+        auditRepo: audit,
+      );
+      expect(
+        await useCase.execute(assignmentId: 'a1', uploaderId: 'B'),
+        isA<DriveUploadEmpty>(),
+      );
+      expect(audit.recordCalls, isEmpty);
+      expect(
+        (await db.select(db.assignments).getSingle()).driveUploadConfirmedAt,
+        isNull,
+      );
+    });
+
     test('returns Empty when no jobs exist', () async {
       final db = _db();
       addTearDown(db.close);
@@ -120,8 +158,18 @@ void main() {
         auditRepo: audit,
       );
       await _seedAssignment(db, id: 'a-1', name: 'cebu');
-      await _seedJob(repo, id: 'j1', assignmentId: 'a-1', status: DriveUploadJobStatus.completed);
-      await _seedJob(repo, id: 'j2', assignmentId: 'a-1', status: DriveUploadJobStatus.failed);
+      await _seedJob(
+        repo,
+        id: 'j1',
+        assignmentId: 'a-1',
+        status: DriveUploadJobStatus.completed,
+      );
+      await _seedJob(
+        repo,
+        id: 'j2',
+        assignmentId: 'a-1',
+        status: DriveUploadJobStatus.failed,
+      );
 
       final outcome = await useCase.execute(
         assignmentId: 'a-1',
@@ -135,7 +183,8 @@ void main() {
       expect(audit.recordCalls, isEmpty);
     });
 
-    test('returns Succeeded, writes assignment + audit when all complete', () async {
+    test('returns Succeeded, writes assignment + audit when all complete',
+        () async {
       final db = _db();
       addTearDown(db.close);
       final repo = DriveUploadRepository(db);
@@ -149,8 +198,18 @@ void main() {
         now: () => DateTime.utc(2026, 5, 20, 10),
       );
       await _seedAssignment(db, id: 'a-1', name: 'cebu');
-      await _seedJob(repo, id: 'j1', assignmentId: 'a-1', status: DriveUploadJobStatus.completed);
-      await _seedJob(repo, id: 'j2', assignmentId: 'a-1', status: DriveUploadJobStatus.completed);
+      await _seedJob(
+        repo,
+        id: 'j1',
+        assignmentId: 'a-1',
+        status: DriveUploadJobStatus.completed,
+      );
+      await _seedJob(
+        repo,
+        id: 'j2',
+        assignmentId: 'a-1',
+        status: DriveUploadJobStatus.completed,
+      );
 
       final outcome = await useCase.execute(
         assignmentId: 'a-1',
@@ -165,8 +224,10 @@ void main() {
 
       final persisted = await assignmentRepo.getDriveUploadResult('a-1');
       expect(persisted?.folderPath, 'firecheck/cebu/');
-      expect(persisted?.confirmedAt.isAtSameMomentAs(DateTime.utc(2026, 5, 20, 10)),
-          isTrue);
+      expect(
+        persisted?.confirmedAt.isAtSameMomentAs(DateTime.utc(2026, 5, 20, 10)),
+        isTrue,
+      );
 
       expect(audit.recordCalls, hasLength(1));
       expect(audit.recordCalls.first['uploadedBy'], 'user-1');
@@ -186,7 +247,12 @@ void main() {
         auditRepo: audit,
       );
       await _seedAssignment(db, id: 'a-1', name: 'cebu');
-      await _seedJob(repo, id: 'j1', assignmentId: 'a-1', status: DriveUploadJobStatus.completed);
+      await _seedJob(
+        repo,
+        id: 'j1',
+        assignmentId: 'a-1',
+        status: DriveUploadJobStatus.completed,
+      );
 
       final outcome = await useCase.execute(assignmentId: 'a-1');
 
@@ -209,16 +275,23 @@ void main() {
       );
       // UUID-named / legacy assignment: name column is null.
       await _seedAssignment(db, id: 'a-uuid');
-      await _seedJob(repo, id: 'j1', assignmentId: 'a-uuid', status: DriveUploadJobStatus.completed);
+      await _seedJob(
+        repo,
+        id: 'j1',
+        assignmentId: 'a-uuid',
+        status: DriveUploadJobStatus.completed,
+      );
 
-      final outcome = await useCase.execute(assignmentId: 'a-uuid', uploaderId: 'user-1');
+      final outcome =
+          await useCase.execute(assignmentId: 'a-uuid', uploaderId: 'user-1');
 
       expect(outcome, isA<DriveUploadSucceeded>());
       expect((outcome as DriveUploadSucceeded).folderPath, 'firecheck/a-uuid/');
       expect(audit.recordCalls.single['driveFolderPath'], 'firecheck/a-uuid/');
     });
 
-    test('persists worker-shaped path when enumeratorIdentifier is provided', () async {
+    test('persists worker-shaped path when enumeratorIdentifier is provided',
+        () async {
       final db = _db();
       addTearDown(db.close);
       final repo = DriveUploadRepository(db);
@@ -233,9 +306,15 @@ void main() {
         enumeratorIdentifier: () => 'alice@example.com',
       );
       await _seedAssignment(db, id: 'a-1', name: 'cebu');
-      await _seedJob(repo, id: 'j1', assignmentId: 'a-1', status: DriveUploadJobStatus.completed);
+      await _seedJob(
+        repo,
+        id: 'j1',
+        assignmentId: 'a-1',
+        status: DriveUploadJobStatus.completed,
+      );
 
-      final outcome = await useCase.execute(assignmentId: 'a-1', uploaderId: 'user-1');
+      final outcome =
+          await useCase.execute(assignmentId: 'a-1', uploaderId: 'user-1');
 
       expect(outcome, isA<DriveUploadSucceeded>());
       expect(
@@ -248,7 +327,8 @@ void main() {
       );
     });
 
-    test('falls back to unknown-enumerator when identifier returns null', () async {
+    test('falls back to unknown-enumerator when identifier returns null',
+        () async {
       final db = _db();
       addTearDown(db.close);
       final repo = DriveUploadRepository(db);
@@ -263,7 +343,12 @@ void main() {
         enumeratorIdentifier: () => null,
       );
       await _seedAssignment(db, id: 'a-1', name: 'cebu');
-      await _seedJob(repo, id: 'j1', assignmentId: 'a-1', status: DriveUploadJobStatus.completed);
+      await _seedJob(
+        repo,
+        id: 'j1',
+        assignmentId: 'a-1',
+        status: DriveUploadJobStatus.completed,
+      );
 
       final outcome = await useCase.execute(assignmentId: 'a-1');
 
@@ -273,7 +358,8 @@ void main() {
       );
     });
 
-    test('executePending finalizes only assignments without confirmation', () async {
+    test('executePending finalizes only assignments without confirmation',
+        () async {
       final db = _db();
       addTearDown(db.close);
       final repo = DriveUploadRepository(db);
@@ -288,8 +374,18 @@ void main() {
       );
       await _seedAssignment(db, id: 'a-1', name: 'cebu');
       await _seedAssignment(db, id: 'a-2', name: 'manila');
-      await _seedJob(repo, id: 'j1', assignmentId: 'a-1', status: DriveUploadJobStatus.completed);
-      await _seedJob(repo, id: 'j2', assignmentId: 'a-2', status: DriveUploadJobStatus.completed);
+      await _seedJob(
+        repo,
+        id: 'j1',
+        assignmentId: 'a-1',
+        status: DriveUploadJobStatus.completed,
+      );
+      await _seedJob(
+        repo,
+        id: 'j2',
+        assignmentId: 'a-2',
+        status: DriveUploadJobStatus.completed,
+      );
       // a-2 is already confirmed — should be skipped.
       await assignmentRepo.setDriveUploadResult(
         assignmentId: 'a-2',

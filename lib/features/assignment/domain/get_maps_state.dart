@@ -21,7 +21,8 @@ class DiscoveringAssignments extends GetMapsState {
 }
 
 class PickingAssignment extends GetMapsState {
-  PickingAssignment({required List<DriveAssignment> assignments, required this.selectedId})
+  PickingAssignment(
+      {required List<DriveAssignment> assignments, required this.selectedId})
       : assignments = List.unmodifiable(assignments);
   final List<DriveAssignment> assignments;
   final String selectedId;
@@ -96,14 +97,17 @@ class DownloadingTiles extends GetMapsState {
   });
   final int downloadedBytes;
   final int totalBytes;
-  double get tileProgress =>
-      totalBytes == 0 ? 0 : downloadedBytes / totalBytes;
+  double get tileProgress => totalBytes == 0 ? 0 : downloadedBytes / totalBytes;
   @override
   double get overallProgress => 0.35 + 0.65 * tileProgress;
 }
 
 class Ready extends GetMapsState {
-  const Ready({required this.featureCount, required this.totalBytes});
+  const Ready(
+      {this.assignmentId,
+      required this.featureCount,
+      required this.totalBytes});
+  final String? assignmentId;
   final int featureCount;
   final int totalBytes;
   @override

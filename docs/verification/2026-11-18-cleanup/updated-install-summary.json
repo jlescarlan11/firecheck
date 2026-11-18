@@ -1,0 +1,48 @@
+{
+  "package": "ph.gov.bfp.firecheck",
+  "version_evidence": [
+    "versionCode=6014 minSdk=26 targetSdk=34",
+    "versionName=0.1.9"
+  ],
+  "install_method": "adb install -r; approved by user",
+  "apk_sha256": "92e51efb566bb327d448a5d1b689e97c192a7c1df9e79a4a29068323df0c6ffa",
+  "home_before_after": {
+    "surveyed": 4,
+    "total_features": 1438,
+    "remaining": 1434
+  },
+  "maps_retained": [
+    {
+      "sample_label": "map_a",
+      "surveyed": 1,
+      "total": 5
+    },
+    {
+      "sample_label": "map_b",
+      "surveyed": 3,
+      "total": 1433
+    }
+  ],
+  "test_sketch_saved": false,
+  "review": "opened after normal user biometric authentication; selected map up to date; no new changes; 1/1 complete;0 incomplete;0 new features;0 photos pending",
+  "upload_queue": "0 files; no pending uploads; Upload All disabled",
+  "same_signed_in_account_retained": true,
+  "original_working_map_restored": true,
+  "left_on_home": true,
+  "home_end_counts": {
+    "surveyed": 4,
+    "total_features": 1438,
+    "remaining": 1434
+  },
+  "building_sketch": {
+    "three_distinct_vertices_enable_finish": true,
+    "undo_to_two_disables_finish": true,
+    "cancel_requests_discard_confirmation": true,
+    "test_sketch_discarded_without_finishing": true
+  },
+  "manual_upload_requested": false,
+  "full_new_survey_and_remote_sync_verified": false,
+  "extended_protocol": "deferred by user",
+  "private_database_extracted": false,
+  "stay_on_setting": "0"
+}

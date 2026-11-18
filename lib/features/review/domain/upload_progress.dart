@@ -18,15 +18,19 @@ class Idle extends UploadProgress {
 
 @immutable
 class InProgress extends UploadProgress {
-  const InProgress({required this.done, required this.total});
+  const InProgress({required this.done, required this.total, this.label});
   final int done;
   final int total;
+  final String? label;
 
   @override
   bool operator ==(Object other) =>
-      other is InProgress && other.done == done && other.total == total;
+      other is InProgress &&
+      other.done == done &&
+      other.total == total &&
+      other.label == label;
   @override
-  int get hashCode => Object.hash(done, total);
+  int get hashCode => Object.hash(done, total, label);
 }
 
 @immutable

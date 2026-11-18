@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 import 'package:firecheck/core/db/database.dart';
+import 'package:firecheck/features/survey/building_form/data/submission_repository.dart';
 import 'package:firecheck/features/survey/olp_survey/domain/construction_details.dart';
 import 'package:firecheck/features/survey/olp_survey/domain/olp_form_state.dart';
 import 'package:firecheck/features/survey/olp_survey/domain/olp_rubric.dart';
@@ -16,23 +17,24 @@ class HouseholdSurveyRepository {
     required List<String> safetySuggestionKeys,
   }) async {
     final byCheckedSection = _packCheckedBySection(state.checkedCodes);
-    await _db.into(_db.householdSurveys).insertOnConflictUpdate(
-          HouseholdSurveysCompanion.insert(
-            submissionId: state.submissionId,
-            constructionDetailsJson:
-                Value(jsonEncode(_encodeConstruction(state.constructionDetails))),
-            kaayusanJson: Value(jsonEncode(byCheckedSection[OlpSection.b] ?? {})),
-            koneksyongElektrikalJson:
-                Value(jsonEncode(byCheckedSection[OlpSection.c] ?? {})),
-            kusinaJson: Value(jsonEncode(byCheckedSection[OlpSection.d] ?? {})),
-            daananOLabasanJson:
-                Value(jsonEncode(byCheckedSection[OlpSection.e] ?? {})),
-            lebelNgKahinaan: Value(lebelNgKahinaan),
-            safetySuggestions: Value(jsonEncode(safetySuggestionKeys)),
-            homeownerAcknowledged: Value(state.homeownerAcknowledged),
-            completedAt: Value(state.completedAt),
-          ),
-        );
+    final attributes = HouseholdSurveysCompanion.insert(
+      submissionId: state.submissionId,
+      constructionDetailsJson:
+          Value(jsonEncode(_encodeConstruction(state.constructionDetails))),
+      kaayusanJson: Value(jsonEncode(byCheckedSection[OlpSection.b] ?? {})),
+      koneksyongElektrikalJson:
+          Value(jsonEncode(byCheckedSection[OlpSection.c] ?? {})),
+      kusinaJson: Value(jsonEncode(byCheckedSection[OlpSection.d] ?? {})),
+      daananOLabasanJson:
+          Value(jsonEncode(byCheckedSection[OlpSection.e] ?? {})),
+      lebelNgKahinaan: Value(lebelNgKahinaan),
+      safetySuggestions: Value(jsonEncode(safetySuggestionKeys)),
+      homeownerAcknowledged: Value(state.homeownerAcknowledged),
+      completedAt: Value(state.completedAt),
+    );
+    await SubmissionRepository(_db).persistEdit(state.submissionId, () async {
+      await _db.into(_db.householdSurveys).insertOnConflictUpdate(attributes);
+    });
   }
 
   Future<OlpFormState?> loadForSubmission(String submissionId) async {
@@ -49,7 +51,8 @@ class HouseholdSurveyRepository {
     return OlpFormState(
       submissionId: submissionId,
       checkedCodes: checked,
-      constructionDetails: decodeConstructionDetails(row.constructionDetailsJson),
+      constructionDetails:
+          decodeConstructionDetails(row.constructionDetailsJson),
       homeownerAcknowledged: row.homeownerAcknowledged,
       completedAt: row.completedAt,
     );

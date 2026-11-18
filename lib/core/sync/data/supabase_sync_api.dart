@@ -8,8 +8,11 @@ import 'package:firecheck/core/sync/domain/sync_outcome.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 
 class SupabaseSyncApi implements SyncApi {
-  SupabaseSyncApi(this._client);
+  SupabaseSyncApi(this._client) : _ownerId = _client.auth.currentUser?.id;
   final SupabaseClient _client;
+  final String? _ownerId;
+  bool get _sameAccount =>
+      _ownerId != null && _client.auth.currentUser?.id == _ownerId;
   static const _photosBucket = 'photos';
 
   @override
@@ -18,6 +21,7 @@ class SupabaseSyncApi implements SyncApi {
     required String photoId,
     required File file,
   }) async {
+    if (!_sameAccount) return (outcome: const AuthExpired(), storagePath: null);
     final path = '$submissionId/$photoId.jpg';
     try {
       await _client.storage.from(_photosBucket).upload(
@@ -39,14 +43,23 @@ class SupabaseSyncApi implements SyncApi {
   Future<SyncOutcome> markPhotoUploaded({
     required String photoId,
     required String storagePath,
+    required DateTime capturedAt,
   }) async {
+    if (!_sameAccount) return const AuthExpired();
     try {
-      // Only storage_path is server-side; upload_status is local-only per
-      // master spec §6. The worker flips local photos.upload_status after
-      // this returns Success.
-      await _client.from('photos').update({
-        'storage_path': storagePath,
-      }).eq('id', photoId);
+      try {
+        await _client.rpc<dynamic>('register_uploaded_photo', params: {
+          'p_photo_id': photoId,
+          'p_submission_id': storagePath.split('/').first,
+          'p_storage_path': storagePath,
+          'p_captured_at': capturedAt.toUtc().toIso8601String(),
+        });
+      } on PostgrestException catch (e) {
+        if (e.code != 'PGRST202') rethrow;
+        await _client
+            .from('photos')
+            .update({'storage_path': storagePath}).eq('id', photoId);
+      }
       return const Success();
     } on PostgrestException catch (e) {
       return _mapPostgrestException(e, null);
@@ -61,6 +74,8 @@ class SupabaseSyncApi implements SyncApi {
   Future<SyncOutcome> uploadFeatureGeometryUpdate(
     FeatureGeometryRevision revision,
   ) async {
+    if (!_sameAccount || revision.editedBy != _ownerId)
+      return const AuthExpired();
     try {
       final params = {
         'p_revision_id': revision.id,
@@ -113,7 +128,11 @@ class SupabaseSyncApi implements SyncApi {
     if (status == '401' || e.message.contains('JWT')) {
       return const AuthExpired();
     }
-    if (status != null && status.startsWith('4')) {
+    if (status != null &&
+        (status.startsWith('4') ||
+            status.startsWith('22') ||
+            status.startsWith('23') ||
+            status == 'P0001')) {
       return PermanentFailure('${e.code} ${e.message}');
     }
     return TransientFailure('${e.code} ${e.message}');
@@ -134,6 +153,7 @@ class SupabaseSyncApi implements SyncApi {
     required Map<String, dynamic> payload,
     String? baseVersionId,
   }) async {
+    if (!_sameAccount) return (outcome: const AuthExpired(), result: null);
     // The RPC expects base_version_id INSIDE the payload jsonb; tucking it
     // in here keeps the existing payload-builder unaware of conflict
     // semantics.
@@ -166,10 +186,13 @@ class SupabaseSyncApi implements SyncApi {
   @override
   Future<({SyncOutcome outcome, SubmitNewFeatureResult? result})>
       submitNewFeatureWithDedup(Map<String, dynamic> payload) async {
+    if (!_sameAccount) return (outcome: const AuthExpired(), result: null);
     try {
       final raw = await _client.rpc<dynamic>(
         'submit_new_feature_with_dedup_check',
-        params: {'payload': payload},
+        params: {
+          'payload': {...payload, 'submitted_by': _ownerId}
+        },
       );
       final result = _parseNewFeatureResult(raw);
       if (result == null) {
@@ -194,6 +217,7 @@ class SupabaseSyncApi implements SyncApi {
     required AttributionDecision decision,
     String? resolutionNote,
   }) async {
+    if (!_sameAccount) return const AuthExpired();
     try {
       await _client.rpc<dynamic>(
         'resolve_attribution',
@@ -219,6 +243,7 @@ class SupabaseSyncApi implements SyncApi {
     required DedupDecision decision,
     String? resolutionNote,
   }) async {
+    if (!_sameAccount) return const AuthExpired();
     try {
       await _client.rpc<dynamic>(
         'resolve_new_feature',

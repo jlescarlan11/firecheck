@@ -14,8 +14,7 @@ class FakeSyncApi implements SyncApi {
   final List<SyncOutcome> _featureGeometryUpdateResponses = [];
 
   /// Records of every call, in order, for assertions.
-  final List<({String submissionId, String photoId})> uploadPhotoFileCalls =
-      [];
+  final List<({String submissionId, String photoId})> uploadPhotoFileCalls = [];
   final List<({String photoId, String storagePath})> markPhotoUploadedCalls =
       [];
   final List<FeatureGeometryRevision> uploadFeatureGeometryUpdateCalls = [];
@@ -45,6 +44,7 @@ class FakeSyncApi implements SyncApi {
   Future<SyncOutcome> markPhotoUploaded({
     required String photoId,
     required String storagePath,
+    required DateTime capturedAt,
   }) async {
     markPhotoUploadedCalls.add((photoId: photoId, storagePath: storagePath));
     return _next(_photoMarkResponses);
@@ -60,11 +60,9 @@ class FakeSyncApi implements SyncApi {
 
   // -------- Conflict-aware upload + resolution -------------------------
 
-  final List<
-      ({SyncOutcome outcome, SubmitAttributionResult? result})>
+  final List<({SyncOutcome outcome, SubmitAttributionResult? result})>
       _submitAttributionResponses = [];
-  final List<
-      ({SyncOutcome outcome, SubmitNewFeatureResult? result})>
+  final List<({SyncOutcome outcome, SubmitNewFeatureResult? result})>
       _submitNewFeatureResponses = [];
   final List<SyncOutcome> _resolveAttributionResponses = [];
   final List<SyncOutcome> _resolveNewFeatureResponses = [];

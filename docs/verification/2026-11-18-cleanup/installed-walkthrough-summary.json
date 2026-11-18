@@ -1,0 +1,25 @@
+{
+  "installed_version": "0.1.9",
+  "installed_version_code": 4013,
+  "new_working_tree_binary": false,
+  "routes_observed": [
+    "Home",
+    "My Maps",
+    "Gather Data: selection/zoom",
+    "Distance policy override prompt: cancelled",
+    "Review after user biometric authentication",
+    "Upload progress: empty/disabled Upload All",
+    "Account",
+    "Home restored"
+  ],
+  "original_working_map_restored": true,
+  "survey_writes_requested": false,
+  "manual_uploads_requested": false,
+  "new_survey_end_to_end_verified": false,
+  "notes": [
+    "Only installed older app navigation/read UI observed. No evidence that new code runs on this phone.",
+    "Screen turning off clarified by user; no idle process crash reproduced.",
+    "User has only this phone and requested deferral of extended device/capacity validation in favor of walkthrough.",
+    "Raw device screenshots may contain real account/map information and remain ignored/local; do not copy into tracked docs."
+  ]
+}

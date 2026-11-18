@@ -14,6 +14,7 @@ import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:proj4dart/proj4dart.dart' as proj4;
+import 'package:uuid/uuid.dart';
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -151,7 +152,10 @@ List<List<double>> _ensureClosed(List<List<double>> ring) {
   final first = ring.first;
   final last = ring.last;
   if (first[0] == last[0] && first[1] == last[1]) return ring;
-  return [...ring, [first[0], first[1]]];
+  return [
+    ...ring,
+    [first[0], first[1]],
+  ];
 }
 
 /// For polygon parts, normalize to Esri orientation: first ring CW (outer),
@@ -397,7 +401,7 @@ String? _photosToPipe(List<String> urls) {
   const cap = 254;
   final buf = StringBuffer();
   for (final url in urls) {
-    final prospective = buf.isEmpty ? url : '${buf.toString()}|$url';
+    final prospective = buf.isEmpty ? url : '$buf|$url';
     if (prospective.length > cap) break;
     if (buf.isNotEmpty) buf.write('|');
     buf.write(url);
@@ -543,7 +547,10 @@ class ShapefileExporter {
     // Guard against exporter bugs producing empty file components.
     for (final out in outputs) {
       if (out.shp.isEmpty || out.shx.isEmpty || out.dbf.isEmpty) {
-        return (WriteError('Layer ${out.layerName} produced empty components'), null);
+        return (
+          WriteError('Layer ${out.layerName} produced empty components'),
+          null
+        );
       }
     }
 
@@ -578,7 +585,9 @@ class ShapefileExporter {
     }
 
     final zipBytes = ZipEncoder().encode(archive);
-    if (zipBytes == null) return (const WriteError('ZIP encoding produced no output'), null);
+    if (zipBytes == null) {
+      return (const WriteError('ZIP encoding produced no output'), null);
+    }
     final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
     final zipName = 'firecheck_${assignmentId}_$timestamp.zip';
     final zipPath = p.join(destDir.path, zipName);
@@ -591,6 +600,9 @@ class ShapefileExporter {
 
     return (null, zipPath);
   }
+
+  String _componentDirectoryName(String assignmentId, String timestamp) =>
+      'firecheck_${assignmentId}_${timestamp}_${const Uuid().v4()}';
 
   Future<(ExportFailure?, List<ShapefileComponentFile>?)>
       _buildAndWriteComponents({
@@ -605,7 +617,7 @@ class ShapefileExporter {
     // a file an upload worker is currently streaming.
     final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
     final exportDirPath =
-        p.join(destDir.path, 'firecheck_${assignmentId}_$timestamp');
+        p.join(destDir.path, _componentDirectoryName(assignmentId, timestamp));
     await Directory(exportDirPath).create(recursive: true);
 
     final prjBytes = utf8.encode(_targetCrs.wkt);
@@ -622,7 +634,8 @@ class ShapefileExporter {
           final filename = '$layer.$ext';
           final path = p.join(exportDirPath, filename);
           await File(path).writeAsBytes(bytes);
-          components.add(ShapefileComponentFile(filename: filename, path: path));
+          components
+              .add(ShapefileComponentFile(filename: filename, path: path));
         }
       }
     } catch (e) {
@@ -635,6 +648,12 @@ class ShapefileExporter {
   // -------------------------------------------------------------------------
   // DB queries — run on the main isolate
   // -------------------------------------------------------------------------
+
+  Expression<bool> _completedLayer(String assignmentId, String type) =>
+      db.features.assignmentId.equals(assignmentId) &
+      db.features.featureType.equals(type) &
+      db.features.status.equals('complete') &
+      db.submissions.syncStatus.isIn(['ready_to_upload', 'queued', 'uploaded']);
 
   Future<List<_BuildingQueryRow>> _queryBuildings(
     String assignmentId,
@@ -650,9 +669,7 @@ class ShapefileExporter {
       ),
     ])
       ..where(
-        db.features.assignmentId.equals(assignmentId) &
-            db.features.featureType.equals('building') &
-            db.features.status.equals('complete'),
+        _completedLayer(assignmentId, 'building'),
       );
 
     final rows = await query.get();
@@ -700,9 +717,7 @@ class ShapefileExporter {
       ),
     ])
       ..where(
-        db.features.assignmentId.equals(assignmentId) &
-            db.features.featureType.equals('road') &
-            db.features.status.equals('complete'),
+        _completedLayer(assignmentId, 'road'),
       );
 
     final rows = await query.get();
@@ -744,8 +759,10 @@ class ShapefileExporter {
   ) async {
     if (submissionIds.isEmpty) return const {};
     final photos = await (db.select(db.photos)
-          ..where((t) =>
-              t.submissionId.isIn(submissionIds) & t.storagePath.isNotNull())
+          ..where(
+            (t) =>
+                t.submissionId.isIn(submissionIds) & t.storagePath.isNotNull(),
+          )
           ..orderBy([(t) => OrderingTerm.asc(t.capturedAt)]))
         .get();
     final map = <String, List<String>>{};
@@ -760,7 +777,8 @@ class ShapefileExporter {
   String _photoUrlFor(String storagePath) {
     final base = supabaseUrl;
     if (base == null || base.isEmpty) return storagePath;
-    final trimmed = base.endsWith('/') ? base.substring(0, base.length - 1) : base;
+    final trimmed =
+        base.endsWith('/') ? base.substring(0, base.length - 1) : base;
     return '$trimmed/storage/v1/object/public/photos/$storagePath';
   }
 }
@@ -802,7 +820,10 @@ String _reprojectGeojson(String geojson, PhCrs target) {
   List<double> transformPair(List<dynamic> pair) {
     final pt = wgs84.transform(
       dst,
-      proj4.Point(x: (pair[0] as num).toDouble(), y: (pair[1] as num).toDouble()),
+      proj4.Point(
+        x: (pair[0] as num).toDouble(),
+        y: (pair[1] as num).toDouble(),
+      ),
     );
     return [pt.x, pt.y];
   }

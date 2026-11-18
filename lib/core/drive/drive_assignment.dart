@@ -8,6 +8,7 @@ class DriveAssignment {
     required this.inputZipModifiedTime,
     required this.driveFolderId,
     this.alreadyDownloaded = false,
+    this.downloadedAssignmentId,
     this.displayName,
   });
 
@@ -24,15 +25,23 @@ class DriveAssignment {
 
   final String inputZipModifiedTime;
   final String driveFolderId;
-  final bool alreadyDownloaded;
 
-  DriveAssignment copyWith({bool? alreadyDownloaded}) => DriveAssignment(
+  /// Whether the original download matches the current source version.
+  /// This is an import optimization, not local availability or sync freshness.
+  final bool alreadyDownloaded;
+  final String? downloadedAssignmentId;
+
+  DriveAssignment copyWith(
+          {bool? alreadyDownloaded, String? downloadedAssignmentId}) =>
+      DriveAssignment(
         assignmentId: assignmentId,
         displayName: displayName,
         localAssignmentId: localAssignmentId,
         inputZipModifiedTime: inputZipModifiedTime,
         driveFolderId: driveFolderId,
         alreadyDownloaded: alreadyDownloaded ?? this.alreadyDownloaded,
+        downloadedAssignmentId:
+            downloadedAssignmentId ?? this.downloadedAssignmentId,
       );
 
   @override
@@ -43,9 +52,16 @@ class DriveAssignment {
       other.inputZipModifiedTime == inputZipModifiedTime &&
       other.driveFolderId == driveFolderId &&
       other.displayName == displayName &&
-      other.alreadyDownloaded == alreadyDownloaded;
+      other.alreadyDownloaded == alreadyDownloaded &&
+      other.downloadedAssignmentId == downloadedAssignmentId;
 
   @override
-  int get hashCode => Object.hash(assignmentId, localAssignmentId,
-      inputZipModifiedTime, driveFolderId, alreadyDownloaded, displayName);
+  int get hashCode => Object.hash(
+      assignmentId,
+      localAssignmentId,
+      inputZipModifiedTime,
+      driveFolderId,
+      alreadyDownloaded,
+      displayName,
+      downloadedAssignmentId);
 }

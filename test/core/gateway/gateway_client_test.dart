@@ -6,6 +6,33 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 void main() {
+  test('reports streamed bytes and preserves the exact upload body', () async {
+    final bytes = List<int>.generate(200000, (i) => i % 256);
+    final sent = <int>[];
+    final client = GatewayClient(
+      baseUri: Uri.parse('https://files.example.com'),
+      userId: () => 'worker',
+      accessToken: () => 'token',
+      refresh: () async {},
+      client: MockClient((request) async {
+        expect(request.bodyBytes, bytes);
+        expect(request.contentLength, bytes.length);
+        return http.Response('{}', 200);
+      }),
+    );
+    final response = await client
+        .send('PUT', '/v1/uploads/test/files/file/chunks', bytes: bytes,
+            onProgress: (count, total) {
+      expect(total, bytes.length);
+      sent.add(count);
+    });
+    await response.stream.drain<void>();
+    expect(sent.first, 0);
+    expect(sent.last, bytes.length);
+    expect(sent.any((count) => count > 0 && count < bytes.length), isTrue);
+    expect(sent, orderedEquals([...sent]..sort()));
+  });
+
   test('bodyless completion does not declare an empty JSON payload', () async {
     final client = GatewayClient(
       baseUri: Uri.parse('https://files.example.com'),
@@ -19,7 +46,8 @@ void main() {
         return http.Response('{"complete":true}', 200);
       }),
     );
-    expect((await client.json('POST', '/v1/uploads/example/complete'))['complete'],
+    expect(
+        (await client.json('POST', '/v1/uploads/example/complete'))['complete'],
         isTrue);
   });
   test('preserves Supabase function prefix and never follows redirects',

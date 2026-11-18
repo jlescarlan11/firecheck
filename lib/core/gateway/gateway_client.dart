@@ -45,6 +45,7 @@ class GatewayClient {
     List<int>? bytes,
     Map<String, String> headers = const {},
     String? owner,
+    void Function(int sent, int total)? onProgress,
   }) async {
     final expected = owner ?? userId();
     if (expected == null || userId() != expected) {
@@ -75,10 +76,12 @@ class GatewayClient {
         path: '$prefix${relative.path}',
         query: relative.hasQuery ? relative.query : null,
       );
-      final req = http.Request(method, uri)
+      final http.BaseRequest req = bytes != null && onProgress != null
+          ? _ProgressRequest(method, uri, bytes, onProgress)
+          : (http.Request(method, uri)..bodyBytes = bytes ?? const []);
+      req
         ..followRedirects = false
         ..headers.addAll({...headers, 'Authorization': 'Bearer $token'});
-      if (bytes != null) req.bodyBytes = bytes;
       final response =
           await _client.send(req).timeout(const Duration(seconds: 60));
       if (userId() != expected) {
@@ -137,5 +140,31 @@ class GatewayClient {
     final raw =
         await r.stream.bytesToString().timeout(const Duration(seconds: 60));
     return jsonDecode(raw) as Map<String, dynamic>;
+  }
+}
+
+/// Reports bytes consumed by the transport, not a fabricated time estimate.
+/// Server confirmation is tracked separately from this transfer count.
+class _ProgressRequest extends http.BaseRequest {
+  _ProgressRequest(super.method, super.url, this.bytes, this.onProgress) {
+    contentLength = bytes.length;
+  }
+  final List<int> bytes;
+  final void Function(int sent, int total) onProgress;
+
+  @override
+  http.ByteStream finalize() {
+    super.finalize();
+    return http.ByteStream(_body());
+  }
+
+  Stream<List<int>> _body() async* {
+    onProgress(0, bytes.length);
+    for (var offset = 0; offset < bytes.length;) {
+      final end = (offset + 64 * 1024).clamp(0, bytes.length);
+      yield bytes.sublist(offset, end);
+      offset = end;
+      onProgress(offset, bytes.length);
+    }
   }
 }

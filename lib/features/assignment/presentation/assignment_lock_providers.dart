@@ -8,28 +8,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// lazily-generated bundle file for the closed-remotely path.
 final assignmentLockStateProvider =
     StreamProvider<AssignmentLockState>((ref) async* {
-  final repo = ref.watch(assignmentRepositoryProvider);
+  final assignment = ref.watch(currentAssignmentProvider).valueOrNull;
   final bundle = ref.watch(pendingWorkBundleProvider);
 
-  await for (final assignment in repo.watchCurrentAssignment()) {
-    if (assignment == null) {
-      yield const Unlocked();
-      continue;
+  if (assignment == null) {
+    yield const Unlocked();
+    return;
+  }
+  if (assignment.closedRemotely) {
+    yield const ClosedRemotely(bundleFile: null);
+    try {
+      final file = await bundle.exportFor(assignment.id);
+      yield ClosedRemotely(bundleFile: file);
+    } on Object {
+      // Bundle export is best-effort; the blocker UI degrades gracefully
+      // when bundleFile is null.
     }
-    if (assignment.closedRemotely) {
-      yield const ClosedRemotely(bundleFile: null);
-      try {
-        final file = await bundle.exportFor(assignment.id);
-        yield ClosedRemotely(bundleFile: file);
-      } on Object {
-        // Bundle export is best-effort; the blocker UI degrades gracefully
-        // when bundleFile is null.
-      }
-    } else if (assignment.submittedAt != null) {
-      yield Submitted(submittedAt: assignment.submittedAt!);
-    } else {
-      yield const Unlocked();
-    }
+  } else if (assignment.submittedAt != null) {
+    yield Submitted(submittedAt: assignment.submittedAt!);
+  } else {
+    yield const Unlocked();
   }
 });
 

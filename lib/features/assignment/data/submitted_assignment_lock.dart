@@ -55,7 +55,8 @@ class SubmittedAssignmentLock {
     // Start Upload tap yet has zero sync_jobs at all — vacuously satisfying
     // that condition — so submitted_at would stamp the moment a draft was
     // saved. We now also require AT LEAST ONE success job to exist, so the
-    // lock fires only after the worker has actually drained an upload.
+    // timestamp is recorded only after the worker has drained an upload.
+    // This timestamp does not block subsequent progressive edits.
     final counts = await _db.customSelect(
       '''
       SELECT

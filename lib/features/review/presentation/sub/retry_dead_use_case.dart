@@ -8,26 +8,23 @@ class RetryDeadUseCase {
   final AppDatabase db;
   final TriggerSync triggerNow;
 
-  Future<void> retryOne(String jobId) async {
-    await (db.update(db.syncJobs)
-          ..where((t) => t.id.equals(jobId) & t.status.equals('dead')))
-        .write(const SyncJobsCompanion(
-          status: Value('pending'),
-          attempts: Value(0),
-          lastError: Value(null),
-          nextRetryAt: Value(null),
-        ),);
-    await triggerNow();
-  }
+  Future<void> retryOne(String jobId) => _retry(jobId);
 
-  Future<void> retryAll() async {
-    await (db.update(db.syncJobs)..where((t) => t.status.equals('dead')))
-        .write(const SyncJobsCompanion(
-          status: Value('pending'),
-          attempts: Value(0),
-          lastError: Value(null),
-          nextRetryAt: Value(null),
-        ),);
+  Future<void> retryAll() => _retry(null);
+
+  Future<void> _retry(String? jobId) async {
+    await db.customUpdate(
+      """
+      UPDATE sync_jobs SET status='pending', attempts=0, last_error=NULL, next_retry_at=NULL
+      WHERE status='dead' AND (? IS NULL OR id=?)
+        AND NOT (entity_type='attribution_upload' AND EXISTS (
+          SELECT 1 FROM sync_jobs newer
+          WHERE newer.entity_type=sync_jobs.entity_type AND newer.entity_id=sync_jobs.entity_id
+            AND newer.rowid > sync_jobs.rowid AND newer.status='success'
+        ))""",
+      variables: [Variable<String>(jobId), Variable<String>(jobId)],
+      updates: {db.syncJobs},
+    );
     await triggerNow();
   }
 }

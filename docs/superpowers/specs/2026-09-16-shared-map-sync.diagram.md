@@ -1,0 +1,22 @@
+# Shared map architecture
+
+## One shared map, with background exports
+
+<!-- mermaid:id=shared_map -->
+```mermaid
+flowchart LR
+  phone["Phone&#58; private drafts and durable pending changes"]
+  commit["Server&#58; validate, deduplicate, resolve conflicts"]
+  records["Supabase&#58; accepted shared map and revisions"]
+  peers["Other phones&#58; fetch changes, preserve drafts"]
+  worker["Background job&#58; freeze and build a map version"]
+  download["Get Maps&#58; snapshot plus newer changes"]
+  drive["Drive&#58; one current combined export per map"]
+  phone -->|Completed work| commit
+  commit -->|Atomic acceptance| records
+  records -->|Ordered changes| peers
+  records -->|Durable job| worker
+  worker --> download
+  worker --> drive
+%% portable-canonical-v2:eyJhY2Nlc3NpYmlsaXR5IjpudWxsLCJkYXRhIjp7ImRpcmVjdGlvbiI6IkxSIiwiZWRnZXMiOlt7ImZyb20iOiJwaG9uZSIsImxhYmVsIjoiQ29tcGxldGVkIHdvcmsiLCJ0byI6ImNvbW1pdCJ9LHsiZnJvbSI6ImNvbW1pdCIsImxhYmVsIjoiQXRvbWljIGFjY2VwdGFuY2UiLCJ0byI6InJlY29yZHMifSx7ImZyb20iOiJyZWNvcmRzIiwibGFiZWwiOiJPcmRlcmVkIGNoYW5nZXMiLCJ0byI6InBlZXJzIn0seyJmcm9tIjoicmVjb3JkcyIsImxhYmVsIjoiRHVyYWJsZSBqb2IiLCJ0byI6IndvcmtlciJ9LHsiZnJvbSI6IndvcmtlciIsInRvIjoiZG93bmxvYWQifSx7ImZyb20iOiJ3b3JrZXIiLCJ0byI6ImRyaXZlIn1dLCJub2RlcyI6W3siaWQiOiJwaG9uZSIsImxhYmVsIjoiUGhvbmU6IHByaXZhdGUgZHJhZnRzIGFuZCBkdXJhYmxlIHBlbmRpbmcgY2hhbmdlcyJ9LHsiaWQiOiJjb21taXQiLCJsYWJlbCI6IlNlcnZlcjogdmFsaWRhdGUsIGRlZHVwbGljYXRlLCByZXNvbHZlIGNvbmZsaWN0cyJ9LHsiaWQiOiJyZWNvcmRzIiwibGFiZWwiOiJTdXBhYmFzZTogYWNjZXB0ZWQgc2hhcmVkIG1hcCBhbmQgcmV2aXNpb25zIn0seyJpZCI6InBlZXJzIiwibGFiZWwiOiJPdGhlciBwaG9uZXM6IGZldGNoIGNoYW5nZXMsIHByZXNlcnZlIGRyYWZ0cyJ9LHsiaWQiOiJ3b3JrZXIiLCJsYWJlbCI6IkJhY2tncm91bmQgam9iOiBmcmVlemUgYW5kIGJ1aWxkIGEgbWFwIHZlcnNpb24ifSx7ImlkIjoiZG93bmxvYWQiLCJsYWJlbCI6IkdldCBNYXBzOiBzbmFwc2hvdCBwbHVzIG5ld2VyIGNoYW5nZXMifSx7ImlkIjoiZHJpdmUiLCJsYWJlbCI6IkRyaXZlOiBvbmUgY3VycmVudCBjb21iaW5lZCBleHBvcnQgcGVyIG1hcCJ9XX0sImRlc2NyaXB0aW9uIjpudWxsLCJpZCI6InNoYXJlZF9tYXAiLCJraW5kIjoiZmxvd2NoYXJ0Iiwic291cmNlU2hhMjU2IjoiZDJlMzFkOTMxYTRkYmY5ODQxYzQ0MjM5NDMzZWM2MDE0YmQwMTJhYjIwMjBjYmQ1M2JkNWEyMGUzNjk1NmMxMiIsInN0eWxlcyI6W10sInRpdGxlIjoiT25lIHNoYXJlZCBtYXAsIHdpdGggYmFja2dyb3VuZCBleHBvcnRzIiwidmVyc2lvbiI6MX0
+```

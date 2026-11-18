@@ -1,3 +1,4 @@
+import '../../support/form_store_directory.dart';
 // test/features/assignment/get_maps_notifier_test.dart
 import 'dart:async';
 import 'dart:typed_data';
@@ -124,7 +125,9 @@ GetMapsNotifier _makeNotifier({
 }
 
 void main() {
-  test('Drive reconnection is an auth error without an automatic retry', () async {
+  setUp(useTemporaryFormDirectory);
+  test('Drive reconnection is an auth error without an automatic retry',
+      () async {
     final n = _makeNotifier(listError: const AuthFailure('Reconnect Drive'));
     await n.start();
     final error = n.state as GetMapsError;
@@ -204,10 +207,11 @@ void main() {
     final states = <GetMapsState>[];
     n.addListener(states.add, fireImmediately: false);
 
-    unawaited(n.confirmDownload());
+    final downloading = n.confirmDownload();
     await Future.microtask(() {});
 
     expect(states.first, isA<PreparingDownload>());
+    await downloading;
   });
 
   test('insufficient storage → InsufficientStorage state', () async {
@@ -227,6 +231,31 @@ void main() {
     await n.confirmDownload();
     expect(n.state, isA<DownloadingTiles>());
     expect(imp.callCount, 1);
+  });
+
+  test(
+      'downloading another map keeps selection and targets that download for tiles',
+      () async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(db.close);
+    await db.into(db.assignments).insert(AssignmentsCompanion.insert(
+          id: 'cebu',
+          enumeratorId: 'me',
+          campaignId: 'cebu',
+          boundaryPolygonGeojson: '',
+          createdAt: DateTime.now(),
+        ));
+    final repo = AssignmentRepository(db: db, userId: 'me');
+    await repo.selectAssignment('cebu');
+    final notifier = _makeNotifier(db: db);
+    addTearDown(notifier.dispose);
+    await notifier.start();
+    await notifier.confirmDownload();
+    expect(notifier.state, isA<DownloadingTiles>());
+    expect((await repo.getCurrentAssignment())?.id, 'cebu');
+    final packs = await db.select(db.offlineTilePacks).get();
+    expect(packs.single.assignmentId, 'brgy-001');
+    expect(await db.select(db.assignments).get(), hasLength(2));
   });
 
   test('delta skip: alreadyDownloaded=true skips importer call', () async {
@@ -251,6 +280,38 @@ void main() {
     expect(imp.callCount, 0);
     expect(n.state, isA<DownloadingTiles>());
   });
+
+  for (final savedVersion in [null, 'previous-export']) {
+    test('gateway map stays downloaded with saved version $savedVersion',
+        () async {
+      final db = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(db.close);
+      await db.into(db.assignments).insert(AssignmentsCompanion.insert(
+            id: 'saved-map',
+            enumeratorId: 'e',
+            campaignId: 'c',
+            boundaryPolygonGeojson: '',
+            createdAt: DateTime(2026),
+            driveFolderId: const Value(''),
+            driveModifiedTime: Value(savedVersion),
+          ));
+      final n = _makeNotifier(db: db, assignments: [
+        for (final id in ['saved-map', 'missing-map'])
+          DriveAssignment(
+              assignmentId: id,
+              localAssignmentId: id,
+              inputZipModifiedTime: 'new-export',
+              driveFolderId: ''),
+      ]);
+      addTearDown(n.dispose);
+      await n.start();
+      final maps = (n.state as PickingAssignment).assignments;
+      expect(maps.first.downloadedAssignmentId, 'saved-map');
+      expect(maps.first.alreadyDownloaded, isFalse);
+      expect(maps.last.downloadedAssignmentId, isNull,
+          reason: 'Empty folder IDs must not match another map');
+    });
+  }
 
   for (final canonical in [false, true]) {
     test('named folder is recognized after import (canonical=$canonical)',
@@ -292,12 +353,22 @@ void main() {
 
       // A changed source still requires a fresh import.
       await db.update(db.assignments).write(
-        const AssignmentsCompanion(driveModifiedTime: Value('older-version')),
-      );
+            const AssignmentsCompanion(
+                driveModifiedTime: Value('older-version')),
+          );
       await n.start();
       expect(
         (n.state as PickingAssignment).assignments.single.alreadyDownloaded,
         isFalse,
+      );
+      expect(
+        (n.state as PickingAssignment)
+            .assignments
+            .single
+            .downloadedAssignmentId,
+        canonical
+            ? 'f47ac10b-58cc-4372-a567-0e02b2c3d479'
+            : assignment.localAssignmentId,
       );
     });
   }
@@ -370,8 +441,8 @@ void main() {
       final fakeReporter = FakeValidationFailureReporter();
       final fatalValidator = ShapefileValidator(
         rules: [
-          _SpyRule(
-              const RuleFatal(ruleName: 'header_integrity', userMessage: 'Damaged.'))
+          _SpyRule(const RuleFatal(
+              ruleName: 'header_integrity', userMessage: 'Damaged.'))
         ],
       );
       final notifier = _makeNotifier(

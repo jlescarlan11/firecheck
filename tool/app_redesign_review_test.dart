@@ -28,7 +28,6 @@ import 'package:firecheck/features/conflict_review/presentation/conflict_review_
 import 'package:firecheck/features/conflict_review/presentation/conflict_review_providers.dart';
 import 'package:firecheck/features/conflict_review/presentation/dedup_review_screen.dart';
 import 'package:firecheck/features/conflict_review/presentation/side_by_side_compare.dart';
-import 'package:firecheck/features/form_preview/presentation/form_preview_screen.dart';
 import 'package:firecheck/features/home/domain/progress_snapshot.dart';
 import 'package:firecheck/features/home/presentation/home_providers.dart';
 import 'package:firecheck/features/home/presentation/home_screen.dart';
@@ -145,7 +144,6 @@ void main() {
         submissionId: 's-building',
         featureId: 'building-1',
       ),
-      'form-rules': const FormPreviewScreen(),
       'activity': const RemoteActivityListScreen(),
       'their-answers':
           const RemoteAttributionDetailScreen(featureId: 'building-1'),
@@ -292,7 +290,7 @@ void main() {
                   ),
                 ),
                 review.assignmentJobsStreamProvider
-                    .overrideWith((_) => Stream.value([])),
+                    .overrideWith((_, assignmentId) => Stream.value([])),
                 currentAssignmentProvider
                     .overrideWith((_) => Stream.value(null)),
                 awaitingResolutionCountProvider.overrideWithValue(0),

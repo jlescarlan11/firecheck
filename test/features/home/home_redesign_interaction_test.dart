@@ -72,7 +72,7 @@ void main() {
         GoRoute(path: '/', builder: (_, __) => const HomeScreen()),
         for (final path in [
           '/map',
-          '/get-maps',
+          '/my-maps',
           '/review',
           '/uploads',
           '/account',
@@ -130,7 +130,7 @@ void main() {
     await pumpHome(tester);
     for (final entry in {
       'Continue survey': '/map',
-      'Get maps': '/get-maps',
+      'My Maps': '/my-maps',
       'Account': '/account',
     }.entries) {
       await tester.ensureVisible(find.text(entry.key));

@@ -62,6 +62,60 @@ class RemoteAttributionsCacheRepository {
     });
   }
 
+  /// Commits a requested assignment's complete legacy pull as one unit.
+  /// Validate both result sets before any cache or cursor can change.
+  Future<void> applyPull(
+    String assignmentId, {
+    required Iterable<Map<String, dynamic>> attributions,
+    required Iterable<Map<String, dynamic>> newFeatures,
+    required DateTime? attributionsCursor,
+    required DateTime? newFeaturesCursor,
+  }) async {
+    if (assignmentId.trim().isEmpty) {
+      throw StateError('Missing requested assignment identity');
+    }
+    final cachedAt = DateTime.now();
+    final attributionRows = attributions
+        .map(
+          (row) =>
+              _attributionRow(_bindAssignment(row, assignmentId), cachedAt),
+        )
+        .toList(growable: false);
+    final featureRows = newFeatures
+        .map(
+          (row) => _newFeatureRow(_bindAssignment(row, assignmentId), cachedAt),
+        )
+        .toList(growable: false);
+    await _db.transaction(() async {
+      await _db.batch((batch) {
+        batch
+          ..insertAllOnConflictUpdate(
+            _db.remoteAttributionsCache,
+            attributionRows,
+          )
+          ..insertAllOnConflictUpdate(
+            _db.remoteNewFeaturesCache,
+            featureRows,
+          );
+      });
+      await setAttributionsCursor(assignmentId, attributionsCursor);
+      await setNewFeaturesCursor(assignmentId, newFeaturesCursor);
+    });
+  }
+
+  Map<String, dynamic> _bindAssignment(
+    Map<String, dynamic> row,
+    String assignmentId,
+  ) {
+    for (final alias in ['__assignment_id', 'assignment_id']) {
+      final value = _optionalAssignmentId(row, alias);
+      if (value != null && value != assignmentId) {
+        throw StateError('Remote row belongs to another assignment');
+      }
+    }
+    return {...row, '__assignment_id': assignmentId};
+  }
+
   // -- Cursor management ------------------------------------------------
 
   Future<AssignmentSyncCursor?> getCursor(String assignmentId) {
@@ -74,9 +128,7 @@ class RemoteAttributionsCacheRepository {
     String assignmentId,
     DateTime? cursor,
   ) async {
-    await _db
-        .into(_db.assignmentSyncCursors)
-        .insertOnConflictUpdate(
+    await _db.into(_db.assignmentSyncCursors).insertOnConflictUpdate(
           AssignmentSyncCursorsCompanion(
             assignmentId: Value(assignmentId),
             attributionsLastSyncAt: Value(cursor),
@@ -88,9 +140,7 @@ class RemoteAttributionsCacheRepository {
     String assignmentId,
     DateTime? cursor,
   ) async {
-    await _db
-        .into(_db.assignmentSyncCursors)
-        .insertOnConflictUpdate(
+    await _db.into(_db.assignmentSyncCursors).insertOnConflictUpdate(
           AssignmentSyncCursorsCompanion(
             assignmentId: Value(assignmentId),
             newFeaturesLastSyncAt: Value(cursor),
@@ -105,9 +155,10 @@ class RemoteAttributionsCacheRepository {
     String assignmentId,
   ) {
     return (_db.select(_db.remoteAttributionsCache)
-          ..where((t) =>
-              t.assignmentId.equals(assignmentId) &
-              t.supersededAt.isNull(),))
+          ..where(
+            (t) =>
+                t.assignmentId.equals(assignmentId) & t.supersededAt.isNull(),
+          ))
         .get();
   }
 
@@ -117,7 +168,10 @@ class RemoteAttributionsCacheRepository {
     return (_db.select(_db.remoteAttributionsCache)
           ..where((t) => t.featureId.equals(featureId))
           ..orderBy([
-            (t) => OrderingTerm(expression: t.submittedAt, mode: OrderingMode.desc),
+            (t) => OrderingTerm(
+                  expression: t.submittedAt,
+                  mode: OrderingMode.desc,
+                ),
           ]))
         .get();
   }
@@ -126,9 +180,10 @@ class RemoteAttributionsCacheRepository {
     String assignmentId,
   ) {
     return (_db.select(_db.remoteNewFeaturesCache)
-          ..where((t) =>
-              t.assignmentId.equals(assignmentId) &
-              t.supersededAt.isNull(),))
+          ..where(
+            (t) =>
+                t.assignmentId.equals(assignmentId) & t.supersededAt.isNull(),
+          ))
         .get();
   }
 
@@ -159,8 +214,9 @@ class RemoteAttributionsCacheRepository {
       assignmentId: Value(_assignmentIdFromRow(row)),
       featureId: Value(row['feature_id'] as String),
       featureType: Value(row['feature_type'] as String),
-      attributeValuesJson:
-          Value(jsonEncode(row['attribute_values'] ?? const <String, dynamic>{})),
+      attributeValuesJson: Value(
+        jsonEncode(row['attribute_values'] ?? const <String, dynamic>{}),
+      ),
       submittedBy: Value(row['submitted_by'] as String?),
       submittedAt: Value(_parseDate(row['submitted_at'])),
       supersededAt: Value(_parseNullableDate(row['superseded_at'])),
@@ -176,7 +232,7 @@ class RemoteAttributionsCacheRepository {
   ) {
     return RemoteNewFeaturesCacheCompanion(
       id: Value(row['id'] as String),
-      assignmentId: Value(row['assignment_id'] as String),
+      assignmentId: Value(_assignmentIdFromRow(row)),
       featureType: Value(row['feature_type'] as String),
       geometryGeojson: Value(_geojsonAsString(row['geometry_geojson'])),
       centroidLat: Value((row['centroid_lat'] as num).toDouble()),
@@ -196,15 +252,27 @@ class RemoteAttributionsCacheRepository {
   /// (the call already filters by it). Realtime payloads on `public.submissions`
   /// also don't have it directly. We accept it as a side-channel and stash
   /// it via an `__assignment_id` synthetic key when the caller knows it.
-  /// For now: require callers to pass it in via that key.
+  /// When both aliases exist they must identify the same assignment.
   String _assignmentIdFromRow(Map<String, dynamic> row) {
-    final explicit = row['__assignment_id'] as String?;
-    if (explicit != null) return explicit;
-    final inline = row['assignment_id'] as String?;
-    if (inline != null) return inline;
-    throw StateError(
-      'attribution row missing assignment_id — pass __assignment_id alongside',
-    );
+    final explicit = _optionalAssignmentId(row, '__assignment_id');
+    final inline = _optionalAssignmentId(row, 'assignment_id');
+    if (explicit != null && inline != null && explicit != inline) {
+      throw StateError('Conflicting attribution assignment identity');
+    }
+    final assignment = explicit ?? inline;
+    if (assignment == null) {
+      throw StateError('Attribution row missing assignment identity');
+    }
+    return assignment;
+  }
+
+  String? _optionalAssignmentId(Map<String, dynamic> row, String key) {
+    if (!row.containsKey(key)) return null;
+    final value = row[key];
+    if (value is! String || value.trim().isEmpty) {
+      throw StateError('Invalid assignment identity in $key');
+    }
+    return value;
   }
 
   String _geojsonAsString(Object? v) {

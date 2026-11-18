@@ -1,47 +1,74 @@
-// lib/features/auth/data/google_access_token_cache.dart
+import 'dart:convert';
+
 import 'package:firecheck/core/security/secure_storage.dart';
 
-/// Persists the most recent Google OAuth access token so background isolates
-/// (e.g. the periodic Drive upload WorkManager job) can re-use it without
-/// re-running the interactive Google sign-in flow.
+/// An atomic account-bound credential for foreground and background Drive work.
 abstract class GoogleAccessTokenCache {
-  Future<void> save(String accessToken, DateTime expiresAt);
-  Future<String?> read();
+  Future<void> save(
+    String accessToken,
+    DateTime expiresAt, {
+    required String accountId,
+  });
+  Future<String?> read({required String accountId});
   Future<void> clear();
 }
 
 class SecureStorageGoogleAccessTokenCache implements GoogleAccessTokenCache {
   SecureStorageGoogleAccessTokenCache(this._storage);
-
   final SecureStorage _storage;
-
-  static const _tokenKey = 'google_access_token';
-  static const _expiresKey = 'google_access_token_expires_at';
-
-  // Treat tokens within this window of expiry as already expired so callers
-  // get a fresh one before requests start failing mid-flight.
+  static const _recordKey = 'google_access_token_record';
   static const _skew = Duration(minutes: 1);
 
   @override
-  Future<void> save(String accessToken, DateTime expiresAt) async {
-    await _storage.write(_tokenKey, accessToken);
-    await _storage.write(_expiresKey, expiresAt.toUtc().toIso8601String());
+  Future<void> save(
+    String accessToken,
+    DateTime expiresAt, {
+    required String accountId,
+  }) async {
+    if (accountId.isEmpty) throw ArgumentError.value(accountId, 'accountId');
+    // One storage write prevents owner/token/expiry pairs from different
+    // asynchronous sign-ins being combined into a credential for another user.
+    await _storage.write(
+      _recordKey,
+      jsonEncode({
+        'account_id': accountId,
+        'access_token': accessToken,
+        'expires_at': expiresAt.toUtc().toIso8601String(),
+      }),
+    );
   }
 
   @override
-  Future<String?> read() async {
-    final token = await _storage.read(_tokenKey);
-    final expiresStr = await _storage.read(_expiresKey);
-    if (token == null || expiresStr == null) return null;
-    final expiresAt = DateTime.tryParse(expiresStr);
-    if (expiresAt == null) return null;
-    if (DateTime.now().toUtc().isAfter(expiresAt.subtract(_skew))) return null;
-    return token;
+  Future<String?> read({required String accountId}) async {
+    if (accountId.isEmpty) return null;
+    final raw = await _storage.read(_recordKey);
+    if (raw == null) {
+      return null; // Unowned legacy keys are deliberately ignored.
+    }
+    try {
+      final record = jsonDecode(raw);
+      if (record is! Map<String, dynamic> ||
+          record['account_id'] != accountId) {
+        return null;
+      }
+      final token = record['access_token'];
+      final expiry = record['expires_at'];
+      if (token is! String || token.isEmpty || expiry is! String) return null;
+      final expiresAt = DateTime.tryParse(expiry);
+      if (expiresAt == null ||
+          DateTime.now().toUtc().isAfter(expiresAt.subtract(_skew))) {
+        return null;
+      }
+      return token;
+    } on FormatException {
+      return null;
+    }
   }
 
   @override
   Future<void> clear() async {
-    await _storage.delete(_tokenKey);
-    await _storage.delete(_expiresKey);
+    await _storage.delete(_recordKey);
+    await _storage.delete('google_access_token');
+    await _storage.delete('google_access_token_expires_at');
   }
 }

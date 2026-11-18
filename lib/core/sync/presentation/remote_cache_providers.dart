@@ -1,3 +1,5 @@
+import 'package:firecheck/core/sync/data/shared_map_sync.dart';
+import 'package:firecheck/core/auth/current_user_provider.dart';
 import 'package:drift/drift.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/sync/data/realtime_subscriber.dart';
@@ -22,17 +24,24 @@ final remoteCacheApiProvider = Provider<RemoteCacheApi>((ref) {
 
 final remoteAttributionsPullServiceProvider =
     Provider<RemoteAttributionsPullService>((ref) {
+  final account = ref.watch(currentUserIdProvider);
   return RemoteAttributionsPullService(
+    sharedSync: account == null
+        ? null
+        : SharedMapSync(
+            db: ref.watch(appDatabaseProvider),
+            accountId: account,
+            fetch: SharedMapSync.supabase(Supabase.instance.client)),
     api: ref.watch(remoteCacheApiProvider),
     cache: ref.watch(remoteAttributionsCacheRepositoryProvider),
   );
 });
 
-final remoteCacheControllerProvider =
-    Provider<RemoteCacheController>((ref) {
+final remoteCacheControllerProvider = Provider<RemoteCacheController>((ref) {
   final controller = RemoteCacheController(
     pullService: ref.watch(remoteAttributionsPullServiceProvider),
     db: ref.watch(appDatabaseProvider),
+    userId: ref.watch(currentUserIdProvider),
   );
   ref.onDispose(controller.stop);
   return controller;
@@ -42,12 +51,12 @@ final realtimeSubscriberProvider = Provider<RealtimeSubscriber>((ref) {
   return SupabaseRealtimeSubscriber(Supabase.instance.client);
 });
 
-final realtimeSyncControllerProvider =
-    Provider<RealtimeSyncController>((ref) {
+final realtimeSyncControllerProvider = Provider<RealtimeSyncController>((ref) {
   final controller = RealtimeSyncController(
     subscriber: ref.watch(realtimeSubscriberProvider),
     pullService: ref.watch(remoteAttributionsPullServiceProvider),
     db: ref.watch(appDatabaseProvider),
+    userId: ref.watch(currentUserIdProvider),
   );
   ref.onDispose(controller.stop);
   return controller;
@@ -68,9 +77,10 @@ final remoteAttributionsForAssignmentProvider =
   (ref, assignmentId) {
     final db = ref.watch(appDatabaseProvider);
     return (db.select(db.remoteAttributionsCache)
-          ..where((t) =>
-              t.assignmentId.equals(assignmentId) &
-              t.supersededAt.isNull(),))
+          ..where(
+            (t) =>
+                t.assignmentId.equals(assignmentId) & t.supersededAt.isNull(),
+          ))
         .watch();
   },
 );
@@ -81,9 +91,10 @@ final remoteNewFeaturesForAssignmentProvider =
   (ref, assignmentId) {
     final db = ref.watch(appDatabaseProvider);
     return (db.select(db.remoteNewFeaturesCache)
-          ..where((t) =>
-              t.assignmentId.equals(assignmentId) &
-              t.supersededAt.isNull(),))
+          ..where(
+            (t) =>
+                t.assignmentId.equals(assignmentId) & t.supersededAt.isNull(),
+          ))
         .watch();
   },
 );

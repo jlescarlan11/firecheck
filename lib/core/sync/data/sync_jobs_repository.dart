@@ -3,7 +3,8 @@ import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/sync/domain/sync_job_status.dart';
 
 class SyncJobsRepository {
-  SyncJobsRepository(this._db);
+  SyncJobsRepository(this._db, {this.ownerId});
+  final String? ownerId;
   final AppDatabase _db;
 
   /// Claims up to [n] pending sync_jobs ready to run NOW. Atomically transitions
@@ -24,8 +25,40 @@ class SyncJobsRepository {
       final raw = await _db.customSelect(
         '''
         SELECT j.* FROM sync_jobs j
-        WHERE j.status = ?
+        WHERE (j.status = ? OR (j.status='in_progress' AND j.next_retry_at IS NOT NULL))
           AND (j.next_retry_at IS NULL OR j.next_retry_at <= ?)
+          AND NOT (j.entity_type='attribution_upload' AND EXISTS (
+            SELECT 1 FROM sync_jobs newer WHERE newer.entity_type=j.entity_type
+              AND newer.entity_id=j.entity_id AND newer.rowid > j.rowid AND newer.status='success'
+          ))
+          AND NOT EXISTS (
+            SELECT 1 FROM sync_jobs earlier
+            WHERE earlier.entity_type=j.entity_type AND earlier.entity_id=j.entity_id
+              AND earlier.rowid < j.rowid
+              AND earlier.status NOT IN ('success', 'dead')
+          )
+          AND NOT EXISTS (
+            SELECT 1 FROM assignments a JOIN features f ON f.assignment_id=a.id
+            LEFT JOIN submissions s ON s.feature_id=f.id
+            LEFT JOIN photos p ON p.submission_id=s.id
+            LEFT JOIN feature_geometry_revisions g ON g.feature_id=f.id
+            WHERE a.closed_remotely=1 AND (
+              (j.entity_type LIKE 'attribution_%' AND s.id=j.entity_id) OR
+              (j.entity_type LIKE 'new_feature_%' AND f.id=j.entity_id) OR
+              (j.entity_type='photo' AND p.id=j.entity_id) OR
+              (j.entity_type='feature_geometry_update' AND g.id=j.entity_id)
+            )
+          )
+          AND (? IS NULL OR EXISTS (
+            SELECT 1 FROM submissions owned
+            LEFT JOIN photos photo ON photo.submission_id=owned.id
+            WHERE owned.submitted_by=? AND (
+              (j.entity_type LIKE 'attribution_%' AND j.entity_id=owned.id) OR
+              (j.entity_type LIKE 'new_feature_%' AND j.entity_id=owned.feature_id) OR
+              (j.entity_type='photo' AND j.entity_id=photo.id))
+          ) OR (j.entity_type='feature_geometry_update' AND EXISTS (
+            SELECT 1 FROM feature_geometry_revisions rev WHERE rev.id=j.entity_id AND rev.edited_by=?
+          )))
           AND (
             j.blocks_on_submission_id IS NULL
             OR EXISTS (
@@ -60,6 +93,9 @@ class SyncJobsRepository {
         variables: [
           Variable.withString(SyncJobStatus.pending),
           Variable.withDateTime(cutoff),
+          Variable<String>(ownerId),
+          Variable<String>(ownerId),
+          Variable<String>(ownerId),
           Variable.withInt(n),
         ],
         readsFrom: {_db.syncJobs, _db.submissions, _db.features},
@@ -67,7 +103,10 @@ class SyncJobsRepository {
       final claimed = raw.map((row) => _db.syncJobs.map(row.data)).toList();
       for (final j in claimed) {
         await (_db.update(_db.syncJobs)..where((t) => t.id.equals(j.id))).write(
-          const SyncJobsCompanion(status: Value(SyncJobStatus.inProgress)),
+          SyncJobsCompanion(
+            status: const Value(SyncJobStatus.inProgress),
+            nextRetryAt: Value(cutoff.add(const Duration(minutes: 10))),
+          ),
         );
       }
       return claimed;
@@ -111,9 +150,16 @@ class SyncJobsRepository {
   }
 
   Future<SyncJob?> findByEntity(String entityType, String entityId) {
-    return (_db.select(_db.syncJobs)
-          ..where((t) =>
-              t.entityType.equals(entityType) & t.entityId.equals(entityId),))
-        .getSingleOrNull();
+    return _db
+        .customSelect(
+          'SELECT * FROM sync_jobs WHERE entity_type=? AND entity_id=? ORDER BY rowid DESC LIMIT 1',
+          variables: [
+            Variable.withString(entityType),
+            Variable.withString(entityId),
+          ],
+          readsFrom: {_db.syncJobs},
+        )
+        .getSingleOrNull()
+        .then((row) => row == null ? null : _db.syncJobs.map(row.data));
   }
 }

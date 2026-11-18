@@ -5,11 +5,14 @@ class Assignments extends Table {
   TextColumn get enumeratorId => text()();
   TextColumn get campaignId => text()();
   TextColumn get boundaryPolygonGeojson => text()();
+  TextColumn get boundarySource =>
+      text().nullable().withDefault(const Constant('unknown'))();
   DateTimeColumn get downloadedAt => dateTime().nullable()();
   DateTimeColumn get submittedAt => dateTime().nullable()();
-  TextColumn get status =>
-      text().withDefault(const Constant('assigned'))(); // assigned|in_progress|submitted
-  BoolColumn get closedRemotely => boolean().withDefault(const Constant(false))();
+  TextColumn get status => text().withDefault(
+      const Constant('assigned'))(); // assigned|in_progress|submitted
+  BoolColumn get closedRemotely =>
+      boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime()();
   TextColumn get driveModifiedTime => text().nullable()();
   TextColumn get driveFolderId => text().nullable()();

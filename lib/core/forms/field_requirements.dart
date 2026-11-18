@@ -9,25 +9,27 @@
 // can carry forward-looking entries) but ignored at validation time.
 //
 // Fallback contract: when the asset is missing or unparseable, callers see
-// a [FieldRequirements.allRequired] config — i.e. every field is required,
-// matching the pre-Issue-#43 behavior. This keeps a misconfigured deploy
-// from silently weakening data quality.
+// a [FieldRequirements.allRequired] config: existing keys default required;
+// CBMS ID and fire-fighting facilities default optional for compatibility.
 import 'package:flutter/foundation.dart';
 
 @immutable
 class FieldRequirements {
   const FieldRequirements(this._byKey);
-
-  /// Sentinel used when the asset is missing/unparseable. Treats every
-  /// looked-up field as required.
-  static const FieldRequirements allRequired = FieldRequirements._allRequired();
   const FieldRequirements._allRequired() : _byKey = const {};
+
+  /// Legacy fallback used when the asset is missing/unparseable. Existing
+  /// keys remain required; the two historically optional fields stay optional.
+  static const FieldRequirements allRequired = FieldRequirements._allRequired();
 
   final Map<String, bool> _byKey;
 
-  /// True when [key] is configured as required, OR when it is absent from
-  /// the config (absent → required is the safe default).
-  bool isRequired(String key) => _byKey[key] ?? true;
+  /// Explicit configuration wins. Absent keys default required except CBMS
+  /// ID and fire-fighting facilities, which preserve legacy optional behavior.
+  bool isRequired(String key) =>
+      _byKey[key] ??
+      (key != FieldRequirementKeys.buildingCbmsId &&
+          key != FieldRequirementKeys.buildingFireFightingFacilities);
 
   /// Exposed for tests + debug surfaces. Avoid relying on key set in code:
   /// unknown keys are intentionally tolerated.
@@ -63,6 +65,9 @@ class FieldRequirementKeys {
   const FieldRequirementKeys._();
 
   // Building
+  static const buildingCbmsId = 'building.cbmsId';
+  static const buildingFireFightingFacilities =
+      'building.fireFightingFacilities';
   static const buildingName = 'building.buildingName';
   static const buildingRa9514Type = 'building.ra9514Type';
   static const buildingStoreys = 'building.storeys';

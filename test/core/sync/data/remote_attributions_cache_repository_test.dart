@@ -25,7 +25,8 @@ void main() {
     String? supersededById,
     String updatedAt = '2026-05-18T10:00:00Z',
     Map<String, dynamic>? attributeValues,
-  }) => {
+  }) =>
+      {
         'id': id,
         '__assignment_id': 'a1',
         'feature_id': featureId,
@@ -35,18 +36,21 @@ void main() {
         'superseded_at': supersededAt,
         'superseded_by_id': supersededById,
         'updated_at': updatedAt,
-        'attribute_values': attributeValues ?? {'building': {'storeys': 2}},
+        'attribute_values': attributeValues ??
+            {
+              'building': {'storeys': 2},
+            },
       };
 
   Map<String, dynamic> newFeatureRow({
     required String id,
     String updatedAt = '2026-05-18T10:00:00Z',
-  }) => {
+  }) =>
+      {
         'id': id,
         'assignment_id': 'a1',
         'feature_type': 'building',
-        'geometry_geojson':
-            '{"type":"Point","coordinates":[121.0,14.5]}',
+        'geometry_geojson': '{"type":"Point","coordinates":[121.0,14.5]}',
         'centroid_lat': 14.5,
         'centroid_lng': 121.0,
         'submitted_by': 'bob',
@@ -70,7 +74,9 @@ void main() {
     expect(rows.first.supersededAt, isNull);
     expect(
       jsonDecode(rows.first.attributeValuesJson),
-      {'building': {'storeys': 2}},
+      {
+        'building': {'storeys': 2},
+      },
     );
   });
 
@@ -119,6 +125,56 @@ void main() {
 
     final live = await repo.liveAttributionsFor('a1');
     expect(live.map((r) => r.id), ['s1']);
+  });
+
+  test('assignment aliases agree and inline-only opaque IDs remain supported',
+      () async {
+    final row = attributionRow(id: 'inline', featureId: 'f1')
+      ..remove('__assignment_id')
+      ..['assignment_id'] = 'a1';
+    await repo.upsertAttribution(row);
+    await repo
+        .upsertAttribution({...row, 'id': 'both', '__assignment_id': 'a1'});
+    expect(
+      (await repo.liveAttributionsFor('a1')).map((r) => r.id),
+      ['inline', 'both'],
+    );
+  });
+
+  for (final invalid in <Map<String, dynamic>>[
+    {'__assignment_id': 'a1', 'assignment_id': 'a2'},
+    {'__assignment_id': ''},
+    {'__assignment_id': '   '},
+    {'__assignment_id': 42},
+    {'__assignment_id': 'a1', 'assignment_id': null},
+    {'__assignment_id': 'a1', 'assignment_id': ''},
+  ]) {
+    test('invalid contextual identity $invalid rejects the whole batch',
+        () async {
+      final bad = attributionRow(id: 'bad', featureId: 'f1')
+        ..remove('__assignment_id')
+        ..addAll(invalid);
+      await expectLater(
+        repo.upsertAttributionsBatch([
+          attributionRow(id: 'valid', featureId: 'f1'),
+          bad,
+        ]),
+        throwsStateError,
+      );
+      expect(await db.select(db.remoteAttributionsCache).get(), isEmpty);
+    });
+  }
+
+  test('new-feature assignment alias disagreement rejects atomically',
+      () async {
+    await expectLater(
+      repo.upsertNewFeaturesBatch([
+        newFeatureRow(id: 'valid'),
+        {...newFeatureRow(id: 'bad'), '__assignment_id': 'other'},
+      ]),
+      throwsStateError,
+    );
+    expect(await db.select(db.remoteNewFeaturesCache).get(), isEmpty);
   });
 
   // ----- new features ------------------------------------------------------

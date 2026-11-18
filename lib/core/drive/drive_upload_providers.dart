@@ -7,6 +7,7 @@ import 'package:firecheck/core/drive/drive_upload_worker.dart';
 import 'package:firecheck/core/drive/enqueue_assignment_use_case.dart';
 import 'package:firecheck/core/drive/finalize_assignment_upload_use_case.dart';
 import 'package:firecheck/core/drive/google_drive_upload_api.dart';
+import 'package:firecheck/core/drive/upload_transfer_progress.dart';
 import 'package:firecheck/core/gateway/gateway_providers.dart';
 import 'package:firecheck/core/supabase/supabase_client_provider.dart';
 import 'package:firecheck/core/sync/shapefile/export/shapefile_exporter.dart';
@@ -24,8 +25,12 @@ final driveUploadRepoProvider = Provider<DriveUploadRepository>((ref) {
 final driveUploadWorkerProvider = Provider<DriveUploadWorker>((ref) {
   final client = ref.watch(supabaseClientProvider);
   final gateway = ref.watch(gatewayUploadRunnerProvider);
+  String? currentIdentifier() =>
+      client.auth.currentUser?.email ?? client.auth.currentUser?.id;
   return DriveUploadWorker(
+    currentUserId: () => client.auth.currentUser?.id,
     gatewayDrain: gateway?.drain,
+    progress: ref.watch(uploadTransferProgressProvider.notifier),
     api: gateway != null
         ? null
         : GoogleDriveUploadApi(
@@ -36,8 +41,7 @@ final driveUploadWorkerProvider = Provider<DriveUploadWorker>((ref) {
     // Per-enumerator Drive subfolder. Prefer the Google email so the
     // admin can identify each enumerator's submissions at a glance.
     // Falls back to the Supabase user UUID when email is absent.
-    enumeratorIdentifier: () =>
-        client.auth.currentUser?.email ?? client.auth.currentUser?.id,
+    enumeratorIdentifier: currentIdentifier,
   );
 });
 
@@ -83,6 +87,7 @@ final finalizeAssignmentUploadUseCaseProvider =
     Provider<FinalizeAssignmentUploadUseCase>((ref) {
   final client = ref.watch(supabaseClientProvider);
   return FinalizeAssignmentUploadUseCase(
+    currentUserId: () => client.auth.currentUser?.id,
     gatewayReceipt: ref.watch(gatewayUploadRunnerProvider)?.receipt,
     db: ref.watch(appDatabaseProvider),
     repo: ref.watch(driveUploadRepoProvider),

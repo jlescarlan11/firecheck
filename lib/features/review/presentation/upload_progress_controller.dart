@@ -14,41 +14,46 @@ class UploadProgressController extends StateNotifier<UploadProgress> {
 
   late final StreamSubscription<List<SyncJob>> _sub;
   bool _uploading = false;
-  // Timestamp captured the moment beginUpload() fires. Jobs older than
-  // this (e.g. dead retries from previous attempts) are filtered out so
-  // the progress bar reflects only jobs created by the current session.
-  DateTime? _sessionStart;
+  List<SyncJob> _latestJobs = const [];
+  Set<String> _previousTerminalIds = {};
 
-  /// Caller flips this on right before triggering the worker. While true,
-  /// the controller computes InProgress/Completed; while false, all
-  /// emissions are ignored (we stay Idle).
+  /// Keep old successful/failed jobs out of this attempt without comparing
+  /// wall-clock timestamps: SQLite stores createdAt with second precision.
+  /// Existing pending jobs still belong to this attempt and must be counted.
   void beginUpload() {
+    _previousTerminalIds = {
+      for (final job in _latestJobs)
+        if (job.status == 'success' || job.status == 'dead') job.id,
+    };
     _uploading = true;
-    // Subtract a small skew so jobs inserted inside the same millisecond
-    // as this call still count toward "this session".
-    _sessionStart =
-        DateTime.now().subtract(const Duration(milliseconds: 100));
-    state = const InProgress(done: 0, total: 0);
+    _onJobs(_latestJobs);
+  }
+
+  void beginDriveUpload() {
+    _uploading = false;
+    state = const InProgress(done: 0, total: 0, label: 'Uploading files…');
   }
 
   void reset() {
     _uploading = false;
-    _sessionStart = null;
+    _previousTerminalIds.clear();
     state = const Idle();
   }
 
   void _onJobs(List<SyncJob> allJobs) {
+    _latestJobs = allJobs;
     if (!_uploading) return;
-    final sessionStart = _sessionStart;
-    final jobs = sessionStart == null
-        ? allJobs
-        : allJobs.where((j) => !j.createdAt.isBefore(sessionStart)).toList();
+    // A retried terminal job becomes part of this attempt again.
+    for (final job in allJobs) {
+      if (job.status != 'success' && job.status != 'dead') {
+        _previousTerminalIds.remove(job.id);
+      }
+    }
+    final jobs =
+        allJobs.where((job) => !_previousTerminalIds.contains(job.id)).toList();
     if (jobs.isEmpty) {
-      // No session jobs yet — beginUpload() fired but the worker hasn't
-      // enqueued rows. Hold InProgress; collapsing to Completed here would
-      // flash a stale success card whenever a second upload begins while
-      // the previous attempt's success rows are still in sync_jobs (they
-      // get filtered out by sessionStart, leaving the filtered list empty).
+      // Wait for enqueueing. The orchestrator explicitly ends this phase
+      // even when there are no new sync jobs (for example, a Drive-only retry).
       state = const InProgress(done: 0, total: 0);
       return;
     }

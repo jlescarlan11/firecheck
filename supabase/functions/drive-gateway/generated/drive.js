@@ -44,8 +44,32 @@ export class GoogleDrive {
         }
         return r.json();
     }
+    /** Read-only development diagnostics; never changes account or file permissions. */
+    async storageQuota() {
+        return (await this.json("/drive/v3/about?fields=storageQuota"))
+            .storageQuota;
+    }
+    async folderAccess(id) {
+        const file = await this.json(`/drive/v3/files/${encodeURIComponent(id)}?supportsAllDrives=true&fields=ownedByMe`);
+        const permissions = [];
+        let pageToken;
+        do {
+            const query = new URLSearchParams({
+                supportsAllDrives: "true",
+                pageSize: "100",
+                fields: "nextPageToken,permissions(type,role,deleted)",
+            });
+            if (pageToken)
+                query.set("pageToken", pageToken);
+            const page = await this.json(`/drive/v3/files/${encodeURIComponent(id)}/permissions?${query}`);
+            permissions.push(...page.permissions);
+            pageToken = page.nextPageToken;
+            assert(permissions.length <= 1000, 413, "TOO_MANY_PERMISSIONS");
+        } while (pageToken);
+        return { ownedByMe: file.ownedByMe, permissions };
+    }
     metadata(id) {
-        return this.json(`/drive/v3/files/${encodeURIComponent(id)}?supportsAllDrives=true&fields=id,name,mimeType,size,md5Checksum,parents,driveId,trashed`);
+        return this.json(`/drive/v3/files/${encodeURIComponent(id)}?supportsAllDrives=true&fields=id,name,mimeType,size,md5Checksum,parents,driveId,trashed,appProperties`);
     }
     async children(id) {
         const result = [];
@@ -56,7 +80,7 @@ export class GoogleDrive {
                 supportsAllDrives: "true",
                 includeItemsFromAllDrives: "true",
                 pageSize: "100",
-                fields: "nextPageToken,files(id,name,mimeType,size,md5Checksum,parents,driveId,trashed)",
+                fields: "nextPageToken,files(id,name,mimeType,size,md5Checksum,parents,driveId,trashed,appProperties)",
             });
             if (pageToken)
                 q.set("pageToken", pageToken);
@@ -67,17 +91,54 @@ export class GoogleDrive {
         } while (pageToken);
         return result;
     }
-    async folder(parent, name) {
+    async folder(parent, name, key) {
         const result = await this.json("/drive/v3/files?supportsAllDrives=true&fields=id", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 name,
+                ...(key ? { appProperties: { firecheckOutputKey: key } } : {}),
                 parents: [parent],
                 mimeType: "application/vnd.google-apps.folder",
             }),
         });
         return result.id;
+    }
+    async managedFolder(parent, name, key) {
+        const children = await this.children(parent);
+        const existing = children.find((f) => f.appProperties?.firecheckOutputKey === key);
+        if (existing)
+            return existing;
+        const label = children.some((f) => f.name === name)
+            ? `${name} (${key.slice(-8)})`
+            : name;
+        return this.json("/drive/v3/files?supportsAllDrives=true&fields=id,name,mimeType,parents,appProperties", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                name: label,
+                parents: [parent],
+                mimeType: "application/vnd.google-apps.folder",
+                appProperties: { firecheckOutputKey: key },
+            }),
+        });
+    }
+    async relocate(id, parent, name) {
+        const current = await this.metadata(id);
+        const query = new URLSearchParams({
+            supportsAllDrives: "true",
+            fields: "id",
+        });
+        if (!current.parents?.includes(parent)) {
+            query.set("addParents", parent);
+            if (current.parents?.length)
+                query.set("removeParents", current.parents.join(","));
+        }
+        await this.json(`/drive/v3/files/${encodeURIComponent(id)}?${query}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name }),
+        });
     }
     copy(id, parent) {
         return this.json(`/drive/v3/files/${encodeURIComponent(id)}/copy?supportsAllDrives=true&fields=id,name,mimeType,size,md5Checksum`, {

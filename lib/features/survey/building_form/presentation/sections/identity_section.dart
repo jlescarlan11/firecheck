@@ -80,7 +80,11 @@ class IdentitySection extends ConsumerWidget {
         PersistentTextField(
           enabled: enabled('cbmsId'),
           value: state.cbmsId ?? '',
-          labelText: l.fieldCbmsId,
+          labelText: requiredLabel(
+            l.fieldCbmsId,
+            reqs,
+            FieldRequirementKeys.buildingCbmsId,
+          ),
           onChanged: (v) => notifier.update(
             (s) => s.copyWith(cbmsId: v),
           ),
@@ -109,7 +113,6 @@ class IdentitySection extends ConsumerWidget {
       children.add(
         DropdownButtonFormField<String>(
           isExpanded: true,
-          itemHeight: null,
           initialValue: state.ra9514Type,
           decoration: InputDecoration(
             labelText: requiredLabel(

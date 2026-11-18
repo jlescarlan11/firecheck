@@ -274,4 +274,107 @@ void main() {
     final cursor = await cache.getCursor('a1');
     expect(cursor!.attributionsLastSyncAt, isNull);
   });
+  for (final invalid in [
+    'new alias conflict',
+    'foreign new inline',
+    'foreign attribution synthetic',
+    'foreign attribution inline',
+  ]) {
+    test('invalid $invalid leaves both caches and cursors unchanged', () async {
+      api
+        ..attributions = [_attrib(id: 's1', featureId: 'f1')]
+        ..newFeatures = [_newFeat(id: 'f2')];
+      final service = RemoteAttributionsPullService(api: api, cache: cache);
+      await service.pullAll('a1');
+      final beforeAttributions =
+          await db.select(db.remoteAttributionsCache).get();
+      final beforeFeatures = await db.select(db.remoteNewFeaturesCache).get();
+      final beforeCursor = await cache.getCursor('a1');
+      final attribution =
+          _attrib(id: 's1', featureId: 'f1', updatedAt: '2026-05-18T12:00:00Z');
+      final feature = _newFeat(id: 'f2', updatedAt: '2026-05-18T12:00:00Z');
+      switch (invalid) {
+        case 'new alias conflict':
+          feature['__assignment_id'] = 'a2';
+        case 'foreign new inline':
+          feature['assignment_id'] = 'a2';
+        case 'foreign attribution synthetic':
+          attribution['__assignment_id'] = 'a2';
+        case 'foreign attribution inline':
+          attribution['assignment_id'] = 'a2';
+      }
+      api
+        ..attributions = [attribution]
+        ..newFeatures = [feature];
+      await expectLater(service.pullAll('a1'), throwsStateError);
+      expect(
+        await db.select(db.remoteAttributionsCache).get(),
+        beforeAttributions,
+      );
+      expect(await db.select(db.remoteNewFeaturesCache).get(), beforeFeatures);
+      expect(await cache.getCursor('a1'), beforeCursor);
+      expect(await cache.liveAttributionsFor('a2'), isEmpty);
+      expect(await cache.liveNewFeaturesFor('a2'), isEmpty);
+      expect(
+        attribution['__assignment_id'],
+        invalid == 'foreign attribution synthetic' ? 'a2' : isNull,
+      );
+    });
+  }
+
+  test('malformed second result rolls back valid attribution update', () async {
+    api
+      ..attributions = [_attrib(id: 's1', featureId: 'f1')]
+      ..newFeatures = [_newFeat(id: 'f2')];
+    final service = RemoteAttributionsPullService(api: api, cache: cache);
+    await service.pullAll('a1');
+    final before = await db.select(db.remoteAttributionsCache).get();
+    final cursor = await cache.getCursor('a1');
+    api
+      ..attributions = [
+        _attrib(id: 's1', featureId: 'f1', updatedAt: '2026-05-18T12:00:00Z'),
+      ]
+      ..newFeatures = [_newFeat(id: 'bad')..['centroid_lat'] = 'malformed'];
+    await expectLater(service.pullAll('a1'), throwsA(isA<TypeError>()));
+    expect(await db.select(db.remoteAttributionsCache).get(), before);
+    expect((await cache.liveNewFeaturesFor('a1')).map((f) => f.id), ['f2']);
+    expect(await cache.getCursor('a1'), cursor);
+  });
+
+  test('cursor persistence failure rolls back both cache sets and both cursors',
+      () async {
+    api
+      ..attributions = [_attrib(id: 's1', featureId: 'f1')]
+      ..newFeatures = [_newFeat(id: 'f2')];
+    final service = RemoteAttributionsPullService(api: api, cache: cache);
+    await service.pullAll('a1');
+    final beforeAttributions =
+        await db.select(db.remoteAttributionsCache).get();
+    final beforeFeatures = await db.select(db.remoteNewFeaturesCache).get();
+    final beforeCursor = await cache.getCursor('a1');
+    await db.customStatement('''
+      CREATE TRIGGER reject_cursor BEFORE UPDATE ON assignment_sync_cursors
+      WHEN NEW.new_features_last_sync_at > OLD.new_features_last_sync_at
+      BEGIN SELECT RAISE(ABORT, 'blocked_cursor'); END;
+    ''');
+    api
+      ..attributions = [
+        _attrib(id: 's1', featureId: 'f1', updatedAt: '2026-05-18T12:00:00Z'),
+      ]
+      ..newFeatures = [_newFeat(id: 'f2', updatedAt: '2026-05-18T12:00:00Z')];
+    await expectLater(
+      service.pullAll('a1'),
+      throwsA(
+        predicate<Object>(
+          (error) => error.toString().contains('blocked_cursor'),
+        ),
+      ),
+    );
+    expect(
+      await db.select(db.remoteAttributionsCache).get(),
+      beforeAttributions,
+    );
+    expect(await db.select(db.remoteNewFeaturesCache).get(), beforeFeatures);
+    expect(await cache.getCursor('a1'), beforeCursor);
+  });
 }

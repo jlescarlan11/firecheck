@@ -16,8 +16,10 @@ class _RecordingRepository extends DriveUploadRepository {
   Future<List<DriveUploadJob>> getPendingJobs({
     DateTime? now,
     int? limit,
+    String? ownerId,
   }) async {
-    final jobs = await super.getPendingJobs(now: now, limit: limit);
+    final jobs =
+        await super.getPendingJobs(now: now, limit: limit, ownerId: ownerId);
     batchSizes.add(jobs.length);
     return jobs;
   }
@@ -38,6 +40,7 @@ void main() {
       await repo.insertJob(
         id: 'job-$i',
         assignmentId: 'assignment',
+        ownerId: 'test-owner',
         filePath: path,
         fileType: DriveFileType.photo,
         fileName: '$i.jpg',
@@ -72,6 +75,7 @@ void main() {
       () async {
     final api = FakeDriveUploadApi();
     final worker = DriveUploadWorker(
+      currentUserId: () => 'test-owner',
       api: api,
       repo: repo,
       db: db,

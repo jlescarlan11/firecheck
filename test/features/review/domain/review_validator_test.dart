@@ -1,7 +1,10 @@
 import 'package:firecheck/core/db/database.dart';
+import 'package:firecheck/core/forms/field_requirements.dart';
+import 'package:firecheck/core/forms/form_definition.dart';
 import 'package:firecheck/features/review/data/review_repository.dart';
 import 'package:firecheck/features/review/domain/review_state.dart';
 import 'package:firecheck/features/review/domain/review_validator.dart';
+import 'package:firecheck/features/survey/building_form/domain/building_form_applicability.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Feature _building(String id) => Feature(
@@ -31,6 +34,7 @@ Submission _sub(
   bool doesNotExist = false,
 }) =>
     Submission(
+      isAdditionalObservation: false,
       id: id,
       featureId: featureId,
       submittedBy: 'u-1',
@@ -44,6 +48,8 @@ Submission _sub(
 BuildingAttribute _bldg(
   String submissionId, {
   String? ra9514Type,
+  String? cbmsId,
+  String facilities = '[]',
   bool costIsExact = false,
   double? costAmount,
   String? costEstimateRange,
@@ -51,13 +57,14 @@ BuildingAttribute _bldg(
     BuildingAttribute(
       submissionId: submissionId,
       buildingName: 'name',
+      cbmsId: cbmsId,
       ra9514Type: ra9514Type,
       storeys: 1,
       material: 'concrete',
       costIsExact: costIsExact,
       costAmount: costAmount,
       costEstimateRange: costEstimateRange,
-      fireFightingFacilitiesJson: '[]',
+      fireFightingFacilitiesJson: facilities,
       fireLoadJson: '[]',
     );
 
@@ -71,6 +78,177 @@ RoadAttribute _roadAttrs(String submissionId, {double? widthMeters}) =>
     );
 
 void main() {
+  test('review boundary context stays bound to the source assignment', () {
+    const boundary =
+        '{"type":"Polygon","coordinates":[[[0,0],[1,0],[1,1],[0,1],[0,0]]]}';
+    final definition = FormDefinition.fromJson(const {
+      'version': 'boundary',
+      'name': 'Boundary',
+      'visibilityRules': [
+        {
+          'target': 'building.section.fireFightingFacilities',
+          'conditions': [
+            {
+              'source': 'geometry',
+              'key': 'distanceFromBoundaryMeters',
+              'operator': 'not_equals',
+              'value': 0,
+            }
+          ],
+        }
+      ],
+    });
+    ReviewSourceData source(String assignment) => ReviewSourceData(
+          assignmentId: assignment,
+          assignmentBoundaryGeojson: boundary,
+          features: [
+            _building('f').copyWith(
+              geometryGeojson: '{"type":"Point","coordinates":[0,0]}',
+            ),
+          ],
+          submissions: [_sub('s', 'f')],
+          buildingAttrs: [_bldg('s', ra9514Type: 'C')],
+          roadAttrs: [],
+          householdSurveys: [],
+          photoCountsBySubmission: {'s': 1},
+          deadJobs: [],
+        );
+    final requirements =
+        parseFieldRequirements('building.fireFightingFacilities=required');
+    expect(
+      buildReviewState(
+        source('a-1'),
+        requirements: requirements,
+        definition: definition,
+      ).blockers,
+      isEmpty,
+    );
+    expect(
+      buildReviewState(
+        source('other'),
+        requirements: requirements,
+        definition: definition,
+      ).blockers.map((b) => b.code),
+      contains('fire_fighting_facilities_required'),
+    );
+  });
+
+  for (final section in ['identity', 'fireFightingFacilities']) {
+    test('definition-hidden $section skips its required new answer', () {
+      final hiddenField =
+          section == 'identity' ? 'cbmsId' : 'fireFightingFacilities';
+      final definition = FormDefinition.fromJson({
+        'version': 'visibility-test',
+        'name': 'Visibility test',
+        'visibilityRules': [
+          {
+            'target': 'building.section.$section',
+            'conditions': const [
+              {
+                'source': 'answer',
+                'key': 'building.costIsExact',
+                'operator': 'equals',
+                'value': true,
+              }
+            ],
+          }
+        ],
+      });
+      const requirements = FieldRequirements({
+        'building.buildingName': false,
+        'building.ra9514Type': false,
+        'building.storeys': false,
+        'building.material': false,
+        'building.cost': false,
+        'building.fireLoad': false,
+        'building.cbmsId': true,
+        'building.fireFightingFacilities': true,
+      });
+      final source = ReviewSourceData(
+        features: [_building('f')],
+        submissions: [_sub('s', 'f')],
+        buildingAttrs: [_bldg('s', ra9514Type: 'C')],
+        roadAttrs: [],
+        householdSurveys: [],
+        photoCountsBySubmission: {'s': 1},
+        deadJobs: [],
+      );
+      final state = buildReviewState(
+        source,
+        requirements: requirements,
+        definition: definition,
+      );
+      final hiddenCode = hiddenField == 'cbmsId'
+          ? 'cbms_id_required'
+          : 'fire_fighting_facilities_required';
+      expect(state.blockers.map((b) => b.code), isNot(contains(hiddenCode)));
+      expect(state.blockers.length, 1);
+    });
+  }
+  test(
+      'review enforces configured CBMS and facilities, preserving legacy defaults',
+      () {
+    ReviewSourceData source({bool answered = false, bool missing = false}) =>
+        ReviewSourceData(
+          features: [_building('f')],
+          submissions: [_sub('s', 'f')],
+          buildingAttrs: missing
+              ? []
+              : [
+                  _bldg(
+                    's',
+                    ra9514Type: 'C',
+                    cbmsId: answered ? 'local / ID' : null,
+                    facilities: answered ? '["None"]' : '[]',
+                  ),
+                ],
+          roadAttrs: [],
+          householdSurveys: [],
+          photoCountsBySubmission: {'s': 1},
+          deadJobs: [],
+        );
+    final requirements = parseFieldRequirements(
+      'building.cbmsId=required\nbuilding.fireFightingFacilities=required',
+    );
+    expect(buildReviewState(source()).blockers, isEmpty);
+    final required = buildReviewState(source(), requirements: requirements);
+    expect(
+      required.blockers.map((b) => b.code),
+      containsAll(['cbms_id_required', 'fire_fighting_facilities_required']),
+    );
+    expect(
+      buildReviewState(source(answered: true), requirements: requirements)
+          .blockers,
+      isEmpty,
+    );
+    expect(
+      buildReviewState(
+        source(),
+        requirements: requirements,
+        hiddenBuildingFields: {
+          BuildingFormField.cbmsId,
+          BuildingFormField.fireFightingFacilities,
+        },
+      ).blockers,
+      isEmpty,
+    );
+    expect(
+      buildReviewState(
+        source(),
+        requirements: parseFieldRequirements(
+          'building.cbmsId=optional\nbuilding.fireFightingFacilities=optional',
+        ),
+      ).blockers,
+      isEmpty,
+    );
+    expect(
+      buildReviewState(source(missing: true), requirements: requirements)
+          .blockers
+          .map((b) => b.code),
+      containsAll(['cbms_id_required', 'fire_fighting_facilities_required']),
+    );
+  });
+
   test('empty assignment → 0 features, 0 issues, no upload', () {
     final state = buildReviewState(
       const ReviewSourceData(

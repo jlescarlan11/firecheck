@@ -13,7 +13,8 @@ Map<String, dynamic> _row({
   required String id,
   required String featureId,
   required String submittedBy,
-}) => {
+}) =>
+    {
       'id': id,
       '__assignment_id': 'a1',
       'feature_id': featureId,
@@ -46,6 +47,9 @@ void main() {
         );
   });
 
+  setUp(
+      () => AssignmentRepository(db: db, userId: "me").selectAssignment("a1"));
+
   tearDown(() => db.close());
 
   ProviderContainer makeContainer({String? userId = 'me'}) {
@@ -54,7 +58,7 @@ void main() {
         appDatabaseProvider.overrideWithValue(db),
         currentUserIdProvider.overrideWithValue(userId),
         assignmentRepositoryProvider
-            .overrideWithValue(AssignmentRepository(db: db)),
+            .overrideWithValue(AssignmentRepository(db: db, userId: userId)),
       ],
     );
   }
@@ -74,8 +78,7 @@ void main() {
     // dependent provider — its initial AsyncLoading emission would yield
     // an empty stream from othersRemoteAttributionsProvider.
     await container.read(currentAssignmentProvider.future);
-    final views =
-        await container.read(othersRemoteAttributionsProvider.future);
+    final views = await container.read(othersRemoteAttributionsProvider.future);
     expect(views.map((v) => v.id), ['s2']);
   });
 
@@ -99,11 +102,8 @@ void main() {
     expect(container.read(remoteActivityCountProvider), 2);
   });
 
-  test('when signed-out, all non-null submitted_by rows still surface',
-      () async {
-    // Spec: cache is "Clearable on logout" but if we're between sessions
-    // and rows still exist locally, we don't crash — we just show
-    // everything (the chip / list will appear, sign-in flow will overwrite).
+  test('when signed out, no assignment activity surfaces', () async {
+    // The account-scoped selection is unavailable while signed out.
     await cache.upsertAttribution(
       _row(id: 's1', featureId: 'f1', submittedBy: 'alice'),
     );
@@ -115,8 +115,7 @@ void main() {
     // dependent provider — its initial AsyncLoading emission would yield
     // an empty stream from othersRemoteAttributionsProvider.
     await container.read(currentAssignmentProvider.future);
-    final views =
-        await container.read(othersRemoteAttributionsProvider.future);
-    expect(views, hasLength(1));
+    final views = await container.read(othersRemoteAttributionsProvider.future);
+    expect(views, isEmpty);
   });
 }

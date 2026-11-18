@@ -1,4 +1,6 @@
 import 'package:firecheck/core/forms/field_requirements.dart';
+import 'package:firecheck/core/forms/form_definition.dart';
+import 'package:firecheck/features/survey/building_form/domain/building_form_applicability.dart';
 import 'package:firecheck/features/survey/building_form/domain/building_form_state.dart';
 import 'package:firecheck/features/survey/building_form/domain/building_form_validator.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -6,6 +8,121 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   BuildingFormState empty() => const BuildingFormState(submissionId: 's1');
 
+  test('configured required CBMS and facilities block missing answers', () {
+    final requirements = parseFieldRequirements(
+      'building.cbmsId=required\nbuilding.fireFightingFacilities=required',
+    );
+    expect(
+      validateBuildingForm(empty(), 1, requirements: requirements).fieldErrors,
+      containsPair('cbmsId', 'required'),
+    );
+    expect(
+      validateBuildingForm(empty(), 1, requirements: requirements).fieldErrors,
+      containsPair('fireFightingFacilities', 'required'),
+    );
+    final answered = empty().copyWith(
+      cbmsId: 'local / arbitrary ID',
+      fireFightingFacilities: ['None'],
+    );
+    final result =
+        validateBuildingForm(answered, 1, requirements: requirements);
+    expect(result.fieldErrors, isNot(contains('cbmsId')));
+    expect(result.fieldErrors, isNot(contains('fireFightingFacilities')));
+    expect(
+      validateBuildingForm(
+        empty().copyWith(doesNotExist: true),
+        1,
+        requirements: requirements,
+      ).isComplete,
+      isTrue,
+    );
+  });
+
+  test('required hidden fields and whitespace CBMS use applicability policy',
+      () {
+    final requirements = parseFieldRequirements(
+      'building.cbmsId=required\nbuilding.fireFightingFacilities=required',
+    );
+    final state = empty().copyWith(cbmsId: '  ');
+    expect(
+      validateBuildingForm(state, 1, requirements: requirements).fieldErrors,
+      containsPair('cbmsId', 'required'),
+    );
+    final result = validateBuildingForm(
+      state,
+      1,
+      requirements: requirements,
+      hidden: {
+        BuildingFormField.cbmsId,
+        BuildingFormField.fireFightingFacilities,
+      },
+    );
+    expect(result.fieldErrors, isNot(contains('cbmsId')));
+    expect(result.fieldErrors, isNot(contains('fireFightingFacilities')));
+  });
+
+  test('explicit optional fields accept unanswered values', () {
+    final result = validateBuildingForm(
+      empty(),
+      1,
+      requirements: parseFieldRequirements(
+        'building.cbmsId=optional\nbuilding.fireFightingFacilities=optional',
+      ),
+    );
+    expect(result.fieldErrors, isNot(contains('cbmsId')));
+    expect(result.fieldErrors, isNot(contains('fireFightingFacilities')));
+  });
+
+  for (final section in ['identity', 'fireFightingFacilities']) {
+    test('definition-hidden $section skips its required new answer', () {
+      final hiddenField =
+          section == 'identity' ? 'cbmsId' : 'fireFightingFacilities';
+      final definition = FormDefinition.fromJson({
+        'version': 'visibility-test',
+        'name': 'Visibility test',
+        'visibilityRules': [
+          {
+            'target': 'building.section.$section',
+            'conditions': const [
+              {
+                'source': 'answer',
+                'key': 'building.costIsExact',
+                'operator': 'equals',
+                'value': true,
+              }
+            ],
+          }
+        ],
+      });
+      const requirements = FieldRequirements({
+        'building.buildingName': false,
+        'building.ra9514Type': false,
+        'building.storeys': false,
+        'building.material': false,
+        'building.cost': false,
+        'building.fireLoad': false,
+        'building.cbmsId': true,
+        'building.fireFightingFacilities': true,
+      });
+      final result = validateBuildingForm(
+        empty(),
+        1,
+        requirements: requirements,
+        definition: definition,
+      );
+      expect(result.fieldErrors, isNot(contains(hiddenField)));
+      expect(result.fieldErrors.length, 1);
+      expect(
+        validateBuildingForm(
+          empty(),
+          0,
+          requirements: requirements,
+          definition: definition,
+        ).fieldErrors,
+        contains('photo'),
+      );
+    });
+  }
   group('validateBuildingForm — does not exist OFF', () {
     test('empty form has all required errors', () {
       final r = validateBuildingForm(empty(), 0);

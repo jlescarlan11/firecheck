@@ -37,16 +37,18 @@ void driveUploadCallbackDispatcher() {
         anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
       );
 
+      final client = Supabase.instance.client;
+
       // Opens the real on-disk Drift database in this background isolate.
       final db = AppDatabase();
 
       // Bail out if there is no active session — the foreground app will handle
       // the upload once the user signs in again.
-      final session = Supabase.instance.client.auth.currentSession;
+      final session = client.auth.currentSession;
       if (session == null) return true;
 
       final tokenSource = CachedTokenSource(
-        auth: Supabase.instance.client.auth,
+        auth: client.auth,
         cache: SecureStorageGoogleAccessTokenCache(
           FlutterSecureStorageAdapter(),
         ),
@@ -54,7 +56,7 @@ void driveUploadCallbackDispatcher() {
       final gatewayUri = configuredGatewayUri();
       final gatewayClient = gatewayUri == null
           ? null
-          : GatewayClient.supabase(gatewayUri, Supabase.instance.client);
+          : GatewayClient.supabase(gatewayUri, client);
       final uploadApi = gatewayClient == null
           ? GoogleDriveUploadApi(googleAuthRepo: tokenSource)
           : null;
@@ -63,13 +65,13 @@ void driveUploadCallbackDispatcher() {
           ? null
           : GatewayUploadRunner(client: gatewayClient, repo: repo);
       final worker = DriveUploadWorker(
+        currentUserId: () => client.auth.currentUser?.id,
         api: uploadApi,
         gatewayDrain: gateway?.drain,
         repo: repo,
         db: db,
         enumeratorIdentifier: () =>
-            Supabase.instance.client.auth.currentUser?.email ??
-            Supabase.instance.client.auth.currentUser?.id,
+            client.auth.currentUser?.email ?? client.auth.currentUser?.id,
       );
       try {
         await worker.drain();
@@ -84,15 +86,15 @@ void driveUploadCallbackDispatcher() {
       // audit row) so background-completed uploads aren't invisible to
       // the rest of the app.
       final finalizeUseCase = FinalizeAssignmentUploadUseCase(
+        currentUserId: () => client.auth.currentUser?.id,
         gatewayReceipt: gateway?.receipt,
         db: db,
         repo: repo,
         assignmentRepo: AssignmentRepository(db: db),
-        auditRepo: DriveUploadAuditRepository(Supabase.instance.client),
+        auditRepo: DriveUploadAuditRepository(client),
         // Match the per-enumerator subfolder the worker just uploaded into.
         enumeratorIdentifier: () =>
-            Supabase.instance.client.auth.currentUser?.email ??
-            Supabase.instance.client.auth.currentUser?.id,
+            client.auth.currentUser?.email ?? client.auth.currentUser?.id,
       );
       await finalizeUseCase.executePending(
         uploaderId: session.user.id,

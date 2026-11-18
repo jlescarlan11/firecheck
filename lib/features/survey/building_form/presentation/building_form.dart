@@ -47,9 +47,8 @@ class BuildingForm extends ConsumerWidget {
         FormDefinition.legacy;
     final geometry = ref.watch(geometrySignalProvider(featureId)).valueOrNull ??
         GeometrySignal.empty;
-    final formContext = buildingFormContext(state, geometry);
     bool visible(String section) =>
-        definition.isVisible('building.section.$section', formContext);
+        isBuildingSectionVisible(definition, state, geometry, section);
 
     return ListView(
       padding: appPageInsets(context),

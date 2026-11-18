@@ -1,3 +1,4 @@
+import 'package:firecheck/core/sync/data/shared_map_sync.dart';
 import 'package:firecheck/core/sync/data/remote_attributions_cache_repository.dart';
 import 'package:firecheck/core/sync/data/remote_cache_api.dart';
 import 'package:flutter/foundation.dart';
@@ -20,6 +21,7 @@ import 'package:flutter/foundation.dart';
 /// divergence after crash" handling.
 class RemoteAttributionsPullService {
   RemoteAttributionsPullService({
+    this.sharedSync,
     required RemoteCacheApi api,
     required RemoteAttributionsCacheRepository cache,
     Duration staleAge = const Duration(hours: 24),
@@ -29,6 +31,7 @@ class RemoteAttributionsPullService {
         _staleAge = staleAge,
         _now = now ?? DateTime.now;
 
+  final SharedMapSync? sharedSync;
   final RemoteCacheApi _api;
   final RemoteAttributionsCacheRepository _cache;
   final Duration _staleAge;
@@ -72,6 +75,14 @@ class RemoteAttributionsPullService {
     DateTime? sinceAttributions,
     DateTime? sinceNewFeatures,
   }) async {
+    if (await sharedSync?.pull(assignmentId) == true) {
+      return PullResult(
+          kind: kind,
+          attributionsCount: 0,
+          newFeaturesCount: 0,
+          attributionsCursor: null,
+          newFeaturesCursor: null);
+    }
     // Awaiting via Future.wait — not sequential awaits — so a thrown error
     // in the first call still leaves the second future awaited. Sequential
     // `await`s would orphan the second future and surface as an uncaught
@@ -83,21 +94,16 @@ class RemoteAttributionsPullService {
     final attributions = results[0];
     final newFeatures = results[1];
 
-    // Attach assignment_id sidecar so the upsert doesn't have to re-derive
-    // it from the row (fetch_remote_attributions omits it on each row since
-    // the call is already filtered).
-    for (final row in attributions) {
-      row['__assignment_id'] = assignmentId;
-    }
-
-    await _cache.upsertAttributionsBatch(attributions);
-    await _cache.upsertNewFeaturesBatch(newFeatures);
-
     final attribCursor = _maxUpdatedAt(attributions) ?? sinceAttributions;
     final newFeatCursor = _maxUpdatedAt(newFeatures) ?? sinceNewFeatures;
 
-    await _cache.setAttributionsCursor(assignmentId, attribCursor);
-    await _cache.setNewFeaturesCursor(assignmentId, newFeatCursor);
+    await _cache.applyPull(
+      assignmentId,
+      attributions: attributions,
+      newFeatures: newFeatures,
+      attributionsCursor: attribCursor,
+      newFeaturesCursor: newFeatCursor,
+    );
 
     debugPrint(
       '[RemotePull] $kind assignment=$assignmentId '

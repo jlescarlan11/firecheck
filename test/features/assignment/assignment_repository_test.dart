@@ -19,7 +19,7 @@ void main() {
   setUp(() {
     db = AppDatabase.forTesting(NativeDatabase.memory());
     supa = _MockSupabaseClient();
-    repo = AssignmentRepository(client: supa, db: db);
+    repo = AssignmentRepository(client: supa, db: db, userId: "u1");
   });
 
   tearDown(() async => db.close());
@@ -106,7 +106,7 @@ void main() {
     expect(result, isNull);
   });
 
-  test('watchCurrentAssignment emits the most recent assignment', () async {
+  test('watchCurrentAssignment emits the explicitly selected assignment', () async {
     await repo.upsertBundle(
       assignment: {
         'id': 'a1',
@@ -119,6 +119,7 @@ void main() {
       features: const [],
       ra9514Types: const [],
     );
+    await repo.selectAssignment("a1");
     final snap = await repo.watchCurrentAssignment().first;
     expect(snap, isNotNull);
     expect(snap!.id, 'a1');

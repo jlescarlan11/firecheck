@@ -13,11 +13,14 @@ export interface DriveFile {
   parents?: string[];
   driveId?: string;
   trashed?: boolean;
+  appProperties?: Record<string, string>;
 }
 export interface Drive {
   metadata(id: string): Promise<DriveFile>;
   children(id: string): Promise<DriveFile[]>;
-  folder(parent: string, name: string): Promise<string>;
+  folder(parent: string, name: string, key?: string): Promise<string>;
+  managedFolder(parent: string, name: string, key: string): Promise<DriveFile>;
+  relocate(id: string, parent: string, name: string): Promise<void>;
   copy(id: string, parent: string): Promise<DriveFile>;
   empty(parent: string, name: string): Promise<string>;
   stream(id: string, range?: string): Promise<Response>;
@@ -73,9 +76,41 @@ export class GoogleDrive implements Drive {
     }
     return r.json();
   }
+  /** Read-only development diagnostics; never changes account or file permissions. */
+  async storageQuota(): Promise<{ limit?: string; usage: string }> {
+    return (await this.json("/drive/v3/about?fields=storageQuota"))
+      .storageQuota;
+  }
+  async folderAccess(
+    id: string,
+  ): Promise<{
+    ownedByMe: boolean;
+    permissions: Array<{ type: string; role: string; deleted?: boolean }>;
+  }> {
+    const file = await this.json(
+      `/drive/v3/files/${encodeURIComponent(id)}?supportsAllDrives=true&fields=ownedByMe`,
+    );
+    const permissions = [];
+    let pageToken: string | undefined;
+    do {
+      const query = new URLSearchParams({
+        supportsAllDrives: "true",
+        pageSize: "100",
+        fields: "nextPageToken,permissions(type,role,deleted)",
+      });
+      if (pageToken) query.set("pageToken", pageToken);
+      const page = await this.json(
+        `/drive/v3/files/${encodeURIComponent(id)}/permissions?${query}`,
+      );
+      permissions.push(...page.permissions);
+      pageToken = page.nextPageToken;
+      assert(permissions.length <= 1000, 413, "TOO_MANY_PERMISSIONS");
+    } while (pageToken);
+    return { ownedByMe: file.ownedByMe, permissions };
+  }
   metadata(id: string): Promise<DriveFile> {
     return this.json(
-      `/drive/v3/files/${encodeURIComponent(id)}?supportsAllDrives=true&fields=id,name,mimeType,size,md5Checksum,parents,driveId,trashed`,
+      `/drive/v3/files/${encodeURIComponent(id)}?supportsAllDrives=true&fields=id,name,mimeType,size,md5Checksum,parents,driveId,trashed,appProperties`,
     );
   }
   async children(id: string) {
@@ -88,7 +123,7 @@ export class GoogleDrive implements Drive {
         includeItemsFromAllDrives: "true",
         pageSize: "100",
         fields:
-          "nextPageToken,files(id,name,mimeType,size,md5Checksum,parents,driveId,trashed)",
+          "nextPageToken,files(id,name,mimeType,size,md5Checksum,parents,driveId,trashed,appProperties)",
       });
       if (pageToken) q.set("pageToken", pageToken);
       const data = await this.json(`/drive/v3/files?${q}`);
@@ -98,7 +133,7 @@ export class GoogleDrive implements Drive {
     } while (pageToken);
     return result;
   }
-  async folder(parent: string, name: string) {
+  async folder(parent: string, name: string, key?: string) {
     const result = await this.json(
       "/drive/v3/files?supportsAllDrives=true&fields=id",
       {
@@ -106,12 +141,53 @@ export class GoogleDrive implements Drive {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name,
+          ...(key ? { appProperties: { firecheckOutputKey: key } } : {}),
           parents: [parent],
           mimeType: "application/vnd.google-apps.folder",
         }),
       },
     );
     return result.id;
+  }
+  async managedFolder(parent: string, name: string, key: string) {
+    const children = await this.children(parent);
+    const existing = children.find(
+      (f) => f.appProperties?.firecheckOutputKey === key,
+    );
+    if (existing) return existing;
+    const label = children.some((f) => f.name === name)
+      ? `${name} (${key.slice(-8)})`
+      : name;
+    return this.json(
+      "/drive/v3/files?supportsAllDrives=true&fields=id,name,mimeType,parents,appProperties",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: label,
+          parents: [parent],
+          mimeType: "application/vnd.google-apps.folder",
+          appProperties: { firecheckOutputKey: key },
+        }),
+      },
+    ) as Promise<DriveFile>;
+  }
+  async relocate(id: string, parent: string, name: string) {
+    const current = await this.metadata(id);
+    const query = new URLSearchParams({
+      supportsAllDrives: "true",
+      fields: "id",
+    });
+    if (!current.parents?.includes(parent)) {
+      query.set("addParents", parent);
+      if (current.parents?.length)
+        query.set("removeParents", current.parents.join(","));
+    }
+    await this.json(`/drive/v3/files/${encodeURIComponent(id)}?${query}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
   }
   copy(id: string, parent: string): Promise<DriveFile> {
     return this.json(

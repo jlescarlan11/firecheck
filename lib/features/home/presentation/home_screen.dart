@@ -5,7 +5,6 @@ import 'package:firecheck/core/sync/shapefile/export/export_failure.dart';
 import 'package:firecheck/core/sync/shapefile/export/export_validation_result.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_lock_providers.dart';
 import 'package:firecheck/features/assignment/presentation/assignment_lock_state.dart';
-import 'package:firecheck/features/assignment/presentation/submitted_banner.dart';
 import 'package:firecheck/features/conflict_review/presentation/conflict_banner.dart';
 import 'package:firecheck/features/conflict_review/presentation/conflict_review_providers.dart';
 import 'package:firecheck/features/home/data/shapefile_export_notifier.dart';
@@ -37,10 +36,7 @@ class HomeScreen extends ConsumerWidget {
                 ? l.homePendingFiles(uploadCount)
                 : l.uploadDataSubtitle;
     final lock = ref.watch(assignmentLockStateProvider).value;
-    // Only ClosedRemotely blocks edits/uploads. Submitted is informational
-    // (banner only) — enumerators may re-export and re-upload after a
-    // submit; conflict resolution is handled server-side via
-    // submit_attribution_with_conflict_check.
+    // A previous submission does not prevent further surveying or uploads.
     final isLocked = lock is ClosedRemotely;
     final exportState = ref.watch(shapefileExportNotifierProvider);
     final isBusy =
@@ -184,10 +180,6 @@ class HomeScreen extends ConsumerWidget {
                           const SizedBox(height: 20),
                           const ConflictBanner(),
                         ],
-                        if (lock is Submitted) ...[
-                          const SizedBox(height: 20),
-                          SubmittedBanner(submittedAt: lock.submittedAt),
-                        ],
                         if (isLocked) ...[
                           const SizedBox(height: 20),
                           Text(
@@ -210,9 +202,7 @@ class HomeScreen extends ConsumerWidget {
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          onPressed: snap.totalFeatures == 0
-                              ? null
-                              : () => context.push('/map'),
+                          onPressed: () => context.push('/map'),
                           child: Row(
                             children: [
                               const Icon(Icons.map_outlined, size: 28),
@@ -258,11 +248,11 @@ class HomeScreen extends ConsumerWidget {
                         const SizedBox(height: 12),
                         _ActionTile(
                           icon: Icons.map_outlined,
-                          title: l.homeGetMaps,
+                          title: 'My Maps',
                           subtitle: snap.totalFeatures == 0
                               ? l.noLocalMaps
-                              : l.getMapsSubtitle,
-                          onTap: () => context.push('/get-maps'),
+                              : 'Choose a downloaded map or download another',
+                          onTap: () => context.push('/my-maps'),
                         ),
                         if (!isLocked)
                           _ActionTile(
@@ -326,31 +316,6 @@ class HomeScreen extends ConsumerWidget {
                           ),
                       ],
                     ),
-                    if (snap.totalFeatures > 0)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 32, bottom: 12),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.save_outlined,
-                              size: 20,
-                              color: colors.onSurfaceVariant,
-                            ),
-                            const SizedBox(width: 10),
-                            Flexible(
-                              child: Text(
-                                l.homeLocalSaveHint,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  height: 1.4,
-                                  color: colors.onSurfaceVariant,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
                   ],
                 ),
               ),
@@ -463,7 +428,7 @@ class _AssignmentProgress extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          l.assignmentProgress,
+          '${l.assignmentProgress} · All maps',
           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 12),

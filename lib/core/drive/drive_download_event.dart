@@ -7,9 +7,17 @@ sealed class DriveDownloadEvent {
 
 @immutable
 class DriveDownloadProgress extends DriveDownloadEvent {
-  const DriveDownloadProgress({required this.downloaded, required this.total});
+  const DriveDownloadProgress({
+    required this.downloaded,
+    required this.total,
+    this.verifying = false,
+  });
   final int downloaded;
   final int total;
+
+  /// All bytes are persisted, but checksum verification is still pending.
+  /// A transfer count is never evidence that import has completed.
+  final bool verifying;
 }
 
 @immutable

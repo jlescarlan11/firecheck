@@ -12,7 +12,11 @@ class ReviewSourceData {
     required this.householdSurveys,
     required this.photoCountsBySubmission,
     required this.deadJobs,
+    this.assignmentId,
+    this.assignmentBoundaryGeojson,
   });
+  final String? assignmentId;
+  final String? assignmentBoundaryGeojson;
   final List<Feature> features;
   final List<Submission> submissions;
   final List<BuildingAttribute> buildingAttrs;
@@ -34,6 +38,7 @@ class ReviewRepository {
     final trigger = _db.customSelect(
       'SELECT 1',
       readsFrom: {
+        _db.assignments,
         _db.features,
         _db.submissions,
         _db.buildingAttributes,
@@ -41,6 +46,7 @@ class ReviewRepository {
         _db.householdSurveys,
         _db.photos,
         _db.syncJobs,
+        _db.featureGeometryRevisions,
       },
     ).watch();
 
@@ -48,6 +54,9 @@ class ReviewRepository {
   }
 
   Future<ReviewSourceData> _snapshot(String assignmentId) async {
+    final assignment = await (_db.select(_db.assignments)
+          ..where((row) => row.id.equals(assignmentId)))
+        .getSingleOrNull();
     // Opening a feature creates an empty draft. Only fetch features with
     // saved fieldwork (or newly added geometry), before loading related rows
     // and building validation widgets for potentially thousands of features.
@@ -122,7 +131,7 @@ class ReviewRepository {
       FROM sync_jobs j
       WHERE j.status = 'dead'
       AND (
-        (j.entity_type = 'submission' AND j.entity_id IN (
+        (j.entity_type IN ('submission','attribution_upload','attribution_resolve') AND j.entity_id IN (
           SELECT s.id FROM submissions s
           JOIN features f ON f.id = s.feature_id
           WHERE f.assignment_id = ?
@@ -133,8 +142,13 @@ class ReviewRepository {
           JOIN features f ON f.id = s.feature_id
           WHERE f.assignment_id = ?
         ))
-        OR (j.entity_type = 'new_feature' AND j.entity_id IN (
+        OR (j.entity_type IN ('new_feature','new_feature_upload','new_feature_resolve') AND j.entity_id IN (
           SELECT id FROM features WHERE assignment_id = ?
+        ))
+        OR (j.entity_type = 'feature_geometry_update' AND j.entity_id IN (
+          SELECT g.id FROM feature_geometry_revisions g
+          JOIN features f ON f.id=g.feature_id WHERE f.assignment_id=?
+          AND g.sync_status NOT IN ('uploaded','discarded')
         ))
       )
       ORDER BY j.created_at ASC
@@ -143,8 +157,15 @@ class ReviewRepository {
         Variable.withString(assignmentId),
         Variable.withString(assignmentId),
         Variable.withString(assignmentId),
+        Variable.withString(assignmentId),
       ],
-      readsFrom: {_db.syncJobs, _db.submissions, _db.features, _db.photos},
+      readsFrom: {
+        _db.syncJobs,
+        _db.submissions,
+        _db.features,
+        _db.photos,
+        _db.featureGeometryRevisions,
+      },
     ).get();
 
     final deadJobs = deadJobRows
@@ -160,6 +181,8 @@ class ReviewRepository {
         .toList();
 
     return ReviewSourceData(
+      assignmentId: assignmentId,
+      assignmentBoundaryGeojson: assignment?.boundaryPolygonGeojson,
       features: features,
       submissions: submissions,
       buildingAttrs: buildingAttrs,

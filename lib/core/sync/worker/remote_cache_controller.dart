@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:drift/drift.dart';
+import 'package:firecheck/features/assignment/data/assignment_repository.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/sync/data/remote_attributions_pull_service.dart';
 import 'package:firecheck/core/sync/worker/connectivity_listener.dart';
@@ -19,15 +19,18 @@ class RemoteCacheController {
   RemoteCacheController({
     required RemoteAttributionsPullService pullService,
     required AppDatabase db,
+    this.userId,
   })  : _pullService = pullService,
         _db = db;
 
   final RemoteAttributionsPullService _pullService;
   final AppDatabase _db;
+  final String? userId;
 
   ConnectivityListener? _connectivity;
   SyncLifecycleListener? _lifecycle;
   bool _started = false;
+  Timer? _timer;
 
   /// Performs the initial cold-open full-pull for whatever assignment is
   /// currently selected, then wires connectivity + lifecycle listeners so
@@ -36,11 +39,14 @@ class RemoteCacheController {
     if (_started) return;
     _started = true;
     await _pullForCurrentAssignment(full: true);
+    if (!_started) return;
+    _timer = Timer.periodic(const Duration(seconds: 30), (_) => _onReconnect());
     _connectivity = ConnectivityListener(onConnect: _onReconnect)..start();
     _lifecycle = SyncLifecycleListener(onResume: _onResume)..start();
   }
 
   Future<void> stop() async {
+    _timer?.cancel();
     await _connectivity?.dispose();
     _lifecycle?.dispose();
     _started = false;
@@ -60,14 +66,8 @@ class RemoteCacheController {
   }
 
   Future<void> _pullForCurrentAssignment({required bool full}) async {
-    // Deterministic selection — matches AssignmentRepository.getCurrentAssignment()
-    // ("newest by createdAt") so badges/cache reference the same assignment
-    // the rest of the app considers "current".
-    final rows = await (_db.select(_db.assignments)
-          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])
-          ..limit(1))
-        .get();
-    final assignment = rows.firstOrNull;
+    final assignment = await AssignmentRepository(db: _db, userId: userId)
+        .getCurrentAssignment();
     if (assignment == null) return;
     try {
       final result = full

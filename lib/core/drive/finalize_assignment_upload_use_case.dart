@@ -55,6 +55,7 @@ class FinalizeAssignmentUploadUseCase {
     required DriveUploadAuditRepository auditRepo,
     DateTime Function() now = DateTime.now,
     String? Function()? enumeratorIdentifier,
+    String? Function()? currentUserId,
     Future<GatewayUploadReceipt?> Function(String, String?)? gatewayReceipt,
   })  : _db = db,
         _repo = repo,
@@ -62,6 +63,7 @@ class FinalizeAssignmentUploadUseCase {
         _auditRepo = auditRepo,
         _now = now,
         _enumeratorIdentifier = enumeratorIdentifier,
+        _currentUserId = currentUserId,
         _gatewayReceipt = gatewayReceipt;
 
   final Future<GatewayUploadReceipt?> Function(String, String?)?
@@ -78,6 +80,7 @@ class FinalizeAssignmentUploadUseCase {
   /// layout. When null (tests, environments without auth), the legacy
   /// `firecheck/<assignmentFolderName>/` shape is written.
   final String? Function()? _enumeratorIdentifier;
+  final String? Function()? _currentUserId;
 
   /// Inspects the job queue for [assignmentId], persists the upload result
   /// on the assignment row, and records an audit entry when every job has
@@ -90,16 +93,11 @@ class FinalizeAssignmentUploadUseCase {
     required String assignmentId,
     String? uploaderId,
   }) async {
-    var jobs = await _repo.getJobsForAssignment(assignmentId);
-    if (_gatewayReceipt != null) {
-      jobs = jobs
-          .where((j) => j.ownerId == uploaderId && j.batchId != null)
-          .toList();
-      if (jobs.isNotEmpty) {
-        final latest = jobs.last.batchId;
-        jobs = jobs.where((j) => j.batchId == latest).toList();
-      }
+    if (_currentUserId != null && _currentUserId() != uploaderId) {
+      return DriveUploadEmpty(assignmentId: assignmentId);
     }
+    final identifier = _enumeratorIdentifier?.call();
+    final jobs = await _jobsForUpload(assignmentId, uploaderId);
     if (jobs.isEmpty) {
       return DriveUploadEmpty(assignmentId: assignmentId);
     }
@@ -137,7 +135,15 @@ class FinalizeAssignmentUploadUseCase {
       );
     }
     final confirmedAt = receipt?.confirmedAt ?? _now();
-    final folderPath = receipt?.folderPath ?? _buildFolderPath(folderName);
+    final folderPath =
+        receipt?.folderPath ?? _buildFolderPath(folderName, identifier);
+    if (_currentUserId != null && _currentUserId() != uploaderId) {
+      return DriveUploadIncomplete(
+        assignmentId: assignmentId,
+        completedCount: completed,
+        failedCount: failed,
+      );
+    }
 
     await _assignmentRepo.setDriveUploadResult(
       assignmentId: assignmentId,
@@ -164,6 +170,46 @@ class FinalizeAssignmentUploadUseCase {
     );
   }
 
+  Future<List<DriveUploadJob>> _jobsForUpload(
+    String assignmentId,
+    String? uploaderId,
+  ) async {
+    var jobs = await _repo.getJobsForAssignment(assignmentId);
+    if (uploaderId != null) {
+      jobs = jobs.where((job) => job.ownerId == uploaderId).toList();
+    }
+    if (_gatewayReceipt != null) {
+      jobs = jobs
+          .where((j) => j.ownerId == uploaderId && j.batchId != null)
+          .toList();
+      return _latestBatch(jobs);
+    }
+    final exports = _latestBatch(
+      jobs.where((job) => job.fileType == DriveFileType.shapefile).toList(),
+    );
+    return jobs
+        .where(
+          (job) =>
+              job.fileType != DriveFileType.shapefile || exports.contains(job),
+        )
+        .toList();
+  }
+
+  List<DriveUploadJob> _latestBatch(List<DriveUploadJob> jobs) {
+    // Repository order is insertion order. A later component of an old batch
+    // does not make that old revision the latest intended export.
+    final seen = <(String?, String?)>{};
+    final latestByOwner = <String?, String?>{};
+    for (final job in jobs) {
+      if (seen.add((job.ownerId, job.batchId))) {
+        latestByOwner[job.ownerId] = job.batchId;
+      }
+    }
+    return jobs
+        .where((job) => latestByOwner[job.ownerId] == job.batchId)
+        .toList();
+  }
+
   /// Finalizes every assignment that has at least one completed job and no
   /// recorded confirmation. Used by the background WorkManager isolate,
   /// which doesn't know which assignment(s) had jobs drained this tick.
@@ -172,8 +218,12 @@ class FinalizeAssignmentUploadUseCase {
       'SELECT DISTINCT j.assignment_id '
       'FROM drive_upload_jobs j '
       'INNER JOIN assignments a ON a.id = j.assignment_id '
-      'WHERE j.status = ? AND a.drive_upload_confirmed_at IS NULL',
-      variables: [Variable.withString(DriveUploadJobStatus.completed)],
+      'WHERE j.status = ? AND a.drive_upload_confirmed_at IS NULL AND (? IS NULL OR j.owner_id=?)',
+      variables: [
+        Variable.withString(DriveUploadJobStatus.completed),
+        Variable<String>(uploaderId),
+        Variable<String>(uploaderId),
+      ],
     ).get();
     final ids = rows
         .map((r) => r.read<String>('assignment_id'))
@@ -201,11 +251,10 @@ class FinalizeAssignmentUploadUseCase {
     return row.name ?? row.id;
   }
 
-  String _buildFolderPath(String folderName) {
-    final resolver = _enumeratorIdentifier;
-    if (resolver == null) return 'firecheck/$folderName/';
+  String _buildFolderPath(String folderName, String? identifier) {
+    if (_enumeratorIdentifier == null) return 'firecheck/$folderName/';
     final enumerator =
-        sanitizeDriveFolderName(resolver()) ?? 'unknown-enumerator';
+        sanitizeDriveFolderName(identifier) ?? 'unknown-enumerator';
     return 'firecheck/output/$enumerator/$folderName/';
   }
 }

@@ -23,6 +23,9 @@ class _NoOpAssignmentRepository extends AssignmentRepository {
 
   @override
   Future<Assignment?> getCurrentAssignment() async => null;
+
+  @override
+  Stream<Assignment?> watchCurrentAssignment() => Stream.value(null);
 }
 
 /// Bare-minimum SupabaseClient stub. The fake repo overrides every method
@@ -87,5 +90,8 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.widgetWithText(AppBar, 'Review before upload'), findsOneWidget);
+    // Dispose database stream subscriptions before closing the database.
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 10));
   });
 }

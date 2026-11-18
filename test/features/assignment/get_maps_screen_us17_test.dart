@@ -60,11 +60,15 @@ void main() {
   });
   for (final entry in [
     (500, 1000, '50%'),
-    (1200, 1000, '100%'),
+    // Received bytes are not yet verified/imported; reserve 100% for success.
+    (1200, 1000, '99%'),
     (-10, 1000, '0%'),
     (0, 0, 'Calculating progress…')
   ]) {
-    testWidgets('download progress displays ${entry.$3}', (tester) async {
+    final description = entry.$3 == '99%'
+        ? 'full-byte download remains at 99% until validation completes'
+        : 'download progress displays ${entry.$3}';
+    testWidgets(description, (tester) async {
       await tester.pumpWidget(
           _wrap(DownloadingShapefiles(downloaded: entry.$1, total: entry.$2)));
       await tester.pump();

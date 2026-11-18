@@ -5,9 +5,13 @@ class StartUploadButton extends StatelessWidget {
   const StartUploadButton({
     required this.enabled,
     required this.onPressed,
+    this.alreadyUploaded = false,
+    this.sharedMap = false,
     super.key,
   });
   final bool enabled;
+  final bool alreadyUploaded;
+  final bool sharedMap;
   final VoidCallback onPressed;
 
   @override
@@ -19,13 +23,19 @@ class StartUploadButton extends StatelessWidget {
         onPressed: enabled ? onPressed : null,
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 14),
-          child: Text(l.startUploadButton),
+          child: Text(sharedMap
+              ? (alreadyUploaded ? 'Up to date' : 'Sync changes')
+              : alreadyUploaded
+                  ? 'Uploaded'
+                  : l.startUploadButton),
         ),
       ),
     );
     if (enabled) return btn;
     return Tooltip(
-      message: l.startUploadDisabledTooltip,
+      message: alreadyUploaded
+          ? 'No new changes to sync.'
+          : l.startUploadDisabledTooltip,
       child: btn,
     );
   }

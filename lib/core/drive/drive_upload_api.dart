@@ -1,6 +1,17 @@
 /// Upload surface for Google Drive. Separate from the read-only DriveApi
 /// to keep download and upload concerns independent.
+class DriveAccountChanged implements Exception {
+  const DriveAccountChanged();
+  @override
+  String toString() =>
+      'Drive account changed. Retry with the original account.';
+}
+
 abstract interface class DriveUploadApi {
+  /// Pins credentials to the original account for one drain. Implementations
+  /// must reject requests if the active account changes during asynchronous work.
+  Future<DriveUploadApi> forAccount(String accountId);
+
   /// Returns the Drive folder ID of the shared `firecheck` root, using a
   /// parent-agnostic name search so it converges on the same folder the
   /// download path reads from — including shared-with-me and shared drives.
@@ -13,7 +24,7 @@ abstract interface class DriveUploadApi {
   /// Uploads [localPath] into [driveParentId] and returns the Drive file ID.
   ///
   /// [resumableUri] is reserved for future resumable upload support.
-  /// It is currently unused by [GoogleDriveUploadApi]; uploads restart on failure.
+  /// It is currently unused by `GoogleDriveUploadApi`; uploads restart on failure.
   Future<String> uploadFile({
     required String localPath,
     required String driveParentId,

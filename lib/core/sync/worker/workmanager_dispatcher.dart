@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:drift/native.dart';
+import 'package:firecheck/core/sync/data/shared_map_sync.dart';
 import 'package:firecheck/core/db/database.dart';
 import 'package:firecheck/core/sync/data/submission_payload_builder.dart';
 import 'package:firecheck/core/sync/data/supabase_sync_api.dart';
@@ -24,24 +24,34 @@ void callbackDispatcher() {
         url: dotenv.env['SUPABASE_URL']!,
         anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
       );
-      // Background isolate uses the same on-disk Drift DB.
-      final db = AppDatabase.forTesting(NativeDatabase.memory());
-      // NOTE: in production, WorkManager isolate should open the same
-      // sqlite file the main isolate uses. We ship with the simpler path —
-      // the periodic tick isn't load-bearing for correctness (connectivity
-      // + foreground triggers are). Production-grade isolate sharing is
-      // deferred polish.
-      final api = SupabaseSyncApi(Supabase.instance.client);
-      final worker = SyncWorker(
-        api: api,
-        jobs: SyncJobsRepository(db),
-        payload: SubmissionPayloadBuilder(db),
-        lock: AssignmentLockRepository(db),
-        db: db,
-        bundle: PendingWorkBundle(db),
-      );
-      await worker.drain();
-      return Future.value(true);
+      final account = Supabase.instance.client.auth.currentUser?.id;
+      if (account == null) return true;
+      final db = AppDatabase();
+      try {
+        final api = SupabaseSyncApi(Supabase.instance.client);
+        final worker = SyncWorker(
+          api: api,
+          jobs: SyncJobsRepository(db, ownerId: account),
+          payload: SubmissionPayloadBuilder(db),
+          lock: AssignmentLockRepository(db),
+          db: db,
+          bundle: PendingWorkBundle(db),
+        );
+        await worker.drain();
+        final maps = await (db.select(db.sharedMapCursors)
+              ..where((t) => t.accountId.equals(account)))
+            .get();
+        final sync = SharedMapSync(
+            db: db,
+            accountId: account,
+            fetch: SharedMapSync.supabase(Supabase.instance.client));
+        for (final map in maps) {
+          await sync.pull(map.assignmentId);
+        }
+        return true;
+      } finally {
+        await db.close();
+      }
     } on Object {
       return Future.value(false);
     }

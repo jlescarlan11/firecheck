@@ -1,3 +1,4 @@
+import 'package:firecheck/core/drive/upload_transfer_progress.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:drift/native.dart';
@@ -13,30 +14,38 @@ void main() {
   late AppDatabase db;
   late DriveUploadRepository repo;
   late Directory dir;
+  late UploadTransferTracker progress;
   const owner = '00000000-0000-0000-0000-000000000001';
   const other = '00000000-0000-0000-0000-000000000002';
   const batch = '00000000-0000-0000-0000-000000000003';
   const assignment = '00000000-0000-0000-0000-000000000004';
   const job = '00000000-0000-0000-0000-000000000005';
   setUp(() async {
+    progress = UploadTransferTracker();
     db = AppDatabase.forTesting(NativeDatabase.memory());
     repo = DriveUploadRepository(db);
     dir = await Directory.systemTemp.createTemp('gateway-upload-');
   });
   tearDown(() async {
+    progress.dispose();
     await db.close();
     await dir.delete(recursive: true);
   });
-  Future<void> seed({String? who = owner, String? batchId = batch}) async {
+  Future<void> seed(
+      {String? who = owner, String? batchId = batch, int size = 5}) async {
     final file = File('${dir.path}/buildings.shp');
-    await file.writeAsString('shape');
+    if (size == 5) {
+      await file.writeAsString('shape');
+    } else {
+      await file.writeAsBytes(List.filled(size, 1));
+    }
     await repo.insertJob(
         id: job,
         assignmentId: assignment,
         filePath: file.path,
         fileType: 'shapefile',
         fileName: 'buildings.shp',
-        fileSizeBytes: 5,
+        fileSizeBytes: size,
         capturedAt: DateTime.now(),
         ownerId: who,
         batchId: batchId);
@@ -46,12 +55,58 @@ void main() {
           Future<http.Response> Function(http.Request) send) =>
       GatewayUploadRunner(
           repo: repo,
+          progress: progress,
           client: GatewayClient(
               baseUri: Uri.parse('https://files.example.com'),
               userId: () => owner,
               accessToken: () => 'app-token',
               refresh: () async {},
               client: MockClient(send)));
+  for (final failSecondChunk in [false, true]) {
+    test('progress follows acknowledged chunks, failure: $failSecondChunk',
+        () async {
+      const size = 1024 * 1024;
+      await seed(size: size);
+      var acknowledged = 0;
+      final observed = <int>[];
+      progress.addListener((items) {
+        if (items[job] != null) observed.add(items[job]!.percent);
+      });
+      await runner((request) async {
+        if (request.url.path.endsWith('/uploads')) {
+          return http.Response('{"complete":false}', 200);
+        }
+        if (request.url.path.endsWith('/chunks')) {
+          // MockClient has already consumed the whole request body here.
+          // That must NOT advance the displayed percentage.
+          expect(progress.state[job]!.sent, acknowledged);
+          expect(request.bodyBytes.length, 256 * 1024);
+          expect(request.headers['Upload-Offset'], '$acknowledged');
+          if (failSecondChunk && acknowledged > 0) {
+            return http.Response('{}', 503);
+          }
+          acknowledged += request.bodyBytes.length;
+          return http.Response(
+              jsonEncode({
+                'offset': acknowledged,
+                'complete': acknowledged == size,
+              }),
+              200);
+        }
+        if (request.url.path.endsWith('/complete')) {
+          expect(acknowledged, size);
+          return http.Response('{"complete":true}', 200);
+        }
+        return http.Response('{"offset":0,"complete":false}', 200);
+      }).drain();
+      if (failSecondChunk) {
+        expect(progress.state[job]!.percent, 25);
+        expect(progress.state[job]!.phase, TransferPhase.failed);
+      } else {
+        expect(observed, containsAllInOrder([0, 25, 50, 75, 99, 100]));
+      }
+    });
+  }
   test('does not submit another account pending exports', () async {
     await seed(who: other);
     var requests = 0;
@@ -91,6 +146,8 @@ void main() {
         return http.Response('{"offset":5,"complete":true}', 200);
       }
       if (req.url.path.endsWith('/complete')) {
+        expect(progress.state[job]!.percent, 99);
+        expect(progress.state[job]!.phase, TransferPhase.confirming);
         expect((await repo.getJobsForAssignment(assignment)).single.status,
             'uploading');
         return http.Response('{"complete":true}', 200);
@@ -101,5 +158,7 @@ void main() {
     expect((await repo.getJobsForAssignment(assignment)).single.status,
         'completed');
     expect(calls.last, 'POST /v1/uploads/$batch/complete');
+    expect(progress.state[job]!.percent, 100);
+    expect(progress.state[job]!.phase, TransferPhase.completed);
   });
 }

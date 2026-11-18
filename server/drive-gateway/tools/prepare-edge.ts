@@ -8,7 +8,15 @@ const output = fileURLToPath(
   ),
 );
 await mkdir(output, { recursive: true });
-for (const name of ["app", "db", "domain", "drive"]) {
+for (const name of [
+  "app",
+  "db",
+  "domain",
+  "drive",
+  "output-layout",
+  "shared-map-export",
+  "source-publication",
+]) {
   const compiled = await readFile(
     new URL(`../dist/${name}.js`, import.meta.url),
     "utf8",

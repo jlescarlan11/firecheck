@@ -40,14 +40,13 @@ void main() {
     expect(find.text('0% complete'), findsOneWidget);
   });
 
-  testWidgets('empty workspace disables map and offers downloads',
-      (tester) async {
+  testWidgets('empty workspace allows opening the map chooser', (tester) async {
     await tester.pumpWidget(buildSubject(Stream.value(ProgressSnapshot.empty)));
     await tester.pumpAndSettle();
     final button = tester.widget<FilledButton>(
       find.byKey(const Key('home-survey-action')),
     );
-    expect(button.onPressed, isNull);
+    expect(button.onPressed, isNotNull);
     expect(find.text('No maps downloaded'), findsOneWidget);
     expect(find.byTooltip('Upload progress'), findsOneWidget);
   });
@@ -79,7 +78,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Start survey'), findsOneWidget);
-    expect(find.text('Get maps'), findsOneWidget);
+    expect(find.text('My Maps'), findsOneWidget);
     expect(find.text('Review before upload'), findsOneWidget);
   });
 

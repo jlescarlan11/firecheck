@@ -4,6 +4,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  testWidgets('confirmed unchanged work shows Uploaded and cannot be tapped',
+      (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(
+          body: StartUploadButton(
+        enabled: false,
+        alreadyUploaded: true,
+        onPressed: () => fail('Must not reupload'),
+      )),
+    ));
+    expect(find.text('Uploaded'), findsOneWidget);
+    expect(tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
+        isNull);
+  });
+
   testWidgets('disabled with blockers', (tester) async {
     await tester.pumpWidget(
       MaterialApp(

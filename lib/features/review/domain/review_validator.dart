@@ -1,14 +1,26 @@
 import 'package:firecheck/core/db/database.dart';
+import 'package:firecheck/core/forms/field_requirements.dart';
+import 'package:firecheck/core/forms/form_definition.dart';
+import 'package:firecheck/core/forms/geometry_signal.dart';
 import 'package:firecheck/features/review/data/review_repository.dart';
 import 'package:firecheck/features/review/domain/review_state.dart';
 import 'package:firecheck/features/review/domain/upload_progress.dart';
+import 'package:firecheck/features/survey/building_form/data/building_attributes_repository.dart';
+import 'package:firecheck/features/survey/building_form/domain/building_form_applicability.dart';
+import 'package:firecheck/features/survey/building_form/domain/building_form_state.dart';
 
 /// Pure validator: takes a snapshot of source rows and produces ReviewState.
 ///
 /// Per master spec §10. Treats `does_not_exist=true` as the existing
 /// validateBuildingForm/validateRoadForm do — short-circuits content
 /// blockers, but photo is always required.
-ReviewState buildReviewState(ReviewSourceData data) {
+ReviewState buildReviewState(
+  ReviewSourceData data, {
+  FieldRequirements requirements = FieldRequirements.allRequired,
+  Set<BuildingFormField> hiddenBuildingFields = const {},
+  FormDefinition definition = FormDefinition.legacy,
+  Map<String, FormDefinition> definitionsByVersion = const {},
+}) {
   final blockers = <ReviewIssue>[];
   final warnings = <ReviewIssue>[];
 
@@ -53,6 +65,18 @@ ReviewState buildReviewState(ReviewSourceData data) {
     for (final sub in finalized) {
       final photoCount = data.photoCountsBySubmission[sub.id] ?? 0;
       var subBlockers = 0;
+      void requiredBuildingAnswer(String code, String messageKey) {
+        subBlockers++;
+        blockers.add(
+          ReviewIssue(
+            featureId: f.id,
+            featureLabel: _featureLabel(f),
+            severity: ReviewSeverity.blocker,
+            code: code,
+            messageKey: messageKey,
+          ),
+        );
+      }
 
       if (photoCount < 1) {
         subBlockers++;
@@ -71,16 +95,51 @@ ReviewState buildReviewState(ReviewSourceData data) {
       if (!sub.doesNotExist) {
         if (f.featureType == 'building') {
           final b = buildingBySub[sub.id];
+          final answers = BuildingFormState(
+            submissionId: sub.id,
+            cbmsId: b?.cbmsId,
+            buildingName: b?.buildingName,
+            ra9514Type: b?.ra9514Type,
+            storeys: b?.storeys,
+            material: b?.material,
+            costIsExact: b?.costIsExact ?? false,
+            costAmount: b?.costAmount,
+            costEstimateRange: b?.costEstimateRange,
+            fireLoad: BuildingAttributesRepository.decodeStringList(
+              b?.fireLoadJson ?? '[]',
+            ),
+            fireFightingFacilities:
+                BuildingAttributesRepository.decodeStringList(
+              b?.fireFightingFacilitiesJson ?? '[]',
+            ),
+          );
+          final hidden = effectiveHiddenBuildingFields(
+            answers,
+            hidden: hiddenBuildingFields,
+            definition: definitionsByVersion[sub.formVersion] ?? definition,
+            geometry: _reviewGeometryForFeature(f, data),
+          );
+          for (final field in [
+            BuildingFormField.cbmsId,
+            BuildingFormField.fireFightingFacilities,
+          ]) {
+            if (isApplicable(answers, field, hidden: hidden) &&
+                requirements.isRequired(buildingRequirementKeyFor(field)) &&
+                !isAnswered(answers, field)) {
+              requiredBuildingAnswer(
+                field == BuildingFormField.cbmsId
+                    ? 'cbms_id_required'
+                    : 'fire_fighting_facilities_required',
+                field == BuildingFormField.cbmsId
+                    ? 'issueCbmsRequired'
+                    : 'issueFireFightingFacilitiesRequired',
+              );
+            }
+          }
           if (b == null || b.ra9514Type == null) {
-            subBlockers++;
-            blockers.add(
-              ReviewIssue(
-                featureId: f.id,
-                featureLabel: _featureLabel(f),
-                severity: ReviewSeverity.blocker,
-                code: 'ra_9514_type_required',
-                messageKey: 'issueRa9514Required',
-              ),
+            requiredBuildingAnswer(
+              'ra_9514_type_required',
+              'issueRa9514Required',
             );
           } else {
             // Warning: residential without OLP.
@@ -145,6 +204,7 @@ ReviewState buildReviewState(ReviewSourceData data) {
   );
 
   return ReviewState(
+    assignmentId: data.assignmentId,
     summary: summary,
     warnings: warnings,
     blockers: blockers,
@@ -158,3 +218,15 @@ String _featureLabel(Feature f) {
   final shortId = f.id.length > 6 ? f.id.substring(0, 6) : f.id;
   return '${f.featureType[0].toUpperCase()}${f.featureType.substring(1)} $shortId';
 }
+
+GeometrySignal _reviewGeometryForFeature(
+  Feature feature,
+  ReviewSourceData source,
+) =>
+    geometrySignalFromGeojson(
+      feature.geometryGeojson,
+      featureType: feature.featureType,
+      boundaryGeojson: feature.assignmentId == source.assignmentId
+          ? source.assignmentBoundaryGeojson
+          : null,
+    );

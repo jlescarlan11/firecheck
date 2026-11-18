@@ -1,0 +1,168 @@
+{
+  "device": {
+    "model": "TECNO CLA5",
+    "android": 16,
+    "api": 36,
+    "ram_kib": 7871176
+  },
+  "build": {
+    "mode": "profile AOT arm64",
+    "apk_sha256": "3393ce9e5ed054abacfe047731aaeb969c474c2ae19b0514fd77f28f5006490a",
+    "network": "INTERNET permission absent; local synthetic geometry only"
+  },
+  "camera_3000": {
+    "event": "photo_benchmark",
+    "source": "native-camera-center-crop-resize-3000x2000",
+    "input_width": 3000,
+    "input_height": 2000,
+    "samples": [
+      3116.358,
+      3094.343,
+      3196.02,
+      3206.624,
+      3147.015,
+      3206.555,
+      3008.003,
+      3220.14,
+      3188.446,
+      3162.088,
+      3137.013,
+      3125.558,
+      3154.339,
+      3053.491,
+      3177.789,
+      3189.957,
+      3094.955,
+      3185.841,
+      3218.347,
+      3180.267
+    ],
+    "p95_ms": 3218.347,
+    "peak_observed_rss": 475480064,
+    "process_max_rss": 498937856,
+    "timer_max_gap_ms": 45.03,
+    "display_hz": 120.00000762939453,
+    "frame_budget_ms": 8.333332803514303,
+    "frame_window_start_us": 153207468590,
+    "frame_window_end_us": 153270531925,
+    "frame_attribution": "vsyncStart >= start && vsyncStart < end; full duration retained",
+    "frame_collection_complete": true,
+    "frame_collection_timeout_ms": 5000,
+    "frame_sentinel_vsync_us": 153270534325,
+    "frame_excluded_before": 3,
+    "frame_excluded_after": 3,
+    "frame_gate_eligible": true,
+    "frames": 3736,
+    "over_budget": 85,
+    "over_budget_percent": 2.275160599571734,
+    "max_build_ms": 25.686,
+    "max_raster_ms": 19.861,
+    "max_total_span_ms": 40.886,
+    "output_width": 1600,
+    "output_height": 1067
+  },
+  "legacy_synthetic_3000": {
+    "samples": 20,
+    "p95_ms": 5326.23,
+    "peak_observed_rss": 473853952,
+    "frame_gate_eligible": false,
+    "reason": "Superseded frame collection window; processing durations remain valid"
+  },
+  "raw_larger_camera": {
+    "event": "photo_benchmark",
+    "source": "native-camera-raw",
+    "input_width": 3048,
+    "input_height": 4064,
+    "samples": [
+      4618.784,
+      4556.382,
+      4659.399,
+      4701.337,
+      4666.869,
+      4610.975,
+      4601.484,
+      4474.398,
+      4677.704,
+      4605.298,
+      4632.641,
+      4927.393,
+      4655.982,
+      4598.749,
+      4594.051,
+      4586.969,
+      4634.639,
+      4683.556,
+      4530.472,
+      4696.742
+    ],
+    "p95_ms": 4701.337,
+    "peak_observed_rss": 485609472,
+    "process_max_rss": 498937856,
+    "timer_max_gap_ms": 44.467,
+    "display_hz": 120.00000762939453,
+    "frame_budget_ms": 8.333332803514303,
+    "frame_window_start_us": 153372286356,
+    "frame_window_end_us": 153465000364,
+    "frame_attribution": "vsyncStart >= start && vsyncStart < end; full duration retained",
+    "frame_collection_complete": true,
+    "frame_collection_timeout_ms": 5000,
+    "frame_sentinel_vsync_us": 153465005952,
+    "frame_excluded_before": 7,
+    "frame_excluded_after": 3,
+    "frame_gate_eligible": true,
+    "frames": 5508,
+    "over_budget": 87,
+    "over_budget_percent": 1.579520697167756,
+    "max_build_ms": 27.942,
+    "max_raster_ms": 14.578,
+    "max_total_span_ms": 43.327,
+    "output_width": 1200,
+    "output_height": 1600
+  },
+  "process_restart": {
+    "method": "isolated app force-stop/relaunch",
+    "startup_persisted_photos": 1,
+    "repository_before_after": {
+      "before": {
+        "photo_count": 1,
+        "jobs": [
+          {
+            "entity_type": "new_feature_resolve",
+            "entity_id": "b-mine",
+            "status": "pending",
+            "payload": null
+          }
+        ],
+        "resolutions": [
+          {
+            "target_id": "b-mine",
+            "kind": "new_feature",
+            "decision": "discard_mine"
+          }
+        ]
+      },
+      "after": {
+        "photo_count": 1,
+        "jobs": [
+          {
+            "entity_type": "new_feature_resolve",
+            "entity_id": "b-mine",
+            "status": "pending",
+            "payload": null
+          }
+        ],
+        "resolutions": [
+          {
+            "target_id": "b-mine",
+            "kind": "new_feature",
+            "decision": "discard_mine"
+          }
+        ]
+      }
+    },
+    "limit": "Exact discard_mine resolution persisted in separate pending_resolutions table; queue payload is expected null. Local persistence only; no remote acceptance verified."
+  },
+  "device_settings": {
+    "stay_on_while_plugged_in_restored": 0
+  }
+}
